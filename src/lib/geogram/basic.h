@@ -52,6 +52,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <vector>
 
 #ifndef M_PI
 /**
@@ -186,6 +187,8 @@ namespace GEO {
  *  classes in Geogram are declared with GEOGRAM_API.
  */
 #define GEOGRAM_API
+
+    using std::vector;
 
 }
 
