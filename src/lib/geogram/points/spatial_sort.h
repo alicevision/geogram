@@ -51,6 +51,10 @@ namespace GEO {
 
     /**
      * \brief Computes the Hilbert order for a set of 3D points.
+     * \details The implementation is inspired by:
+     *  - Christophe Delage and Olivier Devillers. Spatial Sorting. 
+     *   In CGAL User and Reference Manual. CGAL Editorial Board, 
+     *   3.9 edition, 2011
      * \param[in] nb_vertices number of vertices to sort
      * \param[in] vertices pointer to the coordinates of the vertices
      * \param[out] sorted_indices a vector of element indices that will

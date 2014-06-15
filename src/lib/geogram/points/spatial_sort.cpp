@@ -200,7 +200,7 @@ namespace {
     /**
      * \brief Generic class for sorting arbitrary elements in
      *  Hilbert and Morton orders.
-     * \details Reference:
+     * \details The implementation is inspired by:
      *  Christophe Delage and Olivier Devillers. 
      *  Spatial Sorting. In CGAL User and Reference Manual. 
      *  CGAL Editorial Board, 3.9 edition, 2011
