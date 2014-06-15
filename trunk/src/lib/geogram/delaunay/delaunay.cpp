@@ -42,51 +42,57 @@
  *
  */
 
-#ifndef __GEOGRAM_POINTS_SPATIAL_SORT__
-#define __GEOGRAM_POINTS_SPATIAL_SORT__
-
-#include <geogram/basic.h>
+#include <geogram/delaunay/delaunay.h>
+#include <algorithm>
 
 namespace GEO {
 
-    /**
-     * \brief Computes the Hilbert order for a set of 3D points.
-     * \param[in] nb_vertices number of vertices to sort
-     * \param[in] vertices pointer to the coordinates of the vertices
-     * \param[out] sorted_indices a vector of element indices that will
-     *  be sorted spatially
-     * \param[in] stride number of doubles between two consecutive vertices
-     */
-    void GEOGRAM_API compute_Hilbert_order(
-        index_t nb_vertices, const double* vertices,
-        vector<index_t>& sorted_indices,
-        index_t stride = 3
-    );
+    Delaunay::Delaunay(coord_index_t dimension) {
+        set_dimension(dimension);
+        vertices_ = nil;
+        nb_vertices_ = 0;
+        nb_cells_ = 0;
+        cell_to_v_ = nil;
+        cell_to_cell_ = nil;
+    }
 
-    /**
-     * \brief Computes the BRIO order for a set of 3D points.
-     * \details It is used to accelerate incremental insertion
-     *  in Delaunay triangulation.
-     * \param[in] nb_vertices number of vertices to sort
-     * \param[in] vertices pointer to the coordinates of the vertices
-     * \param[out] sorted_indices a vector of element indices to
-     *  be sorted spatially
-     * \param[in] stride number of doubles between two consecutive vertices
-     * \param[in] threshold minimum size of interval to be sorted
-     * \param[in] ratio splitting ratio between current interval and
-     *  the rest to be sorted
-     * \param[out] levels if non-nil, indices that correspond to level l are
-     *   in the range levels[l] (included) ... levels[l+1] (excluded)
-     */
-    void GEOGRAM_API compute_BRIO_order(
-        index_t nb_vertices, const double* vertices,
-        vector<index_t>& sorted_indices,
-        index_t stride = 3,
-        index_t threshold = 64,
-        double ratio = 0.125,
-        vector<index_t>* levels = nil
-    );
+    Delaunay::~Delaunay() {
+    }
+
+    void Delaunay::set_vertices(
+        index_t nb_vertices, const double* vertices
+    ) {
+        nb_vertices_ = nb_vertices;
+        vertices_ = vertices;
+    }
+
+    void Delaunay::set_arrays(
+        index_t nb_cells,
+        const signed_index_t* cell_to_v, const signed_index_t* cell_to_cell
+    ) {
+        nb_cells_ = nb_cells;
+        cell_to_v_ = cell_to_v;
+        cell_to_cell_ = cell_to_cell;
+    }
+
+    index_t Delaunay::nearest_vertex(const double* p) const {
+        // Unefficient implementation (but at least it works).
+        // Derived classes are supposed to overload.
+        geo_assert(nb_vertices() > 0);
+        index_t result = 0;
+        double d = Geom::distance2(vertex_ptr(0), p, dimension());
+        for(index_t i = 1; i < nb_vertices(); i++) {
+            double cur_d = Geom::distance2(vertex_ptr(i), p, dimension());
+            if(cur_d < d) {
+                d = cur_d;
+                result = i;
+            }
+        }
+        return result;
+    }
+
+    /************************************************************************/
+    
+    
 }
-
-#endif
 
