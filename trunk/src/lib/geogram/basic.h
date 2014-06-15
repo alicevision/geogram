@@ -142,7 +142,29 @@ namespace GEO {
         return x * x;
     }
 
-   
+    namespace Numeric {
+
+        /** Floating point type with a width of 64 bits */
+        typedef double float64;
+
+        /**
+         * \brief Gets 64 bits float maximum positive value
+         */
+        inline float64 max_float64() {
+            return std::numeric_limits<float64>::max();
+        }
+
+        /**
+         * \brief Gets 64 bits float minimum negative value
+         */
+        inline float64 min_float64() {
+            // Note: numeric_limits<>::min() is not
+            // what we want (it returns the smallest
+            // positive non-denormal).
+            return -max_float64();
+        }
+    }
+    
 
 #ifdef GEO_DEBUG
 #define geo_assert(x) assert(x)
@@ -189,6 +211,31 @@ namespace GEO {
 #define GEOGRAM_API
 
     using std::vector;
+
+    /**
+     * \brief Some geometric functions.
+     */
+    namespace Geom {
+
+        /**
+         * \brief Computes the squared distance between two nd points.
+         * \param[in] p1 a pointer to the coordinates of the first point
+         * \param[in] p2 a pointer to the coordinates of the second point
+         * \param[in] dim dimension (number of coordinates of the points)
+         * \return the squared distance between \p p1 and \p p2
+         * \tparam COORD_T the numeric type of the point coordinates
+         */
+        template <class COORD_T>
+        inline double distance2(
+            const COORD_T* p1, const COORD_T* p2, coord_index_t dim
+        ) {
+            double result = 0.0;
+            for(coord_index_t i = 0; i < dim; i++) {
+                result += geo_sqr(double(p2[i]) - double(p1[i]));
+            }
+            return result;
+        }
+    }
 
 }
 
