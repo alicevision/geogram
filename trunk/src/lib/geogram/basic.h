@@ -146,11 +146,11 @@ namespace GEO {
 #ifdef GEO_DEBUG
 #define geo_assert(x) assert(x)
 #define geo_debug_assert(x) assert(x)
-#define geo_assert_not_reached() assert(0)
+#define geo_assert_not_reached assert(0)
 #else
 #define geo_assert(x) assert(x)
 #define geo_debug_assert(x) 
-#define geo_assert_not_reached() assert(0)
+#define geo_assert_not_reached assert(0)
 #endif    
 
     /**
