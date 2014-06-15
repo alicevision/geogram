@@ -1,4 +1,5 @@
 #include <geogram/delaunay/delaunay.h>
+#include <geogram/numerics/predicates.h>
 #include <iostream>
 #include <fstream>
 
@@ -43,6 +44,8 @@ namespace {
                 << del.cell_vertex(t,3) 
                 << std::endl;
         }
+        std::cerr << "Predicates statistics:" << std::endl;
+        PCK::show_stats();
     }
 }
 

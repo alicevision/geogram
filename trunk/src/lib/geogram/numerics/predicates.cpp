@@ -1181,7 +1181,7 @@ namespace {
         index_t len
     ) {
         show_stats_sos(name, cnt1, cnt2, cnt3);
-        std::cerr << "name: " << " Len: " << len << std::endl;
+        std::cerr << name << ": " << " Len: " << len << std::endl;
     }
 
     /**

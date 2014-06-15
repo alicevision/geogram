@@ -84,11 +84,8 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR}/src/lib)
 
 add_subdirectory(src/lib/geogram)
-add_subdirectory(src/bin/fpg)
+#add_subdirectory(src/bin/fpg)
 add_subdirectory(src/bin/delaunay3d)
-
-#add_subdirectory(doc)
-#add_subdirectory(tests)
 
 ##############################################################################
 # Cleanup from previous builds
