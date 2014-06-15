@@ -335,6 +335,11 @@ namespace GEO {
          */
         Delaunay3d(bool weighted = false);
 
+        /**
+         * \brief Delaunay3d destructor
+         */
+        virtual ~Delaunay3d();
+
         virtual void set_vertices(
             index_t nb_vertices, const double* vertices
         );
@@ -1166,10 +1171,6 @@ namespace GEO {
             return result; 
         }
 
-        /**
-         * \brief Delaunay3d destructor
-         */
-        virtual ~Delaunay3d();
 
 
     private:
