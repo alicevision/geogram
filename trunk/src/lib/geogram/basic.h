@@ -52,6 +52,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <vector>
 
 #ifndef M_PI
@@ -60,6 +61,153 @@
  */
 #define M_PI 3.14159265358979323846
 #endif
+
+/**
+ * \def GEO_DEBUG
+ * \brief This macro is set when compiling in debug mode
+ *
+ * \def GEO_PARANOID
+ * \brief This macro is set when compiling in debug mode
+ *
+ * \def GEO_OS_LINUX
+ * \brief This macro is set on Linux systems (Android included).
+ *
+ * \def GEO_OS_UNIX
+ * \brief This macro is set on Unix systems (Android included).
+ *
+ * \def GEO_OS_WINDOWS
+ * \brief This macro is set on Windows systems.
+ *
+ * \def GEO_OS_APPLE
+ * \brief This macro is set on Apple systems.
+ *
+ * \def GEO_OS_ANDROID
+ * \brief This macro is set on Android systems (in addition to GEO_OS_LINUX
+ * and GEO_OS_UNIX).
+ *
+ * \def GEO_OS_X11
+ * \brief This macro is set on X11 is supported on the current system.
+ *
+ * \def GEO_ARCH_32
+ * \brief This macro is set if the current system is a 32 bits architecture.
+ *
+ * \def GEO_ARCH_64
+ * \brief This macro is set if the current system is a 64 bits architecture.
+ *
+ * \def GEO_OPENMP
+ * \brief This macro is set if OpenMP is supported on the current system.
+ *
+ * \def GEO_COMPILER_GCC
+ * \brief This macro is set if the source code is compiled with GNU's gcc.
+ *
+ * \def GEO_COMPILER_INTEL
+ * \brief This macro is set if the source code is compiled with Intel's icc.
+ *
+ * \def GEO_COMPILER_MSVC
+ * \brief This macro is set if the source code is compiled with Microsoft's
+ * Visual C++.
+ */
+
+#ifdef NDEBUG
+#undef GEO_DEBUG
+#undef GEO_PARANOID
+#else
+#define GEO_DEBUG
+#define GEO_PARANOID
+#endif
+
+// =============================== LINUX defines ===========================
+
+#if defined(__ANDROID__)
+#define GEO_OS_ANDROID
+#endif
+
+#if defined(__linux__)
+
+#define GEO_OS_LINUX
+#define GEO_OS_UNIX
+
+#ifndef GEO_OS_ANDROID
+#define GEO_OS_X11
+#endif
+
+#if defined(_OPENMP)
+#  define GEO_OPENMP
+#endif
+
+#if defined(__INTEL_COMPILER)
+#  define GEO_COMPILER_INTEL
+#elif defined(__clang__)
+#  define GEO_COMPILER_CLANG
+#elif defined(__GNUC__)
+#  define GEO_COMPILER_GCC
+#else
+#  error "Unsupported compiler"
+#endif
+
+// The following works on GCC and ICC
+#if defined(__x86_64)
+#  define GEO_ARCH_64
+#else
+#  define GEO_ARCH_32
+#endif
+
+// =============================== WINDOWS defines =========================
+
+#elif defined(WIN32)
+
+#define GEO_OS_WINDOWS
+
+#if defined(_OPENMP)
+#  define GEO_OPENMP
+#endif
+
+#if defined(_MSC_VER)
+#  define GEO_COMPILER_MSVC
+#else
+#  error "Unsupported compiler"
+#endif
+
+#if defined(_WIN64)
+#  define GEO_ARCH_64
+#else
+#  define GEO_ARCH_32
+#endif
+
+// =============================== APPLE defines ===========================
+
+#elif defined(__APPLE__)
+
+#define GEO_OS_APPLE
+#define GEO_OS_UNIX
+
+#if defined(_OPENMP)
+#  define GEO_OPENMP
+#endif
+
+#if defined(__x86_64) || defined(__ppc64__)
+#  define GEO_ARCH_64
+#else
+#  define GEO_ARCH_32
+#endif
+
+// =============================== Unsupported =============================
+#else
+
+#error "Unsupported operating system"
+
+#endif
+
+#ifdef DOXYGEN_ONLY
+// Keep doxygen happy
+#define GEO_OS_WINDOWS
+#define GEO_OS_APPLE
+#define GEO_OS_ANDROID
+#define GEO_ARCH_32
+#define GEO_COMPILER_INTEL
+#define GEO_COMPILER_MSVC
+#endif
+
 
 namespace GEO {
 
@@ -142,7 +290,90 @@ namespace GEO {
         return x * x;
     }
 
+
+    /**
+     * \brief Computes a two-by-two determinant.
+     */
+    inline double det2x2(
+        double a11, double a12,                    
+        double a21, double a22
+    ) {                                 
+        return a11*a22-a12*a21 ;
+    }
+
+    /**
+     * \brief Computes a three-by-three determinant.
+     */
+    inline double det3x3(
+        double a11, double a12, double a13,                
+        double a21, double a22, double a23,                
+        double a31, double a32, double a33
+    ) {
+    return
+         a11*det2x2(a22,a23,a32,a33)   
+        -a21*det2x2(a12,a13,a32,a33)   
+        +a31*det2x2(a12,a13,a22,a23);
+    }   
+
+
+    /**
+     * \brief Computes a four-by-four determinant.
+     */
+    inline double det4x4(
+        double a11, double a12, double a13, double a14,
+        double a21, double a22, double a23, double a24,               
+        double a31, double a32, double a33, double a34,  
+        double a41, double a42, double a43, double a44  
+    ) {
+        double m12 = a21*a12 - a11*a22;
+        double m13 = a31*a12 - a11*a32;
+        double m14 = a41*a12 - a11*a42;
+        double m23 = a31*a22 - a21*a32;
+        double m24 = a41*a22 - a21*a42;
+        double m34 = a41*a32 - a31*a42;
+
+        double m123 = m23*a13 - m13*a23 + m12*a33;
+        double m124 = m24*a13 - m14*a23 + m12*a43;
+        double m134 = m34*a13 - m14*a33 + m13*a43;
+        double m234 = m34*a23 - m24*a33 + m23*a43;
+        
+        return (m234*a14 - m134*a24 + m124*a34 - m123*a44);
+    }   
+
     namespace Numeric {
+
+        /** Generic pointer type */
+        typedef void* pointer;
+
+        /** Integer type with a width of 8 bits */
+        typedef int8_t int8;
+
+        /** Integer type with a width of 16 bits */
+        typedef int16_t int16;
+
+        /** Integer type with a width of 32 bits */
+        typedef int32_t int32;
+
+        /** Integer type with a width of 64 bits */
+        typedef int64_t int64;
+
+        /** Unsigned integer type with a width of 8 bits */
+        typedef uint8_t uint8;
+
+        /** Unsigned integer type with a width of 16 bits */
+        typedef uint16_t uint16;
+
+        /** Unsigned integer type with a width of 32 bits */
+        typedef uint32_t uint32;
+
+        /** Unsigned integer type with a width of 64 bits */
+        typedef uint64_t uint64;
+
+        /** Floating point type with a width of 32 bits */
+        typedef float float32;
+
+        /** Floating point type with a width of 64 bits */
+        typedef double float64;
 
         /** Floating point type with a width of 64 bits */
         typedef double float64;
@@ -163,6 +394,18 @@ namespace GEO {
             // positive non-denormal).
             return -max_float64();
         }
+
+        /**
+         * \brief Returns a 32 bits integer between 0 and RAND_MAX
+         */
+        inline int32 random_int32() {
+#ifdef GEO_OS_WINDOWS
+            return rand();
+#else
+            return int32(random() % std::numeric_limits<int32>::max());
+#endif
+        }
+
     }
     
 
@@ -185,13 +428,38 @@ namespace GEO {
 
         /** \brief Pointer to unsigned byte(s) */        
         typedef byte* pointer;
-    }
+
+        /**
+         * \brief Clears a memory block
+         * \details Clears (set to zero) the first \p size bytes of array \p
+         * addr.
+         * \param[in] addr an array of bytes
+         * \param[in] size the number of bytes to clear
+         */
+        inline void clear(void* addr, size_t size) {
+            ::memset(addr, 0, size);
+        }
+
+        /**
+         * \brief Copies a memory block
+         * \details Copies the first \p size bytes of array \p from to array
+         * \p to. Note that this function has unpredictable results if the
+         * memory areas pointed to by \p to and \p from overlap.
+         * \param[in] to the destination array of bytes
+         * \param[in] from the array of bytes to copy
+         * \param[in] size the number of bytes to copy
+         */
+        inline void copy(void* to, const void* from, size_t size) {
+            ::memcpy(to, from, size);
+        }
 
         /**
          * \brief Value of the null pointer
          * \internal Should be replaces by nullptr in C++11
          */
 #define nil 0
+    }
+
 
     /**
      * \brief Suppresses compiler warnings about unused parameters
