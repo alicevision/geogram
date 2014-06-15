@@ -1,5 +1,6 @@
 aux_source_directories(SOURCES "Source Files"            .)
-aux_source_directories(SOURCES "Source Files\\basic"     numerics)
+aux_source_directories(SOURCES "Source Files\\numerics"     numerics)
+aux_source_directories(SOURCES "Source Files\\points"       points)
 
 include_directories(${CMAKE_BINARY_DIR}/src/lib)
 
