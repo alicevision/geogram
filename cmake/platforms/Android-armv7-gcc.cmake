@@ -31,11 +31,11 @@ add_flags(CMAKE_CXX_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 
 # Parameters for FPU instruction set and ABI:
-# * -mfpu=vfpv3: 
-#  FPU is vfpv3, note that using neon and/or vfpv4 does not work, because 
-#  neon is not fully IEEE754-compliant, and I suspect that vfpv4 uses neon 
-#  by default. I checked, and exact predicates are broken with vfpv4 or/and neon
-#  (i.e. -mfpu=vfpv4 and -mfpu=neon-vfpv4 both generate broken code).
+# * -mfpu=neon-vfpv4: activate support for streaming vector floating point
+#   (neon) and scalar floating point v4 (vfpv4). Note that vfpv4 supports
+#   fma (fused multiply add), which is good, but which should not be 
+#   generated automatically (-ffp-contract=off), since it will break
+#   multi-precision routines.
 # * -mfloat-abi=hard (or -mhard-float)
 #  hard-float ABI (floating point values passed in vfp registers) needs 
 #  a libstdc++ compiled with the same flags (NDK r9d has it, cool !)
@@ -43,8 +43,8 @@ add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 #  _NDK_MATH_NO_SOFTFP=1 ensures that math.h prototypes are not declared
 #  as softfp ABI, and libm_hard is the version of libm compiled with hard ABI.
 
-add_flags(CMAKE_CXX_FLAGS -march=armv7-a -mfloat-abi=hard -mfpu=vfpv3 -D_NDK_MATH_NO_SOFTFP=1)
-add_flags(CMAKE_C_FLAGS -march=armv7-a -mfloat-abi=hard -mfpu=vfpv3 -D_NDK_MATH_NO_SOFTFP=1)
+add_flags(CMAKE_CXX_FLAGS -march=armv7-a -mfloat-abi=hard -mfpu=neon-vfpv4 -ffp-contract=off -D_NDK_MATH_NO_SOFTFP=1)
+add_flags(CMAKE_C_FLAGS -march=armv7-a -mfloat-abi=hard -mfpu=vfpv4 -ffp-contract=off -D_NDK_MATH_NO_SOFTFP=1)
 add_flags(CMAKE_EXE_LINKER_FLAGS -march=armv7-a -mfloat-abi=hard -mfpu=vfpv3 -Wl,--fix-cortex-a8 -Wl,--no-warn-mismatch -lm_hard)
 
 
