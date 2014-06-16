@@ -127,6 +127,17 @@ namespace GEO {
      * \relates expansion
      */
     inline void two_product(double a, double b, double& x, double& y) {
+#ifdef FP_FAST_FMA
+        // If the target processor supports the FMA (Fused Multiply Add)
+        // instruction, then the product of two doubles into a length-2
+        // expansion can be implemented as follows. Thanks to Marc Glisse
+        // for the information.
+        // Note: under gcc, automatic generations of fma() for a*b+c needs
+        // to be deactivated, using -ffp-contract=off, else it may break
+        // other functions such as fast_expansion_sum_zeroelim().
+        x = a*b;
+        y = fma(a,b,-x);
+#else
         x = a * b;
         double ahi, alo;
         split(a, ahi, alo);
@@ -136,6 +147,7 @@ namespace GEO {
         double err2 = err1 - (alo * bhi);
         double err3 = err2 - (ahi * blo);
         y = (alo * blo) - err3;
+#endif
     }
 
     /**
