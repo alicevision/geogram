@@ -216,7 +216,7 @@ namespace GEO {
     Delaunay3d::Delaunay3d(bool weighted) :
         Delaunay(weighted ? 4 : 3), weighted_(weighted)
     {
-        geo_debug_assert(dimension == 3 || dimension == 4);
+        geo_debug_assert(dimension_ == 3 || dimension_ == 4);
         first_free_ = END_OF_LIST;
         // In weighted mode, vertices are 4d but combinatorics is 3d.
         if(weighted_) {
