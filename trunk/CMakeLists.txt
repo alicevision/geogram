@@ -39,14 +39,15 @@ set(GEOGRAM_BUILD_NUMBER $ENV{BUILD_NUMBER})
 ##############################################################################
 # Get SVN revision info
 
-find_package(Subversion QUIET)
-if(NOT SUBVERSION_FOUND)
-    message(WARNING "Subversion executable not found - cannot determine current revision")
-else()
-    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Geogram)
-    message(STATUS "Geogram revision is ${Geogram_WC_REVISION}")
-    set(GEOGRAM_SVN_REVISION ${Geogram_WC_REVISION})
-endif()
+#find_package(Subversion QUIET)
+#if(NOT SUBVERSION_FOUND)
+#    message(WARNING "Subversion executable not found - cannot determine current revision")
+#else()
+#    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Geogram)
+#    message(STATUS "Geogram revision is ${Geogram_WC_REVISION}")
+#    set(GEOGRAM_SVN_REVISION ${Geogram_WC_REVISION})
+#endif()
+
 
 ##############################################################################
 # Build configuration
