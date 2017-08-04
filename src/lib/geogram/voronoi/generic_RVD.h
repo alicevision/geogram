@@ -635,7 +635,6 @@ namespace GEOGen {
                 index_t t,
                 const Polyhedron& C
             ) const {
-                GEO::geo_argused(t);
                 const_cast<ACTION&> ( do_it_)(v, t, C);
             }
 

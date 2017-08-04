@@ -75,7 +75,7 @@ namespace GEO {
          * \brief Constructs a new expansion_nt from a double.
          * \param[in] x the value to initialize this expansion.
          */
-        expansion_nt(double x = 0.0) {
+        explicit expansion_nt(double x = 0.0) {
             rep_ = expansion::new_expansion_on_heap(1);
             rep()[0] = x;
             rep().set_length(1);
@@ -667,7 +667,7 @@ namespace GEO {
 }
 
 /**
- * \brief Displays the approximated value of an expantion_nt to a stream.
+ * \brief Displays the approximated value of an expansion_nt to a stream.
  * \param[out] os the stream 
  * \param[in] a the expansion_nt to be sent to the stream
  * \return a reference to the stream
@@ -682,16 +682,557 @@ inline std::ostream& operator<< (
  * \brief Reads a double precision number from a stream and converts it to
  *  an approximation.
  * \param[in] is the stream 
- * \param[out] a the read expantion_nt
+ * \param[out] a the read expansion_nt
  * \return a reference to the stream
  */
 inline std::istream& operator>> ( std::istream& is, GEO::expansion_nt& a) {
     double d;
     is >> d;
     if (is) {
-        a = d;
+        a = GEO::expansion_nt(d);
     }
     return is;
+}
+
+/*****************************************************************************/
+
+namespace GEO {
+
+    /**
+     * \brief Rational_nt (rational Number Type) is used to compute the
+     *  sign of rational fractions exactly.
+     * \details Rational_nt can be used like float and double. It supports
+     *  four arithmetic operations (+,-,*,/), comparisons (>,>=,<,<=,==,!=)
+     *  and exact sign computation. When performance is a concern, the 
+     *  lower-level expansion class may be used instead.
+     */
+    class GEOGRAM_API rational_nt {
+      public:
+
+        /**
+         * \brief Constructs a new rational_nt from a double.
+         * \param[in] x the value to initialize this rational_nt.
+         */
+        explicit rational_nt(double x = 0.0) : num_(x), denom_(1.0) {
+        }
+
+        /**
+         * \brief Constructs a new rational_nt from an expansion_nt.
+         * \param[in] x the value to initialize this rational_nt.
+         */
+        explicit rational_nt(const expansion_nt& x) : num_(x), denom_(1.0) {
+        }
+
+        /**
+         * \brief Constructs a new rational_nt from two expansion_nt.
+         * \param[in] num the numerator
+	 * \param[in] denom the denominator
+         */
+        explicit rational_nt(const expansion_nt& num, const expansion_nt& denom)
+	    : num_(num), denom_(denom) {
+        }
+	
+        /**
+         * \brief Copy-constructor.
+         * \param[in] rhs the rational to be copied
+         */
+        rational_nt(const rational_nt& rhs) {
+            copy(rhs);
+        }
+        
+        /**
+         * \brief Assignment operator.
+         * \details The stored rational is shared with \p rhs.
+         * \param[in] rhs the rational to be copied
+         * \return the new value of this rational (rhs)
+         */
+        rational_nt& operator= (const rational_nt& rhs) {
+            if(&rhs != this) {
+                copy(rhs);
+            }
+            return *this;
+        }
+
+        /**
+         * \brief rational_nt destructor.
+         * \details The stored rational is deallocated whenever
+         *  reference counting reaches 0.
+         */
+        ~rational_nt() {
+        }
+
+	/**
+	 * \brief gets the numerator.
+	 * \return a const reference to the numerator.
+	 */
+	const expansion_nt& num() const {
+	    return num_;
+	}
+
+	/**
+	 * \brief gets the denominator.
+	 * \return a const reference to the denominator.
+	 */
+	const expansion_nt& denom() const {
+	    return denom_;
+	}
+
+	/**
+	 * \brief gets the numerator.
+	 * \return a reference to the numerator.
+	 */
+	 expansion_nt& num() {
+	    return num_;
+	}
+
+	/**
+	 * \brief gets the denominator.
+	 * \return a reference to the denominator.
+	 */
+	 expansion_nt& denom() {
+	    return denom_;
+	}
+	
+        /********************************************************************/
+
+        /**
+         * \brief Adds a rational_nt to this rational_nt
+         * \param[in] rhs the rational_nt to be added to this rational_nt
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator+= (const rational_nt& rhs) {
+	    num_ = num_ * rhs.denom_ + rhs.num_ * denom_;	    
+	    denom_ *= rhs.denom_;
+	    return *this;
+	}
+
+        /**
+         * \brief Substracts a rational_nt to this rational_nt
+         * \param[in] rhs the rational_nt to be substracted
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator-= (const rational_nt& rhs) {
+	    num_ = num_ * rhs.denom_ - rhs.num_ * denom_;	    
+	    denom_ *= rhs.denom_;
+	    return *this;
+	}
+
+        /**
+         * \brief Multiplies this rational_nt by a rational_nt
+         * \param[in] rhs the rational_nt to multiply this rational_nt by
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator*= (const rational_nt& rhs) {
+	    num_ *= rhs.num_;
+	    denom_ *= rhs.denom_;
+	    return *this;
+	}
+
+        /**
+         * \brief Divides this rational_nt by a rational_nt
+         * \param[in] rhs the rational_nt to divide this rational_nt by
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator/= (const rational_nt& rhs) {
+	    num_ *= rhs.denom_;
+	    denom_ *= rhs.num_;
+	    return *this;
+	}
+	
+        /**
+         * \brief Adds a double to this rational_nt
+         * \param[in] rhs the double to be added to this rational_nt
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator+= (double rhs) {
+	    num_ += denom_ * rhs;
+	    return *this;
+	}
+
+        /**
+         * \brief Substracts a double from this rational_nt
+         * \param[in] rhs the double to be substracted from this rational_nt
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator-= (double rhs) {
+	    num_ -= denom_ * rhs;
+	    return *this;
+	}
+
+        /**
+         * \brief Multiplies this rational_nt by a double
+         * \details If the double is a constant (possibly negative) power of
+         *  two (e.g. 0.125, 0.5, 2.0, 4.0 ...), one may use
+         *  num().scale_fast() / denom().scale_fast() instead.
+         * \param[in] rhs the double to multiply this rational_nt with
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator*= (double rhs) {
+	    num_ *= rhs;
+	    return *this;
+	}
+
+        /**
+         * \brief Divides this rational_nt by a double
+         * \details If the double is a constant (possibly negative) power of
+         *  two (e.g. 0.125, 0.5, 2.0, 4.0 ...), one may use
+         *  num().scale_fast() / denom().scale_fast() instead.
+         * \param[in] rhs the double to multiply this rational_nt with
+         * \return the new value of this rational_nt
+         */
+        rational_nt& operator/= (double rhs) {
+	    denom_ *= rhs;
+	    return *this;
+	}
+	
+        /********************************************************************/
+
+        /**
+         * \brief Computes the sum of two rational_nt%s
+         * \param[in] rhs the rational_nt to be added to this rational_nt
+         * \return the sum of this rational_nt and \p rhs
+         */
+        rational_nt operator+ (const rational_nt& rhs) const {
+	    return rational_nt(
+		num_ * rhs.denom_ + rhs.num_ * denom_,
+		denom_ * rhs.denom_
+	    );
+	}
+
+        /**
+         * \brief Computes the difference between two rational_nt%s
+         * \param[in] rhs the rational_nt to be substracted from
+         *  this rational_nt
+         * \return the difference between this rational_nt and \p rhs
+         */
+        rational_nt operator- (const rational_nt& rhs) const {
+	    return rational_nt(
+		num_ * rhs.denom_ - rhs.num_ * denom_,
+		denom_ * rhs.denom_
+	    );
+	}
+
+        /**
+         * \brief Computes the product between two rational_nt%s
+         * \param[in] rhs the rational_nt to be multiplied by
+         *  this rational_nt
+         * \return the product between this rational_nt and \p rhs
+         */
+        rational_nt operator* (const rational_nt& rhs) const {
+	    return rational_nt(
+		num_ * rhs.num_,
+		denom_ * rhs.denom_
+	    );
+	}
+
+        /**
+         * \brief Computes the ratio between two rational_nt%s
+         * \param[in] rhs the rational_nt to be multiplied by
+         *  this rational_nt
+         * \return the ratio between this rational_nt and \p rhs
+         */
+        rational_nt operator/ (const rational_nt& rhs) const {
+	    return rational_nt(
+		num_ * rhs.denom_,
+		denom_ * rhs.num_
+	    );
+	}
+
+	
+        /**
+         * \brief Computes the sum of a rational_nt and a double.
+         * \param[in] rhs the double to be added to this rational_nt
+         * \return the sum of this rational_nt and \p rhs
+         */
+        rational_nt operator+ (double rhs) const {
+	    return rational_nt(
+		num_ + rhs * denom_,
+		denom_
+	    );
+	}
+
+        /**
+         * \brief Computes the difference between a rational_nt and a double.
+         * \param[in] rhs the double to be subtracted from this rational_nt
+         * \return the difference between this rational_nt and \p rhs
+         */
+        rational_nt operator- (double rhs) const {
+	    return rational_nt(
+		num_ - rhs * denom_,
+		denom_
+	    );
+	}
+
+        /**
+         * \brief Computes the product between a rational_nt and a double.
+         * \param[in] rhs the double to be multiplied by this rational_nt
+         * \return the product between this rational_nt and \p rhs
+         */
+        rational_nt operator* (double rhs) const {
+	    return rational_nt(
+		num_ *rhs,
+		denom_
+	    );
+	}
+
+        /**
+         * \brief Computes the ratio between a rational_nt and a double.
+         * \param[in] rhs the double to be multiplied by this rational_nt
+         * \return the ratio between this rational_nt and \p rhs
+         */
+        rational_nt operator/ (double rhs) const {
+	    return rational_nt(
+		num_,
+		denom_*rhs
+	    );
+	}
+	
+        /********************************************************************/
+
+        /**
+         * \brief Computes the opposite of this rational_nt.
+         * \return the opposite of this rational_nt
+         */
+        rational_nt operator- () const {
+	    return rational_nt(
+		-num_, 
+		denom_
+	    );
+	}
+
+        /********************************************************************/
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is greater than \p rhs,
+         *  false otherwise
+         */
+        bool operator> (const rational_nt& rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is greater or equal than \p rhs,
+         *  false otherwise
+         */
+        bool operator>= (const rational_nt& rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is smaller than \p rhs,
+         *  false otherwise
+         */
+        bool operator< (const rational_nt& rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is smaller or equal than \p rhs,
+         *  false otherwise
+         */
+        bool operator<= (const rational_nt& rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is greater than \p rhs,
+         *  false otherwise
+         */
+        bool operator> (double rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is greater or equal than \p rhs,
+         *  false otherwise
+         */
+        bool operator>= (double rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is smaller than \p rhs,
+         *  false otherwise
+         */
+        bool operator< (double rhs) const;
+
+        /**
+         * \brief Compares this rational_nt with another one.
+         * \details Internally computes the sign of the difference
+         *  between this rational_nt and \p rhs.
+         * \return true if this rational_nt is smaller or equal than \p rhs,
+         *  false otherwise
+         */
+        bool operator<= (double rhs) const;
+
+        /********************************************************************/
+
+        /**
+         * \brief Computes an approximation of the stored
+         *  value in this rational.
+         * \return an approximation of the stored value.
+         */
+        double estimate() const {
+            return num_.estimate() / denom_.estimate();
+        }
+        
+        /**
+         * \brief Gets the sign of this rational_nt.
+         * \return the sign of this rational_nt, computed exactly.
+         */
+        Sign sign() const {
+            return Sign(num_.sign() * denom_.sign());
+        }
+
+      protected:
+        /**
+         * \brief Copies a rational into this one.
+         * \param[in] rhs a const reference to the rational to be copied
+         */
+	void copy(const rational_nt& rhs) {
+	    num_ = rhs.num_;
+	    denom_ = rhs.denom_;
+	}
+	
+      private:
+	expansion_nt num_;
+	expansion_nt denom_;
+    };
+
+    /***************************************************************************/
+
+    /**
+     * \brief Computes the sum of a double and a rational_nt
+     * \param[in] a the double to be added
+     * \param[in] b the rational_nt to be added
+     * \return a rational_nt that represents \p a + \p b
+     * \relates rational_nt
+     */
+    inline rational_nt operator+ (double a, const rational_nt& b) {
+        return b + a;
+    }
+
+    /**
+     * \brief Computes the difference between a double and a rational_nt
+     * \param[in] a the double
+     * \param[in] b the rational_nt to be substracted
+     * \return a rational_nt that represents \p a - \p b
+     * \relates rational_nt
+     */
+    inline rational_nt operator- (double a, const rational_nt& b) {
+        rational_nt result = b - a;
+        result.num().rep().negate();
+        return result;
+    }
+
+    /**
+     * \brief Computes the product of a double and a rational_nt
+     * \param[in] a the double
+     * \param[in] b the rational_nt to be multiplied
+     * \return a rational_nt that represents \p a * \p b
+     * \relates rational_nt
+     */
+    inline rational_nt operator* (double a, const rational_nt& b) {
+        return b * a;
+    }
+
+    /**
+     * \brief Computes the ratio between a double and a rational_nt
+     * \param[in] a the double
+     * \param[in] b the rational_nt to be divided
+     * \return a rational_nt that represents \p a / \p b
+     * \relates rational_nt
+     */
+    inline rational_nt operator/ (double a, const rational_nt& b) {
+        return rational_nt(
+	    a*b.denom(),
+	    b.num()
+	);
+    }
+    
+    /**
+     * \brief Tests equality between two rational_nt%s.
+     * \details Implemented by testing whether the difference between
+     * \p a and \p b is 0.
+     * \return true if \p a and \p b represent exactly the same value, false
+     *  otherwise
+     * \relates rational_nt
+     */
+    inline bool operator== (const rational_nt& a, const rational_nt& b) {
+        return (a - b).sign() == ZERO;
+    }
+
+    /**
+     * \brief Tests equality between a rational_nt and a double.
+     * \details Implemented by testing whether the difference between
+     * \p a and \p b is 0.
+     * \return true if \p a and \p b represent exactly the same value, false
+     *  otherwise
+     * \relates rational_nt
+     */
+    inline bool operator== (const rational_nt& a, double b) {
+        return (a - b).sign() == ZERO;
+    }
+
+    /**
+     * \brief Tests equality between a double and a rational_nt.
+     * \details Implemented by testing whether the difference between
+     * \p a and \p b is 0.
+     * \return true if \p a and \p b represent exactly the same value, false
+     *  otherwise
+     * \relates rational_nt
+     */
+    inline bool operator== (double a, const rational_nt& b) {
+        return (a - b).sign() == ZERO;
+    }
+
+    /**
+     * \brief Tests whether two rational_nt%s differ.
+     * \details Implemented by testing whether the difference between
+     * \p a and \p b is different from 0.
+     * \return true if \p a and \p b do not represent the same exact value,
+     *  false otherwise
+     * \relates rational_nt
+     */
+    inline bool operator!= (const rational_nt& a, const rational_nt& b) {
+        return (a - b).sign() != ZERO;
+    }
+
+    /**
+     * \brief Tests whether a rational_nt differs from a double.
+     * \details Implemented by testing whether the difference between
+     * \p a and \p b is different from 0.
+     * \return true if \p a and \p b do not represent the same exact value,
+     *  false otherwise
+     * \relates rational_nt
+     */
+    inline bool operator!= (const rational_nt& a, double b) {
+        return (a - b).sign() != ZERO;
+    }
+
+    /**
+     * \brief Tests whether a double differs from a rational_nt.
+     * \details Implemented by testing whether the difference between
+     * \p a and \p b is different from 0.
+     * \return true if \p a and \p b do not represent the same exact value,
+     *  false otherwise
+     * \relates rational_nt
+     */
+    inline bool operator!= (double a, const rational_nt& b) {
+        return (a - b).sign() != ZERO;
+    }
+
+    /***************************************************************************/
+    
 }
 
 #endif

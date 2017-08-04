@@ -6,6 +6,8 @@ HEADERS="../api/defs.h \
 ../basic/argused.h \
 ../basic/numeric.h \
 ../basic/memory.h \
+../basic/atomics.h \
+../basic/thread_sync.h \
 ../basic/psm.h \
 multi_precision.h \
 expansion_nt.h

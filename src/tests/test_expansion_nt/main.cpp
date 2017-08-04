@@ -66,6 +66,17 @@ static void print(std::ostream& out, const GEO::expansion_nt& x) {
 }
 
 /**
+ * \brief Outputs a rational_nt to a stream.
+ * \param out a reference to the output stream
+ * \param x a const reference to the expansion_nt to be printed
+ */
+static void print(std::ostream& out, const GEO::rational_nt& x) {
+    print(out,x.num());
+    out << " / ";
+    print(out,x.denom());
+}
+
+/**
  * \brief Outputs a double precision number to a stream.
  * \details this function is here so that the same generic code
  *  can be used with double and with expansion to show the difference.
@@ -95,6 +106,19 @@ template <class T> inline void compute(const T& zzz) {
     std::cout << std::endl;
 }
 
+
+template <class T> inline void compute2(const T& zzz) {
+    GEO::geo_argused(zzz);
+
+    T r = T(1e-30) / T(3.0) + T(5.0) / T(3.0) + T(1e30) / T(3.0) + T(2e-30) / T(3.0) - T(1e30) / T(3.0);
+    std::cout << "   sign(1e-30/3.0 + 5.0/3.0 + 1e30/3.0 + 2e-30/3.0 - 1e30/3.0) = "
+              << GEO::geo_sgn(r) << std::endl;
+    std::cout << "   result = ";
+    print(std::cout,r);
+    std::cout << std::endl;
+}
+
+
 int main() {
     //   This function needs to be called before
     // using expansion_nt.
@@ -105,6 +129,18 @@ int main() {
     
     std::cout << "Using expansion_nt:" << std::endl;    
     compute(GEO::expansion_nt());
+
+    std::cout << "Using rational_nt:" << std::endl;    
+    compute(GEO::rational_nt());
+
+    std::cout << "With divisions:" << std::endl;
+    
+    std::cout << "Using double:" << std::endl;
+    compute2(double());
+
+    std::cout << "Using rational_nt:" << std::endl;    
+    compute2(GEO::rational_nt());
+    
     
     return 0;
 }

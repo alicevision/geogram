@@ -328,5 +328,94 @@ namespace GEO {
     }
     
     /************************************************************************/
+
+    bool rational_nt::operator> (const rational_nt& rhs) const {
+	const expansion& num_a = expansion_product(
+	    num_.rep(), rhs.denom_.rep()
+	);
+	const expansion& num_b = expansion_product(
+	    rhs.num_.rep(), denom_.rep()
+	);
+	const expansion& diff_num = expansion_diff(num_a, num_b);
+	const expansion& diff_denom = expansion_product(
+	    denom_.rep(), rhs.denom_.rep()
+	);
+	return (diff_num.sign() * diff_denom.sign() > 0);
+    }
+
+    bool rational_nt::operator>= (const rational_nt& rhs) const {
+	const expansion& num_a = expansion_product(
+	    num_.rep(), rhs.denom_.rep()
+	);
+	const expansion& num_b = expansion_product(
+	    rhs.num_.rep(), denom_.rep()
+	);
+	const expansion& diff_num = expansion_diff(num_a, num_b);
+	const expansion& diff_denom = expansion_product(
+	    denom_.rep(), rhs.denom_.rep()
+	);
+	return (diff_num.sign() * diff_denom.sign() >= 0);
+    }
+
+    bool rational_nt::operator< (const rational_nt& rhs) const {
+	const expansion& num_a = expansion_product(
+	    num_.rep(), rhs.denom_.rep()
+	);
+	const expansion& num_b = expansion_product(
+	    rhs.num_.rep(), denom_.rep()
+	);
+	const expansion& diff_num = expansion_diff(num_a, num_b);
+	const expansion& diff_denom = expansion_product(
+	    denom_.rep(), rhs.denom_.rep()
+	);
+	return (diff_num.sign() * diff_denom.sign() < 0);
+    }
+
+    bool rational_nt::operator<= (const rational_nt& rhs) const {
+	const expansion& num_a = expansion_product(
+	    num_.rep(), rhs.denom_.rep()
+	);
+	const expansion& num_b = expansion_product(
+	    rhs.num_.rep(), denom_.rep()
+	);
+	const expansion& diff_num = expansion_diff(num_a, num_b);
+	const expansion& diff_denom = expansion_product(
+	    denom_.rep(), rhs.denom_.rep()
+	);
+	return (diff_num.sign() * diff_denom.sign() <= 0);
+    }
+
+    bool rational_nt::operator> (double rhs) const {
+	const expansion& num_b = expansion_product(
+	    denom_.rep(), rhs
+	);
+	const expansion& diff_num = expansion_diff(num_.rep(), num_b);
+	return (diff_num.sign() * denom_.sign() > 0);
+    }
+
+    bool rational_nt::operator>= (double rhs) const {
+	const expansion& num_b = expansion_product(
+	    denom_.rep(), rhs
+	);
+	const expansion& diff_num = expansion_diff(num_.rep(), num_b);
+	return (diff_num.sign() * denom_.sign() >= 0);
+    }
+
+    bool rational_nt::operator< (double rhs) const {
+	const expansion& num_b = expansion_product(
+	    denom_.rep(), rhs
+	);
+	const expansion& diff_num = expansion_diff(num_.rep(), num_b);
+	return (diff_num.sign() * denom_.sign() < 0);
+    }
+
+    bool rational_nt::operator<= (double rhs) const {
+	const expansion& num_b = expansion_product(
+	    denom_.rep(), rhs
+	);
+	const expansion& diff_num = expansion_diff(num_.rep(), num_b);
+	return (diff_num.sign() * denom_.sign() <= 0);
+    }
     
+    /************************************************************************/    
 }

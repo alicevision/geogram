@@ -38,7 +38,7 @@
  */
 
 #include <exploragram/hexdom/polygon.h>
-
+#include <geogram/NL/nl.h>
 namespace GEO {
 
 	vec2 Poly2d::barycenter() {
@@ -58,7 +58,7 @@ namespace GEO {
 		FOR(i, nbv) num.push_back(i);
 		export_mesh.facets.create_polygon(num);
 		char filename[1024];
-		sprintf(filename, "2dcontours/nimp%i.obj", rand());
+		sprintf(filename, "C:/DATA/2dcontours/nimp%i.obj", rand());
 		mesh_save(export_mesh, filename);
 	}
 
@@ -78,7 +78,7 @@ namespace GEO {
 			m = std::max(m, M_PI - angle);
 		}
 
-		FOR(other, pts.size()) {
+		FOR(other, pts.size()) { // TODO c'et con de faire ça, vaut mieux regarder si le triangle est inversé (ça ne gere pas tout [comme, d'ailleurs, le teste courant!])
 			if (other == i || other == j || other == k) continue;
 			vec2 P = pts[other];
 			bool inside = true;
@@ -90,6 +90,7 @@ namespace GEO {
 		return m;
 	}
 
+    // this function has O(n^4) computational cost
 	bool Poly2d::try_triangulate_minweight(vector<index_t>& triangles) {
 		triangles.clear();
 		index_t n = pts.size();
@@ -115,7 +116,7 @@ namespace GEO {
 			for (index_t i = 0, j = pbsize; j < n; i++, j++) {
 				// recall that we are testing triangle (i,k,j) which splits the problem (i,j) into
 				// two smaller subproblems (i,k) and (k,j)
-				double minv = 1024.;
+				double minv = 1e20;
 				index_t mink = index_t(-1);
 				for (index_t k = i + 1; k < j; k++) {
 					double val = table[i*n + k] + table[k*n + j] + cost(i, k, j);
@@ -123,15 +124,13 @@ namespace GEO {
 					minv = val;
 					mink = k;
 				}
+                geo_assert(mink!=index_t(-1));
 				table[i*n + j] = minv;
 				tri[i*n + j] = mink;
 			}
 		}
 
-		if (table[n - 1] >= 1024.) {
-			plop("may dump_contour for debug...");//dump_contour();
-			return false;
-		}
+//		if (table[n-1] >= 1024.) return false;
 
 		vector<index_t> Q(1, n - 1);
 		FOR(t, Q.size()) {
@@ -141,7 +140,7 @@ namespace GEO {
 			index_t k = tri[idx];
 			index_t j = idx % n;
 
-			//geo_assert(i >= 0 && k >= 0 && j >= 0);
+			geo_assert(i >= 0 && k >= 0 && j >= 0 && i!=index_t(-1) && k != index_t(-1) && j!=index_t(-1));
 			triangles.push_back(i);
 			triangles.push_back(k);
 			triangles.push_back(j);
@@ -149,7 +148,11 @@ namespace GEO {
 			if (k + 2 <= j) Q.push_back(k*n + j);
 			if (i + 2 <= k) Q.push_back(i*n + k);
 		}
-		return true;
+
+		if (table[n - 1] >= 1024.) {
+			plop("may dump_contour for debug...");//dump_contour();
+		}
+		return table[n-1] < 1024.;
 	}
 
 
@@ -194,8 +197,273 @@ namespace GEO {
 	}
 
 
-	bool Poly2d::try_quadrangulate(vector<index_t>& quads) {
 
+	struct Contour2D {
+		void resize(int n) { pos_.resize(n); angu_.resize(n);vid_.resize(n);}
+		void compute_angu() {
+			//plop("compute_angu() will not sffice to capture sing 5");
+			angu_.resize(pos_.size());
+			FOR(v, pos_.size()) {
+				angu_[v] = 1;
+				vec2 d0 = pos(v) - pos(v - 1);
+				vec2 d1 = pos(v + 1) - pos(v);
+				double angle = atan2(det(d0, d1), dot(d0, d1));
+				if (angle < M_PI / 4.) angu_[v] = 0;
+				if (angle < -M_PI / 4.) angu_[v] = -1;
+			}
+		}
+
+		vec2 normal(int v) {// equals 0 for the singularity
+			mat2 R90; R90(0, 0) = 0;	R90(0, 1) = -1; R90(1, 0) = 1;	R90(1, 1) = 0;
+			return normalize(R90*(pos(v+1) - pos(v - 1)));
+		}
+
+		vec2& pos(int i) { return aupp(i, pos_); }
+		int& angu(int i) { return aupp(i, angu_); }
+		int& vid(int i) { return aupp(i, vid_); }
+
+		void show() {
+			GEO::Logger::out("HexDom")  << "\npos.size = " << pos_.size() <<  std::endl; FOR(i, pos_.size()) std::cerr << pos_[i] << "\t";
+			GEO::Logger::out("HexDom")  << "\nangu.size = " << angu_.size() <<  std::endl; FOR(i, angu_.size()) std::cerr << angu_[i] << "\t";
+			GEO::Logger::out("HexDom")  << "\nvid.size = " << vid_.size() <<  std::endl; FOR(i, vid_.size()) std::cerr << vid_[i] << "\t";
+		}
+		
+		void remove(int i) {
+			i = i%pos_.size();
+			for (int j = i; j < pos_.size() - 1; j++) {
+				pos_[j] = pos_[j + 1];
+				angu_[j] = angu_[j + 1];
+				vid_[j] = vid_[j + 1];
+			}
+			pos_.pop_back(); angu_.pop_back(); vid_.pop_back();
+		}
+
+		vector<vec2> pos_;
+		vector<int> angu_;
+		vector<int> vid_;
+	};
+
+	struct QuadrangulateWithOneSingularity {
+		QuadrangulateWithOneSingularity(vector<vec2>& p_pts, vector<index_t>& p_quads) 
+			:pts(p_pts), quads(p_quads) {
+			R90(0, 0) = 0;	R90(0, 1) = -1; R90(1, 0) = 1;	R90(1, 1) = 0;
+		}
+
+		// returns the index of the singularity
+		int init_contour(vector<int>& angu,int sing_valence) {
+			int offset = 0;
+			// find the best offset
+			double best_dist2 = 1e20;
+			contour.resize(pts.size()+1);
+			contour.pos(0) = vec2(0, 0);
+			FOR(off, pts.size()) {
+				vec2 dir(1, 0);
+				FOR(v, pts.size()) {
+					contour.pos(v + 1) = contour.pos(v) + dir;
+					if (aupp(off + v + 1, angu) < 0) dir = -(R90*dir);
+					if (aupp(off + v + 1, angu) > 0) dir = R90*dir;
+				}
+				vec2 diag = contour.pos(-1) ;
+
+				if (sing_valence == 3 && diag.x == -diag.y && diag.length2() < best_dist2) {
+					best_dist2 = diag.length2();
+					offset = off;
+				};
+				if (sing_valence == 5 && diag.x == diag.y && diag.length2() < best_dist2) {
+					best_dist2 = diag.length2();
+					offset = off;
+				};
+			}
+			// decal gridpos w.r.t offset
+			vec2 dir(1, 0);
+			FOR(v, pts.size()) {
+				contour.pos(v + 1) = contour.pos(v) + dir;
+				if (aupp(offset + v + 1, angu) < 0) dir = -(R90*dir);
+				if (aupp(offset + v + 1, angu) > 0) dir = R90*dir;
+			}
+
+			// define mapping contour -> pts 
+			FOR(v, pts.size() )  contour.vid(v ) = (offset + v ) % pts.size();
+			contour.vid_.back() = contour.vid_.front();
+			
+			// singularity on border   TODO CHECK angu on singularity !
+			if ((contour.pos(-1) - contour.pos(0)).length2() < .1) { contour.remove(contour.pos_.size() - 1); contour.compute_angu(); return 0; }
+
+			// add pts 
+			vec2 A = contour.pos(0);
+			vec2 B = contour.pos(-1);
+			if (sing_valence == 3) for (int i = B.x + 1; i < A.x; i++) {
+				contour.pos_.push_back(vec2(i, B.y));	
+				contour.vid_.push_back(pts.size());
+				pts.push_back(contour.pos_.back());
+			}
+
+			if (sing_valence == 5) for (int i = B.x - 1; i > A.x; i--) {
+				contour.pos_.push_back(vec2(i, B.y));
+				contour.vid_.push_back(pts.size());
+				pts.push_back(contour.pos_.back());
+			}
+
+			int singularity_index = contour.pos_.size();
+			contour.pos_.push_back(vec2(A.x, B.y));
+			contour.vid_.push_back(pts.size());
+			pts.push_back(contour.pos_.back());
+			
+			for (int j = B.y - 1; j > A.y; j--) {
+				contour.vid_.push_back(contour.vid(2* singularity_index -contour.pos_.size()));
+				contour.pos_.push_back(vec2(A.x, j));
+			}
+			contour.compute_angu();
+			contour.angu(singularity_index) = 2 - sing_valence;
+			return singularity_index;
+		}
+
+
+
+
+
+		bool try_to_punch() {
+			if (contour.pos_.size() < 4) return false;
+			FOR(v, contour.pos_.size()) {
+				if (contour.angu(v) != 1) continue;
+				// cut ear
+				if (contour.angu(v + 1) == 1) {
+					FOR(s, 4) quads.push_back(contour.vid(v - 1 + s));
+					contour.remove(v);
+					contour.remove(v);
+					contour.angu(v - 1)++;
+					contour.angu(v) ++;
+					return true;
+
+				}
+				// add new point
+				vec2 npos = contour.pos(v - 1) + contour.pos(v + 1) - contour.pos(v);
+				bool conflict = false;
+				FOR(vv, contour.pos_.size()) if (vv != v && (contour.pos(vv) - npos).length2() < .1) conflict = true;
+				if (conflict) continue;
+				FOR(s,3) quads.push_back(contour.vid(v - 1+s));
+				quads.push_back(pts.size());
+				contour.vid(v) = pts.size();
+				pts.push_back(npos);
+				contour.pos(v) = npos;
+				contour.angu(v-1) ++;
+				contour.angu(v) = -1;
+				contour.angu(v+1) ++;
+				return true;
+			}
+			return false;
+		}
+
+
+		bool apply(vector<int>& angu,int sing_valence) {
+			int singularity_index=-1;
+			int border_size = pts.size();
+			if (sing_valence == 3|| sing_valence == 5) {
+				singularity_index = init_contour(angu, sing_valence);
+			} else if (sing_valence == 4) {
+				contour.resize(pts.size());
+				vec2 dir(1, 0);
+				contour.pos(0) = vec2(0, 0);
+				for (int v = 1; v < pts.size();v++) {
+					contour.pos(v) = contour.pos(v - 1) + dir;
+					if (angu[v]< 0) dir = -(R90*dir);
+					if (angu[v]> 0) dir = R90*dir;
+				}
+				FOR(v, pts.size()) contour.vid(v) = v;
+				FOR(v, pts.size()) contour.angu(v) = angu[v];
+				if ((contour.pos_.back() + dir - contour.pos_.front()).length2() > .1) return false; // check that it is closed
+			}
+			else {
+				return false;
+			}
+			vector<vec2> theta_r(border_size);
+			vec2 O(.5, .5);
+			if (singularity_index!=-1) O= contour.pos(singularity_index);
+			FOR(v, border_size) theta_r[v][1] = (contour.pos(v) - O).length();
+			theta_r[0][0] = 0;
+			FOR(v, border_size - 1) {
+				theta_r[v + 1][0] = theta_r[v][0] + atan2(det(contour.pos(v) - O, contour.pos(v + 1) - O), dot(contour.pos(v) - O, contour.pos(v + 1) - O));
+			}
+
+			FOR(v, border_size) FOR(vv, border_size) if (vv != v && (theta_r[vv] - theta_r[v]).length2() < .0001) {
+				plop("gna");
+				FOR(v, theta_r.size()) plop(theta_r[v]);
+				return false;
+			}
+			while (try_to_punch());
+			
+
+			nlNewContext();
+			nlSolverParameteri(NL_LEAST_SQUARES, NL_TRUE);
+			nlSolverParameteri(NL_NB_VARIABLES, NLint(2*pts.size()));
+			nlBegin(NL_SYSTEM);
+			FOR(v, border_size) FOR(d,2){
+				nlSetVariable(v * 2 +d, pts[v][d]);
+				nlLockVariable(v * 2 + d);
+			}
+			nlBegin(NL_MATRIX);
+			FOR(q, quads.size() / 4) FOR(e, 4) FOR(d, 2) {
+				nlBegin(NL_ROW);
+				nlCoefficient(quads[4 * q + e]*2+d, -1.);
+				nlCoefficient(quads[4 * q + ((e+1)%4)] * 2 + d, 1.);
+				nlEnd(NL_ROW);
+			}
+
+			nlEnd(NL_MATRIX);
+			nlEnd(NL_SYSTEM);
+			nlSolve();
+			FOR(v, pts.size()) FOR(d, 2)  pts[v][d]= nlGetVariable(2*v+d);
+			nlDeleteContext(nlGetCurrent());
+
+			if (contour.pos_.size() > 2) { pts.resize(border_size); quads.clear(); return false; }
+
+			return true;
+		}
+		mat2 R90;
+
+		vector<vec2>& pts;
+		vector<index_t>& quads;
+		Contour2D contour;
+	};
+
+
+
+
+
+
+
+
+
+
+
+
+
+	bool Poly2d::try_quad_cover(vector<index_t>& quads) {
+		vector<int> angu(pts.size(), 1);
+		int sing_valence = 0;
+		FOR(v, pts.size()) {
+			vec2 d0 = aupp(v, pts) - aupp(v - 1, pts);
+			vec2 d1 = aupp(v + 1, pts) - aupp(v, pts);
+			double angle = atan2(det(d0, d1), dot(d0, d1));
+			if (angle < M_PI / 4.) angu[v] = 0;
+			if (angle < -M_PI / 4.) angu[v] = -1;
+			sing_valence += angu[v];
+		}
+		plop("try_quad_cover");
+		//dump_contour();
+		QuadrangulateWithOneSingularity doit(pts,quads);
+		//return doit.apply();
+		if (doit.apply(angu, sing_valence)) return true;
+		
+		return false;
+	}
+
+
+
+
+
+	bool Poly2d::try_quadrangulate(vector<index_t>& quads) {
+		return try_quad_cover(quads);
 		bool verbose = false;
 
 		index_t nbv = pts.size();
@@ -224,6 +492,7 @@ namespace GEO {
 			length[i] = (P[1] - P[0]).length() / double(nbv);
 			ave_length += length[i];
 		}
+		plop("gna");
 
 
 		// define outputs of the search
@@ -235,14 +504,19 @@ namespace GEO {
 
 
 		index_t dec = parity_of_original_points();
+		plop("gna");
 
 		FOR(test_start, nbv) {
+			plop(test_start);
 			index_t test_end;
 			index_t test_nb_nv_pts;
 			double test_score;
 
+			plop("gna");
 
 			FOR(d, nbv - 5) {
+				plop(d);
+
 				test_end = test_start + d + 3;
 
 				vec2 A[3];
@@ -305,6 +579,7 @@ namespace GEO {
 
 		}
 
+		plop("gna");
 
 		if (nbv > 8)
 			if (nb_nv_pts != index_t(-1)) {
@@ -344,6 +619,7 @@ namespace GEO {
 			}
 
 
+		plop("gna");
 
 
 		if (verbose) GEO::Logger::out("HexDom")  << "middle_point_quadrangulate(quads)" <<  std::endl;
@@ -398,7 +674,7 @@ namespace GEO {
 	 */
 	bool Poly3d::try_quadrangulate(vector<index_t>& quads) {
 		index_t nbv = pts.size();
-		geo_assert(nbv > 0);
+		if (nbv < 4) return false;
 		vec3 G = barycenter();
 		Basis3d b(normal());
 

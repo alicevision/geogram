@@ -48,6 +48,10 @@
 #include <assert.h>
 #include <time.h>
 
+#ifndef FOR
+#define FOR(i,max) for (index_t i = 0; i<index_t(max); i++)
+#endif
+
 namespace GEO {
 
     inline index_t next_mod(index_t i, index_t imax) {
@@ -125,6 +129,7 @@ namespace GEO {
 	return vec2(M(0, 0)*v[0] + M(0, 1)*v[1], M(1, 0)*v[0] + M(1, 1)*v[1]) ;
     }
 
+    
     inline vec3i snap_to_integer(const vec3& f) {
 	return vec3i(int(round(f[0])), int(round(f[1])), int(round(f[2])));
     }
@@ -133,19 +138,20 @@ namespace GEO {
 	return d == floor(d);
     }
 
-    // a une periode pres
-    template <class T> inline
-	T& aupp(int id, vector<T>& data){
-	while (id < 0) id += int(data.size());
-	while (id >= int(data.size())) id -= int(data.size());
-	return data[id];
-    }
+ //   // a une periode pres
+ //   template <class T> inline
+	//T& aupp(int id, vector<T>& data){
+	//while (id < 0) id += int(data.size());
+	//while (id >= int(data.size())) id -= int(data.size());
+	//return data[id];
+ //   }
 
     // a une periode pres    
     template <class T> inline 
-        T& aupp(index_t id, vector<T>& data){
-	while (id >= index_t(data.size())) id -= index_t(data.size());
-	return data[id];
+        T& aupp(int id, vector<T>& data){
+		while (id <0) id += int(data.size());
+		while (id >= int(data.size())) id -= int(data.size());
+		return data[id];
     }
 }
 

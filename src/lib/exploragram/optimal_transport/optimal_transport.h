@@ -71,12 +71,14 @@ namespace GEO {
      * \param[out] centroids a pointer to the computed centroids of 
      *  the Laguerre cells that correspond to the optimal transport of
      *  the uniform measure to the points
+     * \param[in] parallel_pow if true, use parallel power diagram algorithm
      */
     void EXPLORAGRAM_API compute_Laguerre_centroids(
         Mesh* omega,
         index_t nb_points,
         const double* points,
-        double* centroids
+        double* centroids,
+	bool parallel_pow=true
     );
     
     /**
@@ -99,12 +101,13 @@ namespace GEO {
         /**
          * \brief Initializes a new OptimalTransportMap.
          * \param[in] mesh the source distribution, represented as a 3d mesh
-         * \param[in] delaunay factory name of the Delaunay triangulation
+         * \param[in] delaunay factory name of the Delaunay triangulation, one
+	 *  of "PDEL" (parallel), "BPOW" (sequential)
          * \param[in] BRIO true if vertices are already ordered using BRIO
          */
         OptimalTransportMap(
             Mesh* mesh,
-            const std::string& delaunay = "default",
+            const std::string& delaunay = "PDEL",
             bool BRIO = false
         );
 
@@ -115,7 +118,7 @@ namespace GEO {
         Mesh& mesh() {
             return *mesh_;
         }
-        
+
         /**
          * \brief Sets whether Newton algorithm should be used.
          * \details It is (for now) incompatible with multilevel.

@@ -108,7 +108,8 @@ namespace {
             MT_NONE,            /**< uninitialized                          */
             MT_LLOYD,           /**< Lloyd iteration                        */
             MT_NEWTON,          /**< Newton optimization                    */
-            MT_INT_SMPLX        /**< Newton with integration simplex        */
+            MT_INT_SMPLX,       /**< Newton with integration simplex        */
+	    MT_POLYH            /**< Polyhedron callback                    */
         };
 
         /**
@@ -152,6 +153,7 @@ namespace {
             nb_parts_ = 0;
             funcval_ = 0.0;
             simplex_func_ = nil;
+	    polyhedron_callback_ = nil;
             arg_vectors_ = nil;
             arg_scalars_ = nil;
             thread_mode_ = MT_NONE;
@@ -174,6 +176,7 @@ namespace {
             facets_end_ = -1;
             funcval_ = 0.0;
             simplex_func_ = nil;
+	    polyhedron_callback_ = nil;
             arg_vectors_ = nil;
             arg_scalars_ = nil;
             thread_mode_ = MT_NONE;
@@ -1057,6 +1060,24 @@ namespace {
 
         /********************************************************************/
 
+        virtual void compute_with_polyhedron_callback(
+	    GEO::RVDPolyhedronCallback& polyhedron_callback
+        ) {
+            create_threads();
+            if(nb_parts() == 0) {
+		RVD_.for_each_polyhedron(polyhedron_callback);
+            } else {
+                thread_mode_ = MT_POLYH;
+		polyhedron_callback_ = &polyhedron_callback;
+                parallel_for(
+                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    0, nb_parts()
+                );
+            }
+        } 
+
+        /********************************************************************/	
+
         /**
          * \brief Implementation class for explicitly constructing
          *    a surfacic mesh that corresponds to the surfacic
@@ -1471,11 +1492,15 @@ namespace {
         /********************************************************************/
 
 	void for_each_polyhedron(
-	    GEO::RVDPolyhedronCallback& callback
+	    GEO::RVDPolyhedronCallback& callback,
+	    bool symbolic,
+	    bool connected_comp_priority,
+	    bool parallel
 	) {
+	    geo_argused(parallel);
 	    bool sym_backup = RVD_.symbolic();
-	    RVD_.set_symbolic(true);
-	    RVD_.set_connected_components_priority(true);
+	    RVD_.set_symbolic(symbolic);
+	    RVD_.set_connected_components_priority(connected_comp_priority);
 	    callback.set_dimension(RVD_.mesh()->vertices.dimension());
 	    callback.begin();
 	    RVD_.for_each_polyhedron(callback);
@@ -1510,6 +1535,12 @@ namespace {
                         T.funcval_, arg_vectors_, simplex_func_
                     );
                 } break;
+		case MT_POLYH:
+		{
+		    T.compute_with_polyhedron_callback(
+			*polyhedron_callback_
+		    );
+		} break;
                 case MT_NONE:
                     geo_assert_not_reached;
             }
@@ -2341,7 +2372,10 @@ namespace {
         Process::SpinLockArray spinlocks_;
 
         // Newton mode with int. simplex
-        IntegrationSimplex* simplex_func_; 
+        IntegrationSimplex* simplex_func_;
+
+	// PolyhedronCallback mode.
+	RVDPolyhedronCallback* polyhedron_callback_;
 
         // master stores argument for compute_centroids() and
         // compute_CVT_func_grad() to pass it to the parts.

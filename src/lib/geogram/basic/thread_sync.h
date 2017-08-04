@@ -61,6 +61,12 @@
 #  endif
 #endif
 
+#ifdef geo_debug_assert
+#define geo_thread_sync_assert(x) geo_debug_assert(x)
+#else
+#define geo_thread_sync_assert(x) 
+#endif
+
 /**
  * \file geogram/basic/thread_sync.h
  * \brief Functions and classes for process manipulation
@@ -70,7 +76,7 @@ namespace GEO {
 
     namespace Process {
 
-#if defined(GEO_OS_ANDROID)
+#if defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
 
         /** A lightweight synchronization structure. */
         typedef arm_mutex_t spinlock;
@@ -93,7 +99,7 @@ namespace GEO {
             unlock_mutex_arm(&x);
         }
 
-#elif defined(GEO_OS_LINUX)
+#elif defined(GEO_OS_LINUX) && !defined(GEO_OS_RASPBERRY)
 
         /** A lightweight synchronization structure. */
         typedef unsigned char spinlock;
@@ -253,7 +259,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void acquire_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 GEO::Process::acquire_spinlock(spinlocks_[i]);
             }
 
@@ -263,7 +269,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 GEO::Process::release_spinlock(spinlocks_[i]);
             }
 
@@ -271,7 +277,7 @@ namespace GEO {
             std::vector<spinlock> spinlocks_;
         };
 
-#elif defined(GEO_OS_ANDROID)
+#elif defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
 
         /**
          * \brief An array of light-weight synchronisation
@@ -337,7 +343,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void acquire_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 word_t b = word_t(i & 31);
                 // Loop while previously stored value has its bit set.
@@ -357,7 +363,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 memory_barrier_arm();
                 index_t w = i >> 5;
                 word_t b = word_t(i & 31);
@@ -373,7 +379,7 @@ namespace GEO {
             index_t size_;
         };
 
-#elif defined(GEO_OS_LINUX)
+#elif defined(GEO_OS_LINUX) && !defined(GEO_OS_RASPBERRY)
 
         /**
          * \brief An array of light-weight synchronisation
@@ -440,7 +446,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void acquire_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 index_t b = i & 31;
                 while(atomic_bittestandset_x86(&spinlocks_[w], b)) {
@@ -457,7 +463,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 index_t b = i & 31;
                 // Note: we need here to use a synchronized bit reset
@@ -539,7 +545,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void acquire_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 index_t b = i & 31;
                 while(_interlockedbittestandset(&spinlocks_[w], b)) {
@@ -561,7 +567,7 @@ namespace GEO {
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
-                geo_debug_assert(i < size());
+                geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 index_t b = i & 31;
                 // Note1: we need here to use a synchronized bit reset

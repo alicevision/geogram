@@ -36,10 +36,10 @@ namespace GEO {
 				if (m->facets.nb_vertices(f) != 4) continue;
 
 				index_t nvv = m->vertices.create_vertex();
-				//vec3 n = facet_normal(m, f);
+				vec3 n = facet_normal(m, f);
 				double d = 0;
 				FOR(e, 4) d += .25*(X(m)[m->facets.vertex(f, e)] - X(m)[m->facets.vertex(f, (e + 1) % 4)]).length();
-				X(m)[nvv] = facet_bary(m, f);// +.2*d*n;
+				X(m)[nvv] = facet_bary(m, f) +.2*d*n;
 				to_kill[f] = 1;
 
 				index_t off_f = m->facets.create_triangles(4);
@@ -172,14 +172,16 @@ namespace GEO {
 
 	void Baudoin_mesher(Mesh* m) {
 		geo_argused(m);
-
+		//return;
 		// init rot
 		Attribute<mat3> B(m->vertices.attributes(), "B");
 		{
 		    vector<vector<vec3> >  dir(m->vertices.nb());
-		    FOR(f, m->facets.nb()) FOR(e, 4)
-		        dir[m->facets.vertex(f, e)].push_back(normalize(X(m)[m->facets.vertex(f, e)] - X(m)[m->facets.vertex(f, (e + 1) % 4)]));
-
+			FOR(f, m->facets.nb()) {
+				if (m->facets.nb_vertices(f) != 4) continue;
+				FOR(e, 4)
+					dir[m->facets.vertex(f, e)].push_back(normalize(X(m)[m->facets.vertex(f, e)] - X(m)[m->facets.vertex(f, (e + 1) % 4)]));
+			}
 		    FOR(f, m->facets.nb()) {
 		        if (m->facets.nb_vertices(f)!=4) continue;
 		        FOR(e, 4) dir[m->facets.vertex(f, e)].clear();

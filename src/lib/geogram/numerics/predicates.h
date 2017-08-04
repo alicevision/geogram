@@ -465,6 +465,28 @@ namespace GEO {
             double h0, double h1, double h2, double h3, double h4
         );
 
+
+	/**
+	 * \brief Computes the sign of the determinant of a 3x3 
+	 *  matrix formed by three 3d points.
+	 * \param[in] p0 , p1 , p2 the three points
+	 * \return the sign of the determinant of the matrix.
+	 */
+	Sign GEOGRAM_API det_3d(
+	    const double* p0, const double* p1, const double* p2
+	);
+
+	/**
+	 * \brief Computes the sign of the dot product between two
+	 *  vectors.
+	 * \param[in] p0 , p1 , p2 three 3d points.
+	 * \return the sign of the dot product between the vectors
+	 *  p0p1 and p0p2.
+	 */
+	Sign GEOGRAM_API dot_3d(
+	    const double* p0, const double* p1, const double* p2
+	);
+	
         /**
          * \brief Displays some statistics about predicates,
          *  including the number of calls, the number of exact arithmetics 

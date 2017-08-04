@@ -44,15 +44,13 @@
 #include <geogram/mesh/mesh.h>
 
 namespace GEO {
-    //void EXPLORAGRAM_API hex_crunch(Mesh* m, Mesh* newhex);
     void EXPLORAGRAM_API bourrin_subdivide_hexes(Mesh* m);
     void EXPLORAGRAM_API bourrin_quadrangulate_facets(Mesh* m);
     bool EXPLORAGRAM_API next_crunch(Mesh* m, Mesh* newhex, bool newmodel =false, int nb_max_punch = 1000000);
-    // bool EXPLORAGRAM_API punch_vertices(Mesh* m, Mesh* newhex, index_t stop_iter);
     void EXPLORAGRAM_API prepare_crunch(Mesh* m, bool subdivide, bool revert);
     void EXPLORAGRAM_API punch_and_cut(Mesh* m, Mesh* newhex, int nb_iter, int nb_punch_per_iter, bool check_validity);
 
+	void EXPLORAGRAM_API hex_crunch(Mesh* m, Mesh* hex);
 
-    void EXPLORAGRAM_API Baudoin_mesher(Mesh* m);
 }
 #endif

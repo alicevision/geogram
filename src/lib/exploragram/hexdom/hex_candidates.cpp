@@ -206,7 +206,7 @@ namespace GEO {
 			}
 		}
 
-		FOR(d, 3)  if (std::abs(UC[Dc][d] - round(UC[Dc][d])) <.05) UC[Dc][d] = round(UC[Dc][d]);
+//		FOR(d, 3)  if (std::abs(UC[Dc][d] - round(UC[Dc][d])) <.05) UC[Dc][d] = round(UC[Dc][d]);
 
 
 	}

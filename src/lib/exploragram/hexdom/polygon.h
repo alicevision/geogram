@@ -72,7 +72,8 @@ namespace GEO {
 
         bool quads_are_valid(vector<index_t>& quads);
 
-        bool try_quadrangulate(vector<index_t>& quads);
+		bool try_quad_cover(vector<index_t>& quads);
+		bool try_quadrangulate(vector<index_t>& quads);
 
         vector<vec2> &pts;
     };

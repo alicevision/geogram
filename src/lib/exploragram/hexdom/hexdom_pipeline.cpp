@@ -43,13 +43,18 @@
 #include <exploragram/hexdom/FF.h>
 #include <exploragram/hexdom/PGP.h>
 #include <exploragram/hexdom/hex_candidates.h> 
+#include <exploragram/hexdom/meshcomesh.h> 
 #include <exploragram/hexdom/quad_dominant.h> 
 #include <exploragram/hexdom/hex.h> 
 #include <exploragram/hexdom/cavity.h> 
 #include <exploragram/hexdom/hex_dominant.h>
 
-#include <exploragram/hexdom/PGP_export.h>
 #include <exploragram/hexdom/time_log.h>
+
+
+#include <exploragram/hexdom/hex_cruncher.h>
+#include <geogram/mesh/mesh_geometry.h>
+#include <geogram/mesh/mesh_tetrahedralize.h>
 
 #include <geogram/points/colocate.h>
 
@@ -63,9 +68,10 @@ namespace GEO {
 		funcname args; \
 }
 
-		bool SetConstraints(Mesh*m, std::string& msg,bool hilbert_sort ) {
+		bool SetConstraints(Mesh*m, std::string& msg,bool hilbert_sort,
+		        bool relaxed) {
 			try {
-				STEP(produce_hexdom_input,(m, msg, hilbert_sort ));
+				STEP(produce_hexdom_input,(m, msg, hilbert_sort, relaxed));
 			}
 			catch (const char* s) {
 				plop(s);
@@ -115,12 +121,8 @@ namespace GEO {
 			}
 
 			m->edges.attributes().delete_attribute_store("corr"); // ? can we really do that ?
-			if (algo <2) { // we have launch cubecover
-				m->edges.attributes().delete_attribute_store("ccgrp");
-				m->edges.attributes().delete_attribute_store("ccid");
-			}
 			m->vertices.attributes().delete_attribute_store("U");
-			m->edges.clear();
+			//m->edges.clear();
 		}
 
 		void HexCandidates(Mesh*m, Mesh* result) {
@@ -132,15 +134,43 @@ namespace GEO {
 			STEP(export_boundary_with_uv,(m, chartmesh, "uv", "singular"));
 			//get_facet_stats(chartmesh, "export with uv");
 
-			STEP(split_edges_by_iso_uvs, (chartmesh, "uv", "singular"));
+            
+			STEP(imprint, (chartmesh, "uv", "singular"));
 
-			STEP(facets_split,(chartmesh, "uv", "singular"));
+//		STEP(split_edges_by_iso_uvs, (chartmesh, "uv", "singular"));
+//		STEP(facets_split,(chartmesh, "uv", "singular"));
 
 			STEP(mark_charts,(chartmesh, "uv", "chart", "singular"));
 
 			STEP(simplify_quad_charts,(chartmesh));
 
-			STEP(export_quadtri_from_charts,(chartmesh));
+//            bool res = true;
+//			STEP(res = export_quadtri_from_charts,(chartmesh));
+//          if (res) {
+//              plop("self-intersections!");
+//              return true;
+//          } else return false;
+
+///         vector<index_t> fails;
+///         find_degenerate_facets(chartmesh, fails);
+///         plop(fails.size());
+
+/*
+            vector<index_t> intersections;
+            chartmesh->facets.triangulate();
+            find_self_intersections(chartmesh, intersections);
+            plop(intersections.size());
+          std::string msg;
+            plop (surface_is_manifold(chartmesh, msg));
+            plop(msg);
+            FOR(f, chartmesh->facets.nb()) {
+                double area = Geom::mesh_facet_area(*chartmesh, f, 3);
+                    GEO::Logger::out("HexDom")  << area <<  std::endl;
+            }
+
+*/
+
+
 
 			if (!surface_is_tetgenifiable(chartmesh)) {
 				logt.add_string("fail", " tetgen is not able to remesh the quadtri");
@@ -148,7 +178,7 @@ namespace GEO {
 			}
 
 			chartmesh->facet_corners.attributes().delete_attribute_store("uv");
-			chartmesh->facets.attributes().delete_attribute_store("chart");
+//			chartmesh->facets.attributes().delete_attribute_store("chart");
 			chartmesh->facets.attributes().delete_attribute_store("quadelement");
 			chartmesh->facets.attributes().delete_attribute_store("singular");
 			chartmesh->vertices.attributes().delete_attribute_store("quadcorners");
@@ -174,7 +204,7 @@ namespace GEO {
 			return true;
 		}
 
-		void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid,bool baudoin_carrier) {
+		void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid,bool baudoin_carrier, bool vertex_puncher) {
 
 			{
 			    #ifndef HAS_TET2HEX

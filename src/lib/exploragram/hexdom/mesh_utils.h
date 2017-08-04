@@ -47,9 +47,9 @@
 
 namespace GEO {
 
-	inline index_t cell_facet_corner_id(Mesh* m, index_t c, index_t cf, index_t cfc) {
-		return m->cells.corner(c, m->cells.descriptor(c).facet_vertex[cf][cfc]);
-	}
+    inline index_t cell_facet_corner_id(Mesh* m, index_t c, index_t cf, index_t cfc) {
+	return m->cells.corner(c, m->cells.descriptor(c).facet_vertex[cf][cfc]);
+    }
     
     void EXPLORAGRAM_API compute_3D_edge_cot_w(Mesh* m, Attribute<index_t>& v2e, double anisoZ_cotW);
     

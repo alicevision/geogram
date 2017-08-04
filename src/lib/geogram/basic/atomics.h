@@ -57,7 +57,7 @@
 #ifdef GEO_OS_LINUX
 #  if defined(GEO_OS_EMSCRIPTEN)
 #    define GEO_USE_DUMMY_ATOMICS
-#  elif defined(GEO_OS_ANDROID)
+#  elif defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
 #    define GEO_USE_ARM_ATOMICS
 #  else
 #    define GEO_USE_X86_ATOMICS

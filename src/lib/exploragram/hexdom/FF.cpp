@@ -43,7 +43,6 @@
 #include <exploragram/hexdom/extra_connectivity.h>
 #include <geogram/NL/nl.h>
 #include <geogram/numerics/optimizer.h>
-#include <geogram/bibliography/bibliography.h>
 
 #ifdef GEO_OPENMP
 #include <omp.h>
@@ -53,7 +52,6 @@
 namespace GEO {
 
     FFopt::FFopt(Mesh* p_m) {
-        geo_cite("DBLP:journals/tog/RaySL16");
         m = p_m;
         compute_tet_edge_graph(m,v2e, true); // here  need a bidirectionl edge graph to speed up the LBFGS part
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");

@@ -70,11 +70,17 @@ namespace GEO {
 
 
         //// cubecover
-        index_t get_the_only_non_zero_lc(index_t c, index_t cf, Attribute<index_t>& CCedgeid);
-        index_t number_edges_on_cut_graph(Attribute<index_t>& CCedgeid);
-        
+		//index_t get_the_only_non_zero_lc(index_t c, index_t cf, Attribute<index_t>& CCedgeid);
+		//index_t number_edges_on_cut_graph(Attribute<index_t>& CCedgeid);
+		index_t get_non_nulledge(index_t c, index_t cf, Attribute<bool>& nulledge);
+		void mark_null_edges(Attribute<bool>& nulledge);
+
         //bool constraint_boundary is set to false only to compute the correction one form
         void cubcover(bool compute_only_corr =false);
+		void grow_ball(Attribute<bool>& tet_in_ball);
+		void grow_triangle_ball(vector<bool>& tetface_in_ball);
+
+
 
         index_t edge_from_vertices(index_t v0, index_t v1, bool &inv) {
             inv = v0 > v1;
@@ -91,6 +97,7 @@ namespace GEO {
 			
 		void move_U_to_corner();
 
+/*
         void snap_U_to_round(double eps = 0.05) {
             FOR(v, m->vertices.nb()) FOR(d, 3) {
                 if (std::abs(U[v][d] - round(U[v][d])) < eps) {
@@ -98,6 +105,7 @@ namespace GEO {
                 }
             }
         }
+*/
 
 
 

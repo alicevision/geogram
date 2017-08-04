@@ -111,23 +111,23 @@ namespace GEO {
     /*******************************************************************************/
     
     struct Basis3d {
-	Basis3d(vec3 z) { // TODO DOCUMENT THIS!
-	    v[2] = normalize(z);
-	    if (std::fabs(v[2].z) < .8)
-		v[0] = cross(v[2], vec3(0, 0, 1));
-	    else v[0] = cross(v[2], vec3(1, 0, 0));
-	    v[0] = normalize(v[0]);
-	    v[1] = cross(v[2], v[0]);
-	    //plop(z);
-	    geo_assert(std::abs(v[1].length2() - 1) < .001);
-	}
-	vec2 project_xy(vec3 in){
-	    return vec2(dot(in, v[0]), dot(in, v[1]));
-	}
-	vec3 un_project_xy(vec2 in){
-	    return in[0] * v[0] + in[1] * v[1];
-	}
-	vec3 v[3];
+        Basis3d(vec3 z) { // TODO DOCUMENT THIS!
+            v[2] = normalize(z);
+            if (std::fabs(v[2].z) < .8)
+                v[0] = cross(v[2], vec3(0, 0, 1));
+            else v[0] = cross(v[2], vec3(1, 0, 0));
+            v[0] = normalize(v[0]);
+            v[1] = cross(v[2], v[0]);
+//            plop(z);
+            geo_assert(std::abs(v[1].length2() - 1) < .001);
+        }
+        vec2 project_xy(vec3 in){
+            return vec2(dot(in, v[0]), dot(in, v[1]));
+        }
+        vec3 un_project_xy(vec2 in){
+            return in[0] * v[0] + in[1] * v[1];
+        }
+        vec3 v[3];
     };
 
     /*******************************************************************************/    

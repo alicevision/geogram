@@ -48,7 +48,8 @@ namespace GEO {
     
     namespace HexdomPipeline {
 	
-        bool EXPLORAGRAM_API SetConstraints(Mesh*m, std::string& msg, bool hilbert_sort = true);
+        bool EXPLORAGRAM_API SetConstraints(Mesh*m, std::string& msg, bool hilbert_sort = true,
+                bool relaxed = false);
 	
         void EXPLORAGRAM_API FrameField(Mesh*m, bool smooth);
 
@@ -63,7 +64,7 @@ namespace GEO {
 	
         bool EXPLORAGRAM_API Cavity(Mesh* quaddominant, Mesh* hexahedrons, Mesh* result);
 
-        void EXPLORAGRAM_API HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid=false, bool baudoin_carrier=false);
+        void EXPLORAGRAM_API HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid=false, bool baudoin_carrier=false,bool vertex_puncher =false);
     }
 }
 

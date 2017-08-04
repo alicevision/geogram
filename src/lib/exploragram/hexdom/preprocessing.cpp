@@ -41,29 +41,122 @@
 #include <geogram/mesh/mesh_tetrahedralize.h>
 namespace GEO {
 
-    static void compute_input_constraints(Mesh* m) {
+    vec3 triangle_normal(const Mesh& M, index_t f){
+        vec3 pt[3];
+        for (index_t v = 0; v < 3; v++) pt[v] = M.vertices.point(M.facets.vertex(f,v));
+        return cross(normalize(pt[1] - pt[0]), normalize(pt[2] - pt[0]));
+    }
+
+    bool get_a_triangle_patch(
+            const Mesh& M, 
+            index_t facet, 
+            std::vector<bool>& tri_patch_flag,
+            index_t& patch_size,
+            double cos_angle,
+            index_t nb_tri_min_in_patch) {
+
+        /* Add facet in the patch */
+        tri_patch_flag[facet] = true;
+        patch_size += 1;
+
+        /* Check stop condition */
+        if (patch_size >= nb_tri_min_in_patch) {
+            return true;
+        }
+
+        /* Recursive call */
+        vec3 n = normalize(triangle_normal(M, facet));
+        for (index_t le = 0; le < 3; ++le) {
+            index_t a = M.facets.adjacent(facet, le);
+            if (a == GEO::NO_FACET) continue;
+            vec3 n_a = normalize(triangle_normal(M, a));
+            if (dot(n, n_a) > cos_angle) {
+                if (!tri_patch_flag[a]) 
+                    get_a_triangle_patch(M, a, tri_patch_flag, patch_size, cos_angle, nb_tri_min_in_patch);
+            }
+        }
+        return patch_size >= nb_tri_min_in_patch;
+    }
+
+    void generate_facet_is_in_patch_attribute(const Mesh& M) {
+        geo_assert(M.facets.nb() > 0);
+
+        /* The input constrained are only computed from "valid" triangles
+         * - triangles are considered valid if they are in a smooth patch of at
+         *    least nb_tri_min_in_patch triangles
+         * - two adjacent triangles are in the same patch if the dot product of their
+         *   normals is superior to cos_angle */
+
+        /* Parameters */
+        index_t nb_tri_min_in_patch = 8;
+        const double cos_angle = 0.975;
+
+        if (M.facets.nb() < 100) nb_tri_min_in_patch = 4; /* for small models */
+
+        Attribute<int> is_in_patch(M.facets.attributes(), "is_valid");
+        is_in_patch.fill(0);
+
+        std::vector<bool> is_flagged(M.facets.nb());
+        for(index_t f = 0; f < M.facets.nb(); ++f) {
+            if (is_in_patch[f]) continue;
+            index_t patch_size = 0;
+            std::fill(is_flagged.begin(), is_flagged.end(), false); /* reinitialize to zero */
+            bool ok = get_a_triangle_patch(M, f, is_flagged, patch_size, cos_angle, nb_tri_min_in_patch);
+            if (ok) { /* A patch starting at f has been found */
+                for (index_t i = 0; i < is_flagged.size(); ++i) {
+                    /* triangles in the patch are keep for imposing constraints */
+                    if (is_flagged[i]) is_in_patch[i] = 1;
+                }
+            }
+        }
+    }
+
+    static void compute_input_constraints(Mesh* m, bool relaxed = false) {
 
         Attribute<mat3> B(m->vertices.attributes(), "B");
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");// how many vectors are locked
         Attribute<vec3> U(m->vertices.attributes(), "U");
         Attribute<vec3> lockU(m->vertices.attributes(), "lockU");// how many dimensions are locked
-	// init all normal for each vertex
+
+        // init all normal for each vertex
         vector<vector<vec3> > normals(m->vertices.nb());
         vector<vector<double> > weight(m->vertices.nb());
 
-        FOR(c, m->cells.nb()) FOR(cf, 4) {
-            if ((m->cells.adjacent(c, cf) != NO_CELL)) continue;
-            vec3 n = tet_facet_cross(m, c, cf);
-            if (n.length2() > 1e-10) {
-                FOR(cfv, 3) {
-                    normals[m->cells.facet_vertex(c, cf, cfv)].push_back(normalize(n));
-                    weight[m->cells.facet_vertex(c, cf, cfv)].push_back(n.length());
+        /* Compute the facet normals and store them at vertices */
+        if (!relaxed) {
+            FOR(c, m->cells.nb()) FOR(cf, 4) {
+                if ((m->cells.adjacent(c, cf) != NO_CELL)) continue;
+                vec3 n = tet_facet_cross(m, c, cf);
+                if (n.length2() > 1e-10) {
+                    FOR(cfv, 3) {
+                        normals[m->cells.facet_vertex(c, cf, cfv)].push_back(normalize(n));
+                        weight[m->cells.facet_vertex(c, cf, cfv)].push_back(n.length());
+                    }
+                }
+            }
+        } else {
+            /* The relaxation of constraints is achieved by storing only the normals of "valid" 
+             * triangles.
+             * They are flagged via the facet attribute is_valid
+             * One possibility for flag them is to use generate_facet_is_in_patch_attribute()
+             * See the method for tweaking the parameters. */
+            m->cells.compute_borders();
+            generate_facet_is_in_patch_attribute(*m);
+            Attribute<int> is_valid(m->facets.attributes(), "is_valid");
+
+            for(index_t f = 0; f < m->facets.nb(); ++f) {
+                if (!is_valid[f]) continue;
+                vec3 n = facet_normal(m, f);
+                if (n.length2() > 1e-10) {
+                    FOR(lv, 3) {
+                        normals[m->facets.vertex(f, lv)].push_back(normalize(n));
+                        weight[m->facets.vertex(f, lv)].push_back(n.length());
+                    }
                 }
             }
         }
 
-
-
+        /* Build the constraints */
         FOR(v, m->vertices.nb()) {
             vector<vec3>& n = normals[v];
             vector<double>& w = weight[v];
@@ -85,17 +178,17 @@ namespace GEO {
 				if (lockB[v].length2() > 1) lockB[v] = vec3(1, 1, 1);
 				U[v] = vec3(0, 0, 0);
             }
+			
+			//FOR(i,3) FOR(j,3) B[v](i,j) *= 5.;
+        }
+
+        if (relaxed) {
+            // m->facets.clear(false); // Keep the surface part for debugging
         }
     }
 
-
-
-
-
-
     static void reorder_vertices_according_to_constraints(Mesh* m,bool hibert_sort) {
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");// how many vectors are locked
-
 
         GEO::vector<index_t > ind_map(m->vertices.nb());
         index_t n = 0;
@@ -123,7 +216,7 @@ namespace GEO {
     }
 
 
-    void produce_hexdom_input(Mesh* m,std::string& error_msg,bool hilbert_sort ) {
+    void produce_hexdom_input(Mesh* m,std::string& error_msg,bool hilbert_sort, bool relaxed) {
 		m->edges.clear();
 		m->vertices.remove_isolated();
 
@@ -147,14 +240,26 @@ namespace GEO {
 		if (!volume_is_tetgenifiable(m)) {
             throw (" tetgen is not able to remesh the volume from its boundary");
         }
+
+        /*
+
+        FOR(v, m->vertices.nb()) {
+            vec3 pt = X(m)[v];
+            X(m)[v][0] =  cos(.01)*pt[0] + sin(.01)*pt[1];
+            X(m)[v][1] = -sin(.01)*pt[0] + cos(.01)*pt[1];
+            pt = X(m)[v];
+            X(m)[v][1] =  cos(.02)*pt[1] + sin(.02)*pt[2];
+            X(m)[v][2] = -sin(.02)*pt[1] + cos(.02)*pt[2];
+        }
+
+        */
+
 		
 		// add some attributes
-
-        compute_input_constraints(m);
+		compute_input_constraints(m, relaxed);
 		
 		// compute scale
         double wanted_edge_length = get_cell_average_edge_size(m);
-			
 		
 		Attribute<mat3> B(m->vertices.attributes(), "B");
         FOR(v, m->vertices.nb()) FOR(ij, 9) B[v].data()[ij] *= wanted_edge_length;

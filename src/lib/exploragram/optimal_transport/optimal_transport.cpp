@@ -47,6 +47,7 @@
 
 #include <geogram/voronoi/CVT.h>
 #include <geogram/voronoi/generic_RVD_vertex.h>
+#include <geogram/voronoi/RVD_polyhedron_callback.h>
 #include <geogram/delaunay/delaunay_3d.h>
 
 #include <geogram/points/nn_search.h>
@@ -69,11 +70,17 @@
 
 namespace {
     using namespace GEO;
-    
+
+    class OTMPolyhedronCallback : public RVDPolyhedronCallback {
+    public:
+	
+    };
+
     /**
      * \brief Computes the contribution of an integration simplex
      *  to the objective function minimized by a semi-discrete
      *  optimal transport map.
+     * \note Will be soon replaced with OTMPolyhedronCallback.
      */
     class OTMIntegrationSimplex : public IntegrationSimplex {
     public:
@@ -613,12 +620,17 @@ namespace GEO {
     OptimalTransportMap* OptimalTransportMap::instance_ = nil;
     
     OptimalTransportMap::OptimalTransportMap(
-        Mesh* mesh, const std::string& delaunay, bool BRIO
+        Mesh* mesh, const std::string& delaunay_in, bool BRIO
     ) : mesh_(mesh) {
 
 	geo_cite("DBLP:conf/compgeom/AurenhammerHA92");
 	geo_cite("DBLP:journals/cgf/Merigot11");
 	geo_cite("journals/M2AN/LevyNAL15");
+
+	std::string delaunay = delaunay_in;
+	if(delaunay == "default") {
+	    delaunay = "PDEL";
+	}
 	
         epsilon_regularization_ = 0.0;
 
@@ -626,16 +638,9 @@ namespace GEO {
         // 4th dimension set to zero).
         geo_assert(mesh->vertices.dimension() == 4);
 
-        
-        geo_argused(delaunay);
         // Note: we represent power diagrams as 4d Voronoi diagrams
+        delaunay_ = Delaunay::create(4, delaunay);
 
-        //the sequential version
-        //delaunay_ = Delaunay::create(4, "BPOW");
-
-        //the parallel version
-        delaunay_ = Delaunay::create(4, "PDEL");
-        
         RVD_ = RestrictedVoronoiDiagram::create(delaunay_, mesh_);
         RVD_->set_volumetric(true);
         RVD_->set_check_SR(true);
@@ -670,7 +675,7 @@ namespace GEO {
         measure_of_smallest_cell_ = 0.0;
 
         symmetric_storage_ = false;
-        // symmetric_storage_ = true; 
+        // symmetric_storage_ = true;
     }
 
     void OptimalTransportMap::set_points(
@@ -1712,15 +1717,20 @@ namespace GEO {
         Mesh* omega,
         index_t nb_points,
         const double* points,
-        double* centroids
+        double* centroids,
+	bool parallel_pow
     ) {
         omega->vertices.set_dimension(4);
 
         // false = no BRIO
         // (OTM does not use multilevel and lets Delaunay
         //  reorder the vertices)
-        OptimalTransportMap OTM(omega, "default", false);
-        
+        OptimalTransportMap OTM(
+	    omega,
+	    std::string(parallel_pow ? "PDEL" : "BPOW"),
+	    false
+	);
+
         OTM.set_regularization(1e-3);
         OTM.set_Newton(true);
         OTM.set_points(nb_points, points);

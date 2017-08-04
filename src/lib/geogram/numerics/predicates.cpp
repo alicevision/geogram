@@ -70,7 +70,8 @@
 #include <geogram/numerics/predicates/side4h.h>
 #include <geogram/numerics/predicates/orient2d.h>
 #include <geogram/numerics/predicates/orient3d.h>
-
+#include <geogram/numerics/predicates/det3d.h>
+#include <geogram/numerics/predicates/dot3d.h>
 
 
 namespace {
@@ -1360,6 +1361,65 @@ namespace {
         return Sign(Delta4_sign * r_sign);
     }
 
+    // ================================ det and dot =======================
+
+    /**
+     * \brief Computes the sign of the determinant of a 3x3 
+     *  matrix formed by three 3d points using exact arithmetics.
+     * \param[in] p0 , p1 , p2 the three points
+     * \return the sign of the determinant of the matrix.
+     */
+    Sign det_3d_exact(
+	const double* p0, const double* p1, const double* p2
+    ) {
+	const expansion& p0_0 = expansion_create(p0[0]);
+	const expansion& p0_1 = expansion_create(p0[1]);
+	const expansion& p0_2 = expansion_create(p0[2]);
+	
+	const expansion& p1_0 = expansion_create(p1[0]);
+	const expansion& p1_1 = expansion_create(p1[1]);
+	const expansion& p1_2 = expansion_create(p1[2]);
+
+	const expansion& p2_0 = expansion_create(p2[0]);
+	const expansion& p2_1 = expansion_create(p2[1]);
+	const expansion& p2_2 = expansion_create(p2[2]);	
+	
+	const expansion& Delta = expansion_det3x3(
+	    p0_0, p0_1, p0_2,
+	    p1_0, p1_1, p1_2,
+	    p2_0, p2_1, p2_2
+	);
+	return Delta.sign();
+    }
+    
+
+    /**
+     * \brief Computes the sign of the dot product between two
+     *  vectors using exact arithmetics.
+     * \param[in] p0 , p1 , p2 three 3d points.
+     * \return the sign of the dot product between the vectors
+     *  p0p1 and p0p2.
+     */
+    Sign dot_3d_exact(
+	const double* p0, const double* p1, const double* p2
+    ) {
+	const expansion& U_0 = expansion_diff(p1[0],p0[0]);
+	const expansion& U_1 = expansion_diff(p1[1],p0[1]);
+	const expansion& U_2 = expansion_diff(p1[2],p0[2]);
+	
+	const expansion& V_0 = expansion_diff(p2[0],p0[0]);
+	const expansion& V_1 = expansion_diff(p2[1],p0[1]);
+	const expansion& V_2 = expansion_diff(p2[2],p0[2]);
+
+	const expansion& UV_0 = expansion_product(U_0, V_0);
+	const expansion& UV_1 = expansion_product(U_1, V_1);
+	const expansion& UV_2 = expansion_product(U_2, V_2);
+
+	const expansion& Delta = expansion_sum3(UV_0, UV_1, UV_2);
+
+	return Delta.sign();
+    }
+    
     // ================================ statistics ========================
 
     /**
@@ -1740,6 +1800,30 @@ namespace GEO {
             return Sign(-result);
         }
 
+	Sign det_3d(
+	    const double* p0, const double* p1, const double* p2
+	) {
+	    Sign result = Sign(
+		det_3d_filter(p0, p1, p2)
+	    );
+	    if(result == 0) {
+		result = det_3d_exact(p0, p1, p2);
+	    }
+	    return result;
+	}
+
+	Sign dot_3d(
+	    const double* p0, const double* p1, const double* p2
+	) {
+	    Sign result = Sign(
+		det_3d_filter(p0, p1, p2)
+	    );
+	    if(result == 0) {
+		result = dot_3d_exact(p0, p1, p2);
+	    }
+	    return result;
+	}
+	
         void initialize() {
             expansion::initialize();
         }
