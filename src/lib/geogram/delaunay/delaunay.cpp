@@ -150,7 +150,9 @@ namespace GEO {
 	geo_register_Delaunay_creator(Delaunay2d, "BDEL2d");
 	geo_register_Delaunay_creator(RegularWeightedDelaunay2d, "BPOW2d");
 	
+#ifndef GEOGRAM_PSM       
         geo_register_Delaunay_creator(Delaunay_NearestNeighbors, "NN");
+#endif       
     }
 
     Delaunay* Delaunay::create(
@@ -176,11 +178,18 @@ namespace GEO {
             Logger::warn("Delaunay") << ex.what() << std::endl;
         }
 
+#ifdef GEOGRAM_PSM
+       Logger::err("Delaunay")
+            << "Could not create Delaunay triangulation"
+            << std::endl;
+       return nil;
+#else       
         Logger::warn("Delaunay")
             << "Falling back to NN mode"
             << std::endl;
 
         return new Delaunay_NearestNeighbors(dim);
+#endif       
     }
 
     Delaunay::Delaunay(coord_index_t dimension) {

@@ -70,7 +70,7 @@ namespace {
      *  the two halves
      */
     template <class IT, class CMP>
-    inline IT split(
+    inline IT reorder_split(
         IT begin, IT end, CMP cmp
     ) {
         if(begin >= end) {
@@ -265,6 +265,8 @@ namespace {
 
     /************************************************************************/
 
+#ifndef GEOGRAM_PSM
+    
     /**
      * \brief Base class for facets ordering.
      * \tparam COORD the coordinate to compare
@@ -698,11 +700,13 @@ namespace {
         }
     };
 
+#endif
+    
     /************************************************************************/
     
     /**
      * \brief Generic class for sorting arbitrary elements in
-     *  Hilbert and Morton orders.
+     *  Hilbert and Morton orders in 3d.
      * \details The implementation is inspired by:
      *  - Christophe Delage and Olivier Devillers. Spatial Sorting. 
      *   In CGAL User and Reference Manual. CGAL Editorial Board, 
@@ -717,7 +721,7 @@ namespace {
      * \tparam MESH  the class that represents meshes
      */
     template <template <int COORD, bool UP, class MESH> class CMP, class MESH>
-    struct HilbertSort {
+    struct HilbertSort3d {
 
         /**
          * \brief Low-level recursive spatial sorting function
@@ -747,13 +751,13 @@ namespace {
                 return;
             }
             IT m0 = begin, m8 = end;
-            IT m4 = split(m0, m8, CMP<COORDX, UPX, MESH>(M));
-            IT m2 = split(m0, m4, CMP<COORDY, UPY, MESH>(M));
-            IT m1 = split(m0, m2, CMP<COORDZ, UPZ, MESH>(M));
-            IT m3 = split(m2, m4, CMP<COORDZ, !UPZ, MESH>(M));
-            IT m6 = split(m4, m8, CMP<COORDY, !UPY, MESH>(M));
-            IT m5 = split(m4, m6, CMP<COORDZ, UPZ, MESH>(M));
-            IT m7 = split(m6, m8, CMP<COORDZ, !UPZ, MESH>(M));
+            IT m4 = reorder_split(m0, m8, CMP<COORDX, UPX, MESH>(M));
+            IT m2 = reorder_split(m0, m4, CMP<COORDY, UPY, MESH>(M));
+            IT m1 = reorder_split(m0, m2, CMP<COORDZ, UPZ, MESH>(M));
+            IT m3 = reorder_split(m2, m4, CMP<COORDZ, !UPZ, MESH>(M));
+            IT m6 = reorder_split(m4, m8, CMP<COORDY, !UPY, MESH>(M));
+            IT m5 = reorder_split(m4, m6, CMP<COORDZ, UPZ, MESH>(M));
+            IT m7 = reorder_split(m6, m8, CMP<COORDZ, !UPZ, MESH>(M));
             sort<COORDZ, UPZ, UPX, UPY>(M, m0, m1);
             sort<COORDY, UPY, UPZ, UPX>(M, m1, m2);
             sort<COORDY, UPY, UPZ, UPX>(M, m2, m3);
@@ -776,7 +780,7 @@ namespace {
          *  to be sorted
          * \param[in] limit subsequences smaller than limit are left unsorted
          */
-        HilbertSort(
+        HilbertSort3d(
             const MESH& M,
             vector<index_t>::iterator b,
             vector<index_t>::iterator e,
@@ -788,8 +792,8 @@ namespace {
 	    geo_cite_with_info(
 		"WEB:SpatialSorting",
 		"The implementation of spatial sort in GEOGRAM is inspired by "
-		"the idea of using \\verb|std::nth_element()| in the spatial "
-		"sort package of CGAL"
+		"the idea of using \\verb|std::nth_element()| and the recursive"
+                " template in the spatial sort package of CGAL"
 	    );
 
             // If the sequence is smaller than the limit, skip it
@@ -806,7 +810,7 @@ namespace {
             // Parallel sorting
             m0_ = b;
             m8_ = e;
-            m4_ = split(m0_, m8_, CMP<0, false, MESH>(M));
+            m4_ = reorder_split(m0_, m8_, CMP<0, false, MESH>(M));
             parallel_for(*this, 0, 2);    // computes m2,m6 in parallel
             parallel_for(*this, 10, 14);  // computes m1,m3,m5,m7 in parallel
             parallel_for(*this, 20, 28);  // sorts the 8 subsets in parallel
@@ -825,22 +829,22 @@ namespace {
             const bool UPX = false, UPY = false, UPZ = false;
             switch(i) {
                 case 0:
-                    m2_ = split(m0_, m4_, CMP<COORDY, UPY, MESH>(M_));
+                    m2_ = reorder_split(m0_, m4_, CMP<COORDY, UPY, MESH>(M_));
                     break;
                 case 1:
-                    m6_ = split(m4_, m8_, CMP<COORDY, !UPY, MESH>(M_));
+                    m6_ = reorder_split(m4_, m8_, CMP<COORDY, !UPY, MESH>(M_));
                     break;
                 case 10:
-                    m1_ = split(m0_, m2_, CMP<COORDZ, UPZ, MESH>(M_));
+                    m1_ = reorder_split(m0_, m2_, CMP<COORDZ, UPZ, MESH>(M_));
                     break;
                 case 11:
-                    m3_ = split(m2_, m4_, CMP<COORDZ, !UPZ, MESH>(M_));
+                    m3_ = reorder_split(m2_, m4_, CMP<COORDZ, !UPZ, MESH>(M_));
                     break;
                 case 12:
-                    m5_ = split(m4_, m6_, CMP<COORDZ, UPZ, MESH>(M_));
+                    m5_ = reorder_split(m4_, m6_, CMP<COORDZ, UPZ, MESH>(M_));
                     break;
                 case 13:
-                    m7_ = split(m6_, m8_, CMP<COORDZ, !UPZ, MESH>(M_));
+                    m7_ = reorder_split(m6_, m8_, CMP<COORDZ, !UPZ, MESH>(M_));
                     break;
                 case 20:
                     sort<COORDZ, UPZ, UPX, UPY>(M_, m0_, m1_);
@@ -881,6 +885,103 @@ namespace {
     /************************************************************************/
 
     /**
+     * \brief Generic class for sorting arbitrary elements in
+     *  Hilbert and Morton orders in 3d.
+     * \details The implementation is inspired by:
+     *  - Christophe Delage and Olivier Devillers. Spatial Sorting. 
+     *   In CGAL User and Reference Manual. CGAL Editorial Board, 
+     *   3.9 edition, 2011
+     * \tparam CMP the comparator class for ordering the elements. CMP
+     *  is itself a template parameterized by~:
+     *    - COORD the coordinate along which elements should be
+     *      sorted
+     *    - UP a boolean that indicates whether direct or reverse
+     *      order should be used
+     *    - MESH the class that represents meshes
+     * \tparam MESH  the class that represents meshes
+     */
+    template <template <int COORD, bool UP, class MESH> class CMP, class MESH>
+    struct HilbertSort2d {
+
+        /**
+         * \brief Low-level recursive spatial sorting function
+         * \details This function is recursive
+         * \param[in] M the mesh in which the elements reside
+         * \param[in] begin an iterator that points to the
+         *  first element of the sequence
+         * \param[in] end an interator that points one position past the
+         *  last element of the sequence
+         * \param[in] limit subsequences smaller than limit are left unsorted
+         * \tparam COORDX the first coordinate, can be 0,1 or 2. The second
+         *  coordinate is COORDX+1 modulo 2. 
+         * \tparam UPX whether ordering along the first coordinate
+         *  is direct or inverse
+         * \tparam UPY whether ordering along the second coordinate
+         *  is direct or inverse
+         */
+        template <int COORDX, bool UPX, bool UPY, class IT>
+        static void sort(
+            const MESH& M, IT begin, IT end, index_t limit = 1
+        ) {
+            const int COORDY = (COORDX + 1) % 2;
+            if(end - begin <= signed_index_t(limit)) {
+                return;
+            }
+	    IT m0 = begin, m4 = end;
+
+	    IT m2 = reorder_split (m0, m4, CMP<COORDX,  UPX, MESH>(M));
+	    IT m1 = reorder_split (m0, m2, CMP<COORDY,  UPY, MESH>(M));
+	    IT m3 = reorder_split (m2, m4, CMP<COORDY, !UPY, MESH>(M));
+
+	    sort<COORDY, UPY, UPX> (M, m0, m1);
+	    sort<COORDX, UPX, UPY> (M, m1, m2);
+	    sort<COORDX, UPX, UPY> (M, m2, m3);
+	    sort<COORDY,!UPY,!UPX> (M, m3, m4);
+        }
+
+        /**
+         * \brief Sorts a sequence of elements spatially.
+         * \details This function does an indirect sort, 
+         *  in the sense that a sequence 
+         *  of indices that refer to the elements is sorted. 
+         *  This function uses a multithreaded implementation.
+         * \param[in] M the mesh in which the elements to sort reside
+         * \param[in] b an interator to the first index to be sorted
+         * \param[in] e an interator one position past the last index 
+         *  to be sorted
+         * \param[in] limit subsequences smaller than limit are left unsorted
+         */
+        HilbertSort2d(
+            const MESH& M,
+            vector<index_t>::iterator b,
+            vector<index_t>::iterator e,
+            index_t limit = 1
+        ) :
+            M_(M)
+        {
+            geo_debug_assert(e > b);
+	    geo_cite_with_info(
+		"WEB:SpatialSorting",
+		"The implementation of spatial sort in GEOGRAM is inspired by "
+		"the idea of using \\verb|std::nth_element()| and the recursive"
+                " template in the spatial sort package of CGAL"
+	    );
+
+            // If the sequence is smaller than the limit, skip it
+            if(index_t(e - b) <= limit) {
+                return;
+            }
+	    sort<0, false, false>(M_, b, e);
+        }
+    private:
+        const MESH& M_;
+    };
+
+    /************************************************************************/
+
+#ifndef GEOGRAM_PSM
+    
+    /**
      * \brief Sorts the vertices of a mesh according to the Hilbert ordering.
      * \details The function does not change the mesh, it computes instead
      *  the permutation. The permutation can then be reused to order other
@@ -890,14 +991,14 @@ namespace {
      * \param[out] sorted_indices the permutation to be applied
        to the vertices
      */
-    void hilbert_vsort(
+    void hilbert_vsort_3d(
         const Mesh& M, vector<index_t>& sorted_indices
     ) {
         sorted_indices.resize(M.vertices.nb());
         for(index_t i = 0; i < M.vertices.nb(); i++) {
             sorted_indices[i] = i;
         }
-        HilbertSort<Hilbert_vcmp, Mesh>(
+        HilbertSort3d<Hilbert_vcmp, Mesh>(
             M, sorted_indices.begin(), sorted_indices.end()
         );
     }
@@ -912,14 +1013,14 @@ namespace {
      * \param[out] sorted_indices the permutation to be
      *  applied to the facets
      */
-    void hilbert_fsort(
+    void hilbert_fsort_3d(
         const Mesh& M, vector<index_t>& sorted_indices
     ) {
         sorted_indices.resize(M.facets.nb());
         for(index_t i = 0; i < M.facets.nb(); i++) {
             sorted_indices[i] = i;
         }
-        HilbertSort<Hilbert_fcmp, Mesh>(
+        HilbertSort3d<Hilbert_fcmp, Mesh>(
             M, sorted_indices.begin(), sorted_indices.end()
         );
     }
@@ -933,7 +1034,7 @@ namespace {
      * \param[in] M the mesh where the cells to be sorted reside
      * \param[out] sorted_indices the permutation to be applied to the tets
      */
-    void hilbert_csort(
+    void hilbert_csort_3d(
         const Mesh& M, vector<index_t>& sorted_indices
     ) {
         sorted_indices.resize(M.cells.nb());
@@ -941,11 +1042,11 @@ namespace {
             sorted_indices[i] = i;
         }
         if(M.cells.are_simplices()) {
-            HilbertSort<Hilbert_tcmp, Mesh>(
+            HilbertSort3d<Hilbert_tcmp, Mesh>(
                 M, sorted_indices.begin(), sorted_indices.end()
             );
         } else {
-            HilbertSort<Hilbert_ccmp, Mesh>(
+            HilbertSort3d<Hilbert_ccmp, Mesh>(
                 M, sorted_indices.begin(), sorted_indices.end()
             );
         }
@@ -960,14 +1061,14 @@ namespace {
      * \param[in] M the mesh where the vertices to be sorted reside
      * \param[out] sorted_indices the permutation to be applied to the vertices
      */
-    void morton_vsort(
+    void morton_vsort_3d(
         const Mesh& M, vector<index_t>& sorted_indices
     ) {
         sorted_indices.resize(M.vertices.nb());
         for(index_t i = 0; i < M.vertices.nb(); i++) {
             sorted_indices[i] = i;
         }
-        HilbertSort<Morton_vcmp, Mesh>(
+        HilbertSort3d<Morton_vcmp, Mesh>(
             M, sorted_indices.begin(), sorted_indices.end()
         );
     }
@@ -981,14 +1082,14 @@ namespace {
      * \param[in] M the mesh where the facets to be sorted reside
      * \param[out] sorted_indices the permutation to be applied to the facets
      */
-    void morton_fsort(
+    void morton_fsort_3d(
         const Mesh& M, vector<index_t>& sorted_indices
     ) {
         sorted_indices.resize(M.facets.nb());
         for(index_t i = 0; i < M.facets.nb(); i++) {
             sorted_indices[i] = i;
         }
-        HilbertSort<Morton_fcmp, Mesh>(
+        HilbertSort3d<Morton_fcmp, Mesh>(
             M, sorted_indices.begin(), sorted_indices.end()
         );
     }
@@ -1002,7 +1103,7 @@ namespace {
      * \param[in] M the mesh where the tets to be sorted reside
      * \param[out] sorted_indices the permutation to be applied to the tets
      */
-    void morton_csort(
+    void morton_csort_3d(
         const Mesh& M, vector<index_t>& sorted_indices
     ) {
         sorted_indices.resize(M.cells.nb());
@@ -1010,16 +1111,18 @@ namespace {
             sorted_indices[i] = i;
         }
         if(M.cells.are_simplices()) {
-            HilbertSort<Morton_tcmp, Mesh>(
+            HilbertSort3d<Morton_tcmp, Mesh>(
                 M, sorted_indices.begin(), sorted_indices.end()
             );
         } else {
-            HilbertSort<Morton_ccmp, Mesh>(
+            HilbertSort3d<Morton_ccmp, Mesh>(
                 M, sorted_indices.begin(), sorted_indices.end()
             );
         }
     }
 
+#endif    
+    
     /**
      * \brief Computes the BRIO order for a set of 3D points.
      * \details Implementation of compute_BRIO_order(). 
@@ -1038,7 +1141,7 @@ namespace {
      */
     void compute_BRIO_order_recursive(
         index_t nb_vertices, const double* vertices,
-        index_t stride,
+        index_t dimension, index_t stride,
         vector<index_t>& sorted_indices,
         vector<index_t>::iterator b,
         vector<index_t>::iterator e,
@@ -1054,7 +1157,8 @@ namespace {
             ++depth;
             m = b + int(double(e - b) * ratio);
             compute_BRIO_order_recursive(
-                nb_vertices, vertices, stride,
+                nb_vertices, vertices,
+		dimension, stride,
                 sorted_indices, b, m,
                 threshold, ratio, depth,
                 levels
@@ -1062,9 +1166,17 @@ namespace {
         }
 
         VertexMesh M(nb_vertices, vertices, stride);
-        HilbertSort<Hilbert_vcmp, VertexMesh>(
-            M, m, e
-        );
+	if(dimension == 3) {
+	    HilbertSort3d<Hilbert_vcmp, VertexMesh>(
+		M, m, e
+	    );
+	} else if(dimension ==2) {
+	    HilbertSort2d<Hilbert_vcmp, VertexMesh>(
+		M, m, e
+	    );
+	} else {
+	    geo_assert_not_reached;
+	}
 
         if(levels != nil) {
             levels->push_back(index_t(e - sorted_indices.begin()));
@@ -1076,6 +1188,8 @@ namespace {
 
 namespace GEO {
 
+#ifndef GEOGRAM_PSM
+    
     void mesh_reorder(Mesh& M, MeshOrder order) {
 
         geo_assert(M.vertices.dimension() >= 3);
@@ -1085,10 +1199,10 @@ namespace GEO {
             vector<index_t> sorted_indices;
             switch(order) {
                 case MESH_ORDER_HILBERT:
-                    hilbert_vsort(M, sorted_indices);
+                    hilbert_vsort_3d(M, sorted_indices);
                     break;
                 case MESH_ORDER_MORTON:
-                    morton_vsort(M, sorted_indices);
+                    morton_vsort_3d(M, sorted_indices);
                     break;
             }
             M.vertices.permute_elements(sorted_indices);
@@ -1099,10 +1213,10 @@ namespace GEO {
             vector<index_t> sorted_indices;
             switch(order) {
                 case MESH_ORDER_HILBERT:
-                    hilbert_fsort(M, sorted_indices);
+                    hilbert_fsort_3d(M, sorted_indices);
                     break;
                 case MESH_ORDER_MORTON:
-                    morton_fsort(M, sorted_indices);
+                    morton_fsort_3d(M, sorted_indices);
                     break;
             }
             M.facets.permute_elements(sorted_indices);
@@ -1113,53 +1227,50 @@ namespace GEO {
             vector<index_t> sorted_indices;
             switch(order) {
                 case MESH_ORDER_HILBERT:
-                    hilbert_csort(M, sorted_indices);
+                    hilbert_csort_3d(M, sorted_indices);
                     break;
                 case MESH_ORDER_MORTON:
-                    morton_csort(M, sorted_indices);
+                    morton_csort_3d(M, sorted_indices);
                     break;
             }
             M.cells.permute_elements(sorted_indices);
         }
     }
 
+#endif
+
+
     void compute_Hilbert_order(
-        index_t nb_vertices, const double* vertices,
-        vector<index_t>& sorted_indices,
-        index_t stride
-    ) {
-        sorted_indices.resize(nb_vertices);
-        for(index_t i = 0; i < nb_vertices; ++i) {
-            sorted_indices[i] = i;
-        }
-        VertexMesh M(nb_vertices, vertices, stride);
-        HilbertSort<Hilbert_vcmp, VertexMesh>(
-            M, sorted_indices.begin(), sorted_indices.end()
-        );
-    }
-
-
-    void GEOGRAM_API compute_Hilbert_order(
         index_t total_nb_vertices, const double* vertices,
         vector<index_t>& sorted_indices,
         index_t first,
         index_t last,
-        index_t stride
+        index_t dimension, index_t stride
     ) {
         geo_debug_assert(last > first);
         if(last - first <= 1) {
             return;
         }
         VertexMesh M(total_nb_vertices, vertices, stride);
-        HilbertSort<Hilbert_vcmp, VertexMesh>(
-            M, sorted_indices.begin() + int(first),
-            sorted_indices.begin() + int(last)
-        );
+	if(dimension == 3) {
+	    HilbertSort3d<Hilbert_vcmp, VertexMesh>(
+		M, sorted_indices.begin() + int(first),
+		sorted_indices.begin() + int(last)
+	    );
+	} else if(dimension == 2) {
+	    HilbertSort2d<Hilbert_vcmp, VertexMesh>(
+		M, sorted_indices.begin() + int(first),
+		sorted_indices.begin() + int(last)
+	    );
+	} else {
+	    geo_assert_not_reached;
+	}
     }
     
     void compute_BRIO_order(
         index_t nb_vertices, const double* vertices,
         vector<index_t>& sorted_indices,
+	index_t dimension,
         index_t stride,
         index_t threshold,
         double ratio,
@@ -1176,7 +1287,8 @@ namespace GEO {
         }
         std::random_shuffle(sorted_indices.begin(), sorted_indices.end());
         compute_BRIO_order_recursive(
-            nb_vertices, vertices, stride,
+            nb_vertices, vertices,
+	    dimension, stride,
             sorted_indices,
             sorted_indices.begin(), sorted_indices.end(),
             threshold, ratio, depth, levels

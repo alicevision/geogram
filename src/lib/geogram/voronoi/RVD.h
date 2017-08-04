@@ -69,6 +69,7 @@ namespace GEO {
     class IntegrationSimplex;
     class MeshFacetsAABB;
     class RVDPolyhedronCallback;
+    class RVDPolygonCallback;
 
     /**
      * \brief Computes a Restricted Voronoi Diagram (RVD).
@@ -587,6 +588,7 @@ namespace GEO {
 	 *  vertices
 	 * \param[in] connected_comp_priority if true, generate polyhedron 
 	 *  intersections associated with the same Voronoi seed in order.
+	 * \param[in] parallel if true, tentatively parallize computation.
 	 */
 	virtual void for_each_polyhedron(
 	    RVDPolyhedronCallback& callback,
@@ -595,6 +597,26 @@ namespace GEO {
 	    bool parallel = false
 	) = 0;
 
+	/**
+	 * \brief Invokes a user callback for each intersection polygon
+	 *  of the restricted Voronoi diagram (surfacic mode only).
+	 * \details Each intersection polygon is defined as the intersection
+	 *  between a Voronoi cell and a triangle.
+	 * \param[in] callback the set of user callbacks, as an instance of a
+	 *  class derived from RVDPolygonCallback.
+	 * \param[in] symbolic if true, generate symbolic information in the
+	 *  vertices
+	 * \param[in] connected_comp_priority if true, generate polyhedron 
+	 *  intersections associated with the same Voronoi seed in order.
+	 * \param[in] parallel if true, tentatively parallize computation.
+	 */
+	virtual void for_each_polygon(
+	    RVDPolygonCallback& callback,
+	    bool symbolic = true,
+	    bool connected_comp_priority = true,
+	    bool parallel = false
+	) = 0;
+	
 	
         /**
          * \brief Specifies whether the "radius of security"

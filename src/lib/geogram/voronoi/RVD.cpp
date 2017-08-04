@@ -47,7 +47,7 @@
 #include <geogram/voronoi/generic_RVD.h>
 #include <geogram/voronoi/RVD_mesh_builder.h>
 #include <geogram/voronoi/integration_simplex.h>
-#include <geogram/voronoi/RVD_polyhedron_callback.h>
+#include <geogram/voronoi/RVD_callback.h>
 #include <geogram/mesh/mesh_partition.h>
 #include <geogram/mesh/mesh_sampling.h>
 #include <geogram/mesh/mesh_repair.h>
@@ -109,6 +109,7 @@ namespace {
             MT_LLOYD,           /**< Lloyd iteration                        */
             MT_NEWTON,          /**< Newton optimization                    */
             MT_INT_SMPLX,       /**< Newton with integration simplex        */
+	    MT_POLYG,           /**< Polygon callback                       */
 	    MT_POLYH            /**< Polyhedron callback                    */
         };
 
@@ -153,6 +154,7 @@ namespace {
             nb_parts_ = 0;
             funcval_ = 0.0;
             simplex_func_ = nil;
+	    polygon_callback_ = nil;
 	    polyhedron_callback_ = nil;
             arg_vectors_ = nil;
             arg_scalars_ = nil;
@@ -176,6 +178,7 @@ namespace {
             facets_end_ = -1;
             funcval_ = 0.0;
             simplex_func_ = nil;
+	    polygon_callback_ = nil;
 	    polyhedron_callback_ = nil;
             arg_vectors_ = nil;
             arg_scalars_ = nil;
@@ -1060,6 +1063,77 @@ namespace {
 
         /********************************************************************/
 
+        /**
+         * \brief Adapter class used internally to implement for_each_polygon()
+         * \details Gets the current triangle from the RVD and passes it back
+	 *  to the callback. It is needed becase GenericRVD::for_each_polygon()
+	 *  does not pass the current triangle.
+         */
+	// TODO: pass it through all the callbacks, because it is ridiculous:
+	// we pass it through the first levels, then throw it, then retrieve it
+	// (see GenRVD)
+        class PolygonCallbackAction {
+        public:
+            /**
+             * \brief PolygonCallbackAction constructor
+             * \param[in] RVD a pointer to the restricted Voronoi diagram
+	     * \param[in] callback a pointer to the PolygonCallback
+             */
+            PolygonCallbackAction(
+		GenRestrictedVoronoiDiagram& RVD,
+		GEO::RVDPolygonCallback& callback
+	    ) :
+		RVD_(RVD),
+		callback_(callback) {
+            }
+
+            /**
+             * \brief Callback called for each polygon.
+             * \details Routes the callback to the wrapped user action class.
+             * \param[in] v index of current Delaunay seed
+             * \param[in] P intersection between current mesh facet
+             *  and the Voronoi cell of \p v
+             */
+            void operator() (
+                index_t v,
+                const GEOGen::Polygon& P
+            ) const {
+		callback_(v, RVD_.current_facet(), P);
+            }
+
+        protected:
+	    GenRestrictedVoronoiDiagram& RVD_;
+	    GEO::RVDPolygonCallback& callback_;
+        };
+
+	
+        virtual void compute_with_polygon_callback(
+	    GEO::RVDPolygonCallback& polygon_callback
+        ) {
+            create_threads();
+            if(nb_parts() == 0) {
+		PolygonCallbackAction action(RVD_,polygon_callback);
+		RVD_.for_each_polygon(action);
+            } else {
+                for(index_t t = 0; t < nb_parts(); t++) {
+                    part(t).RVD_.set_symbolic(RVD_.symbolic());
+                    part(t).RVD_.set_connected_components_priority(
+			RVD_.connected_components_priority()
+		    );
+                }
+                spinlocks_.resize(delaunay_->nb_vertices());		
+                thread_mode_ = MT_POLYG;
+		polygon_callback_ = &polygon_callback;
+		polygon_callback_->set_spinlocks(&spinlocks_);
+		// Note: callback begin()/end() is called in for_each_polygon()
+                parallel_for(
+                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    0, nb_parts()
+                );
+		polygon_callback_->set_spinlocks(nil);
+            }
+        } 
+	
         virtual void compute_with_polyhedron_callback(
 	    GEO::RVDPolyhedronCallback& polyhedron_callback
         ) {
@@ -1077,6 +1151,8 @@ namespace {
                 thread_mode_ = MT_POLYH;
 		polyhedron_callback_ = &polyhedron_callback;
 		polyhedron_callback_->set_spinlocks(&spinlocks_);
+		// Note: callback begin()/end() is
+		// called in for_each_polyhedron()		
                 parallel_for(
                     parallel_for_member_callback(this, &thisclass::run_thread),
                     0, nb_parts()
@@ -1500,7 +1576,30 @@ namespace {
 
         /********************************************************************/
 
-	void for_each_polyhedron(
+	virtual void for_each_polygon(
+	    GEO::RVDPolygonCallback& callback,
+	    bool symbolic,
+	    bool connected_comp_priority,
+	    bool parallel
+	) {
+	    bool sym_backup = RVD_.symbolic();
+	    RVD_.set_symbolic(symbolic);
+	    RVD_.set_connected_components_priority(connected_comp_priority);
+	    callback.begin();
+	    if(parallel) {
+		compute_with_polygon_callback(callback);
+	    } else {
+		PolygonCallbackAction action(RVD_,callback);
+		RVD_.for_each_polygon(action); 
+	    }
+	    callback.end();
+	    RVD_.set_symbolic(sym_backup);
+	    RVD_.set_connected_components_priority(false);
+	}
+	
+        /********************************************************************/
+	
+	virtual void for_each_polyhedron(
 	    GEO::RVDPolyhedronCallback& callback,
 	    bool symbolic,
 	    bool connected_comp_priority,
@@ -1547,6 +1646,12 @@ namespace {
                         T.funcval_, arg_vectors_, simplex_func_
                     );
                 } break;
+		case MT_POLYG:
+		{
+		    T.compute_with_polygon_callback(
+			*polygon_callback_
+		    );
+		} break;
 		case MT_POLYH:
 		{
 		    T.compute_with_polyhedron_callback(
@@ -1696,9 +1801,12 @@ namespace {
 
                         if(cur_d2 < d2) {
                             d2 = cur_d2;
-                            const vec3& p1_R3 = R3_embedding(triangles_[3 * t]);
-                            const vec3& p2_R3 = R3_embedding(triangles_[3 * t + 1]);
-                            const vec3& p3_R3 = R3_embedding(triangles_[3 * t + 2]);
+                            const vec3& p1_R3 =
+				R3_embedding(triangles_[3 * t]);
+                            const vec3& p2_R3 =
+				R3_embedding(triangles_[3 * t + 1]);
+                            const vec3& p3_R3 =
+				R3_embedding(triangles_[3 * t + 2]);
                             nearest[p] = l1 * p1_R3 + l2 * p2_R3 + l3 * p3_R3;
                             if(do_project) {
                                 for(coord_index_t
@@ -2213,10 +2321,14 @@ namespace {
                 // Reorient the tetrahedra
                 index_t nb_tetrahedra = simplices.size() / 4;
                 for(index_t t = 0; t < nb_tetrahedra; ++t) {
-                    const double* p1 = delaunay()->vertex_ptr(simplices[4 * t]);
-                    const double* p2 = delaunay()->vertex_ptr(simplices[4 * t + 1]);
-                    const double* p3 = delaunay()->vertex_ptr(simplices[4 * t + 2]);
-                    const double* p4 = delaunay()->vertex_ptr(simplices[4 * t + 3]);
+                    const double* p1 =
+			delaunay()->vertex_ptr(simplices[4 * t]);
+                    const double* p2 =
+			delaunay()->vertex_ptr(simplices[4 * t + 1]);
+                    const double*
+			p3 = delaunay()->vertex_ptr(simplices[4 * t + 2]);
+                    const double*
+			p4 = delaunay()->vertex_ptr(simplices[4 * t + 3]);
                     if(PCK::orient_3d(p1, p2, p3, p4) < 0) {
                         geo_swap(simplices[4 * t], simplices[4 * t + 1]);
                     }
@@ -2387,6 +2499,9 @@ namespace {
         // Newton mode with int. simplex
         IntegrationSimplex* simplex_func_;
 
+	// PolygonCallback mode.
+	RVDPolygonCallback* polygon_callback_;
+	
 	// PolyhedronCallback mode.
 	RVDPolyhedronCallback* polyhedron_callback_;
 

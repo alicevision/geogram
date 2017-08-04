@@ -1,0 +1,18 @@
+. $1
+
+for i in ${HEADERS}
+do
+	DIR=`dirname $i`
+	if [ ! -d "$DIRECTORY" ]; then
+  		mkdir -p $2/${DIR}
+	fi
+	cp -rf $i $2/$i
+done
+for i in ${SOURCES}
+do
+	DIR=`dirname $i`
+	if [ ! -d "$DIRECTORY" ]; then
+  		mkdir -p $2/${DIR}
+	fi
+	cp -rf $i $2/$i
+done

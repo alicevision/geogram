@@ -55,11 +55,10 @@
  * \brief Reorders the elements in a mesh to improve data locality
  */
 
-namespace {
-    class Delaunay3dThread;
-}
-
 namespace GEO {
+
+
+#ifndef GEOGRAM_PSM     
     class Mesh;
 
     /**
@@ -89,6 +88,8 @@ namespace GEO {
         Mesh& M, MeshOrder order = MESH_ORDER_HILBERT
     );
 
+#endif
+    
     /**
      * \brief Computes the Hilbert order for a set of 3D points.
      * \details The implementation is inspired by:
@@ -125,6 +126,7 @@ namespace GEO {
      *  to be sorted
      * \param[in] last one position past the index of the last element 
      *  in \p sorted_indices to be sorted
+     * \param[in] dimension number of vertices coordinates
      * \param[in] stride number of doubles between two consecutive vertices
      */
     void GEOGRAM_API compute_Hilbert_order(
@@ -132,7 +134,7 @@ namespace GEO {
         vector<index_t>& sorted_indices,
         index_t first,
         index_t last,
-        index_t stride = 3
+        index_t dimension, index_t stride = 3
     );
     
     /**
@@ -146,6 +148,7 @@ namespace GEO {
      * \param[in] vertices pointer to the coordinates of the vertices
      * \param[out] sorted_indices a vector of element indices to
      *  be sorted spatially
+     * \param[in] dimension number of vertices coordinates
      * \param[in] stride number of doubles between two consecutive vertices
      * \param[in] threshold minimum size of interval to be sorted
      * \param[in] ratio splitting ratio between current interval and
@@ -156,6 +159,7 @@ namespace GEO {
     void GEOGRAM_API compute_BRIO_order(
         index_t nb_vertices, const double* vertices,
         vector<index_t>& sorted_indices,
+	index_t dimension,
         index_t stride = 3,
         index_t threshold = 64,
         double ratio = 0.125,

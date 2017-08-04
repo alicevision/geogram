@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -105,7 +105,7 @@ namespace GEO {
         progress_ = nil;
 	geo_cite("Lloyd82leastsquares");
 	geo_cite("Du:1999:CVT:340312.340319");
-	geo_cite("DBLP:journals/tog/LiuWLSYLY09");	
+	geo_cite("DBLP:journals/tog/LiuWLSYLY09");
     }
 
     CentroidalVoronoiTesselation::~CentroidalVoronoiTesselation() {
@@ -122,7 +122,7 @@ namespace GEO {
     }
 
     void CentroidalVoronoiTesselation::set_points(
-        index_t nb_points, double* points
+        index_t nb_points, const double* points
     ) {
         points_.resize(dimension_ * nb_points);
         for(index_t i = 0; i < points_.size(); i++) {
@@ -182,7 +182,7 @@ namespace GEO {
         vector<double> vertices;
         vector<double> vertices_R3;
 
-        RestrictedVoronoiDiagram::RDTMode mode = 
+        RestrictedVoronoiDiagram::RDTMode mode =
             RestrictedVoronoiDiagram::RDTMode(0);
 
         if(multinerve) {
@@ -207,7 +207,7 @@ namespace GEO {
         // instead.
         index_t nb_vertices = index_t(vertices.size() / dimension_);
         vertices_R3.resize(nb_vertices * 3);
-        if(is_projection_) {   
+        if(is_projection_) {
             double* cur = vertices.data();
             for(index_t v = 0; v < nb_vertices; v++) {
                 vertices_R3[3 * v] = cur[0];
@@ -286,7 +286,7 @@ namespace GEO {
 	    Lloyd_iterations(nb_iter);
 	    return;
 	}
-	
+
         index_t n = index_t(points_.size());
 
         RVD_->set_check_SR(true);

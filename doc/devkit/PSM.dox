@@ -124,6 +124,20 @@ To compile, use:
 \endcode
 (no example program for now)
 
+
+Delaunay
+--------
+
+(src/lib/geogram/delaunay/Delaunay.psm): Sequential and parallel Delaunay 
+triangulation and power diagrams in 2D and 3D. 
+
+To compile, use:
+\code
+  gcc -O3 -fopenmp -frounding-math -ffp-contract=off Delaunay_example.cpp Delaunay_psm.cpp -o Delaunay_example -lm 
+\endcode
+
+
+
 Syntax of a PSM file
 ====================
 

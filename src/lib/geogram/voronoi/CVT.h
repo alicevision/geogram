@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -141,7 +141,7 @@ namespace GEO {
          *  user-defined initialization. It is copied into
          *  an internal vector
          */
-        void set_points(index_t nb_points, double* points);
+        void set_points(index_t nb_points, const double* points);
 
         /**
          * \brief Changes the number of points.
@@ -247,8 +247,8 @@ namespace GEO {
         /**
          * \brief Makes this CentroidalVoronoiTesselation the current one.
          * \details The Optimizer uses global variables, therefore there can
-         *  be only one CentroidalVoronoiTesselation simultaneously active. 
-         *  This function can be used to change the currently active 
+         *  be only one CentroidalVoronoiTesselation simultaneously active.
+         *  This function can be used to change the currently active
          *  CentroidalVoronoiTesselation.
          * \note Most users will not need to use this function.
          * \pre There is no current CentroidalVoronoiTesselation.
@@ -261,8 +261,8 @@ namespace GEO {
         /**
          * \brief Resets the current CentroidalVoronoiTesselation to nil.
          * \details The Optimizer uses global variables, therefore there can
-         *  be only one CentroidalVoronoiTesselation simultaneously active. 
-         *  This function can be used to change the currently active 
+         *  be only one CentroidalVoronoiTesselation simultaneously active.
+         *  This function can be used to change the currently active
          *  CentroidalVoronoiTesselation.
          * \note Most users will not need to use this function.
          * \pre This CentroidalVoronoiTesselation is the current one.
@@ -271,7 +271,7 @@ namespace GEO {
             geo_assert(instance_ == this);
             instance_ = nil;
         }
-        
+
     public:
         /**
          * \brief Callback for the numerical solver.
@@ -431,7 +431,7 @@ namespace GEO {
 
         /**
          * \brief Constrains the locked points.
-         * \details Zeroes the gradient relative to the components 
+         * \details Zeroes the gradient relative to the components
          *  of locked points.
          * \param[in,out] g gradient of the objective function
          */
@@ -465,7 +465,7 @@ namespace GEO {
 
         IntegrationSimplex_var simplex_func_;
           /**< \brief Integration simplex used by custom codes, e.g. LpCVT */
-        
+
     private:
         /** \brief Forbids construction by copy. */
         CentroidalVoronoiTesselation(const thisclass& rhs);

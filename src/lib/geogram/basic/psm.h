@@ -56,7 +56,11 @@
 #include <iostream>
 #include <string>
 
+#ifndef GEOGRAM_PSM
 #define GEOGRAM_PSM
+#endif
+
+#ifndef GEOGRAM_BASIC_ASSERT
 
 #define geo_assert(x) assert(x)
 #define geo_range_assert(x, min_val, max_val) \
@@ -81,7 +85,17 @@
 #define geo_parano_range_assert(x, min_val, max_val)
 #endif
 
+#endif
+
+#ifndef geo_cite
 #define geo_cite(x)
+#endif
+
+#ifndef geo_cite_with_info
+#define geo_cite_with_info(x,y)
+#endif
+
+#ifndef GEOGRAM_BASIC_LOGGER
 
 namespace GEO {
     namespace Logger {
@@ -100,17 +114,15 @@ namespace GEO {
     
 }
 
+#endif
+
 #ifndef FPG_UNCERTAIN_VALUE
 #define FPG_UNCERTAIN_VALUE 0
 #endif
 
 
-/*
- * If geogram/basic/thread_sync.h was not included in
- * psm, then use dummy fallback.
- */
-#ifndef GEOGRAM_SPINLOCK_INIT
 
+#ifndef GEOGRAM_BASIC_THREAD_SYNC
 #define GEOGRAM_SPINLOCK_INIT 0
 
 namespace GEO {
@@ -131,7 +143,8 @@ namespace GEO {
         }
     }
 }
-
 #endif
+
+#define GEOGRAM_WITH_PDEL
 
 #endif

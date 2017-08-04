@@ -37,213 +37,282 @@
  */
 
 #include <exploragram/optimal_transport/optimal_transport_2d.h>
-#include <exploragram/optimal_transport/linear_least_squares.h>
-
-#include <geogram/mesh/mesh_io.h>
-#include <geogram/mesh/mesh_reorder.h>
-#include <geogram/mesh/mesh_geometry.h>
-
-#include <geogram/voronoi/CVT.h>
 #include <geogram/voronoi/generic_RVD_vertex.h>
-#include <geogram/delaunay/delaunay_2d.h>
-
-#include <geogram/points/nn_search.h>
-#include <geogram/numerics/optimizer.h>
-#include <geogram/numerics/lbfgs_optimizers.h>
-
+#include <geogram/voronoi/generic_RVD_polygon.h>
+#include <geogram/voronoi/RVD_callback.h>
+#include <geogram/basic/geometry.h>
+#include <geogram/basic/geometry_nd.h>
 #include <geogram/basic/stopwatch.h>
-#include <geogram/basic/file_system.h>
-#include <geogram/basic/process.h>
-#include <geogram/basic/progress.h>
-#include <geogram/basic/permutation.h>
-#include <geogram/basic/command_line.h>
 
-#include <geogram/NL/nl.h>
-
-#include <geogram/bibliography/bibliography.h>
 
 namespace {
     using namespace GEO;
 
     /**
-     * \brief Computes the contribution of a simplex.
+     * \brief A RVDPolygonCallback that stores the Restricted Voronoi
+     *  Diagram in a Mesh.
+     */
+    class ComputeRVDPolygonCallback : public RVDPolygonCallback {
+    public:
+	ComputeRVDPolygonCallback(OptimalTransportMap2d* OTM, Mesh* target) :
+	    OTM_(OTM), target_(target) {
+	    target_->clear();
+	    target_->vertices.set_dimension(3);
+	}
+
+	virtual void operator() (
+	    index_t v,
+	    index_t t,
+	    const GEOGen::Polygon& P
+	) const {
+	    geo_argused(v);
+	    geo_argused(t);
+	    index_t voffset = target_->vertices.nb();
+	    FOR(i,P.nb_vertices()) {
+		const double* p = P.vertex(i).point();
+		target_->vertices.create_vertex(
+		    vec3(p[0], p[1], 0.0).data()
+		);
+	    }
+	    index_t f = target_->facets.create_polygon(P.nb_vertices());
+	    FOR(i,P.nb_vertices()) {
+		target_->facets.set_vertex(f,i,voffset+i);
+	    }
+	}
+	
+    private:
+	OptimalTransportMap2d* OTM_;
+	Mesh* target_;
+    };
+    
+    /**
+     * \brief Computes the contribution of a polygon
      *  to the objective function minimized by a semi-discrete
      *  optimal transport map.
      */
-    class OTMIntegrationSimplex : public IntegrationSimplex {
+    class OTMPolygonCallback :
+	public OptimalTransportMap::Callback,
+	public RVDPolygonCallback {
     public:
-    public:
+	
 	/**
-	 * \brief OTMIntegrationSimplex constructor.
-	 * \param[in] OTM a pointer to the OptimalTransportMap3d
+	 * \brief OTMPolygonCallback constructor.
+	 * \param[in] OTM a pointer to the OptimalTransportMap2d
 	 */
-	OTMIntegrationSimplex(OptimalTransportMap2d* OTM) :
-	    IntegrationSimplex(OTM->mesh(), false, 0, 0, nil),            
-	    OTM_(OTM),
-	    Newton_step_(false),
-	    w_(nil),
-	    mg_(nil)
-	{
-	    weighted_ =
-		OTM->mesh().vertices.attributes().is_defined("weight");
+	OTMPolygonCallback(OptimalTransportMap2d* OTM) :
+	    OptimalTransportMap::Callback(OTM) {
 	}
 
-
 	/**
-	 * \copydoc IntegrationSimplex::eval()
+	 * \copydoc RVDPolygonCallback::operator()
 	 */
-	virtual double eval(
-	    index_t center_vertex_index,
-	    const GEOGen::Vertex& v0,
-	    const GEOGen::Vertex& v1,
-	    const GEOGen::Vertex& v2,
+	virtual void operator() (
+	    index_t v,
 	    index_t t,
-	    index_t t_adj = index_t(-1),
-	    index_t v_adj = index_t(-1)
-	) {
-	    geo_argused(center_vertex_index);
-	    geo_argused(v0);
-	    geo_argused(v1);
-	    geo_argused(v2);
+	    const GEOGen::Polygon& P
+	) const {
 	    geo_argused(t);
-	    geo_argused(t_adj);
-	    geo_argused(v_adj);
-	    return 0.0;
-	}
+	    double F = 0.0;
+	    Thread* thread = Thread::current();
+	    index_t current_thread_id = (thread == nil) ? 0 : thread->id();
 
-	
-        /**
-         * \brief Sets where centroids should be output.
-         * \details This computes mass times centroid. The mass can
-         *  be retreived (and used to divide) from the gradient.
-         * \param[in] mg a pointer to the 3*nb_points coordinates
-         *  of the centroids times the mass of the Laguerre cells
-         */
-        void set_Laguerre_centroids(double* mg) {
-            mg_ = mg;
-        }
+	    for(index_t i1=0; i1<P.nb_vertices(); ++i1) {
+		index_t i2 = i1 + 1;
+		if(i2 == P.nb_vertices()) {
+		    i2 = 0;
+		}
+		// Note:
+		// It is P.vertex(i2).adjacent_seed(),
+		// not P.vertex(i1).adjacent_seed() !!!
+		F += eval_simplex(
+		    v, &P.vertex(i1), &P.vertex(i2),
+		    index_t(P.vertex(i2).adjacent_seed())
+		);
+	    }
+	    const_cast<OTMPolygonCallback*>(this)->
+		funcval_[current_thread_id] += F;
 
-	/**
-	 * \brief Tests whether Laguerre centroids should be computed.
-	 * \retval true if Laguerre centroids should be computed.
-	 * \retval false otherwise.
-	 */
-	bool has_Laguerre_centroids() const {
-	    return (mg_ != nil);
-	}
+	    if(mg_ != nil) {
 
-	double* Laguerre_centroids() {
-	    return mg_;
-	}
-	
-        /**
-         * \brief Sets the weight vector
-         * \param[in] w a const pointer to the weight vector.
-         * \param[in] n the number of weights in the weight vector.
-         */
-        void set_w(const double* w, index_t n) { 
-            w_ = w;
-	    geo_argused(n);
-        }
+		double mgx = 0.0;
+		double mgy = 0.0;
+		const GEOGen::Vertex& V0 = P.vertex(0);
+		const double* p0 = V0.point();
+		for(index_t i=1; i+1<P.nb_vertices(); ++i) {
+		    const GEOGen::Vertex& V1 = P.vertex(i);
+		    const double* p1 = V1.point();
+		    const GEOGen::Vertex& V2 = P.vertex(i+1);
+		    const double* p2 = V2.point();
+		    double m = Geom::triangle_area(vec2(p0),vec2(p1),vec2(p2));
+		    mgx += m * (p0[0] + p1[0] + p2[0]) / 3.0;
+		    mgy += m * (p0[1] + p1[1] + p2[1]) / 3.0;
+		}
+		
+		if(spinlocks_ != nil) {
+		    spinlocks_->acquire_spinlock(v);
+		}
 
-	void set_Newton_step(bool Newton) {
-	    Newton_step_ = Newton;
-	}
-
-	bool is_Newton_step() const {
-	    return Newton_step_;
+		mg_[2*v] += mgx;  
+		mg_[2*v+1] += mgy;
+		
+		if(spinlocks_ != nil) {
+		    spinlocks_->release_spinlock(v);
+		}
+	    }
 	}
 
     protected:
 
-    private:
-	OptimalTransportMap2d* OTM_;
-	bool weighted_;
-	bool Newton_step_;
-	const double* w_;
-	double* mg_;
+	/**
+	 * \brief Evaluates the contribution of a simplex in non-weighted mode.
+	 * \details The considered simplex connects one of the Delaunay vertices
+	 *  (\p center_vertex_index) and three other vertices of the 
+	 *  current cell (\p V1, \p V2).
+	 * \param[in] center_vertex_index the index of the current 
+	 *  Delaunay vertex
+	 * \param[in] V1 , V2 three vertices of the current cell
+	 * \param[in] v_adj the index of the Delaunay vertex of the cell 
+	 *  on the other side of (\p V1, \p V2) or index_t(-1) if 
+	 *  there is no such a cell.
+	 */
+	double eval_simplex(
+	    index_t center_vertex_index,
+	    const GEOGen::Vertex* V1,
+	    const GEOGen::Vertex* V2,
+	    index_t v_adj
+	) const {
+	    const double* p0 = OTM_->point_ptr(center_vertex_index);
+	    const double* p1 = V1->point();
+	    const double* p2 = V2->point();
+	    double m = -GEO::Geom::triangle_signed_area(
+		vec2(p0), vec2(p1), vec2(p2)
+	    );
+	    double fT = 0.0;
+	    for(coord_index_t c = 0; c < 2; ++c) {
+		double Uc = p1[c] - p0[c];
+		double Vc = p2[c] - p0[c];
+		fT +=
+		    Uc * Uc +
+		    Vc * Vc +
+		    Uc * Vc ;
+	    }
+                
+	    fT = m * (fT / 6.0 - w_[center_vertex_index]);
+	    
+	    double hij = 0.0;
+	    if(Newton_step_ && v_adj != index_t(-1)) {
+		const double* pj = OTM_->point_ptr(v_adj);
+		hij =
+		    GEO::Geom::distance(p1,p2,2) /
+		    (2.0 * GEO::Geom::distance(p0,pj,2)) ;
+	    }
+
+	    //  Spinlocks are used in multithreading mode, to avoid
+	    // that two threads update g_[center_vertex_index]
+	    // simultaneously.
+	    if(spinlocks_ != nil) {
+		spinlocks_->acquire_spinlock(center_vertex_index);
+	    }
+                
+	    // +m because we maximize F <=> minimize -F
+	    g_[center_vertex_index] += m;
+	    if(Newton_step_) {
+		// ... but here -m because Newton step =
+		//  solve H p = -g    (minus g in the RHS).
+		OTM_->add_i_right_hand_side(
+		    center_vertex_index,-m
+                );
+
+		// -hij because we maximize F <=> minimize -F
+		if(::fabs(hij) > 1e-8) {
+		    // Diagonal is positive, extra-diagonal
+		    // coefficients are negative,
+		    // this is a convex function.
+		    OTM_->add_ij_coefficient(
+			center_vertex_index, v_adj, -hij
+                    );
+		    OTM_->add_ij_coefficient(
+			center_vertex_index, center_vertex_index, hij
+                    );
+		}
+	    }
+
+	    if(spinlocks_ != nil) {
+		spinlocks_->release_spinlock(center_vertex_index);
+	    }
+	    
+            // -fT because we maximize F <=> minimize -F
+            return -fT;
+	}
     };
+
+    /********************************************************************/
 }
 
 namespace GEO {
 
-    OptimalTransportMap2d* OptimalTransportMap2d::instance_ = nil;
-    
     OptimalTransportMap2d::OptimalTransportMap2d(
-        Mesh* mesh, const std::string& delaunay_in, bool BRIO
-    ) : mesh_(mesh) {
-
-	geo_cite("DBLP:conf/compgeom/AurenhammerHA92");
-	geo_cite("DBLP:journals/cgf/Merigot11");
-	geo_cite("journals/M2AN/LevyNAL15");
-
-	std::string delaunay = delaunay_in;
-	if(delaunay == "default") {
-	    delaunay = "BPOW2d";
-	}
-	
-        epsilon_regularization_ = 0.0;
-
-        // Mesh is supposed to be embedded in 3 dim (with
-        // 3rd dimension set to zero).
-        geo_assert(mesh->vertices.dimension() == 0);
-
-        // Note: we represent power diagrams as 3d Voronoi diagrams
-        delaunay_ = Delaunay::create(3, delaunay);
-
-        RVD_ = RestrictedVoronoiDiagram::create(delaunay_, mesh_);
-        RVD_->set_volumetric(true);
-        RVD_->set_check_SR(true);
-        RVD_->create_threads();
-        
-        //   No need to reorder vertices if BRIO is activated since
-        // vertices are then already reordered.
-        if(BRIO) {
-            RVD_->delaunay()->set_reorder(false);
-        }
-
-        newton_ = true;
-        
-        instance_ = nil;
-        lambda_p_ = 0.0;
-        total_mass_ = 0.0;
-        current_call_iter_ = 0;
-        epsilon_ = 0.01;
-        level_ = 0;
-        
-        save_RVD_iter_ = false;
-        save_RVD_last_iter_ = false;
-        show_RVD_seed_ = false;
-        current_iter_ = 0;
-        
-        pretty_log_ = false; // CmdLine::get_arg_bool("log:pretty");
-
-        w_did_not_change_ = false;
-
-        measure_of_smallest_cell_ = 0.0;
-
-	integration_simplex_ = new OTMIntegrationSimplex(this);
-
-	Laguerre_centroids_ = nil;
+        Mesh* mesh, const std::string& delaunay, bool BRIO
+    ) :
+	OptimalTransportMap(
+	    2, 
+	    mesh,
+	    (delaunay == "default") ? "BPOW2d" : delaunay,
+	    BRIO
+        ) {
+	callback_ = new OTMPolygonCallback(this);
+	total_mass_ = total_mesh_mass();
     }
 
     OptimalTransportMap2d::~OptimalTransportMap2d() {
     }
     
-    void OptimalTransportMap2d::set_points(
-        index_t nb_points, const double* points
-    ) {
-        // Note: we represent power diagrams as 3d Voronoi diagrams.
-        // The target points are lifted to 3d.
-        points_3d_.resize(nb_points * 3);
-        for(index_t i = 0; i < nb_points; ++i) {
-            points_3d_[i * 3] = points[i * 3];
-            points_3d_[i * 3 + 1] = points[i * 3 + 1];
-            points_3d_[i * 3 + 2] = 0.0;
+    void OptimalTransportMap2d::get_RVD(Mesh& RVD_mesh) {
+	ComputeRVDPolygonCallback callback(this, &RVD_mesh);
+	RVD()->for_each_polygon(callback, false, false, false);
+	/*
+	  // NOTE: Does not work, TODO: determine why
+        Attribute<index_t> tet_region(RVD_mesh.cells.attributes(),"region");
+        RVD()->compute_RVD(
+            RVD_mesh,
+            0,             // dim (0 means use default)
+            false,         // borders_only
+            show_RVD_seed_ // integration_simplices
+        );
+	*/
+    }
+
+    void OptimalTransportMap2d::compute_Laguerre_centroids(double* centroids) {
+        vector<double> g(nb_points(), 0.0);
+        Memory::clear(centroids, nb_points()*sizeof(double)*2);
+
+	callback_->set_Laguerre_centroids(centroids);
+	callback_->set_g(g.data());
+	{
+	    Stopwatch* W = nil;
+	    if(newton_ && verbose_) {
+		W = new Stopwatch("RVD");
+		Logger::out("OTM") << "In RVD (centroids)..." << std::endl;
+	    }
+	    RVD_->for_each_polygon(
+		*dynamic_cast<RVDPolygonCallback*>(callback_), false, false, true
+	    );
+	    if(newton_ && verbose_) {
+		delete W;
+	    }
+	}
+	
+	callback_->set_Laguerre_centroids(nil);	    
+	
+        for(index_t v=0; v<nb_points(); ++v) {
+            centroids[2*v  ] /= g[v];
+            centroids[2*v+1] /= g[v];
         }
-        weights_.assign(nb_points, 0);
-        total_mass_ = 0.0;
-        
+    }
+
+    double OptimalTransportMap2d::total_mesh_mass() const {
+	double result = 0.0;
+	
         //   This is terribly confusing, the parameters for
         // a power diagram are called "weights", and the
         // standard attribute name for vertices density is
@@ -270,472 +339,15 @@ namespace GEO {
                     vertex_mass[mesh_->facets.vertex(t, 2)] 
                 ) / 3.0;
             }
-            total_mass_ += tri_mass;
+            result += tri_mass;
         }
-        lambda_p_ = total_mass_ / double(nb_points);
+	return result;
     }
 
-
-    // See http://arxiv.org/abs/1603.05579
-    // Kitawaga, Merigot, Thibert,
-    // A Newton Algorithm for semi-discrete OT
-    
-    void OptimalTransportMap2d::optimize_full_Newton(
-        index_t max_iterations, index_t n
-    ) {
-        if(n == 0) {
-            n = index_t(points_3d_.size() / 3);
-        }
-
-        vector<double> pk(n);
-        vector<double> xk(n);
-        vector<double> gk(n);
-        double fk=0.0;
-        bool converged = false;
-
-        double epsilon0 = 0.0;
-        w_did_not_change_ = false;
-        
-        for(index_t k=0; k<max_iterations; ++k) {
-            std::cerr << "======= k = " << k << std::endl;
-            xk=weights_;
-
-            new_linear_system(n);
-            eval_func_grad_Hessian(n,xk.data(),fk,gk.data());
-            
-            if(k == 0) {
-                newiteration();
-            }
-            
-            if(epsilon0 == 0.0) {
-                epsilon0 = 0.5 * geo_min(measure_of_smallest_cell_, lambda_p_);
-            }
-            
-            Logger::out("OTM") << "   Solving linear system" << std::endl;
-
-            solve_linear_system(pk.data());
-
-            std::cerr << "Line search ..." << std::endl;
-
-            w_did_not_change_ = false;
-            
-            double alphak = 1.0;
-            double gknorm = g_norm_;
-            
-            for(index_t inner_iter=0; inner_iter < 100; ++inner_iter) {
-                std::cerr << "      inner iter = " << inner_iter << std::endl;
-
-                // weights = xk + alphak pk
-                for(index_t i=0; i<n; ++i) {
-                    weights_[i] = xk[i] + alphak * pk[i];
-                }
-
-		OTMIntegrationSimplex* smplx_otm =
-		    dynamic_cast<OTMIntegrationSimplex*>(integration_simplex_.get());
-                // Compute cell measures and nbZ.
-		if(Laguerre_centroids_ != nil) {
-		    smplx_otm->set_Laguerre_centroids(Laguerre_centroids_);
-		}
-		
-		funcgrad(n,weights_.data(),fk,gk.data());
-
-		if(Laguerre_centroids_ != nil) {
-		    smplx_otm->set_Laguerre_centroids(nil);
-		}
-		
-                std::cerr << "cell measure :"
-                          << measure_of_smallest_cell_
-                          << "(>=?)" << epsilon0 << std::endl;
-                std::cerr << "gradient norm:"
-                          << g_norm_ << "(<=?)"
-                          << (1.0 - 0.5*alphak) * gknorm << std::endl;
-                if(
-                    (measure_of_smallest_cell_ >= epsilon0) &&
-                    (g_norm_ <= (1.0 - 0.5*alphak) * gknorm) 
-                ) {
-                    if(g_norm_ < gradient_threshold(n)) {
-                        converged = true;
-                    }
-                    break;
-                } 
-                // Else we halve the step.
-                alphak /= 2.0;
-            }
-            newiteration();
-            if(converged) {
-                break;
-            }
-            // No need to update the power diagram at next iteration,
-            // since we will evaluate the Hessian for the same weight
-            // vector.
-            w_did_not_change_ = true;
-        }
-        if(save_RVD_last_iter_) {
-            save_RVD(current_iter_);
-        }
-    }
-    
-    void OptimalTransportMap2d::optimize(index_t max_iterations) {
-        level_ = 0;
-        if(newton_) {
-            optimize_full_Newton(max_iterations);
-            return;
-        }
-    }
-
-    void OptimalTransportMap2d::get_RVD(Mesh& RVD_mesh) {
-        RVD_mesh.clear();
-        Attribute<index_t> tet_region(RVD_mesh.cells.attributes(),"region");
-        RVD()->compute_RVD(
-            RVD_mesh,
-            0,             // dim (0 means use default)
-            false,         // borders_only
-            show_RVD_seed_ // integration_simplices
-        );
-    }
-
-    void OptimalTransportMap2d::compute_Laguerre_centroids(double* centroids) {
-        vector<double> g(nb_points(), 0.0);
-        Memory::clear(centroids, nb_points()*sizeof(double)*2);
-
-	OTMIntegrationSimplex* smplx_otm =
-	    dynamic_cast<OTMIntegrationSimplex*>(integration_simplex_.get());
-	
-	smplx_otm->set_Laguerre_centroids(centroids);
-	{
-	    double f = 0.0;
-	    Stopwatch* W = nil;
-	    if(newton_) {
-		W = new Stopwatch("RVD");
-		Logger::out("OTM") << "In RVD (centroids)..." << std::endl;
-	    }
-	    RVD_->compute_integration_simplex_func_grad(f, g.data(), smplx_otm);
-	    if(newton_) {
-		delete W;
-	    }
-	}
-	
-	smplx_otm->set_Laguerre_centroids(nil);	    
-	
-        for(index_t v=0; v<nb_points(); ++v) {
-            centroids[2*v  ] /= g[v];
-            centroids[2*v+1] /= g[v];
-        }
-    }
-    
-    void OptimalTransportMap2d::save_RVD(index_t id) {
-	/*
-        if(scene_graph_ != nil) {
-            MeshGrob* RVD_mesh =
-                MeshGrob::find_or_create(
-                    scene_graph_, "RVD_" + String::to_string(id)
-                );
-            get_RVD(*RVD_mesh);
-            RVD_mesh->update();
-        } else */ {
-            Mesh RVD_mesh;
-            get_RVD(RVD_mesh);
-            MeshIOFlags flags;
-            flags.set_attribute(MESH_CELL_REGION);
-            flags.set_attribute(MESH_FACET_REGION);            
-            mesh_save(
-                RVD_mesh,
-                "RVD_" + String::to_string(id) + ".geogram",
-                flags
-            );
-        }
-    }
-
-    void OptimalTransportMap2d::funcgrad(
-        index_t n, double* w, double& f, double* g
-    ) {
-
-	OTMIntegrationSimplex* smplx_otm =
-	    dynamic_cast<OTMIntegrationSimplex*>(integration_simplex_.get());
-	
-        bool is_Newton_step = smplx_otm->is_Newton_step();	    
-        
-        // For now, always compute function and gradient
-        bool update_fg = true;
-        
-        // Delaunay triangulation is only updated if function and
-        // gradient is evaluated. If only Hessian needs to be evaluated,
-        // then it is at the same point as the latest function and gradient
-        // evaluation (see Yang Liu's CVT-Newton code).
-        if(update_fg && !w_did_not_change_) {
-            // Step 1: determine the 4d embedding from the weights
-            double W = 0.0;
-            for(index_t p = 0; p < n; ++p) {
-                W = geo_max(W, w[p]);
-            }
-            for(index_t p = 0; p < n; ++p) {
-                points_3d_[3 * p + 2] = ::sqrt(W - w[p]);
-            }
-        
-            // Step 2: compute function and gradient
-            {
-		Stopwatch* W = nil;
-		if(newton_) {
-		    W = new Stopwatch("Power diagram");
-		    Logger::out("OTM") << "In power diagram..." << std::endl;
-		}
-                delaunay_->set_vertices(n, points_3d_.data());
-		if(newton_) {
-		    delete W;
-		}
-            }
-        }
-
-        if(is_Newton_step) {
-            update_sparsity_pattern();
-        }
-        
-        if(g == nil) {
-            if(pretty_log_) {
-                CmdLine::ui_clear_line();
-                CmdLine::ui_message(last_stats_ + "\n");
-            }
-            return;
-        }
-        
-        if(update_fg) {
-            f = 0.0;
-            for(index_t p = 0; p < n; ++p) {
-                g[p] = 0.0;
-            }
-        }
-
-	smplx_otm->set_w(w,n);
-
-	if(smplx_otm->has_Laguerre_centroids()) {
-	    Memory::clear(smplx_otm->Laguerre_centroids(), nb_points()*sizeof(double)*3);	    
-	}
-	
-	{
-	    Stopwatch* W = nil;
-	    if(newton_) {
-		W = new Stopwatch("RVD");
-		Logger::out("OTM") << "In RVD (funcgrad)..." << std::endl;
-	    }
-	    RVD_->compute_integration_simplex_func_grad(
-                f, g, smplx_otm
-            );
-	    if(newton_) {
-		delete W;
-	    }
-	}
-
-	if(smplx_otm->has_Laguerre_centroids()) {
-	    for(index_t v=0; v<nb_points(); ++v) {
-		smplx_otm->Laguerre_centroids()[2*v  ] /= g[v];
-		smplx_otm->Laguerre_centroids()[2*v+1] /= g[v];
-	    }
-	}
-	
-        if(update_fg) {
-            measure_of_smallest_cell_ = Numeric::max_float64();
-            for(index_t i=0; i<n; ++i) {
-                measure_of_smallest_cell_ =
-                    geo_min(measure_of_smallest_cell_, g[i]);
-            }
-        }
-        
-        if(update_fg) {
-            for(index_t p = 0; p < n; ++p) {
-                f += lambda_p_ * w[p];
-                // Note: we minimize -f instead of maximizing f,
-                // therefore, in the paper:
-                //    g[p] = lambda_p - mesure(power cell associated with p)
-                //
-                // What is programmed:
-                //    g[p] = mesure(power cell associated with p) - lambda_p
-                g[p] -= lambda_p_;
-
-                if(is_Newton_step) {
-                    // Newton step: solve H deltax = -g
-                    // (note the minus sign on the right hand side)
-                    // g[p] -= lamnda_p_ -> RHS[p] += lambda_p_
-                    add_i_right_hand_side(p, lambda_p_);
-                }
-            }
-        }
-
-        double max_diff = 0.0;
-        double avg_diff = 0.0;
-        index_t nb_empty_cells = 0;
-        for(index_t p = 0; p < n; ++p) {
-            double cur_diff = ::fabs(g[p]);
-            max_diff = geo_max(max_diff, cur_diff);
-            avg_diff += cur_diff / double(n);
-            // At this step, g[p] = mu(Lag(p)) - lambda_p
-            // We add lambda_p to retreive mu(Lag(p)) and to
-            // count empty cells if mu(Lap(p)) is smaller than
-            // a threshold.
-            if(::fabs(g[p] + lambda_p_) < 1e-10) {
-                nb_empty_cells++;
-            }
-        }
-
-        
-        // Regularisation: minimize the squared norm of the weight
-        // vector to remove a translational degree of freedom.
-        // It seems to make the overall convergence slower
-        // (but this may be due to a wrong
-        // scaling between the different levels, to be investigated...)
-        if(epsilon_regularization_ != 0.0) {
-            if(update_fg) {                                    
-                for(index_t p = 0; p < n; ++p) {
-                    f += 0.5 * epsilon_regularization_ * lambda_p_ * w[p]*w[p];
-                    g[p] += epsilon_regularization_ * lambda_p_ * w[p];
-                }
-            }
-            if(is_Newton_step) {
-                for(index_t p = 0; p < n; ++p) {
-                    add_ij_coefficient(
-                        p,p,epsilon_regularization_*lambda_p_
-                    );
-                    add_i_right_hand_side(
-                        p,-epsilon_regularization_*lambda_p_*w[p]
-                    );
-                }
-            }
-        }
-
-        
-        double gNorm = 0.0;
-        for(index_t i = 0; i < n; ++i) {
-            gNorm += geo_sqr(g[i]);
-        }
-        gNorm = ::sqrt(gNorm);
-
-        nbZ_ = nb_empty_cells;
-        
-        std::ostringstream str;
-        if(pretty_log_) {
-            if(level_ == 0) {
-                str << "o-[OTM         ] " ;
-            } else {
-                str << "o-[OTM Lvl." << level_ << "   ] " ;
-            }
-        } else {
-            if(level_ == 0) {
-                str << "   OTM      : " ;
-            } else {
-                str << "   OTM Lvl." << level_ << ": " ;
-            }
-        }
-        
-        str << "iter=" << current_call_iter_
-            << " nbZ=" << nb_empty_cells
-            //                << " f=" << f
-            //                << " avg_diff=" << avg_diff
-            //                << " max_diff=" << max_diff
-            << " g=" << gNorm
-            << " f=" << f 
-            << " threshold=" << gradient_threshold(n);
-        last_stats_ = str.str();
-
-        g_norm_ = gNorm;
-        
-        // "custom task progress" (clears the standard message
-        // and replaces it with another one).
-        if(pretty_log_) {
-            if(current_call_iter_ != 0) {
-                CmdLine::ui_clear_line();
-            }
-            CmdLine::ui_message(str.str());
-        } else {
-            str << " f=" << f;
-            CmdLine::ui_message(str.str() + "\n");
-        }
-        ++current_call_iter_;
-    }
-
-    void OptimalTransportMap2d::eval_func_grad_Hessian(
-        index_t n, const double* w, double& f, double* g
-    ) {
-	OTMIntegrationSimplex* smplx_otm =
-	    dynamic_cast<OTMIntegrationSimplex*>(integration_simplex_.get());
-	smplx_otm->set_Newton_step(true);
-	funcgrad(n,(double*)w,f,g);
-	smplx_otm->set_Newton_step(false);
-    }
-    
-/************************************************************/
-
-    // TODO: use OpenNL buffers to avoid data copy and allocation.
-    // TODO: in the Euler code, see if we do not have duplicated computations, i.e.
-    //    - Power diagrams when leaving and entering iteration ?
-    //    - Centroids: do we restart a RVD computation ?
-    
-    void OptimalTransportMap2d::update_sparsity_pattern() {
-        // Does nothing for now,
-	// (we let OpenNL discover the sparsity pattern)
-	// Tryed smarter things, but was not faster...
-    }
-
-    void OptimalTransportMap2d::new_linear_system(index_t n) {
-        nlNewContext();
-            
-        bool use_SUPERLU = false;
-        
-        if(use_SUPERLU) {
-            nlInitExtension("SUPERLU");
-        }
-
-	nlEnable(NL_VERBOSE);
-	
-        nlSolverParameteri(NL_NB_VARIABLES, NLint(n));
-        if(use_SUPERLU) {
-            nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);
-        } else {
-            nlSolverParameteri(NL_SOLVER, NL_CG);
-            nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
-            nlSolverParameteri(NL_SYMMETRIC, NL_TRUE);
-            nlSolverParameterd(NL_THRESHOLD, 0.001);
-            nlSolverParameteri(NL_MAX_ITERATIONS, 1000);                
-        }
-        nlBegin(NL_SYSTEM);
-        nlBegin(NL_MATRIX);
-    }
-
-    void OptimalTransportMap2d::solve_linear_system(double* x) {
-        nlEnd(NL_MATRIX);
-        nlEnd(NL_SYSTEM);
-        nlSolve();
-        // Query and display OpenNL stats.
-        NLint n;
-        nlGetIntegerv(NL_NB_VARIABLES, &n);
-        {
-            int used_iters;
-            double elapsed_time;
-            double gflops;
-            double error;
-            nlGetIntegerv(NL_USED_ITERATIONS, &used_iters);
-            nlGetDoublev(NL_ELAPSED_TIME, &elapsed_time);
-            nlGetDoublev(NL_GFLOPS, &gflops);
-            nlGetDoublev(NL_ERROR, &error);                
-            std::cerr << "   "
-                      << used_iters << " iters in "
-                      << elapsed_time << " seconds "
-                      << gflops << " GFlop/s"
-                      << "  ||Ax-b||/||b||="
-                      << error
-                      << std::endl;
-        }
-        for(NLint i=0; i<n; ++i) {
-            x[i] = nlGetVariable(NLuint(i));
-        }
-        nlDeleteContext(nlGetCurrent());
-    }
-
-    void OptimalTransportMap2d::newiteration() {
-        //xxx std::cerr << "newiteration" << std::endl;
-        if(save_RVD_iter_) {
-            std::cerr << "  save iter" << std::endl;
-            save_RVD(current_iter_);
-        }
-        ++current_iter_;
+    void OptimalTransportMap2d::call_callback_on_RVD() {
+	RVD_->for_each_polygon(
+	    *dynamic_cast<RVDPolygonCallback*>(callback_),false,false,true
+	);
     }
     
     /**********************************************************************/
@@ -745,10 +357,14 @@ namespace GEO {
         index_t nb_points,
         const double* points,
         double* centroids,
-	bool parallel_pow
+	bool parallel_pow,
+	Mesh* RVD
     ) {
 	geo_argused(parallel_pow); // Not implemented yet.
-	
+
+	// Omega can be either 2d or 3d with third coordinate set to
+	// zero.
+	index_t omega_dim_backup = omega->vertices.dimension();
         omega->vertices.set_dimension(3);
 
         // false = no BRIO
@@ -766,7 +382,13 @@ namespace GEO {
         OTM.set_epsilon(0.01);
 	OTM.set_Laguerre_centroids(centroids);
         OTM.optimize(1000);
-        omega->vertices.set_dimension(3);        
+
+	if(RVD != nil) {
+	    OTM.get_RVD(*RVD);
+	}
+	
+        omega->vertices.set_dimension(omega_dim_backup);
+
     }
 
     

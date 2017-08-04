@@ -267,7 +267,7 @@ namespace GEO {
           */
          void find_conflict_zone_iterative(
              const double* p, index_t t,
-             index_t& t_bndry, index_t& f_bndry,
+             index_t& t_bndry, index_t& e_bndry,
              index_t& first, index_t& last
          );
 
@@ -839,6 +839,7 @@ namespace GEO {
                             pv[0],pv[1],pv[2],p,h0,h1,h2,h
                        ) > 0) ;
             }
+
             return (PCK::in_circle_2d_SOS(pv[0], pv[1], pv[2], p) > 0);
         }
 

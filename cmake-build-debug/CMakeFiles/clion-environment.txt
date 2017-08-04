@@ -1,2 +1,0 @@
-Options: 
-CMake: 3.8.2@/usr/local/bin/cmake

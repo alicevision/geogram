@@ -87,10 +87,6 @@ namespace GEO {
      * \param[out] result the intersection in symbolic
      *  form, as TriangleRegion pairs. There can be
      *  between 0 and 6 intersection pairs in the result.
-     * \param[in] degenerate if true, then input triangles can be
-     *  degenerate (i.e. with three vertices aligned, or three vertices
-     *  equal). If not, then a degenerate triangle may trigger an assertion
-     *  failure.
      * \retval true if there is a non-degenerate intersection
      * \retval false otherwise. Degenerate intersection cases are:
      *  - one vertex in common

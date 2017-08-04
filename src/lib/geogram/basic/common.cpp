@@ -80,27 +80,34 @@ namespace GEO {
 #ifdef GEO_OS_UNIX
         setenv("LC_NUMERIC","POSIX",1);
 #endif
-        
+
+#ifndef GEOGRAM_PSM						
         Environment* env = Environment::instance();
         env->set_value("version", VORPALINE_VERSION);
         env->set_value("release_date", VORPALINE_BUILD_DATE);
         env->set_value("SVN revision", VORPALINE_SVN_REVISION);        
-
+#endif
+	
         Logger::initialize();
         Process::initialize();
         Progress::initialize();
         CmdLine::initialize();
         PCK::initialize();
         Delaunay::initialize();
-	Biblio::initialize();
 
+#ifndef GEOGRAM_PSM		
+	Biblio::initialize();
+#endif
         atexit(GEO::terminate);
 
+#ifndef GEOGRAM_PSM	
         mesh_io_initialize();
-        
+#endif
+	
         // Clear last system error
         errno = 0;
 
+#ifndef GEOGRAM_PSM		
         // Register attribute types that can be saved into files.
         geo_register_attribute_type<Numeric::uint8>("bool");                
         geo_register_attribute_type<char>("char");        
@@ -111,7 +118,8 @@ namespace GEO {
 
         geo_register_attribute_type<vec2>("vec2");
         geo_register_attribute_type<vec3>("vec3");
-
+#endif
+	
 #ifdef GEO_OS_EMSCRIPTEN
         
         // This mounts the local file system when an emscripten-compiled
@@ -142,7 +150,11 @@ namespace GEO {
         }
 
         PCK::terminate();
+	
+#ifndef GEOGRAM_PSM					
 	Biblio::terminate();
+#endif
+	
         Progress::terminate();
         Process::terminate();
         CmdLine::terminate();

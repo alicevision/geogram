@@ -1829,7 +1829,7 @@ namespace GEO {
 	    if(s != ZERO) {
 		return s;
 	    }
-	    return Sign(-side3_exact_SOS(p0, p1, p2, p3, p0, p1, p2, 3));
+	    return Sign(-side3_exact_SOS(p0, p1, p2, p3, p0, p1, p2, 2));
         }
 
         Sign GEOGRAM_API in_circle_3d_SOS(
@@ -1883,7 +1883,6 @@ namespace GEO {
             const double* p2, const double* p3, 
             double h0, double h1, double h2, double h3
 	) {
-	    geo_assert_not_reached; // Not implemented yet.
             Sign result = Sign(
                 side3_2dlifted_2d_filter(
                     p0, p1, p2, p3, h0, h1, h2, h3

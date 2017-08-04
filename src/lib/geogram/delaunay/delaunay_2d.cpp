@@ -71,7 +71,7 @@ namespace {
      *  coordinates
      * \retval false otherwise
      */
-    bool points_are_identical(
+    bool points_are_identical_2d(
         const double* p1,
         const double* p2
     ) {
@@ -229,18 +229,10 @@ namespace GEO {
 
         //   Sort the vertices spatially. This makes localisation
         // faster.
-	//   Hilbert/Brio not implemented yet in 2D...
         if(do_reorder_) {
-	    /*
-            compute_BRIO_order_2d(
-                nb_vertices, vertex_ptr(0), reorder_, dimension_
+            compute_BRIO_order(
+                nb_vertices, vertex_ptr(0), reorder_, 2, dimension_
             );
-	    */
-            reorder_.resize(nb_vertices);
-            for(index_t i = 0; i < nb_vertices; ++i) {
-                reorder_[i] = i;
-            }
-	    std::random_shuffle(reorder_.begin(), reorder_.end());
 	} else {
             reorder_.resize(nb_vertices);
             for(index_t i = 0; i < nb_vertices; ++i) {
@@ -685,8 +677,8 @@ namespace GEO {
                     if(thread_safe) {
                         Process::release_spinlock(lock);
                     }
-                    for(index_t le = 0; le < 3; ++le) {
-                        orient[le] = POSITIVE;
+                    for(index_t tle = 0; tle < 3; ++tle) {
+                        orient[tle] = POSITIVE;
                     }
                     return t_next;
                 }
@@ -786,7 +778,7 @@ namespace GEO {
     
     void Delaunay2d::find_conflict_zone_iterative(
         const double* p, index_t t_in,
-        index_t& t_bndry, index_t& f_bndry,
+        index_t& t_bndry, index_t& e_bndry,
         index_t& first, index_t& last
     ) {
 
@@ -818,7 +810,7 @@ namespace GEO {
                 // and t2 is not in conflict. 
                 // We keep a reference to a tet on the boundary
                 t_bndry = t;
-                f_bndry = le;
+                e_bndry = le;
                 // Mark t2 as visited (but not conflict)
                 mark_triangle(t2);
             }
@@ -927,7 +919,7 @@ namespace GEO {
         iv1 = 1;
         while(
             iv1 < nb_vertices() &&
-            points_are_identical(
+            points_are_identical_2d(
                 vertex_ptr(iv0), vertex_ptr(iv1)
             )
         ) {

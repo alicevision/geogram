@@ -588,8 +588,9 @@ namespace GEO {
                 return false;
             }
 
+#ifndef GEOGRAM_PSM	    
 	    nlInitialize(argc, argv);
-
+#endif
 	    if(
 		CmdLine::arg_is_declared("nl:CUDA") &&
 		CmdLine::get_arg_bool("nl:CUDA")

@@ -96,14 +96,17 @@ namespace {
 	    geo_debug_assert(i<3);
 	    return vertex_[i];
 	}
+	
         double TX(int i) const {
 	    geo_debug_assert(i<3);
 	    return TX_[i]; 
 	}
+	
         double TY(int i) const {
 	    geo_debug_assert(i<3);
 	    return TY_[i];
 	}
+	
         bool is_flat() const {
 	    return is_flat_ ;
 	}

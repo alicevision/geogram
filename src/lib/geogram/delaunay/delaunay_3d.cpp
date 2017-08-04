@@ -70,7 +70,7 @@ namespace {
      *  coordinates
      * \retval false otherwise
      */
-    bool points_are_identical(
+    bool points_are_identical_3d(
         const double* p1,
         const double* p2
     ) {
@@ -89,7 +89,7 @@ namespace {
      * \retval true if \p p1, \p p2 and \p p3 are colinear
      * \retbal false otherwise
      */
-    bool points_are_colinear(
+    bool points_are_colinear_3d(
         const double* p1,
         const double* p2,
         const double* p3
@@ -277,7 +277,7 @@ namespace GEO {
         // faster.
         if(do_reorder_) {
             compute_BRIO_order(
-                nb_vertices, vertex_ptr(0), reorder_, dimension_
+                nb_vertices, vertex_ptr(0), reorder_, 3, dimension_
             );
         } else {
             reorder_.resize(nb_vertices);
@@ -994,7 +994,7 @@ namespace GEO {
         iv1 = 1;
         while(
             iv1 < nb_vertices() &&
-            points_are_identical(
+            points_are_identical_3d(
                 vertex_ptr(iv0), vertex_ptr(iv1)
             )
         ) {
@@ -1007,7 +1007,7 @@ namespace GEO {
         iv2 = iv1 + 1;
         while(
             iv2 < nb_vertices() &&
-            points_are_colinear(
+            points_are_colinear_3d(
                 vertex_ptr(iv0), vertex_ptr(iv1), vertex_ptr(iv2)
             )
         ) {

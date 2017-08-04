@@ -62,12 +62,193 @@
 
 namespace {
     using namespace GEO;
-    // local user functions to be put here
+    
+   /**
+    * \brief Loads points from a file.
+    * \param[in] points_filename the name of the file with the points.
+    *  -If the example was compiled with the Geogram library, then any
+    *  mesh file handled by Geogram can be used.
+    *  -if the example was compiled with Delaunay_psm (single file), then
+    *  the file should be ASCII, with one point per line.
+    * \param[in] dimension number of coordinates of the points.
+    * \param[out] points the loaded points, in a single vector of coordinates.
+    *  In the end, the number of loaded points is points.size()/dimension.
+    */
+    bool load_points(
+	const std::string& points_filename,
+	index_t dimension,
+	vector<double>& points
+	) {
+#ifdef GEOGRAM_PSM
+	// Simple data input: one point per line, coordinates in ASCII
+	LineInput input(points_filename);
+	if(!input.OK()) {
+	    return false;
+	}
+	while(!input.eof() && input.get_line()) {
+	    input.get_fields();
+	    if(input.nb_fields() == dimension) {
+		for(index_t c=0; c<dimension; ++c) {
+		    points.push_back(input.field_as_double(c));
+		}
+	    }
+	}
+#else
+	// Using Geogram mesh I/O
+	Mesh M;
+	MeshIOFlags flags;
+	flags.reset_element(MESH_FACETS);
+	flags.reset_element(MESH_CELLS);
+	if(!mesh_load(points_filename, M, flags)) {
+	    return false;
+	}
+	M.vertices.set_dimension(dimension);
+	index_t nb_points = M.vertices.nb();
+	points.resize(nb_points * dimension);
+	Memory::copy(
+	    points.data(),
+	    M.vertices.point_ptr(0),
+	    M.vertices.nb()*dimension*sizeof(double)
+	);
+#endif
+	return true;
+    }
+
+   /**
+    * \brief Saves a Delaunay triangulation to a file.
+    * \param[in] delaunay a pointer to the Delaunay triangulation.
+    * \param[in] filename the name of the file to be saved.
+    *  -If the example was compiled with the Geogram library, then any
+    *  mesh file handled by Geogram can be used.
+    *  if the example was compiled with Delaunay_psm (single file), then
+    *  the points and vertices of the triangulation are output in ASCII.
+    * \param[in] convex_hull_only if true, then only the triangles on the
+    *  convex hull are output.
+    */
+    void save_Delaunay(
+	Delaunay* delaunay, const std::string& filename,
+	bool convex_hull_only = false
+    ) {
+	vector<index_t> tri2v;
+	
+	if(convex_hull_only) {
+	    
+	    // The convex hull can be efficiently traversed only if infinite
+	    // tetrahedra are kept.
+	    geo_assert(delaunay->keeps_infinite());
+	    
+	    // The convex hull can be retrieved as the finite facets
+	    // of the infinite cells (note: it would be also possible to
+	    // throw away the infinite cells and get the convex hull as
+	    // the facets adjacent to no cell). Here we use the infinite
+	    // cells to show an example with them.
+	    
+	    
+	    // This block is just a sanity check
+	    {
+		for(index_t t=0; t < delaunay->nb_finite_cells(); ++t) {
+		    geo_debug_assert(delaunay->cell_is_finite(t));
+		}
+		
+		for(index_t t=delaunay->nb_finite_cells();
+		    t < delaunay->nb_cells(); ++t) {
+		    geo_debug_assert(delaunay->cell_is_infinite(t));
+		}
+	    }
+	    
+	    // This iterates on the infinite cells
+	    for(
+		index_t t = delaunay->nb_finite_cells();
+		t < delaunay->nb_cells(); ++t
+	     ) {
+		for(index_t lv=0; lv<4; ++lv) {
+		    signed_index_t v = delaunay->cell_vertex(t,lv);
+		    if(v != -1) {
+			tri2v.push_back(index_t(v));
+		    }
+		}
+	    }
+	}
+	
+#ifdef GEOGRAM_PSM
+	// Simple data output: output vertices and simplices
+	
+	Logger::out("Delaunay") << "Saving output to " << filename << std::endl;
+	std::ofstream out(filename.c_str());
+	
+	out << delaunay->nb_vertices() << " vertices" << std::endl;
+	for(index_t v=0; v < delaunay->nb_vertices(); ++v) {
+	    for(index_t c=0; c < delaunay->dimension(); ++c) {
+		out << delaunay->vertex_ptr(v)[c] << " ";
+	    }
+	    out << std::endl;
+	}
+	if(convex_hull_only) {
+	    out << tri2v.size()/3 << " simplices" << std::endl;
+	    for(index_t t=0; t<tri2v.size()/3; ++t) {
+		out << tri2v[3*t] << " "
+		    << tri2v[3*t+1] << " "
+		    << tri2v[3*t+2] << std::endl;
+	    }
+	} else {
+	    out << delaunay->nb_cells() << " simplices" << std::endl;
+	    for(index_t t=0; t<delaunay->nb_cells(); ++t) {
+		for(index_t lv=0; lv<delaunay->cell_size(); ++lv) {
+		    out << delaunay->cell_vertex(t,lv) << " ";
+		}
+		out << std::endl;
+	    }
+	}
+	
+#else
+	// Using Geogram mesh I/O: copy Delaunay into a Geogram
+	// mesh and save it to disk.
+	
+	Mesh M_out;
+	vector<double> pts(delaunay->nb_vertices() * 3);
+	for(index_t v = 0; v < delaunay->nb_vertices(); ++v) {
+	    pts[3 * v] = delaunay->vertex_ptr(v)[0];
+	    pts[3 * v + 1] = delaunay->vertex_ptr(v)[1];
+	    pts[3 * v + 2] =
+		(delaunay->dimension() >= 3) ? delaunay->vertex_ptr(v)[2] : 0.0;
+	}
+	
+	if(convex_hull_only) {
+	    M_out.facets.assign_triangle_mesh(3, pts, tri2v, true);
+	} else if(delaunay->dimension() == 3) {
+	    vector<index_t> tet2v(delaunay->nb_cells() * 4);
+	    for(index_t t = 0; t < delaunay->nb_cells(); ++t) {
+	    tet2v[4 * t] = index_t(delaunay->cell_vertex(t, 0));
+	    tet2v[4 * t + 1] = index_t(delaunay->cell_vertex(t, 1));
+	    tet2v[4 * t + 2] = index_t(delaunay->cell_vertex(t, 2));
+	    tet2v[4 * t + 3] = index_t(delaunay->cell_vertex(t, 3));
+	    }
+	    M_out.cells.assign_tet_mesh(3, pts, tet2v, true);
+	} else if(delaunay->dimension() == 2) {
+	    tri2v.resize(delaunay->nb_cells() * 3);
+	    for(index_t t = 0; t < delaunay->nb_cells(); ++t) {
+		tri2v[3 * t] = index_t(delaunay->cell_vertex(t, 0));
+		tri2v[3 * t + 1] = index_t(delaunay->cell_vertex(t, 1));
+		tri2v[3 * t + 2] = index_t(delaunay->cell_vertex(t, 2));
+	    }
+	    M_out.facets.assign_triangle_mesh(3, pts, tri2v, true);
+	}
+	M_out.show_stats();
+	
+	Logger::div("Saving the result");
+	MeshIOFlags flags;
+	flags.set_element(MESH_FACETS);            
+	flags.set_element(MESH_CELLS);
+	mesh_save(M_out, filename, flags);
+#endif    
+    }
+    
 }
 
 int main(int argc, char** argv) {
     using namespace GEO;
 
+    // Needs to be called once.
     GEO::initialize();
 
     try {
@@ -102,25 +283,13 @@ int main(int argc, char** argv) {
         std::string points_filename = filenames[0];
 
         std::string output_filename =
-            filenames.size() >= 2 ? filenames[1] : std::string("out.meshb");
+            filenames.size() >= 2 ? filenames[1] : std::string("out.mesh");
 
         bool output = (output_filename != "none");
 
         Logger::div("Data I/O");
 
         Logger::out("I/O") << "Output = " << output_filename << std::endl;
-
-        Mesh M_in;
-        Mesh M_out;
-
-        {
-            MeshIOFlags flags;
-            flags.reset_element(MESH_FACETS);
-            flags.reset_element(MESH_CELLS);
-            if(!mesh_load(points_filename, M_in, flags)) {
-                return 1;
-            }
-        }
 
         bool convex_hull_only = CmdLine::get_arg_bool("convex_hull");
         index_t dimension = index_t(CmdLine::get_arg_int("dimension"));
@@ -129,122 +298,63 @@ int main(int argc, char** argv) {
         if(del == "default") {
             if(dimension == 3) {
                 if(DelaunayFactory::has_creator("PDEL")) {
+  		    // PDEL = Parallel 3D Delaunay
                     CmdLine::set_arg("algo:delaunay", "PDEL");
                 } else {
+		    // BDEL = Sequential 3D Delaunay
                     CmdLine::set_arg("algo:delaunay", "BDEL");
                 }
             } else if(dimension == 2) {
-                CmdLine::set_arg("algo:delaunay", "triangle");                
+	        // BDEL2d = Sequential 2D Delaunay
+                CmdLine::set_arg("algo:delaunay", "BDEL2d");                
             }
         }
-
-        if(convex_hull_only && dimension != 3) {
-            Logger::err("Delaunay")
-                << "Convex hull only implemented in dimension 3"
-                << std::endl;
-            return 1;
-        }
-        
-        Logger::div("Computing 3D Delaunay triangulation");
 
         Logger::out("Delaunay")
             << "Using " << CmdLine::get_arg("algo:delaunay") << std::endl;
 
+        // Note: To create a parallel Delaunay 3D, one can use directly:
+        // Delaunay_var delaunay = Delaunay::create(3,"PDEL") instead
+        // of the line below (that uses the command line to select the
+        // implementation of Delaunay).
         Delaunay_var delaunay = Delaunay::create(coord_index_t(dimension));
 
-        M_in.vertices.set_dimension(dimension);
-        
-        {
-            Stopwatch Wdel("Delaunay");
+	//   If we want the convex hull, we keep the infinite facets,
+	// because the convex hull can be retreived as the finite facets
+	// of the infinite cells (note: it would be also possible to
+	// throw away the infinite cells and get the convex hull as
+	// the facets adjacent to no cell).
+	if(convex_hull_only) {
+	    delaunay->set_keeps_infinite(true);
+	}
 
-            //   If we want the convex hull, we keep the infinite facets,
-            // because the convex hull can be retreived as the finite facets
-            // of the infinite cells (note: it would be also possible to
-            // throw away the infinite cells and get the convex hull as
-            // the facets adjacent to no cell).
-            if(convex_hull_only) {
-                delaunay->set_keeps_infinite(true);
-            }
-            
-            delaunay->set_vertices(
-                M_in.vertices.nb(), M_in.vertices.point_ptr(0)
-            );
-        }
+	vector<double> points;
+	
+	if(!load_points(points_filename, dimension, points)) {
+	    Logger::err("Delaunay") << "Could not load points" << std::endl;
+	    return 1;
+	}
 
+	index_t nb_points = points.size() / dimension;
+	
+	Logger::out("Delaunay")
+	    << "Loaded " << nb_points << " points" << std::endl;
+	
+	{
+	    Stopwatch Wdel("Delaunay");
+	    // Note: this does not transfer ownership of memory, caller
+	    // is still responsible of the memory of the points (here the
+    	    // vector<double>). No memory is copied, Delaunay just keeps
+	    // a pointer.
+	    delaunay->set_vertices(nb_points, points.data());
+	}
+	
         Logger::out("Delaunay") << delaunay->nb_cells() << " tetrahedra"
             << std::endl;
 
         if(output) {
-            vector<double> pts(delaunay->nb_vertices() * 3);
-            for(index_t v = 0; v < delaunay->nb_vertices(); ++v) {
-                pts[3 * v] = delaunay->vertex_ptr(v)[0];
-                pts[3 * v + 1] = delaunay->vertex_ptr(v)[1];
-                pts[3 * v + 2] = (dimension == 3) ? delaunay->vertex_ptr(v)[2] : 0.0;
-            }
-
-            if(convex_hull_only) {
-                
-                // The convex hull can be retrieved as the finite facets
-                // of the infinite cells (note: it would be also possible to
-                // throw away the infinite cells and get the convex hull as
-                // the facets adjacent to no cell). Here we use the infinite
-                // cells to show an example with them.
-
-
-                // This block is just a sanity check
-                {
-                    for(index_t t=0; t < delaunay->nb_finite_cells(); ++t) {
-                        geo_debug_assert(delaunay->cell_is_finite(t));
-                    }
-                
-                    for(index_t t=delaunay->nb_finite_cells();
-                        t < delaunay->nb_cells(); ++t) {
-                        geo_debug_assert(delaunay->cell_is_infinite(t));
-                    }
-                }
-                
-                vector<index_t> tri2v;
-
-                // This iterates on the infinite cells
-                for(
-                    index_t t = delaunay->nb_finite_cells();
-                    t < delaunay->nb_cells(); ++t
-                ) {
-                    for(index_t lv=0; lv<4; ++lv) {
-                        signed_index_t v = delaunay->cell_vertex(t,lv);
-                        if(v != -1) {
-                            tri2v.push_back(index_t(v));
-                        }
-                    }
-                }
-                M_out.facets.assign_triangle_mesh(3, pts, tri2v, true);
-                
-            } else if(dimension == 3) {
-                vector<index_t> tet2v(delaunay->nb_cells() * 4);
-                for(index_t t = 0; t < delaunay->nb_cells(); ++t) {
-                    tet2v[4 * t] = index_t(delaunay->cell_vertex(t, 0));
-                    tet2v[4 * t + 1] = index_t(delaunay->cell_vertex(t, 1));
-                    tet2v[4 * t + 2] = index_t(delaunay->cell_vertex(t, 2));
-                    tet2v[4 * t + 3] = index_t(delaunay->cell_vertex(t, 3));
-                }
-                M_out.cells.assign_tet_mesh(3, pts, tet2v, true);
-            } else if(dimension == 2) {
-                vector<index_t> tri2v(delaunay->nb_cells() * 3);
-                for(index_t t = 0; t < delaunay->nb_cells(); ++t) {
-                    tri2v[3 * t] = index_t(delaunay->cell_vertex(t, 0));
-                    tri2v[3 * t + 1] = index_t(delaunay->cell_vertex(t, 1));
-                    tri2v[3 * t + 2] = index_t(delaunay->cell_vertex(t, 2));
-                }
-                M_out.facets.assign_triangle_mesh(3, pts, tri2v, true);
-            }
-            M_out.show_stats();
-                
-            Logger::div("Saving the result");
-            MeshIOFlags flags;
-            flags.set_element(MESH_FACETS);            
-            flags.set_element(MESH_CELLS);
-            mesh_save(M_out, output_filename, flags);
-        }
+	    save_Delaunay(delaunay, output_filename, convex_hull_only);
+	}
     }
     catch(const std::exception& e) {
         std::cerr << "Received an exception: " << e.what() << std::endl;

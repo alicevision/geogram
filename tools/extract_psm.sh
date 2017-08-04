@@ -165,6 +165,7 @@ EOF
 extract_header() {
     echo "   generating" $PSM_HEADER ...
     cat <<EOF >$PSM_HEADER
+#define GEOGRAM_PSM
 #ifndef GEO_STATIC_LIBS
 #define GEO_DYNAMIC_LIBS
 #endif
@@ -212,12 +213,10 @@ extract_example() {
 	COMPILER=g++
     fi
     echo "   generating $PSM_EXAMPLE ..."
-    cat <<EOF >> $PSM_EXAMPLE
+    cat <<EOF > $PSM_EXAMPLE
 /*
  * To compile under Linux: 
- *   $COMPILER -O $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -ldl -lm
- * To compile under Linux with static linking:
- *   $COMPILER -O -DGEO_STATIC_LIBS $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -lm
+ *   $COMPILER -O3 -fopenmp -frounding-math -ffp-contract=off $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -ldl -lm
  */
 EOF
     echo >> $PSM_EXAMPLE     

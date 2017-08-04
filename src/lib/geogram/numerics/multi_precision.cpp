@@ -964,6 +964,7 @@ namespace GEO {
         const double* p1, const double* p2, coord_index_t dim
     ) {
         geo_debug_assert(capacity() >= sq_dist_capacity(dim));
+	geo_debug_assert(dim > 0);
         if(dim == 1) {
             double d0, d1;
             two_diff(p1[0], p2[0], d1, d0);

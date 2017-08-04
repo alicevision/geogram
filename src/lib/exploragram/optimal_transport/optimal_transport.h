@@ -43,49 +43,23 @@
 #include <exploragram/basic/common.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/voronoi/RVD.h>
-#include <geogram/voronoi/integration_simplex.h>
 #include <geogram/delaunay/delaunay.h>
+#include <geogram/NL/nl.h>
 #include <geogram/third_party/HLBFGS/HLBFGS.h>
 
 /**
  * \file exploragram/optimal_transport/optimal_transport.h
- * \brief Solver for semi-discrete optimal transport (
- *  multilevel and Newton).
+ * \brief Base class for semi-discrete optimal transport.
  */
-
-namespace OGF {
-    class SceneGraph;
-}
 
 namespace GEO {
     class CentroidalVoronoiTesselation;
-    class SparseMatrix;
 
-    /**
-     * \brief Computes the centroids of the Laguerre cells that
-     *  correspond to optimal transport.
-     * \param[in] omega a reference to the mesh that represents the
-     *  domain
-     * \param[in] nb_points number of points
-     * \param[in] points a pointer to the coordinates of the points
-     * \param[out] centroids a pointer to the computed centroids of 
-     *  the Laguerre cells that correspond to the optimal transport of
-     *  the uniform measure to the points
-     * \param[in] parallel_pow if true, use parallel power diagram algorithm
-     */
-    void EXPLORAGRAM_API compute_Laguerre_centroids(
-        Mesh* omega,
-        index_t nb_points,
-        const double* points,
-        double* centroids,
-	bool parallel_pow=true
-    );
-    
     /**
      * \brief Computes semi-discrete optimal transport maps.
      * \details Computes an optimal transport map between two
-     *  distributions in 3D. The first distribution is represented
-     *  by a 3D tetrahedral mesh. The second distribution is a sum
+     *  distributions. The first distribution is represented
+     *  by a simplicial mesh. The second distribution is a sum
      *  of Diracs.
      *  The algorithm is described in the following references:
      *   - 3D algorithm: http://arxiv.org/abs/1409.1279
@@ -99,18 +73,31 @@ namespace GEO {
     class EXPLORAGRAM_API OptimalTransportMap {
     public:
         /**
-         * \brief Initializes a new OptimalTransportMap.
-         * \param[in] mesh the source distribution, represented as a 3d mesh
-         * \param[in] delaunay factory name of the Delaunay triangulation, one
-	 *  of "PDEL" (parallel), "BPOW" (sequential)
+         * \brief OptimalTransportMap constructor.
+         * \param[in] mesh the source distribution, represented as a nd mesh.
+         * \param[in] delaunay factory name of the Delaunay triangulation.
          * \param[in] BRIO true if vertices are already ordered using BRIO
          */
         OptimalTransportMap(
+	    index_t dimension,
             Mesh* mesh,
-            const std::string& delaunay = "PDEL",
+            const std::string& delaunay = "default",
             bool BRIO = false
         );
 
+	/**
+	 * \brief OptimalTransportMap destructor.
+	 */
+	virtual ~OptimalTransportMap();
+
+	/**
+	 * \brief Gets the dimension.
+	 * \return 2 for 2d, 3 for 3d.
+	 */
+	index_t dimension() const {
+	    return dimension_;
+	}
+	
         /**
          * \brief Gets the mesh.
          * \return a reference to the mesh
@@ -132,11 +119,23 @@ namespace GEO {
         /**
          * \brief Sets the points that define the target distribution.
          * \param[in] nb_points number of points in the target distribution
-         * \param[in] points coordinates of the Diracs centers in the target
+         * \param[in] points an array of size nb_points * dimension() with the
+	 *  coordinates of the Diracs centers in the target
          *  distribution.
+	 * \param[in] stride number of doubles between two consecutive points.
+	 *  If 0 (default), then point coordinates are considered to be packed.
          */
-        void set_points(index_t nb_points, const double* points);
+        void set_points(index_t nb_points, const double* points, index_t stride=0);
 
+	/**
+	 * \brief Specifies a user vector where the centroids of the Laguerre
+	 *  cells will be stored after computing transport.
+	 * \param[out] x a vector of nb points * dimension() doubles.
+	 */
+	void set_Laguerre_centroids(double* x) {
+	    Laguerre_centroids_ = x;
+	}
+	
         /**
          * \brief Sets the maximum error.
          * \param eps acceptable relative deviation for the measure of a
@@ -213,11 +212,12 @@ namespace GEO {
         /**
          * \brief Gets a point.
          * \param[in] i index of the point
-         * \return a const pointer to the coordinates of the 4d point \p i
+         * \return a const pointer to the coordinates of the 
+	 *  (dimension()+1)d point \p i
          */
         const double* point_ptr(index_t i) const {
             geo_debug_assert(i < nb_points());
-            return &(points_4d_[4 * i]);
+            return &(points_dimp1_[dimp1_ * i]);
         }
 
         /**
@@ -244,7 +244,7 @@ namespace GEO {
          * \return the d+1-th coordinate that was computed for point \p i
          */
         double potential(index_t i) const {
-            return points_4d_[4 * i + 3];
+            return points_dimp1_[dimp1_*i + dimension_];
         }
 
         /**
@@ -286,16 +286,13 @@ namespace GEO {
          *  in file "RVD_nnn.geogram".
          * \param[in] x true if each iteration should be saved, 
          *  false otherwise.
-         * \param[in] scene_graph if specified, for each iteration
-         *  an object is created in the specified scene graph,
-         *  else iterations are saved in files.
          * \param[in] show_RVD_seed if true, the seed associated
          *  with each restricted Voronoi cell is connected to it
          * \param[in] last_iter_only if true, only the last iteration
          *  is saved
          */
         void set_save_RVD_iter(
-            bool x, OGF::SceneGraph* scene_graph = nil,
+            bool x, 
             bool show_RVD_seed = false,
             bool last_iter_only = false
         ) {
@@ -305,18 +302,21 @@ namespace GEO {
             } else {
                 save_RVD_iter_ = x;
             }
-            scene_graph_ = scene_graph;
             show_RVD_seed_ = show_RVD_seed;
         }
 
-        void get_RVD(Mesh& M);
+	/**
+	 * \brief Computes a mesh with the restricted Voronoi diagram.
+	 * \param[out] M a reference to the computed restricted Voronoi diagram.
+	 */
+        virtual void get_RVD(Mesh& M) = 0;
 
         /**
          * \brief Computes the centroids of the Laguerre cells.
-         * \param[out] centroids a pointer to the 3*nb_points coordinates
-         *  of the centroids.
+         * \param[out] centroids a pointer to the dimension()*nb_points 
+	 *  coordinates of the centroids.
          */
-        void compute_Laguerre_centroids(double* centroids);
+        virtual void compute_Laguerre_centroids(double* centroids) = 0;
 
         /**
          * \brief Updates the sparsity pattern of the Hessian right after
@@ -335,14 +335,18 @@ namespace GEO {
          * \param[in] i , j the indices of the coefficient
          * \param[in] a the value to be added to the coefficient
          */
-        void add_ij_coefficient(index_t i, index_t j, double a);
+        void add_ij_coefficient(index_t i, index_t j, double a) {
+	    nlAddIJCoefficient(i,j,a);
+	}
 
         /**
          * \brief Adds a coefficient to the right hand side.
          * \param[in] i the index of the coefficient
          * \param[in] a the value to be added to the coefficient
          */
-        void add_i_right_hand_side(index_t i, double a);
+        void add_i_right_hand_side(index_t i, double a) {
+	    nlAddIRightHandSide(i,a);
+	}
         
         /**
          * \brief Solves a linear system.
@@ -355,7 +359,7 @@ namespace GEO {
         /**
          * \brief Callback for the numerical solver.
          */
-        void newiteration();
+        virtual void newiteration();
         
         /**
          * \brief Saves the RVD at each iteration if
@@ -375,6 +379,12 @@ namespace GEO {
          */
         void funcgrad(index_t n, double* w, double& f, double* g);
 
+	/**
+	 * \brief Calls the callback for each intersection between a 
+	 *  Laguerre cell and a simplex of the background mesh.
+	 */
+	virtual void call_callback_on_RVD() = 0;
+	
         /**
          * \brief Computes the objective function, its gradient and its Hessian.
          * \details Gradient and Hessian are used to solve a Newton
@@ -402,19 +412,153 @@ namespace GEO {
             return ::sqrt(double(n) * geo_sqr(epsilon_ * lambda_p_));
         }
 
-    private:
+      public:
+
+	/**
+	 * \brief Base class for the callbacks executed for each intersection
+	 *  between a Laguerre cell and a simplex of the background mesh.
+	 */
+	 class Callback {
+	 public:
+	    /**
+	     * \brief Callback constructor.
+	     * \param[in] OTM a pointer to the OptimalTransportMap
+	     */
+	     Callback(
+	      OptimalTransportMap* OTM
+	     ) : OTM_(OTM),
+	        Newton_step_(false),
+	        n_(0),
+	        w_(nil),
+	        g_(nil),
+		mg_(nil) {
+		weighted_ =
+		    OTM->mesh().vertices.attributes().is_defined("weight");
+	    }
+
+	   /**
+	    * \brief Callback destructor.
+	    */
+	    virtual ~Callback();
+
+	   /**
+	    * \brief Sets where centroids should be output.
+	    * \details This computes mass times centroid. The mass can
+	    *  be retreived (and used to divide) from the gradient.
+	    * \param[in] mg a pointer to the dimension()*nb_points coordinates
+	    *  of the centroids times the mass of the Laguerre cells
+	    */
+	    void set_Laguerre_centroids(double* mg) {
+		mg_ = mg;
+	    }
+
+	   /**
+	    * \brief Tests whether Laguerre centroids should be computed.
+	    * \retval true if Laguerre centroids should be computed.
+	    * \retval false otherwise.
+	    */
+	    bool has_Laguerre_centroids() const {
+		return (mg_ != nil);
+	    }
+
+	    /**
+	     * \brief Gets a pointer to the Laguerre centroids.
+	     * \return a pointer to nb vertices * dimension doubles
+	     *  with the centroids of the Laguerre cells times the mass
+	     *  of the Laguerre cells.
+	     */
+	    double* Laguerre_centroids() {
+		return mg_;
+	    }
+	
+	   /**
+	    * \brief Sets the weight vector
+	    * \param[in] w a const pointer to the weight vector.
+	    * \param[in] n the number of weights in the weight vector.
+	    */
+	    void set_w(const double* w, index_t n) { 
+		w_ = w;
+		n_ = n;
+	    }
+
+	    /**
+	     * \brief Specifies whether current step is a Newton step.
+	     * \details If it is a Newton step, then the Hessian is
+	     *  computed.
+	     * \param[in] Newton true if the current step is a Newton
+	     *  step, false otherwise.
+	     */
+	    void set_Newton_step(bool Newton) {
+		Newton_step_ = Newton;
+	    }
+
+	    /**
+	     * \brief Tests whether the current step is a Newton step.
+	     * \retval true if the current step is a Newton step.
+	     * \retval false otherwise.
+	     */
+	    bool is_Newton_step() const {
+		return Newton_step_;
+	    }
+
+	    /**
+	     * \brief Specifies the number of threads.
+	     * \details This allocates one function value per thread.
+	     * \param[in] nb the number of threads.
+	     */
+	    void set_nb_threads(index_t nb) {
+		funcval_.assign(nb, 0.0);	    
+	    }
+
+	    /**
+	     * \brief Specifies where the gradient should be stored.
+	     * \param[in] g a pointer to an array of nb points doubles.
+	     */
+	    void set_g(double* g) {
+		g_ = g;
+	    }
+	
+	    /**
+	     * \brief Gets the computed value of the objective function.
+	     * \details This sums the contributions of all threads.
+	     * \retval the value of the objective function.
+	     */
+	    double funcval() const {
+		double result = 0.0;
+		FOR(i,funcval_.size()) {
+		    result += funcval_[i];
+		}
+		return result;
+	    }
+	    
+	  protected:
+	    OptimalTransportMap* OTM_;
+	    bool weighted_;
+	    bool Newton_step_;
+	    vector<double> funcval_;
+	    index_t n_;
+	    const double* w_;
+	    double* g_;
+	    double* mg_;
+	};
+	
+      protected:
         static OptimalTransportMap* instance_;
+	index_t dimension_;
+	index_t dimp1_; /**< \brief dimension_ + 1 */
         Mesh* mesh_;
         Delaunay_var delaunay_;
         RestrictedVoronoiDiagram_var RVD_;
-        vector<double> points_4d_;
+        vector<double> points_dimp1_;
         vector<double> weights_;
         double total_mass_;
         double lambda_p_; /**< \brief Value of one of the Diracs */
         double epsilon_;
         /**< \brief Acceptable relative deviation for the measure of a cell */
         index_t current_call_iter_;
-        IntegrationSimplex_var simplex_func_;
+
+	Callback* callback_;
+	
         std::string last_stats_;
         bool pretty_log_;
         index_t level_;
@@ -423,9 +567,8 @@ namespace GEO {
         bool save_RVD_last_iter_;
         bool show_RVD_seed_;
         index_t current_iter_;
-	OGF::SceneGraph* scene_graph_;
-
         bool newton_;
+	bool verbose_;
 
         /**
          * \brief Add a regularization term to remove 
@@ -455,65 +598,9 @@ namespace GEO {
          */
         bool w_did_not_change_;
 
-        /** \brief vertex to tet corner mapping */
-        vector<index_t> v_to_c_;
-
-        /** \brief linked corners incident to same vrtx */
-        vector<index_t> nxt_c_around_v_;
-
-        /** \brief CRS matrix - row pointer */
-        vector<index_t> rowptr_;
-        
-        /** \brief CRS matrix - column index */
-        vector<index_t> colind_;
-
-        /** \brief CRS matrix - value array */
-        vector<double>  val_;
-
-        /** \brief CRS matrix - CRS storage */
-        bool symmetric_storage_;
-        
-        /** \brief right-hand side of the linear system */
-        vector<double>  rhs_;
+	/** \brief If user-specified, then Laguerre centroids are output here */
+	double* Laguerre_centroids_;
     };
-
-
-    /**
-     * \brief Computes a shape that interpolates the two input tet
-     *  meshes.
-     * \details The shape is composed of tetrahedra
-     * \param [in] CVT the Centroidal Voronoi Tesselation
-     *   used to sample the second shape
-     * \param [in] OTM the Optimal Transport Map
-     * \param [out] morph mesh where to store the morphing shape. It uses
-     *   6d coordinates (original location + final location).
-     * \param[in] filter_tets if true, remove the tetrahedra that are outside
-     *   the source mesh.
-     */
-    void EXPLORAGRAM_API compute_morph(
-        CentroidalVoronoiTesselation& CVT,
-        OptimalTransportMap& OTM,
-        Mesh& morph,
-        bool filter_tets=true
-    );
-
-
-    /**
-     * \brief Computes the surface that corresponds to discontinuities
-     *  in the optimal transport map.
-     * \details The surface is determined as the facets of Voronoi cells
-     *  that are adjacent in Pow(X)|M1 but not in Vor(X)|M2 
-     * \param [in] CVT the Centroidal Voronoi Tesselation
-     *   used to sample the second shape M2
-     * \param [in] OTM the Optimal Transport Map with the
-     *   power diagram that samples the first shape M1
-     * \param [out] singular_set where to store the singular surface
-     */
-    void EXPLORAGRAM_API compute_singular_surface(        
-        CentroidalVoronoiTesselation& CVT,
-        OptimalTransportMap& OTM,
-        Mesh& singular_set
-    );
 
 }
 

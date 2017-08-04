@@ -177,7 +177,7 @@ namespace {
      *  coordinates
      * \retval false otherwise
      */
-    bool points_are_identical(
+    bool points_are_identical_3d_(
         const double* p1,
         const double* p2
     ) {
@@ -196,7 +196,7 @@ namespace {
      * \retval true if \p p1, \p p2 and \p p3 are colinear
      * \retbal false otherwise
      */
-    bool points_are_colinear(
+    bool points_are_colinear_3d_(
         const double* p1,
         const double* p2,
         const double* p3
@@ -230,7 +230,7 @@ namespace {
      * \todo check whether orientation is inverted as compared to 
      *   Shewchuk's version.
      */
-    inline Sign orient_3d_inexact(
+    inline Sign orient_3d_inexact_(
         const double* p0, const double* p1,
         const double* p2, const double* p3
     ) {
@@ -630,7 +630,7 @@ namespace GEO {
             iv1 = 1;
             while(
                 iv1 < nb_vertices() &&
-                points_are_identical(
+                points_are_identical_3d_(
                     vertex_ptr(iv0), vertex_ptr(iv1)
                     )
                 ) {
@@ -643,7 +643,7 @@ namespace GEO {
             iv2 = iv1 + 1;
             while(
                 iv2 < nb_vertices() &&
-                points_are_colinear(
+                points_are_colinear_3d_(
                     vertex_ptr(iv0), vertex_ptr(iv1), vertex_ptr(iv2)
                     )
                 ) {
@@ -1594,7 +1594,7 @@ namespace GEO {
                      // convention as in CGAL).
                      const double* pv_bkp = pv[f];
                      pv[f] = p;
-                     Sign ori = orient_3d_inexact(pv[0], pv[1], pv[2], pv[3]);
+                     Sign ori = orient_3d_inexact_(pv[0], pv[1], pv[2], pv[3]);
                      
                      //   If the orientation is not negative, then we cannot
                      // walk towards t_next, and examine the next candidate
@@ -2780,7 +2780,8 @@ namespace GEO {
         // Reorder the points
         if(do_reorder_) {
             compute_BRIO_order(
-                nb_vertices, vertex_ptr(0), reorder_, dimension(),
+                nb_vertices, vertex_ptr(0), reorder_,
+		3, dimension(),
                 64, 0.125,
                 &levels_
             );        

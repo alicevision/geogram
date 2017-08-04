@@ -58,7 +58,7 @@ namespace {
      * \return a formatted string that contains the \p num and its percentage
      * of \p denom
      */
-    std::string percent(index_t num, index_t denom) {
+    std::string percent_str(index_t num, index_t denom) {
         if(denom == 0) {
             return String::to_string(num);
         }
@@ -103,17 +103,17 @@ namespace GEO {
 
         Logger::out("PArrays")
             << "Z1 filling:"
-            << percent(nb_items_in_Z1, Z1_total) << std::endl;
+            << percent_str(nb_items_in_Z1, Z1_total) << std::endl;
 
         if(!static_mode()) {
             Logger::out("PArrays")
-                << "arrays in ZV:" << percent(nb_arrays_in_ZV, nb_arrays_)
+                << "arrays in ZV:" << percent_str(nb_arrays_in_ZV, nb_arrays_)
                 << std::endl;
             Logger::out("PArrays")
-                << "items  in Z1:" << percent(nb_items_in_Z1, nb_items)
+                << "items  in Z1:" << percent_str(nb_items_in_Z1, nb_items)
                 << std::endl;
             Logger::out("PArrays")
-                << "items  in ZV:" << percent(nb_items_in_ZV, nb_items)
+                << "items  in ZV:" << percent_str(nb_items_in_ZV, nb_items)
                 << std::endl;
         }
     }

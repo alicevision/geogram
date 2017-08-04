@@ -68,7 +68,7 @@
 #include <geogram/mesh/mesh_tetrahedralize.h>
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/voronoi/RVD.h>
-#include <geogram/voronoi/RVD_polyhedron_callback.h>
+#include <geogram/voronoi/RVD_callback.h>
 #include <geogram/voronoi/RVD_mesh_builder.h>
 #include <geogram/numerics/predicates.h>
 

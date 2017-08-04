@@ -76,7 +76,7 @@ namespace {
         vector<index_t> sorted_indices;
         compute_BRIO_order(
             CVT.nb_points(), CVT.embedding(0), sorted_indices,
-            CVT.dimension(), threshold, ratio, &levels
+            CVT.dimension(), CVT.dimension(), threshold, ratio, &levels
         );
         Permutation::apply(
             CVT.embedding(0), sorted_indices, 

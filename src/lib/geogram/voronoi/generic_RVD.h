@@ -49,7 +49,7 @@
 #include <geogram/basic/common.h>
 #include <geogram/basic/numeric.h>
 #include <geogram/voronoi/generic_RVD_utils.h>
-#include <geogram/voronoi/RVD_polyhedron_callback.h>
+#include <geogram/voronoi/RVD_callback.h>
 #include <geogram/numerics/predicates.h>
 #include <geogram/mesh/index.h>
 #include <geogram/basic/geometry_nd.h>

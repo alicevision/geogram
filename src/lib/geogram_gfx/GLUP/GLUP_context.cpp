@@ -729,19 +729,42 @@ namespace GLUP {
     }
 
     void Context::stream_immediate_buffers() {
-        for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
-            if(
-                immediate_state_.buffer[i].is_enabled() &&
-                immediate_state_.buffer[i].VBO() != 0
-            ) {
-                stream_buffer_object(
-                    immediate_state_.buffer[i].VBO(),
-                    GL_ARRAY_BUFFER,
-                    immediate_state_.buffer[i].size_in_bytes(),
-                    immediate_state_.buffer[i].data()
-                );
-            }
-        }
+	if(immediate_state_.nb_vertices() == IMMEDIATE_BUFFER_SIZE) {
+	    for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+		if(
+		    immediate_state_.buffer[i].is_enabled() &&
+		    immediate_state_.buffer[i].VBO() != 0
+		) {
+		    stream_buffer_object(
+			immediate_state_.buffer[i].VBO(),
+			GL_ARRAY_BUFFER,
+			immediate_state_.buffer[i].size_in_bytes(),
+			immediate_state_.buffer[i].data()
+		    );
+		}
+	    }
+	} else {
+	    for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+		if(
+		    immediate_state_.buffer[i].is_enabled() &&
+		    immediate_state_.buffer[i].VBO() != 0
+		) {
+		    size_t bytes =
+			immediate_state_.nb_vertices() *
+			immediate_state_.buffer[i].dimension() *
+			sizeof(GLfloat);
+		    glBindBuffer(
+			GL_ARRAY_BUFFER, immediate_state_.buffer[i].VBO()
+		    );
+		    glBufferSubData(
+			GL_ARRAY_BUFFER,
+			0,
+			GLsizeiptr(bytes),
+			immediate_state_.buffer[i].data()
+		    );
+		}
+	    }
+	}
         glBindBuffer(GL_ARRAY_BUFFER,0);        
     }
 
