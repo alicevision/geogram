@@ -212,6 +212,10 @@
 
 /* #define SINGLE */
 
+#ifdef _MSC_VER
+#pragma warning ( disable: 4311 4312 )
+#endif
+
 #ifdef SINGLE
 #define REAL float
 #else /* not SINGLE */

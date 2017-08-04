@@ -1430,7 +1430,9 @@ namespace GEO {
             ET_UINT32=3,
             ET_INT32=4,
             ET_FLOAT32=5,
-            ET_FLOAT64=6
+            ET_FLOAT64=6,
+            ET_VEC2=7,
+            ET_VEC3=8
         };
 
         /**
@@ -1534,7 +1536,7 @@ namespace GEO {
          *  elements.
          * \return one of ET_NONE (if unbound), ET_UINT8,
          *  ET_INT8, ET_UINT32, ET_INT32, ET_FLOAT32, 
-         *  ET_FLOAT64.
+         *  ET_FLOAT64, ET_VEC2, ET_VEC3
          */
         ElementType element_type() const {
             return element_type_;
@@ -1585,7 +1587,13 @@ namespace GEO {
                 break;                
             case ET_FLOAT64:
                 result = get_element<Numeric::float64>(i);
-                break;                
+                break;
+            case ET_VEC2:
+                result = get_element<Numeric::float64>(i,2);
+                break;
+            case ET_VEC3:
+                result = get_element<Numeric::float64>(i,3);
+                break;
             case ET_NONE:
                 geo_assert_not_reached;
             }
@@ -1595,12 +1603,22 @@ namespace GEO {
         /**
          * \brief Tests whether a ReadOnlyScalarAttributeAdapter can
          *  be bound to a given attribute store.
+         * \param[in] store a pointer to the attribute store.
          * \retval true if it can be bound
          * \retval false otherwise
          */
         static bool can_be_bound_to(const AttributeStore* store) {
             return element_type(store) != ET_NONE;
         }
+
+        /**
+         * \brief Gets the number of scalar components per item in an
+         *  AttributeStore.
+         * \param[in] store a pointer to the attribute store.
+         * \return the number of scalar components per item in an
+         *  AttributeStore.
+         */
+        static index_t nb_scalar_elements_per_item(const AttributeStore* store);
         
     protected:
         /**
@@ -1632,12 +1650,21 @@ namespace GEO {
          */
         static ElementType element_type(const AttributeStore* store);
 
-        template <class T> double get_element(index_t i) {
+        /**
+         * \brief Gets an element.
+         * \param[in] i index of the element
+         * \param[in] multiplier multiplier applied to the index before fetching
+         *  the raw pointer.
+         */
+        template <class T> double get_element(index_t i, index_t multiplier=1) {
             geo_debug_assert(is_bound());
             geo_debug_assert(i < size());
-            return double(static_cast<const T*>(store_->data())[
-                i * store_->dimension() + element_index_
-            ]);
+            return double(
+                static_cast<const T*>(store_->data())[
+                    (i * store_->dimension() * multiplier) +
+                    element_index_
+                    ]
+                );
         }
         
     private:

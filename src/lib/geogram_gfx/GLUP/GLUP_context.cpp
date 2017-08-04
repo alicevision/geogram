@@ -138,6 +138,33 @@ namespace GLUP {
     }
 
     bool Context::extension_is_supported(const std::string& extension) {
+#ifndef GEO_OS_EMSCRIPTEN
+        // This is the new way of testing for an extension: first get
+        // the number of extensions, then extension names one extension
+        // at a time using glGetStringi
+        if(use_core_profile_) {
+            if(glGetStringi != 0) {
+                GLuint num_ext;
+                glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_ext);
+                if(num_ext != 0) {
+                    for(GLuint i=0; i<num_ext; ++i) {
+                        const GLubyte* cur_extension =
+                            glGetStringi(GL_EXTENSIONS, i);
+                        if(!strcmp(
+                               extension.c_str(),
+                               (const char*)cur_extension)
+                        ) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+#endif
+
+        // If new way is unsupported or if using an old-style OpenGL
+        // context, then we do it the old way.
         const char* extensions = (const char*)(glGetString(GL_EXTENSIONS));
         if(extensions == nil) {
             return false;
@@ -1354,11 +1381,6 @@ namespace GLUP {
             uniform_state_.toggle[GLUP_DRAW_MESH].get() &&
             primitive_info_[immediate_state_.primitive()].tex_coords_VBO != 0
         ) {
-#ifdef GLUP_DEBUG            
-            Logger::out("dbg") << "Cur VAO = " << glupGetVertexArrayBinding()
-                               << std::endl;
-            Logger::out("dbg") << "Enable vertex attrib array 3" << std::endl;
-#endif            
             glEnableVertexAttribArray(3);
         }
         
@@ -1416,12 +1438,6 @@ namespace GLUP {
             uniform_state_.toggle[GLUP_DRAW_MESH].get() &&
             primitive_info_[immediate_state_.primitive()].tex_coords_VBO != 0
         ) {
-#ifdef GLUP_DEBUG            
-            Logger::out("dbg") << "Cur VAO = " << glupGetVertexArrayBinding()
-                               << std::endl;
-            Logger::out("dbg") << "Disable vertex attrib array 3"
-                               << std::endl;
-#endif            
             glDisableVertexAttribArray(3);
         }
     }

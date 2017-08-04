@@ -113,6 +113,11 @@ Default options
 - Select the 'Release' or 'Debug' (default) configuration (pulldown menu)
 - Build the solution (F7)
 
+Visual Studio 2015 notes: when you install Visual Studio 2015, it does
+not automatically install the C++ compiler. To install it, manually
+create a C++ project in Visual C++, this will download the compiler and
+Windows Desktop development tools (3Gb !!).
+
 Fine tuning
 -----------
 

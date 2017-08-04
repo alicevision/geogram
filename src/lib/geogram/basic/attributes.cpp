@@ -46,6 +46,7 @@
 #include <geogram/basic/attributes.h>
 #include <geogram/basic/permutation.h>
 #include <geogram/basic/string.h>
+#include <geogram/basic/geometry.h>
 #include <algorithm>
 
 namespace GEO {
@@ -333,6 +334,22 @@ namespace GEO {
     
     /************************************************************************/ 
 
+    index_t ReadOnlyScalarAttributeAdapter::nb_scalar_elements_per_item(
+        const AttributeStore* store
+    ) {
+        ElementType et = element_type(store);
+        if(et == ET_NONE) {
+            return 0;
+        }
+        index_t result = store->dimension();
+        if(et == ET_VEC2) {
+            result *= 2;
+        } else if(et == ET_VEC3) {
+            result *= 3;
+        }
+        return result;
+    }
+
     std::string ReadOnlyScalarAttributeAdapter::attribute_base_name(
         const std::string& name
     ) {
@@ -406,6 +423,14 @@ namespace GEO {
             return ET_FLOAT64;
         }
 
+        if(store->element_typeid_name() == typeid(vec2).name()) {
+            return ET_VEC2;
+        }
+
+        if(store->element_typeid_name() == typeid(vec3).name()) {
+            return ET_VEC3;
+        }
+        
         return ET_NONE;
     }
     
@@ -417,11 +442,7 @@ namespace GEO {
         element_index_ = attribute_element_index(name);
         store_ = manager_->find_attribute_store(attribute_base_name(name));
 
-        if(
-            store_ == nil ||
-            element_index_ == index_t(-1) ||
-            element_index_ >= store_->dimension()
-        ) {
+        if(store_ == nil || element_index_ == index_t(-1)) {
             store_ = nil;
             element_index_ = index_t(-1);
             return;
@@ -433,6 +454,15 @@ namespace GEO {
             store_ = nil;
             element_index_ = index_t(-1);
             return;
+        }
+
+        // Test element_index_ validity: should be smaller than
+        // store's dimension (or 2*store dimension if a vec2,
+        // or 3*store's dimension if a vec3)
+        if(element_index_ >= nb_scalar_elements_per_item(store_)) {
+            store_ = nil;
+            element_index_ = index_t(-1);
+            element_type_ = ET_NONE;
         }
         
         register_me(const_cast<AttributeStore*>(store_));                
@@ -455,7 +485,7 @@ namespace GEO {
             return false;
         }
 
-        if(element_index >= store->dimension()) {
+        if(element_index >= nb_scalar_elements_per_item(store)) {
             return false;
         }
 

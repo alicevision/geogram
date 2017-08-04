@@ -46,6 +46,7 @@
 #include <geogram_gfx/glup_viewer/glup_viewer_gui.h>
 #include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/glup_viewer/geogram_logo_256.xpm>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 
 #include <geogram/mesh/mesh_io.h>
@@ -59,6 +60,17 @@
 #ifdef GEO_OS_EMSCRIPTEN
 #include <emscripten.h>
 #endif
+
+#include <geogram_gfx/glup_viewer/colormaps/french.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/black_white.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/viridis.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/rainbow.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/cei_60757.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/inferno.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/magma.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/parula.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/plasma.xpm>
+#include <geogram_gfx/glup_viewer/colormaps/blue_red.xpm>
 
 namespace {
     /**
@@ -824,9 +836,19 @@ namespace GEO {
         white_bg_ = true;
 
         clip_mode_ = GLUP_CLIP_WHOLE_CELLS;
+
+        geogram_logo_texture_ = 0;
     }
 
     Application::~Application() {
+        if(geogram_logo_texture_ != 0) {
+            glDeleteTextures(1, &geogram_logo_texture_);
+        }
+        for(index_t i=0; i<colormaps_.size(); ++i) {
+            if(colormaps_[i].texture != 0) {
+                glDeleteTextures(1, &colormaps_[i].texture);                
+            }
+        }
         geo_assert(instance_ == this);        
         instance_ = nil;
     }
@@ -903,6 +925,18 @@ namespace GEO {
     std::string Application::supported_write_file_extensions() {
         return "";
     }
+
+    ImTextureID Application::convert_to_ImTextureID(GLuint gl_texture_id_in) {
+        // It is not correct to directly cast a GLuint into a void*
+        // (generates warnings), therefore I'm using a union.
+        union {
+            GLuint gl_texture_id;
+            ImTextureID imgui_texture_id;
+        };
+        imgui_texture_id = 0;
+        gl_texture_id = gl_texture_id_in;
+        return imgui_texture_id;
+    }
     
     void Application::browse(const std::string& path) {
         std::vector<std::string> files;
@@ -942,6 +976,7 @@ namespace GEO {
         glup_viewer_add_key_func('z', zoom_in, "Zoom in");
         glup_viewer_add_key_func('Z', zoom_out, "Zoom out");
         glup_viewer_add_toggle('b', &white_bg_, "white background");
+        glup_viewer_add_toggle('L', &lighting_, "lighting");        
         
 #ifdef GEO_OS_EMSCRIPTEN
         {
@@ -951,7 +986,14 @@ namespace GEO {
                 load(all_files[0]);
             }
         }
-#endif        
+#endif
+
+        glGenTextures(1, &geogram_logo_texture_);
+        glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+        glBindTexture(GL_TEXTURE_2D, geogram_logo_texture_);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2DXPM(geogram_logo_256_xpm);
     }
 
     void Application::init_graphics_callback() {
@@ -969,6 +1011,11 @@ namespace GEO {
                 glup_viewer_set_background_color(1.0, 1.0, 1.0);
             } else {
                 glup_viewer_set_background_color(0.0, 0.0, 0.0);
+            }
+            if(instance()->lighting_) {
+                glupEnable(GLUP_LIGHTING);
+            } else {
+                glupDisable(GLUP_LIGHTING);                
             }
             glupClipMode(instance()->clip_mode_);
             instance()->draw_scene();
@@ -1076,7 +1123,7 @@ namespace GEO {
         );
         if(lighting_) {
             ImGui::Checkbox(
-                "edit [l]",
+                "edit light [l]",
                 (bool*)glup_viewer_is_enabled_ptr(GLUP_VIEWER_ROTATE_LIGHT)
             );
         }
@@ -1251,6 +1298,12 @@ namespace GEO {
         ImGui::Separator();
         if(ImGui::BeginMenu("About...")) {
             ImGui::Text("%s : a GEOGRAM application", name_.c_str());
+            ImGui::Image(
+                convert_to_ImTextureID(geogram_logo_texture_),
+                ImVec2(256, 256)
+            );
+            ImGui::Text("\n");            
+            ImGui::Separator();
             ImGui::Text("\n");
             ImGui::Text("GEOGRAM website: ");
             ImGui::Text("http://alice.loria.fr/software/geogram");
@@ -1286,6 +1339,37 @@ namespace GEO {
         }
     }
 
+    void Application::init_colormap(
+        const std::string& name, const char** xpm_data
+    ) {
+        colormaps_.push_back(ColormapInfo());
+        colormaps_.rbegin()->name = name;
+        glGenTextures(1, &colormaps_.rbegin()->texture);
+        glBindTexture(GL_TEXTURE_2D, colormaps_.rbegin()->texture);
+        glTexImage2DXPM(xpm_data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(
+            GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void Application::init_colormaps() {
+        init_colormap("french", french_xpm);
+        init_colormap("black_white", black_white_xpm);
+        init_colormap("viridis", viridis_xpm);
+        init_colormap("rainbow", rainbow_xpm);
+        init_colormap("cei_60757", cei_60757_xpm);
+        init_colormap("inferno", inferno_xpm);
+        init_colormap("magma", magma_xpm);
+        init_colormap("parula", parula_xpm);
+        init_colormap("plasma", plasma_xpm);
+        init_colormap("blue_red", blue_red_xpm);
+    }
+    
     /**********************************************************************/
 
     SimpleMeshApplication::SimpleMeshApplication(
@@ -1318,6 +1402,14 @@ namespace GEO {
         GEO::CmdLine::declare_arg(
             "single_precision", true, "use single precision vertices (FP32)"
         );
+
+        show_attributes_ = false;
+        current_colormap_texture_ = 0;
+        attribute_min_ = 0.0f;
+        attribute_max_ = 0.0f;
+        attribute_ = "vertices.point_fp32[0]";
+        attribute_name_ = "point_fp32[0]";
+        attribute_subelements_ = MESH_VERTICES;
     }
 
     std::string SimpleMeshApplication::supported_read_file_extensions() {
@@ -1327,8 +1419,91 @@ namespace GEO {
     std::string SimpleMeshApplication::supported_write_file_extensions() {
         return file_extensions_;
     }
+
+    void SimpleMeshApplication::autorange() {
+        if(attribute_subelements_ != MESH_NONE) {
+            attribute_min_ = 0.0;
+            attribute_max_ = 0.0;
+            const MeshSubElementsStore& subelements =
+                mesh_.get_subelements_by_type(attribute_subelements_);
+            ReadOnlyScalarAttributeAdapter attribute(
+                subelements.attributes(), attribute_name_
+            );
+            if(attribute.is_bound()) {
+                attribute_min_ = Numeric::max_float32();
+                attribute_max_ = Numeric::min_float32();
+                for(index_t i=0; i<subelements.nb(); ++i) {
+                    attribute_min_ = geo_min(attribute_min_, float(attribute[i]));
+                    attribute_max_ = geo_max(attribute_max_, float(attribute[i]));
+                }
+            } 
+        }
+    }
+
+    std::string SimpleMeshApplication::attribute_names() {
+        return mesh_.get_scalar_attributes();
+    }
+
+    void SimpleMeshApplication::set_attribute(const std::string& attribute) {
+        attribute_ = attribute;
+        std::string subelements_name;
+        String::split_string(
+            attribute_, '.',
+            subelements_name,
+            attribute_name_
+        );
+        attribute_subelements_ =
+            mesh_.name_to_subelements_type(subelements_name);
+        if(attribute_min_ == 0.0f && attribute_max_ == 0.0f) {
+            autorange();
+        } 
+    }
     
     void SimpleMeshApplication::draw_object_properties() {
+        ImGui::Checkbox("attributes", &show_attributes_);
+        if(show_attributes_) {
+            if(attribute_min_ == 0.0f && attribute_max_ == 0.0f) {
+                autorange();
+            } 
+            if(ImGui::Button((attribute_ + "##Attribute").c_str(), ImVec2(-1,0))) {
+                ImGui::OpenPopup("##Attributes");                
+            }
+            if(ImGui::BeginPopup("##Attributes")) {
+                std::vector<std::string> attributes;
+                String::split_string(attribute_names(), ';', attributes);
+                for(index_t i=0; i<attributes.size(); ++i) {
+                    if(ImGui::Button(attributes[i].c_str())) {
+                        set_attribute(attributes[i]);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndPopup();                
+            }
+            ImGui::InputFloat("min",&attribute_min_);
+            ImGui::InputFloat("max",&attribute_max_);
+            if(ImGui::Button("autorange", ImVec2(-1,0))) {
+                autorange();
+            }
+            if(ImGui::ImageButton(
+                   convert_to_ImTextureID(current_colormap_texture_),
+                   ImVec2(115,8))
+            ) {
+                ImGui::OpenPopup("##Colormap");
+            }
+            if(ImGui::BeginPopup("##Colormap")) {
+                for(index_t i=0; i<colormaps_.size(); ++i) {
+                    if(ImGui::ImageButton(
+                           convert_to_ImTextureID(colormaps_[i].texture),
+                           ImVec2(100,8))
+                    ) {
+                        current_colormap_texture_ = colormaps_[i].texture;
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndPopup();
+            }
+        }
+        
         if(mesh_.vertices.dimension() >= 6) {
             ImGui::Separator();
             ImGui::Checkbox(
@@ -1341,7 +1516,9 @@ namespace GEO {
     
         ImGui::Separator();    
         ImGui::Checkbox("Vertices [p]", &show_vertices_);
-        ImGui::SliderFloat("sz.", &vertices_size_, 0.1f, 5.0f, "%.1f");
+        if(show_vertices_) {
+            ImGui::SliderFloat("sz.", &vertices_size_, 0.1f, 5.0f, "%.1f");
+        }
 
         if(mesh_.facets.nb() != 0) {
             ImGui::Separator();
@@ -1418,9 +1595,17 @@ namespace GEO {
         glup_viewer_add_key_func(
             'w', increment_cells_shrink_callback, "Increment shrink"
         );
+
+        init_colormaps();
+        current_colormap_texture_ = colormaps_[3].texture;
     }
     
     void SimpleMeshApplication::draw_scene() {
+
+        if(mesh_gfx_.mesh() == nil) {
+            return;
+        }
+        
         if(glup_viewer_is_enabled(GLUP_VIEWER_IDLE_REDRAW)) {
             anim_time_ = float(
                 sin(double(anim_speed_) * GEO::SystemStopwatch::now())
@@ -1431,6 +1616,16 @@ namespace GEO {
         mesh_gfx_.set_lighting(lighting_);
         mesh_gfx_.set_time(double(anim_time_));
 
+        if(show_attributes_) {
+            mesh_gfx_.set_scalar_attribute(
+                attribute_subelements_, attribute_name_,
+                double(attribute_min_), double(attribute_max_),
+                current_colormap_texture_, 1
+            );
+        } else {
+            mesh_gfx_.unset_scalar_attribute();
+        }
+        
         if(show_vertices_) {
             mesh_gfx_.set_points_size(vertices_size_);
             mesh_gfx_.draw_vertices();
@@ -1473,6 +1668,14 @@ namespace GEO {
         }
 
         if(show_volume_) {
+
+            if(
+                glupIsEnabled(GLUP_CLIPPING) &&
+                glupGetClipMode() == GLUP_CLIP_SLICE_CELLS
+            ) {
+                mesh_gfx_.set_lighting(false);
+            }
+            
             mesh_gfx_.set_shrink(double(cells_shrink_));
             mesh_gfx_.set_draw_cells(GEO::MESH_HEX, show_hexes_);
             if(show_colored_cells_) {
@@ -1481,6 +1684,8 @@ namespace GEO {
                 mesh_gfx_.set_cells_color(0.9f, 0.9f, 0.9f);
             }
             mesh_gfx_.draw_volume();
+
+            mesh_gfx_.set_lighting(lighting_);
         }
     }
 

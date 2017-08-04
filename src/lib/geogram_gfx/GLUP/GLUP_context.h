@@ -1095,7 +1095,7 @@ namespace GLUP {
          */
         void load_matrix(const GLfloat m[16]) {
             copy_vector(matrix_stack_[matrix_mode_].top(), m, 16);
-            matrices_dirty_ = true;
+            flag_matrices_as_dirty();
         }
 
         /**
@@ -1104,7 +1104,7 @@ namespace GLUP {
          */
         void load_identity() {
             load_identity_matrix(matrix_stack_[matrix_mode_].top());
-            matrices_dirty_ = true;
+            flag_matrices_as_dirty();            
         }
 
         /**
@@ -1134,7 +1134,7 @@ namespace GLUP {
          */
         void pop_matrix() {
             matrix_stack_[matrix_mode_].pop();
-            matrices_dirty_ = true;
+            flag_matrices_as_dirty();
         }
         
         /**
@@ -1293,9 +1293,18 @@ namespace GLUP {
          *  needs to be recomputed.
          */
         void flag_lighting_as_dirty() {
+            uniform_buffer_dirty_ = true;            
             lighting_dirty_ = true;
         }
 
+        /**
+         * \brief Indicates that cached matrix information 
+         *  needs to be recomputed.
+         */
+        void flag_matrices_as_dirty() {
+            uniform_buffer_dirty_ = true;            
+            matrices_dirty_ = true;
+        }
 
         /**
          * \brief Gets a pointer to the values of the matrix at the

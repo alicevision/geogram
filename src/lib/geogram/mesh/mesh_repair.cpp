@@ -522,8 +522,6 @@ namespace {
     void repair_connect_facets(
         Mesh& M
     ) {
-        const index_t NO_FACET=index_t(-1);
-        const index_t NO_CORNER=index_t(-1);
         const index_t NON_MANIFOLD=index_t(-2);
 
         // Reset all facet-facet adjacencies.

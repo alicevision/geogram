@@ -82,7 +82,7 @@ endif()
 if(GEOGRAM_WITH_GRAPHICS)
    add_subdirectory(src/lib/geogram_gfx)
    add_subdirectory(src/bin/vorpaview)
-   add_subdirectory(src/bin/geoproc)   
+   add_subdirectory(src/bin/geobox)   
 endif()
 
 add_subdirectory(src/lib/third_party)

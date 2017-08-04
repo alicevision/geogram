@@ -95,6 +95,9 @@ namespace GEO {
         geo_register_attribute_type<index_t>("index_t");
         geo_register_attribute_type<float>("float");
         geo_register_attribute_type<double>("double");
+
+        geo_register_attribute_type<vec2>("vec2");
+        geo_register_attribute_type<vec3>("vec3");                
     }
 
     void terminate() {

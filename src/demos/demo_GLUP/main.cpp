@@ -78,7 +78,6 @@ namespace {
             glup_viewer_add_toggle('m', &mesh_,      "mesh");            
             glup_viewer_add_toggle('t', &texturing_, "texturing");
             glup_viewer_add_toggle('o', &picking_,   "picking");
-            glup_viewer_add_toggle('L', &lighting_,  "lighting");            
             glup_viewer_add_key_func(
                 ' ', &DemoGlupApplication::cycle_primitives_callback,
                 "cycle primitives"
@@ -98,7 +97,9 @@ namespace {
          * \brief DemoGlupApplication destructor.
          */
         virtual ~DemoGlupApplication() {
-            glDeleteTextures(1,&texture_);
+            if(texture_ != 0) {
+                glDeleteTextures(1,&texture_);
+            }
         }
         
         /**
@@ -384,6 +385,8 @@ namespace {
          */
         virtual void init_graphics() {
             Application::init_graphics();
+
+            // Create the texture and initialize its texturing modes
             glGenTextures(1, &texture_);
             glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
             glBindTexture(GL_TEXTURE_2D, texture_);

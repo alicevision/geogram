@@ -764,13 +764,13 @@ void glupRotatef(
 ) {
     GEO_CHECK_GLUP();
     
-    GLfloat l = 1.0f / ::sqrtf(x*x+y*y+z*z);
+    GLUPfloat l = 1.0f / ::sqrtf(x*x+y*y+z*z);
     x *= l;
     y *= l;
     z *= l;
-    GLfloat s = ::sinf(angle);
-    GLfloat c = ::cosf(angle);
-    GLfloat M[16];
+    GLUPfloat s = ::sinf(angle * GLUPfloat(M_PI) / 180.0f);
+    GLUPfloat c = ::cosf(angle * GLUPfloat(M_PI) / 180.0f);
+    GLUPfloat M[16];
 
     M[4*0+0] = x*x*(1.0f-c)+c;
     M[4*0+1] = x*y*(1.0f-c)-z*s;

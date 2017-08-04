@@ -105,10 +105,20 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
         const ImDrawIdx* idx_buffer_offset = 0;
 
         glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
-        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert),
+            (GLvoid*)&cmd_list->VtxBuffer.front(),
+            GL_STREAM_DRAW
+        );
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ElementsHandle);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
+        glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx),
+            (GLvoid*)&cmd_list->IdxBuffer.front(),
+            GL_STREAM_DRAW
+        );
 
         for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); pcmd++)
         {

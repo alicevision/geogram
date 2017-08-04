@@ -107,6 +107,7 @@ namespace GEO {
         attribute_repeat_ = 1;
 
         auto_GL_interop_ = false;
+        ES_profile_ = false;
     }
 
     MeshGfx::~MeshGfx() {
@@ -160,6 +161,17 @@ namespace GEO {
         if(do_animation_) {
             return false;
         }
+
+        // Special case: GLUPES2 can use array mode for triangles, but
+        // not with mesh and not with facet shrink.
+        if(
+            prim == GLUP_TRIANGLES &&
+            ES_profile_ &&
+            (show_mesh_ || shrink_ != 0.0)
+        ) {
+            return false;
+        }
+        
         if(!glupPrimitiveSupportsArrayMode(prim)) {
             return false;
         }
@@ -322,7 +334,7 @@ namespace GEO {
         update_buffer_objects_if_needed();
         
         glupSetColor3fv(GLUP_FRONT_COLOR, mesh_color_);
-        glLineWidth(GLfloat(mesh_width_));
+        glupSetMeshWidth(GLUPint(mesh_width_));
         if(can_use_array_mode(GLUP_LINES) && edges_VAO_ != 0) {
             draw_edges_array();
         } else {
@@ -704,7 +716,7 @@ namespace GEO {
     }
 
     void MeshGfx::draw_surface_mesh_with_lines() {
-        glLineWidth(GLfloat(mesh_width_));
+        glupSetMeshWidth(GLUPint(mesh_width_));        
         glupSetColor3fv(GLUP_FRONT_AND_BACK_COLOR, mesh_color_);
         glupBegin(GLUP_LINES);
         for(index_t f=0; f<mesh_->facets.nb(); ++f) {
@@ -728,7 +740,7 @@ namespace GEO {
         }
         set_GLUP_parameters();
         glupSetColor3fv(GLUP_FRONT_COLOR, mesh_color_);
-        glLineWidth(GLfloat(mesh_border_width_));
+        glupSetMeshWidth(GLUPint(mesh_border_width_));
         glupBegin(GLUP_LINES);
         for(index_t f=0; f<mesh_->facets.nb(); ++f) {
             for(
@@ -1055,6 +1067,8 @@ namespace GEO {
 
         do_animation_ =
             (animate_ && mesh_->vertices.dimension() >= 6);
+
+        ES_profile_ = !strcmp(glupCurrentProfileName(), "GLUPES2");
     }
 
     void MeshGfx::set_GLUP_picking(MeshElementsFlags what) {
@@ -1311,12 +1325,24 @@ namespace GEO {
         }
         size_t element_size = attribute_.attribute_store()->element_size();
         GLint dimension = GLint(attribute_.attribute_store()->dimension());
-        GLsizei stride = GLsizei(element_size) * dimension;
-        const GLvoid* offset = (const GLvoid*)(
-            attribute_.attribute_store()->element_size() *
-            index_t(attribute_.element_index())
-        );
 
+        if(
+            attribute_.element_type() ==
+            ReadOnlyScalarAttributeAdapter::ET_VEC2) {
+            dimension *= 2;
+            element_size /= 2;
+        } else if(attribute_.element_type() ==
+            ReadOnlyScalarAttributeAdapter::ET_VEC3) {
+            dimension *= 3;
+            element_size /= 3;
+        } 
+        
+        GLsizei stride = GLsizei(element_size) * dimension;
+
+        const GLvoid* offset = (const GLvoid*)(
+            element_size * index_t(attribute_.element_index())
+        );
+        
         glupBindVertexArray(VAO);
         glBindBuffer(GL_ARRAY_BUFFER, vertices_attribute_VBO_);
         glEnableVertexAttribArray(2); // 2 = tex coords
@@ -1348,6 +1374,8 @@ namespace GEO {
             );
             break;
         case ReadOnlyScalarAttributeAdapter::ET_FLOAT64:
+        case ReadOnlyScalarAttributeAdapter::ET_VEC2:
+        case ReadOnlyScalarAttributeAdapter::ET_VEC3:                        
 #ifdef GEO_GL_NO_DOUBLES
             Logger::warn("MeshGfx")
                 << "Double precision GL attributes not supported by this arch."

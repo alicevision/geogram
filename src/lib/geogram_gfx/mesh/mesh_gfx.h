@@ -859,6 +859,7 @@ namespace GEO {
         //   If true, copies OpenGL state automatically
         // at each rendering operation.
         bool auto_GL_interop_;
+        bool ES_profile_;
     };
 
 }

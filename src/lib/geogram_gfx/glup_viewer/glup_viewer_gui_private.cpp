@@ -29,8 +29,10 @@
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl3.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
+
 #include <geogram/basic/logger.h>
 #include <geogram/basic/progress.h>
+#include <geogram/basic/command_line.h>
 
 #ifdef GEO_OS_EMSCRIPTEN
 #include <GLFW/glfw3.h>
@@ -69,25 +71,11 @@ void glup_viewer_gui_update() {
     // control of the rendering loop, therefore it is not possible (or I
     // don't know how) to update the graphics during computations.
 #ifndef GEO_OS_EMSCRIPTEN
+    glup_viewer_post_redisplay();    
     if(!glup_viewer_gui_locked) {
         glup_viewer_one_frame();
     }
 #endif    
-}
-
-/***************************************************************************/
-
-static GEO::SmartPointer<GEO::Console> console = nil;
-static GEO::SmartPointer<GEO::StatusBar> status_bar = nil;
-
-void glup_viewer_gui_draw_console() {
-    geo_assert(console != nil);
-    console->draw();
-}
-
-void glup_viewer_gui_draw_status_bar() {
-    geo_assert(status_bar != nil);
-    status_bar->draw();
 }
 
 /***************************************************************************/
@@ -111,16 +99,9 @@ void glup_viewer_gui_init(GLFWwindow* w) {
     style.WindowRounding = 0.0f;
     style.FrameRounding = 10.0f;
     style.GrabRounding = 10.0f;
-    
-    console = new GEO::Console;
-    GEO::Logger::instance()->register_client(console);
-
-    status_bar = new GEO::StatusBar;
-    GEO::Progress::set_client(status_bar);
 }
 
 void glup_viewer_gui_cleanup() {
-    console = nil;
 #ifdef GEO_GL_LEGACY        
     if(vanillaGL) {    
         ImGui_ImplGlfw_Shutdown();
@@ -130,6 +111,7 @@ void glup_viewer_gui_cleanup() {
         ImGui_ImplGlfwGL3_Shutdown();        
     }
 }
+
 
 void glup_viewer_gui_begin_frame() {
     glup_viewer_gui_locked = true;
@@ -155,6 +137,9 @@ void glup_viewer_gui_end_frame() {
     // the Logger or the ProgressLogger), then ImGui calls are correctly
     // nested.
     GEO::Command::flush_queue();
+    if(glup_viewer_gui_takes_input()) {
+        glup_viewer_post_redisplay();
+    }
 }
 
 int glup_viewer_gui_takes_input() {
@@ -170,6 +155,7 @@ int glup_viewer_gui_takes_input() {
 void glup_viewer_gui_mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods
 ) {
+    glup_viewer_post_redisplay();
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
         ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
@@ -183,6 +169,7 @@ void glup_viewer_gui_mouse_button_callback(
 void glup_viewer_gui_scroll_callback(
     GLFWwindow* window, double xoffset, double yoffset
 ) {
+    glup_viewer_post_redisplay();    
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
         ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
@@ -196,6 +183,7 @@ void glup_viewer_gui_scroll_callback(
 void glup_viewer_gui_key_callback(
     GLFWwindow* window, int key, int scancode, int action, int mods
 ) {
+    glup_viewer_post_redisplay();    
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
         ImGui_ImplGlFw_KeyCallback(window, key, scancode, action, mods);
@@ -207,6 +195,7 @@ void glup_viewer_gui_key_callback(
 }
 
 void glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c) {
+    glup_viewer_post_redisplay();    
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
         ImGui_ImplGlfw_CharCallback(window, c);
@@ -218,9 +207,19 @@ void glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c) {
 }
 
 void glup_viewer_gui_resize(int width, int height) {
+    glup_viewer_post_redisplay();    
     ImGui::GetIO().DisplaySize.x = float(width);
     ImGui::GetIO().DisplaySize.y = float(height);
 }
+
+GLboolean glup_viewer_get_arg_bool(const char* param) {
+    return GEO::CmdLine::get_arg_bool(param) ? GL_TRUE : GL_FALSE;
+}
+
+GLboolean glup_viewer_test_arg_string(const char* param, const char* arg) {
+    return (GEO::CmdLine::get_arg(param) == arg) ? GL_TRUE : GL_FALSE;
+}
+
 
 #ifdef GEO_OS_EMSCRIPTEN
 

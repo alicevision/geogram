@@ -211,37 +211,29 @@ namespace GLUP {
         "   }                                                                \n"
         "   if(texturing_enabled()) {                                        \n"
         "       vec4 tex_color;                                              \n"
-        "       switch(GLUP.texture_type) {                                  \n"
-        "          case GLUP_TEXTURE_1D:                                     \n"
+        "       if(GLUP.texture_type == GLUP_TEXTURE_1D) {                   \n"
         "           tex_color = texture(                                     \n"
         "               texture1Dsampler, FragmentIn.tex_coord.xy            \n"
         "           );                                                       \n"
-        "           break;                                                   \n"
-        "          case GLUP_TEXTURE_2D:                                     \n"
+        "       } else if(GLUP.texture_type == GLUP_TEXTURE_2D) {            \n"
         "           tex_color = texture(                                     \n"
         "                texture2Dsampler, FragmentIn.tex_coord.xy           \n"
         "           );                                                       \n"
-        "           break;                                                   \n"
-        "          case GLUP_TEXTURE_3D:                                     \n"
+        "       } else if(GLUP.texture_type == GLUP_TEXTURE_3D) {            \n"
         "           tex_color = texture(                                     \n"
         "               texture3Dsampler, FragmentIn.tex_coord.xyz           \n"
         "           );                                                       \n"
-        "           break;                                                   \n"
         "       }                                                            \n"
         "       if(indirect_texturing_enabled()) {                           \n"
         "           tex_color = GLUP.texture_matrix * tex_color;             \n"
         "           tex_color = texture(texture1Dsampler, tex_color.xy);     \n"
         "       }                                                            \n"
-        "       switch(GLUP.texture_mode) {                                  \n"
-        "          case GLUP_TEXTURE_REPLACE:                                \n"
+        "       if(GLUP.texture_mode == GLUP_TEXTURE_REPLACE) {              \n"
         "             frag_color = tex_color;                                \n"
-        "             break;                                                 \n"
-        "          case GLUP_TEXTURE_MODULATE:                               \n"
+        "       } else if(GLUP.texture_mode == GLUP_TEXTURE_MODULATE) {      \n"
         "             frag_color *= tex_color;                               \n"
-        "             break;                                                 \n"
-        "          case GLUP_TEXTURE_ADD:                                    \n"
+        "       } else if(GLUP.texture_mode == GLUP_TEXTURE_ADD) {           \n"
         "             frag_color += tex_color;                               \n"
-        "             break;                                                 \n"
         "       }                                                            \n"
         "   }                                                                \n"
         "}                                                                   \n"
@@ -337,13 +329,10 @@ namespace GLUP {
 
     void Context_GLSL150::setup_GLUP_POINTS() {
 
-        // TODO: check whether texture coordinates are always
-        // generated in points with OpenGL ES profile (it seems
-        // to be OK, at least on NVidia), because GL_POINT_SPRITE
-        // does not seem to exist under OpenGL ES...
-        if(!use_ES_profile_) {
+        if(!use_core_profile_) {
             glEnable(GL_POINT_SPRITE);
-            glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+            // Not needed anymore it seems.
+            // glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
         }
         
         GLuint vshader = GLSL::compile_shader(
@@ -1481,7 +1470,7 @@ namespace GLUP {
         "}                                          \n";
     
     void Context_GLSL440::setup_GLUP_HEXAHEDRA() {
-
+        
         if(!GEO::CmdLine::get_arg_bool("gfx:GLSL_tesselation")) {
             Context_GLSL150::setup_GLUP_HEXAHEDRA();
             return;

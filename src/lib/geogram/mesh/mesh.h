@@ -2515,6 +2515,11 @@ namespace GEO {
             MeshElementsFlags what=MESH_ALL_ELEMENTS
         );
 
+        /**
+         * \brief Gets the list of all scalar attributes.
+         * \return a ';'-separated list of all scalar attributes.
+         */
+        std::string get_scalar_attributes() const;
 
         /**
          * \brief Gets the number of subelements types.
@@ -2575,6 +2580,7 @@ namespace GEO {
         static MeshElementsFlags name_to_subelements_type(
             const std::string& name
         );
+
         
     protected:
         /**

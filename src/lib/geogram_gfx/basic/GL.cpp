@@ -46,6 +46,7 @@
 #include <geogram_gfx/basic/GL.h>
 #include <geogram_gfx/basic/GLSL.h>
 #include <geogram_gfx/GLUP/GLUP.h>
+#include <geogram_gfx/GLUP/GLUP_context.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/command_line.h>
 
@@ -265,6 +266,24 @@ namespace GEO {
 
     GLint64 get_size_of_bound_buffer_object(GLenum target) {
 
+#ifdef GLUP_DEBUG
+        {
+            GLint buffer = 0;
+            switch(target) {
+            case GL_ARRAY_BUFFER:
+                glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &buffer);
+                break;
+            case GL_ELEMENT_ARRAY_BUFFER:
+                glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &buffer);
+                break;
+            default:
+                geo_assert_not_reached;
+                break;
+            }
+            geo_assert(buffer != 0);
+        }
+#endif        
+        
         GLint64 result=0;
         
 #ifdef GEO_GL_440

@@ -93,8 +93,12 @@ namespace GLUP {
 
     void Context_ES2::prepare_to_draw(GLUPprimitive primitive) {
         Context::prepare_to_draw(primitive);
-#ifdef GEO_GL_150        
-        glEnable(GL_POINT_SPRITE);
+#ifdef GEO_GL_150
+        if((!use_core_profile_) && primitive == GLUP_POINTS) {
+            glEnable(GL_POINT_SPRITE);
+            // Not needed anymore it seems
+            // glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+        }
 #endif
     }
 
@@ -103,12 +107,13 @@ namespace GLUP {
     }
     
     bool Context_ES2::primitive_supports_array_mode(GLUPprimitive prim) const {
-        // Crashes if first frame is drawn like that, it
-        // seems that it makes it skip an initialization, to
-        // be checked... Or it is probably connected with this
-        // mesh enabled / mesh disabled thingy...
+        // Commented-out for now, does not work on Mac/OSX (to be investigated)
         /*
-        if(prim == GLUP_TRIANGLES) {
+        // Special case for triangles: we can draw them in array mode (without
+        // the mesh). Note: we need to make sure that a previous call
+        // initialized the shader before (therefore we test the 'implemented'
+        // flag of the primitive info).
+        if(prim == GLUP_TRIANGLES && primitive_info_[prim].implemented) {
             return true;
         }
         */
@@ -259,7 +264,7 @@ namespace GLUP {
     "    return texture2D(samp, uv);                 \n"
     "}                                               \n"
 #else
-    "#version 330                                    \n"
+    "#version 150 core                               \n"
     "out vec4 glup_FragColor;                        \n"
     "vec4 glup_texture(                              \n"
     "    in sampler2D samp, in vec2 uv               \n"
@@ -272,7 +277,7 @@ namespace GLUP {
 
     static const char* vshader_header =
 #ifndef GEO_OS_EMSCRIPTEN
-    "#version 330 \n"    
+    "#version 150 core \n"    
 #endif        
     "  "
     ;
@@ -351,10 +356,6 @@ namespace GLUP {
         if(!GL_OES_vertex_array_object_) {
             GLUP::vertex_array_emulate = true;
         }
-
-#ifdef GLUP_DEBUG        
-        GLUP::vertex_array_emulate = true;
-#endif
 
         Logger::out("GLUP") 
             << "GL_OES_standard_derivatives: "
@@ -1736,7 +1737,7 @@ namespace GLUP {
             flush_immediate_buffers_with_cell_by_cell_clipping();            
         } else if(sliced_cells_clipping()) {
             flush_immediate_buffers_with_sliced_cells_clipping();
-        } {
+        } else {
             Context::flush_immediate_buffers();            
         }
     }

@@ -447,11 +447,12 @@ namespace GEO {
             /**
              * \brief Allocates a block of storage
              * \details Attempts to allocate a block of storage with a size
-             * large enough to contain \p n elements of member type \c value_type
-             * (an alias of the allocator's template parameter), and returns a
-             * pointer to the first element. The storage is aligned
-             * on ALIGN bytes, but they are \b not constructed.
-             * \param[in] n number of elements to allocate
+             * large enough to contain \p n elements of member type 
+             * \c value_type (an alias of the allocator's template parameter), 
+             * and returns a pointer to the first element. 
+             * The storage is aligned on ALIGN bytes, but they are \b not 
+             * constructed.
+             * \param[in] nb_elt number of elements to allocate
              * \param[in] hint Either 0 or a valer 0 or a value previously
              * obtained by another call to allocate and not yet freed with
              * deallocate. When it is not 0, this value may be used as a hint
@@ -461,11 +462,11 @@ namespace GEO {
              * \return A pointer to the initial element in the block of storage
              */
             pointer allocate(
-                size_type n, ::std::allocator<void>::const_pointer hint = 0
+                size_type nb_elt, ::std::allocator<void>::const_pointer hint = 0
             ) {
                 geo_argused(hint);
                 pointer result = static_cast<pointer>(
-                    aligned_malloc(sizeof(T) * n, ALIGN)
+                    aligned_malloc(sizeof(T) * nb_elt, ALIGN)
                 );
                 return result;
             }
@@ -477,12 +478,12 @@ namespace GEO {
              * array \b are not destroyed by a call to this member function.
              * \param[in] p Pointer to a block of storage previously allocated
              * with aligned_allocator::allocate.
-             * \param[in] n Number of elements allocated on the call to
+             * \param[in] nb_elt Number of elements allocated on the call to
              * aligned_allocator::allocate() for this block of storage.
              * \see allocate()
              */
-            void deallocate(pointer p, size_type n) {
-                geo_argused(n);
+            void deallocate(pointer p, size_type nb_elt) {
+                geo_argused(nb_elt);
                 aligned_free(p);
             }
 
@@ -499,12 +500,13 @@ namespace GEO {
 
             /**
              * \brief Constructs an object
-             * \details Constructs an element object on the location pointed by \p p.
-             * Notice that this does not allocate space for the element. It
-             * should already be available at p (see member allocate() to
-             * allocate space).
+             * \details Constructs an element object on the location pointed 
+             *  by \p p.
+             *  Notice that this does not allocate space for the element. It
+             *  should already be available at p (see member allocate() to
+             *  allocate space).
              * \param[in] p pointer to a location with enough storage space to
-             * contain an element of type value_type.
+             *  contain an element of type value_type.
              * \param[in] val value to initialize the constructed element to.
              * \see allocate()
              */

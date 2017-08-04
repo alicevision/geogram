@@ -51,7 +51,8 @@
 
 /**
  * \file geogram_gfx/GLUP/GLUP_context_ES.h
- * \brief Internal implementation of GLUP using OpenGL ES 
+ * \brief Internal implementation of GLUP using OpenGL ES or
+ *  GLSL 1.5 with no geometry shader and no uniform buffer.
  */
 
 #ifdef GEO_GL_ES2
@@ -66,7 +67,6 @@ namespace GLUP {
      * \details Can be also used with OpenGL 3.30 
      * \note the following functionalities are not implemented (yet) in
      *   this profile:
-     *  - GLUP_CLIP_SLICE_CELLS is not implemented
      *  - picking is not implemented
      *  - indirect texture mode is not implemented (but anyway, there is
      *    no texture3D in ES)

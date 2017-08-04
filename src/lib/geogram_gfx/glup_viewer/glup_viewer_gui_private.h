@@ -36,34 +36,111 @@ extern "C" {
      */
     
     struct GLFWwindow;
-    
-    void glup_viewer_gui_init(GLFWwindow* w);
-    void glup_viewer_gui_cleanup();
-    void glup_viewer_gui_begin_frame();
-    void glup_viewer_gui_end_frame();
-    int  glup_viewer_gui_takes_input();
 
+    /**
+     * \brief Initializes GLUP viewer GUI structures.
+     * \details Called at application startup.
+     * \param[in] w a pointer to the GLFWwindow
+     */
+    void glup_viewer_gui_init(GLFWwindow* w);
+
+    /**
+     * \brief Deletes all the variables allocated for the GUI.
+     * \details Called at application shutdown.
+     */
+    void glup_viewer_gui_cleanup();
+
+    /**
+     * \brief Starts a new frame.
+     */
+    void glup_viewer_gui_begin_frame();
+
+    /**
+     * \brief Ends a frame.
+     */
+    void glup_viewer_gui_end_frame();
+
+    /**
+     * \brief Tests whether callbacks are directed towards
+     *  GUI elements or application.
+     * \retval non-zero if callbacks are directed towards GUI
+     * \retval zero if callbacks should be taken into account
+     *  by the application.
+     */
+    int glup_viewer_gui_takes_input();
+
+    /**
+     * \brief Callback for mouse button events.
+     * \param[in] window a pointer to the GLFWwindow
+     * \param[in] button the mouse button
+     * \param[in] action the action
+     * \param[in] mods modifiers
+     */
     void glup_viewer_gui_mouse_button_callback(
         GLFWwindow* window, int button, int action, int mods
     );
-    
+
+    /**
+     * \brief Callback for mouse wheel events.
+     * \param[in] window a pointer to the GLFWwindow
+     * \param[in] xoffset horizontal displacement
+     * \param[in] yoffset vertical displacement
+     */
     void glup_viewer_gui_scroll_callback(
         GLFWwindow* window, double xoffset, double yoffset
     );
 
+    /**
+     * \brief Callback for low-level key events
+     * \param[in] window a pointer to the GLFWwindow
+     * \param[in] key the key code
+     * \param[in] scancode the scan code
+     * \param[in] action the action
+     * \param[in] mods modifiers
+     */
     void glup_viewer_gui_key_callback(
         GLFWwindow* window, int key, int scancode, int action, int mods
     );
 
+    /**
+     * \brief Callback for high-level key events.
+     * \param[in] window a pointer to the GLFWwindow
+     * \param[in] c the character that corresponds to the
+     *  pushed key
+     */
     void glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c);
 
+    /**
+     * \brief Callback for window resize events.
+     * \param[in] width the new width
+     * \param[in] height the new height
+     */
     void glup_viewer_gui_resize(int width, int height);
 
-    void glup_viewer_gui_draw_console(void);
-
-    void glup_viewer_gui_draw_status_bar(void);
-
+    /**
+     * \brief Redraws the GUI and the scene.
+     * \details It can be used from a command to update the graphics during
+     *  a computation. It is called whenever a message is displayed in the
+     *  console or whenever the progress bar is updated. It is ignored if called
+     *  from the redraw or from the overlay callbacks.
+     */
     void glup_viewer_gui_update(void);
+
+    /**
+     * \brief Tests a boolean command line argument.
+     * \param[in] param the name of the argument
+     * \return the value of the argument
+     */
+    GLboolean glup_viewer_get_arg_bool(const char* param);
+
+    /**
+     * \brief Tests a string command line argument.
+     * \param[in] param the name of the argument
+     * \param[in] arg the value to be tested
+     * \retval GLtrue if command line argument \p param has value \p arg
+     * \retval GLfalse otherwise
+     */
+    GLboolean glup_viewer_test_arg_string(const char* param, const char* arg);
     
 #ifdef __cplusplus
 }

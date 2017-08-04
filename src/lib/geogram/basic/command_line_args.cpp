@@ -516,7 +516,7 @@ namespace {
         );
         declare_arg(
             "tet:quality", 2.0,
-            "desired element quality (the lower, the better, 2.0 means reasonable)"
+        "desired element quality (the lower, the better, 2.0 means reasonable)"
         );
     }
 
@@ -525,10 +525,17 @@ namespace {
      */
     void import_arg_group_gfx() {
         declare_arg_group("gfx", "OpenGL graphics options", ARG_ADVANCED);
+#ifdef GEO_OS_APPLE
+        declare_arg(
+            "gfx:GL_profile", "core",
+            "one of core,compatibility,ES"
+        );
+#else        
         declare_arg(
             "gfx:GL_profile", "compatibility",
             "one of core,compatibility,ES"
         );
+#endif        
         declare_arg(
             "gfx:GL_version", 0.0,
             "If non-zero, force GL version detection"
@@ -542,10 +549,6 @@ namespace {
             "Use GLSL shaders (requires a decently recent gfx board)"
         );
         declare_arg(
-            "gfx:GLSL_tesselation", true,
-            "Use tesselation shaders (if supported and GLSL enabled)"
-        );
-        declare_arg(
             "gfx:GLSL_version", 0.0,
             "If non-zero, force GLSL version detection"
         );
@@ -554,11 +557,10 @@ namespace {
             "one of auto, GLUP150, GLUP440, VanillaGL"
         );
         declare_arg(
-            "gfx:GLUP_precompile_shaders", false,
-            "Precompile all GLUP shaders at context creation"
+            "gfx:full_screen", false, "full screen mode"
         );
         declare_arg(
-            "gfx:full_screen", false, "full screen mode"
+            "gfx:GLSL_tesselation", true, "use tesselation shaders if available"
         );
     }
     

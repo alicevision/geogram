@@ -252,11 +252,13 @@ namespace GEO {
             const char* shading_language_ver_str = nil;
 
 #ifdef GEO_GL_150
+#ifndef GEO_OS_APPLE            
             if(glGetStringi != nil) {
                 shading_language_ver_str = (const char*)glGetStringi(
                     GL_SHADING_LANGUAGE_VERSION, 0
                 );
             }
+#endif            
 #endif            
             if(shading_language_ver_str == nil) {
                 // Some buggy drivers do not implement glGetStringi(),

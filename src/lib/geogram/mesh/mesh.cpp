@@ -2037,7 +2037,101 @@ namespace GEO {
         return MESH_NONE;
     }
     
-    
     /**************************************************************************/
+}
+
+namespace {
+
+    using namespace GEO;
+    
+    /**
+     * \brief Gets the names of all scalar attributes from an AttributeManager
+     * \param[in] attributes a const reference to the attribute manager
+     * \param[in] prefix a const rerefenre to a string to be prepended to
+     *  all attribute names
+     * \return a ';'-separated list of all the scalar attributes
+     */
+    std::string get_scalar_attributes_impl(
+        const AttributesManager& attributes,
+        const std::string& prefix
+    ) {
+        std::string result;
+        vector<std::string> attribute_names;
+        attributes.list_attribute_names(attribute_names);
+        for(index_t i=0; i<attribute_names.size(); ++i) {
+            const AttributeStore* store = attributes.
+                find_attribute_store(attribute_names[i]);
+            if(ReadOnlyScalarAttributeAdapter::can_be_bound_to(store)) {
+                index_t dim =
+                    ReadOnlyScalarAttributeAdapter::nb_scalar_elements_per_item(
+                        store
+                    );
+                if(dim == 1) {
+                    if(result != "") {
+                        result += ";";
+                    }
+                    result += prefix + "." + attribute_names[i];
+                } else {
+                    for(index_t j=0; j<dim; ++j) {
+                        if(result != "") {
+                            result += ";";
+                        }
+                        result +=
+                            prefix + "." + attribute_names[i] +
+                            "[" + String::to_string(j) + "]";
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * \brief Appends a string to another one, with ';' delimiters.
+     * \details If a is non-empty, a ';' delimiter is inserted.
+     * \param[in,out] a a string
+     * \param[in] b a string to be appended to a
+     */
+    static void strappend(std::string& a, const std::string& b) {
+        if(b != "") {
+            if(a != "") {
+                a += ";";
+            }
+            a += b;
+        }
+    }
+}
+
+namespace GEO {
+    
+    std::string Mesh::get_scalar_attributes() const {
+        std::string result;
+        strappend(
+            result,get_scalar_attributes_impl(vertices.attributes(),"vertices")
+        );
+        strappend(
+            result,get_scalar_attributes_impl(edges.attributes(),"edges")
+        );
+        strappend(
+            result,get_scalar_attributes_impl(facets.attributes(),"facets")
+        );
+        strappend(result,get_scalar_attributes_impl(
+                      facet_corners.attributes(),"facet_corners"
+                  )
+        );
+        strappend(
+            result,get_scalar_attributes_impl(cells.attributes(),"cells")
+        );
+        strappend(
+            result,get_scalar_attributes_impl(
+                cell_corners.attributes(),"cell_corners"
+            )
+        );
+        strappend(result,get_scalar_attributes_impl(
+            cell_facets.attributes(),"cell_facets")
+        );        
+        return result;
+    }
     
 }
+

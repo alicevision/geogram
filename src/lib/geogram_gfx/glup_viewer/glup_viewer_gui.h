@@ -1584,9 +1584,8 @@ namespace GEO {
          * \brief Gets the list of supported file extensions for reading.
          * \details This function may be olverloaded by derived class. Base
          *  class implementation returns "". If this function returns "", then
-         *  no "Save..." option is displayed in the "File" menu. If it returns
-         *  "*", then the "Save..." option shows a dialog to enter the file
-         *  name. If it returns a colon-separated list of extensions, then the
+         *  no "Save..." option is displayed in the "File" menu.  
+         *   If it returns a colon-separated list of extensions, then the
          *  "Save..." option displays a list of possible file names for each
          *  supported extension.
          * \return The semi-colon separated list of supported file extensions,
@@ -1595,9 +1594,16 @@ namespace GEO {
         virtual std::string supported_write_file_extensions(); 
 
     protected:
+
+        /**
+         * \brief Converts an OpenGL texture ID into an ImGUI texture ID.
+         * \param[in] gl_texture_id_in the OpenGL texture ID
+         * \return the corresponding ImGUI texture ID
+         */
+        ImTextureID convert_to_ImTextureID(GLuint gl_texture_id_in);
         
         /**
-         * \brief Recursively browes a directory and generates
+         * \brief Recursively browses a directory and generates
          *  menu items.
          * \param[in] path the path to be browsed
          */
@@ -1740,10 +1746,26 @@ namespace GEO {
         void hide_console() {
             console_visible_ = false;
         }
+
+        /**
+         * \brief Initializes a new colormap from name and xpm data.
+         * \details This function can be called only once the OpenGL
+         *  context is ready, for instance in the init_graphics() function.
+         * \param[in] name the name of the colormap
+         * \param[in] xpm_data the image data of the colormap.
+         */
+        void init_colormap(const std::string& name, const char** xpm_data);
+
+        /**
+         * \brief Initializes all the default colormaps.
+         * \details This function can be called only once the OpenGL
+         *  context is ready, for instance in the init_graphics() function.
+         */
+        void init_colormaps();
         
     protected:
         static Application* instance_;
-        
+
         int argc_;
         char** argv_;
         
@@ -1767,6 +1789,16 @@ namespace GEO {
         bool white_bg_;
 
         GLUPclipMode clip_mode_;
+        GLuint geogram_logo_texture_;
+
+        struct ColormapInfo {
+            ColormapInfo() : texture(0) {
+            }
+            GLuint texture;
+            std::string name;
+        };
+
+        vector<ColormapInfo> colormaps_;
     };
 
     /*****************************************************************/
@@ -1924,6 +1956,39 @@ namespace GEO {
         void hide_volume() {
             show_volume_ = false;            
         }
+
+        /**
+         * \brief Makes the attributes visible.
+         */
+        void show_attributes() {
+            show_attributes_ = false;
+        }
+        
+        /**
+         * \brief Makes the attributes invisible.
+         */
+        void hide_attributes() {
+            show_attributes_ = false;
+        }
+        
+        /**
+         * \brief Adjusts the current minimum and maximum attribute value
+         *  to the currently bound attribute if any.
+         */
+        void autorange();
+
+        /**
+         * \brief Gets the list of attribute names.
+         * \return the ';'-separated list of attribute names.
+         */
+        std::string attribute_names();
+
+        /**
+         * \brief Sets the currently displayed attribute.
+         * \param[in] attribute the name of the attribute
+         *  to be displayed, prefixed by element type.
+         */
+        void set_attribute(const std::string& attribute);
         
     private:
         Mesh mesh_;
@@ -1945,6 +2010,14 @@ namespace GEO {
         float cells_shrink_;
         bool show_colored_cells_;
         bool show_hexes_;
+
+        bool show_attributes_;
+        GLuint current_colormap_texture_;
+        std::string       attribute_;
+        MeshElementsFlags attribute_subelements_;
+        std::string       attribute_name_;
+        float             attribute_min_;
+        float             attribute_max_;
     };
 
     /*****************************************************************/    
