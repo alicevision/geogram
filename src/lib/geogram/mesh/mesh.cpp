@@ -1473,9 +1473,11 @@ namespace GEO {
             adjacent(adj_c1, adj_lf1) != NO_CELL ||
             adjacent(adj_c2, adj_lf2) != NO_CELL
         ) {
+	    /*
             GEO::Logger::warn("Mesh")
-                << "Matching tet facets are not on border"
+                << "Matching tet facets are not on border (\"thick sliver\")"
                 << std::endl;
+	    */
             return false;
         }
 
@@ -1506,7 +1508,7 @@ namespace GEO {
         return true;
     }
     
-    void MeshCells::connect(bool remove_trivial_slivers) {
+    void MeshCells::connect(bool remove_trivial_slivers, bool verbose_if_OK) {
         // "Fast track" for simplicial mesh
         if(is_simplicial_) {
             connect_tets();
@@ -1665,7 +1667,12 @@ namespace GEO {
                                       << weird
                                       << " invalid connector configurations"
                                       << std::endl;
-        }
+        } else {
+	    if(verbose_if_OK) {
+		GEO::Logger::out("Mesh") << "All connectors are OK"
+					 << std::endl;
+	    }
+	}
         if(remove_trivial_slivers && trivial_slivers.size() != 0) {
             GEO::Logger::warn("Mesh") << "Removing "
                                       << trivial_slivers.size()
@@ -1678,10 +1685,18 @@ namespace GEO {
             for(index_t i=0; i<trivial_slivers.size(); ++i) {
                 delete_c[trivial_slivers[i]] = 1;
             }
+	    // We need to remove the previously generated connectors,
+	    // some of them may be wrong if adjacent to a sliver that
+	    // was removed.
+	    for(index_t c=0; c<nb(); ++c) {
+		if(type(c) == MESH_CONNECTOR) {
+		    delete_c[c] = 1;
+		}
+	    }
             delete_elements(delete_c);
 
             GEO::Logger::warn("Mesh") << "Re-trying to connect cells" << std::endl;
-            connect(false);
+            connect(false,true);
         }
     }
 

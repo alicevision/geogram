@@ -150,28 +150,24 @@ namespace {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         static const char* vshader_source =
-            "#version 150 core                          \n"            
+            "#version 130                               \n"            
             "in vec2 vertex_in;                         \n"
             "in vec2 tex_coord_in;                      \n"
-            "out VertexData {                           \n"
-            "   vec2 tex_coord;                         \n"
-            "} VertexOut;                               \n"
+            "out vec2 tex_coord;                        \n"
             "void main() {                              \n"
-            "  VertexOut.tex_coord = tex_coord_in;      \n"
+            "  tex_coord = tex_coord_in;                \n"
             "  gl_Position = vec4(vertex_in, 0.0, 1.0); \n"
             "}                                          \n"
             ;
 
         static const char* fshader_source =
-            "#version 150 core                          \n"
+            "#version 130                               \n"
             "out vec4 frag_color ;                      \n"
-            "in VertexData {                            \n"
-            "   vec2 tex_coord;                         \n"
-            "} FragmentIn;                              \n"
+            "in vec2 tex_coord;                         \n"
             "uniform sampler2D texture2D;               \n"
             "void main() {                              \n"
             "   frag_color = texture(                   \n"
-            "       texture2D, FragmentIn.tex_coord     \n"
+            "       texture2D, tex_coord                \n"
             "   );                                      \n"
             "}                                          \n"
             ;
@@ -296,23 +292,23 @@ namespace GEO {
         // common place, it is this version that should be used. However,
         // it is not supported by the Intel driver (therefore we fallback
         // to the standard 32 bits version if such a driver is detected).
-
+	// It is not implemented by Gallium either... Oh well, for now
+	// I deactivate it if the driver is not NVIDIA.
+	
         if(!init) {
             init = true;
-            const char* vendor = (const char*)glGetString(
-                GL_VENDOR
-            );
+            const char* vendor = (const char*)glGetString(GL_VENDOR);
             use_glGetBufferParameteri64v = (
-                strlen(vendor) < 5 || strncmp(vendor, "Intel", 5) != 0
+                strlen(vendor) >= 6 && !strncmp(vendor, "NVIDIA", 6)
             );
-            if(!use_glGetBufferParameteri64v) {
-                Logger::warn("GLSL")
-                    << "Buggy Intel driver detected (working around...)"
-                    << std::endl;
-            }
             // Does not seem to be implemented under OpenGL ES
             if(CmdLine::get_arg("gfx:GL_profile") == "ES") {
                 use_glGetBufferParameteri64v = false;
+            }
+            if(use_glGetBufferParameteri64v) {
+                Logger::out("GLSL")
+                    << "using glGetBufferParameteri64v"
+                    << std::endl;
             }
         }
         if(use_glGetBufferParameteri64v) {
@@ -423,8 +419,9 @@ namespace GEO {
         while(error_code != GL_NO_ERROR) {
             has_opengl_errors = true ;
             Logger::err("OpenGL")
-                << file << ":" << line << " " 
-//                << (char*)(gluErrorString(error_code)) << std::endl ;
+                << file << ":" << line << " "
+// TODO: implement some form of gluErrorString() 		
+//              << (char*)(gluErrorString(error_code)) << std::endl ;
                 << std::endl;
             error_code = glGetError() ;
         }
@@ -432,6 +429,16 @@ namespace GEO {
         // geo_debug_assert(!has_opengl_errors);
     }
 
+    void clear_gl_error_flags(const char* file, int line) {
+#ifdef GEO_DEBUG
+	check_gl(file,line);
+#else
+	geo_argused(file);
+	geo_argused(line);
+        while(glGetError() != GL_NO_ERROR);
+#endif	
+    }
+    
     void draw_unit_textured_quad() {
         if(quad_VAO == 0) {
             create_quad_VAO_and_program();

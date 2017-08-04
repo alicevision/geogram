@@ -1133,7 +1133,7 @@ namespace GEO {
 
 
     void GEOGRAM_API compute_Hilbert_order(
-        index_t nb_vertices, const double* vertices,
+        index_t total_nb_vertices, const double* vertices,
         vector<index_t>& sorted_indices,
         index_t first,
         index_t last,
@@ -1143,7 +1143,7 @@ namespace GEO {
         if(last - first <= 1) {
             return;
         }
-        VertexMesh M(nb_vertices, vertices, stride);
+        VertexMesh M(total_nb_vertices, vertices, stride);
         HilbertSort<Hilbert_vcmp, VertexMesh>(
             M, sorted_indices.begin() + int(first),
             sorted_indices.begin() + int(last)

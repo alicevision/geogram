@@ -294,6 +294,17 @@ namespace GEO {
     void GEOGRAM_GFX_API check_gl(const char* file, int line);
 
     /**
+     * \brief Clears all error flags set by previous OpenGL calls.
+     * \details This function shoud be called to ensure that subsequent 
+     *  calls to check_gl() will not report any error. This is necessary
+     *  to workaround some buggy or incomplete implementations of OpenGL.
+     *  In debug mode, error are always reported.
+     * \param[in] file current sourcefile, as given by __FILE__
+     * \param[in] line current line, as given by __LINE__
+     */
+    void GEOGRAM_GFX_API clear_gl_error_flags(const char* file, int line);
+    
+    /**
      * \brief Draws a textured quad.
      * \details The textured quad spans the [-1,1]x[-1,1] square with
      *  texture coordinates in [0,1]x[0,1]. If no program is currently

@@ -372,7 +372,6 @@ namespace GLUP {
             break;
         case GLUP_NB_PRIMITIVES:
             geo_assert_not_reached;
-            break;
         }
     }
     
@@ -611,7 +610,6 @@ namespace GLUP {
             
         case GLUP_NB_PRIMITIVES:
             geo_assert_not_reached;
-            break;
         }
     }
 }

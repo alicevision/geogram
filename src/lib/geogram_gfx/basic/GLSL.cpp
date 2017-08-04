@@ -290,16 +290,19 @@ namespace GEO {
                 return GLSL_version;
             }
 
-            // New OpenGL API: one should use glGetStringi()
-
             const char* shading_language_ver_str = nil;
 
 #ifdef GEO_GL_150
-#ifndef GEO_OS_APPLE            
+#ifndef GEO_OS_APPLE
+            // glGetStringi() is the new way of querying OpenGL implementation
             if(glGetStringi != nil) {
                 shading_language_ver_str = (const char*)glGetStringi(
                     GL_SHADING_LANGUAGE_VERSION, 0
                 );
+		// Intel driver has glGetStringi() but it does not seem
+		// to be implemented (triggers OpenGL errors). We make
+		// them silent. We use glGetString() below.
+		clear_gl_error_flags(__FILE__, __LINE__);
             }
 #endif            
 #endif            

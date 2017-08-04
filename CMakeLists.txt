@@ -30,7 +30,7 @@ include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 3)
-set(VORPALINE_VERSION_PATCH 10)
+set(VORPALINE_VERSION_PATCH 11)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
@@ -93,38 +93,31 @@ add_custom_target(uninstall
 # Geogram/Vorpaline sources
 
 add_subdirectory(src/lib/geogram)
-add_subdirectory(src/bin/vorpastat)
-add_subdirectory(src/bin/vorpacomp)
-add_subdirectory(src/bin/geodump)
-
-if(GEOGRAM_WITH_FPG)
-   add_subdirectory(src/bin/fpg)
-endif()
-
 if(GEOGRAM_WITH_VORPALINE)
    add_subdirectory(src/lib/vorpalib)
-   add_subdirectory(src/bin/vorpaline)
-else()
-   add_subdirectory(src/bin/vorpalite)
 endif()
 
 add_subdirectory(src/lib/third_party)
 
 if(GEOGRAM_WITH_GRAPHICS)
-   add_subdirectory(src/lib/geogram_gfx)
-   add_subdirectory(src/bin/vorpaview)
-   add_subdirectory(src/bin/geobox)   
+  add_subdirectory(src/lib/geogram_gfx)
 endif()
 
-add_subdirectory(src/test)
+if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/lib/exploragram)
+  set(GEOGRAM_WITH_EXPLORAGRAM TRUE)
+  add_subdirectory(src/lib/exploragram)
+endif()
 
-if(GEOGRAM_WITH_GRAPHICS)
-   add_subdirectory(src/demos)
+if(NOT GEOGRAM_LIB_ONLY)
+  add_subdirectory(src/bin)
+  add_subdirectory(src/test)
+  if(GEOGRAM_WITH_GRAPHICS)
+    add_subdirectory(src/demos)
+  endif()
 endif()
 
 add_subdirectory(doc)
 add_subdirectory(tests)
-
 
 ##############################################################################
 # Cleanup from previous builds

@@ -77,7 +77,7 @@
  *  -> essayer le premier (plus simple a programmer), et si \c{c}a rame
  *    faire le deuxi\`eme:
  *       Ca a l'air de marcher pas trop mal.
- *       Rem: le ELEMENT_ARRAY_BUFFER est en entiers 32 bits, certains archis
+ *       Rem: le ELEMENT_ARRAY_BUFFER est en entiers 32 bits, certaines archis
  *    (telephones etc...) peuvent avoir besoin d'un ELEMENT_ARRAY_BUFFER 
  *    16 bits (ce qu'on pourrait assez facilement avoir...)
  *
@@ -86,6 +86,18 @@
  *   OpenGL ES 2.0 n'a pas de textures 3D, mais on peut les emuler avec des
  * textures 2D:
  * https://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
+ *
+ * The shaders
+ * ===========
+ * The shaders can be compiled either in OpenGL ES mode or in GLSL 1.5 mode,
+ *  OpenGL ES mode is used by Emscripten and by non-NVIDIA GPUs (e.g. Intel
+ *    and Gallium emulation layer, that do not support GLSL 1.5)
+ *  Tested with:
+ *     - Linux Intel i915
+ *     - Linux Gallium CPU emularion
+ *  GLSL 1.5 mode is used under MACOSX and by NVIDIA GPUs
+ *  TODO: test whether OpenGL ES mode works with MACOSX (if yes, I may remove
+ *    all the GLSL 1.5 code from here)
  */
 
 namespace {
@@ -243,9 +255,13 @@ namespace GLUP {
         if(use_ES_profile_) {
             extension_standard_derivatives =
                 extension_is_supported("GL_OES_standard_derivatives");
-            
+
+	    // ES profile can be artificially set to true for non-NVidia
+	    // GPUs, see constructor.
             extension_vertex_array_object =
-                extension_is_supported("GL_OES_vertex_array_object");
+                extension_is_supported("GL_OES_vertex_array_object") ||
+	        extension_is_supported("GL_ARB_vertex_array_object") ;
+	    
         } else {
             extension_standard_derivatives = true;
             extension_vertex_array_object = true;
@@ -259,10 +275,10 @@ namespace GLUP {
         }
 
         Logger::out("GLUP") 
-            << "standard_derivatives: "
+            << "OES_standard_derivatives: "
             << extension_standard_derivatives
             << std::endl;
-
+	
         Logger::out("GLUP")
             << "vertex_array_object: "
             << extension_vertex_array_object
@@ -359,9 +375,25 @@ namespace GLUP {
         for(index_t i=0; i<3; ++i) {
             sliced_cells_vertex_attrib_VBO_[i] = 0;
         }
-#ifdef GEO_OS_EMSCRIPTEN        
+#if defined(GEO_OS_EMSCRIPTEN)
         use_ES_profile_ = true;
-#endif        
+#elif defined(GEO_OS_APPLE)
+	// do nothing, do not use ES profile, using GLSL 1.5 shaders
+#else
+	//   Intel and Gallium drivers do not support GLSL 1.5 shaders,
+	// but they support OpenGL ES shaders, therefore if we detect
+	// a non-NVIDIA GPU, we pretend that we are using OpenGL ES,
+	// so that GLUP uses shaders that are understood by the GPU.
+	const char* vendor = (const char*)glGetString(GL_VENDOR);
+	if(!strncmp(vendor,"NVIDIA",6)) {
+	    Logger::out("GLUP") << "GLUPES2 using core profile shaders"
+				<< std::endl;
+	} else {
+	    Logger::out("GLUP") << "GLUPES2 using ES2 shaders"
+				<< std::endl;
+	    use_ES_profile_ = true;
+	}
+#endif
     }
     
     Context_ES2::~Context_ES2() {

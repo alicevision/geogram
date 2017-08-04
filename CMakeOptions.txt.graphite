@@ -9,4 +9,8 @@ elseif(UNIX)
    set(VORPALINE_PLATFORM Linux64-gcc-dynamic)
 endif()
 
+# Only geogram, geogram_gfx and GLFW will be built
+# (skips generation of geogram demos and programs)
+
+set(GEOGRAM_LIB_ONLY TRUE)
 

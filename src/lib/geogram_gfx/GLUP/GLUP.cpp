@@ -89,6 +89,9 @@ void GLUP_API glupBindUniformState(GLUPuint program) {
 }
 
 
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE)
+#else
+
 /**
  * \brief Tests whether tessellation shaders are supported by OpenGL.
  * \details Some drivers may declare to be OpenGL 4.5 compliant whereas
@@ -128,8 +131,10 @@ static bool supports_tessellation_shader() {
 #endif    
 }
 
-GLUPcontext glupCreateContext() {
+#endif
 
+GLUPcontext glupCreateContext() {
+  
     if(!GLUP::initialized_) {
         GLUP::initialized_ = true;
         atexit(GLUP::cleanup);
@@ -141,65 +146,34 @@ GLUPcontext glupCreateContext() {
     GLUP::Context* result = nil;
 
     if(GLUP_profile == "auto") {
-        double GLSL_version = GEO::GLSL::supported_language_version();
-#ifndef GEO_OS_APPLE                
-        const GLubyte* vendor = glGetString(GL_VENDOR);
-        if(!GEO::String::string_starts_with(
-               std::string((const char*)vendor), "NVIDIA")
-        ) {
-#ifndef GEO_OS_EMSCRIPTEN            
-            GEO::Logger::out("GLUP") << "Non-NVIDIA GPU" << std::endl;
-#endif            
-            if(GEO::CmdLine::get_arg("gfx:GL_profile") == "compatibility") {
-#ifdef GEO_OS_EMSCRIPTEN
-                GEO::Logger::out("GLUP") << "Running in a browser."
-                                         << std::endl;
-#else                
-                GEO::Logger::out("GLUP")
-                    << "Trying VanillaGL and GLUPES2" << std::endl;
-                GEO::Logger::out("GLUP")
-                    << "Use gfx:GLUP_profile to override"
-                    << std::endl;
-#endif                
-                GLSL_version = 0.0;
-            } else {
-                GEO::Logger::warn("GLUP")
-                    << "Cannot switch to VanillaGL" << std::endl;
-                GEO::Logger::warn("GLUP")
-                    << "Needs gfx:GL_profile=compatibility" << std::endl;
-                GEO::Logger::warn("GLUP")
-                    << "(trying anyway with GLUP150/GLUP440)" << std::endl;
-            }
-        }
-#endif
-        
-        if (GLSL_version >= 4.4) {
-            if (!supports_tessellation_shader()) {
-                GEO::Logger::out("GLUP")
-                    << "GLSL version >= 4.4 but tessellation unsupported"
-                    << std::endl;
-                GEO::Logger::out("GLUP") << "Downgrading to GLUP 150..."
-                                         << std::endl;
-                GLSL_version = 1.5;
-            }
-        }
-        if(GLSL_version < 1.5) {
-#ifdef GEO_GL_LEGACY            
-            GLUP_profile = "VanillaGL";
+      
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE)
+      GLUP_profile = "GLUPES2";
 #else
-            GLUP_profile = "GLUPES2";
-#endif            
-        }
-#ifdef GEO_OS_APPLE
-        else {
-            GLUP_profile = "GLUPES2";
-        }
-#else        
-        else if(GLSL_version < 4.4) {
-            GLUP_profile = "GLUP150";
-        } else {
-            GLUP_profile = "GLUP440";
-        }
+      GEO_CHECK_GLUP();      
+      double GLSL_version = GEO::GLSL::supported_language_version();
+      GEO_CHECK_GLUP();            
+      if (GLSL_version >= 4.4) {
+	  GEO_CHECK_GLUP();      	  
+	  if (!supports_tessellation_shader()) {
+	      GEO::Logger::out("GLUP")
+		<< "GLSL version >= 4.4 but tessellation unsupported"
+		<< std::endl;
+	      GEO::Logger::out("GLUP") << "Downgrading to GLUP 150..."
+				       << std::endl;
+	      GLSL_version = 1.5;
+	  }
+	  GEO_CHECK_GLUP();      	  
+      }
+      
+      if(GLSL_version >= 4.4) {
+	  GLUP_profile = "GLUP440";	
+      } else if(GLSL_version >= 1.5) {
+	  GLUP_profile = "GLUP150";	
+      } else {
+	  GLUP_profile = "GLUPES2";	
+      }
+      
 #endif        
     }
 
@@ -207,82 +181,82 @@ GLUPcontext glupCreateContext() {
     GEO::Logger::out("GLUP") << "Using " << GLUP_profile << " profile"
                         << std::endl;
 
-#ifdef GEO_GL_ES2    
-    if(GLUP_profile == "GLUPES2") {
-        result = new GLUP::Context_ES2;        
-    }
-#endif
-    
-#ifdef GEO_GL_150    
-    if(GLUP_profile == "GLUP150") {
-        result = new GLUP::Context_GLSL150;        
+#ifdef GEO_GL_440    
+    if(GLUP_profile == "GLUP440") {
+        try {
+	    result = new GLUP::Context_GLSL440;
+	    result->setup();	    
+	} catch(...) {
+	    GEO::Logger::warn("GLUP")
+	        << "Caught an exception in GLUP440, downgrading to GLUP150"
+	        << std::endl;
+	    GLUP_profile = "GLUP150";
+	    delete result;
+	    result = nil;
+	}
     }
 #endif
 
-#ifdef GEO_GL_440    
-    if(GLUP_profile == "GLUP440") {
-        result = new GLUP::Context_GLSL440;
+#ifdef GEO_GL_150    
+    if(GLUP_profile == "GLUP150") {
+        try {
+            result = new GLUP::Context_GLSL150;
+	    result->setup();	    	    
+        } catch(...) {
+	    GEO::Logger::warn("GLUP")
+	        << "Caught an exception in GLUP150, downgrading to GLUPES2"
+	        << std::endl;
+	    GLUP_profile = "GLUPES2";
+	    delete result;
+	    result = nil;
+	}
+    }
+#endif
+    
+#ifdef GEO_GL_ES2    
+    if(GLUP_profile == "GLUPES2") {
+        try {      
+	    result = new GLUP::Context_ES2;
+	    result->setup();	    	    
+        } catch(...) {
+	    GEO::Logger::warn("GLUP")
+	        << "Caught an exception in GLUPES2, downgrading to VanillaGL"
+	        << std::endl;
+	    GLUP_profile = "VanillaGL";
+	    delete result;
+	    result = nil;
+	}
     }
 #endif
 
 #ifdef GEO_GL_LEGACY    
     if(GLUP_profile == "VanillaGL") {
-        result = new GLUP::Context_VanillaGL;
+        if(GEO::CmdLine::get_arg("gfx:GL_profile") != "compatibility") {    
+	    GEO::Logger::warn("GLUP")
+	      << "Cannot switch to VanillaGL" << std::endl;
+	    GEO::Logger::warn("GLUP")
+	      << "Needs gfx:GL_profile=compatibility" << std::endl;
+	} else {
+	    try {            
+	        result = new GLUP::Context_VanillaGL;
+		result->setup();	    	    
+	    } catch(...) {
+	        GEO::Logger::warn("GLUP")
+		  << "Caught an exception in VanillaGL"
+		  << std::endl;
+		delete result;
+		result = nil;
+	    }
+	}
     }
 #endif
 
-#ifdef GEO_GL_ES2    
     if(result == nil) {
-        GEO::Logger::warn("GLUP")
-            << GLUP_profile << " unknown profile, falling back to GLUPES2"
-            << std::endl;
-        result = new GLUP::Context_ES2;        
+        GEO::Logger::err("GLUP") << "Could not create context"
+			    << std::endl;
+    } else {
+        GLUP::all_contexts_.insert(result);
     }
-#endif    
-    
-#ifdef GEO_GL_LEGACY    
-    if(result == nil) {
-        GEO::Logger::warn("GLUP")
-            << GLUP_profile << " unknown profile, falling back to VanillaGL"
-            << std::endl;
-        result = new GLUP::Context_VanillaGL;        
-    }
-#endif    
-
-    if(result == nil) {
-        GEO::Logger::err("GLUP")
-            << "Could not create a context"
-            << std::endl;
-        return nil;
-    }
-    
-    try {
-        result->setup();
-    } catch(...) {
-#ifndef GEO_GL_LEGACY
-        GEO::Logger::err("GLUP")
-            << "Could not create a context"
-            << std::endl;
-#else        
-#if defined(GEO_OS_APPLE)
-        GEO::Logger::warn("GLUP")
-            << "Caught an exception, downgrading to GLUPES2"
-            << std::endl;
-        delete result;
-        result = new GLUP::Context_ES2;
-        result->setup();
-#else        
-        GEO::Logger::warn("GLUP")
-            << "Caught an exception, downgrading to VanillaGL"
-            << std::endl;
-        delete result;
-        result = new GLUP::Context_VanillaGL;
-        result->setup();
-#endif
-#endif        
-    }
-
-    GLUP::all_contexts_.insert(result);
     
     return result;
 }

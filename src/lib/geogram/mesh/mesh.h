@@ -2134,8 +2134,12 @@ namespace GEO {
          *  two triangular facets.
          * \param[in] remove_trivial_slivers if set, this removes the 
          *  slivers that are adjacent to a quadrilateral facet.
+	 * \param[in] verbose_if_OK if set, says OK if no bad connector
+	 *  configuration was detected.
          */
-        void connect(bool remove_trivial_slivers = true);
+        void connect(
+	    bool remove_trivial_slivers = true, bool verbose_if_OK=false
+	);
 
         /**
          * \brief Replaces the surfacic part of this mesh
