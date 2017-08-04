@@ -199,7 +199,19 @@ namespace GEO {
                                     break;
                                 }
                             }
-                            index_t vertex_index = in.field_as_uint(i);
+                            
+                            // In .obj files, 
+                            // negative vertex index means
+                            // nb_vertices - vertex index
+                            int s_vertex_index = in.field_as_int(i);
+                            index_t vertex_index = 0;
+                            if(s_vertex_index < 0) {
+                                vertex_index = index_t(
+                                    1+int(M.vertices.nb()) + s_vertex_index
+                                );
+                            } else {
+                                vertex_index = index_t(s_vertex_index);
+                            }
                             if(
                                 (vertex_index < 1) ||
                                 (vertex_index > M.vertices.nb())

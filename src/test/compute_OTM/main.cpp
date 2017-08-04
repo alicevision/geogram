@@ -288,13 +288,20 @@ namespace {
             w_ = w ; 
         }
 
+        /**
+         * \copydoc IntegrationSimplex::eval()
+         */
         virtual double eval(
             index_t center_vertex_index,
             const GEOGen::Vertex& v1,
             const GEOGen::Vertex& v2,
             const GEOGen::Vertex& v3,
-            index_t t
+            index_t t,
+            index_t t_adj,
+            index_t v_adj
         ) {
+            geo_argused(t_adj);
+            geo_argused(v_adj);
             double fT = 0.0;
             if(weighted_) {
                 if(

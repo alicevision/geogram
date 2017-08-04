@@ -447,7 +447,9 @@ template< class Vertex >
 int CoredVectorMeshData< Vertex >::addOutOfCorePoint_s( const Vertex& p )
 {
         size_t sz;
+#ifdef _OPENMP        
 #pragma omp critical (CoredVectorMeshData_addOutOfCorePoint_s )
+#endif
         {
                 sz = oocPoints.size();
                 oocPoints.push_back(p);
@@ -458,7 +460,9 @@ template< class Vertex >
 int CoredVectorMeshData< Vertex >::addPolygon_s( const std::vector< int >& polygon )
 {
         size_t sz;
+#ifdef _OPENMP        
 #pragma omp critical (CoredVectorMeshData_addPolygon_s)
+#endif
         {
                 sz = polygon.size();
                 polygons.push_back( polygon );
@@ -537,7 +541,9 @@ template< class Vertex >
 int CoredFileMeshData< Vertex >::addOutOfCorePoint_s( const Vertex& p )
 {
         int sz;
+#ifdef _OPENMP        
 #pragma omp critical (CoredFileMeshData_addOutOfCorePoint_s)
+#endif
         {
                 sz = oocPoints;
                 oocPointFile->write( &p , sizeof( Vertex ) );
@@ -549,7 +555,9 @@ template< class Vertex >
 int CoredFileMeshData< Vertex >::addPolygon_s( const std::vector< int >& vertices )
 {
         int sz , vSize = (int)vertices.size();
+#ifdef _OPENMP        
 #pragma omp critical (CoredFileMeshData_addPolygon_s )
+#endif
         {
                 sz = polygons;
                 polygonFile->write( &vSize , sizeof(int) );

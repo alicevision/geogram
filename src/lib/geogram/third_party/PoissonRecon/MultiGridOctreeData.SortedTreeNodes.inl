@@ -142,16 +142,18 @@ void SortedTreeNodes::setSliceTableData( SliceTableData& sData , int depth , int
                 sData._cMap = NewPointer< int >( sData.nodeCount * Square::CORNERS );
                 sData._eMap = NewPointer< int >( sData.nodeCount * Square::EDGES );
                 sData._fMap = NewPointer< int >( sData.nodeCount * Square::FACES );
-                sData.cTable = NewPointer< typename SortedTreeNodes::SquareCornerIndices >( sData.nodeCount );
-                sData.eTable = NewPointer< typename SortedTreeNodes::SquareCornerIndices >( sData.nodeCount );
-                sData.fTable = NewPointer< typename SortedTreeNodes::SquareFaceIndices >( sData.nodeCount );
+                sData.cTable = NewPointer< SortedTreeNodes::SquareCornerIndices >( sData.nodeCount );
+                sData.eTable = NewPointer< SortedTreeNodes::SquareCornerIndices >( sData.nodeCount );
+                sData.fTable = NewPointer< SortedTreeNodes::SquareFaceIndices >( sData.nodeCount );
                 memset( sData._cMap , 0 , sizeof(int) * sData.nodeCount * Square::CORNERS );
                 memset( sData._eMap , 0 , sizeof(int) * sData.nodeCount * Square::EDGES );
                 memset( sData._fMap , 0 , sizeof(int) * sData.nodeCount * Square::FACES );
         }
         std::vector< ConstAdjacenctNodeKey > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( depth );
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=span.first ; i<span.second ; i++ )
         {
                 ConstAdjacenctNodeKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -248,7 +250,9 @@ void SortedTreeNodes::setSliceTableData( SliceTableData& sData , int depth , int
         for( size_t i=0 ; i<sData.nodeCount * Square::CORNERS ; i++ ) if( sData._cMap[i] ) sData._cMap[i] = cCount++;
         for( size_t i=0 ; i<sData.nodeCount * Square::EDGES   ; i++ ) if( sData._eMap[i] ) sData._eMap[i] = eCount++;
         for( size_t i=0 ; i<sData.nodeCount * Square::FACES   ; i++ ) if( sData._fMap[i] ) sData._fMap[i] = fCount++;
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=0 ; i<sData.nodeCount ; i++ )
         {
                 for( int j=0 ; j<Square::CORNERS ; j++ ) sData.cTable[i][j] = sData._cMap[ sData.cTable[i][j] ];
@@ -274,15 +278,17 @@ void SortedTreeNodes::setXSliceTableData( XSliceTableData& sData , int depth , i
         {
                 sData._eMap = NewPointer< int >( sData.nodeCount * Square::CORNERS );
                 sData._fMap = NewPointer< int >( sData.nodeCount * Square::EDGES );
-                sData.eTable = NewPointer< typename SortedTreeNodes::SquareCornerIndices >( sData.nodeCount );
-                sData.fTable = NewPointer< typename SortedTreeNodes::SquareEdgeIndices >( sData.nodeCount );
+                sData.eTable = NewPointer< SortedTreeNodes::SquareCornerIndices >( sData.nodeCount );
+                sData.fTable = NewPointer< SortedTreeNodes::SquareEdgeIndices >( sData.nodeCount );
                 memset( sData._eMap , 0 , sizeof(int) * sData.nodeCount * Square::CORNERS );
                 memset( sData._fMap , 0 , sizeof(int) * sData.nodeCount * Square::EDGES );
         }
 
         std::vector< ConstAdjacenctNodeKey > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( depth );
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=span.first ; i<span.second ; i++ )
         {
                 ConstAdjacenctNodeKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -346,7 +352,9 @@ void SortedTreeNodes::setXSliceTableData( XSliceTableData& sData , int depth , i
 
         for( size_t i=0 ; i<sData.nodeCount * Square::CORNERS ; i++ ) if( sData._eMap[i] ) sData._eMap[i] = eCount++;
         for( size_t i=0 ; i<sData.nodeCount * Square::EDGES   ; i++ ) if( sData._fMap[i] ) sData._fMap[i] = fCount++;
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=0 ; i<sData.nodeCount ; i++ )
         {
                 for( int j=0 ; j<Square::CORNERS ; j++ ) sData.eTable[i][j] = sData._eMap[ sData.eTable[i][j] ];

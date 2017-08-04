@@ -305,12 +305,12 @@ void nlSparseMatrixDestroy(NLSparseMatrix* M) {
     NL_DELETE_ARRAY(M->diag) ;
     if(M->storage & NL_MATRIX_STORE_DIAG_INV) {
         NL_DELETE_ARRAY(M->diag_inv) ;
-        M->storage = (NLenum)((int)(M->storage) & ~NL_MATRIX_STORE_DIAG_INV);                    
+        M->storage = (NLenum)((int)(M->storage) & ~NL_MATRIX_STORE_DIAG_INV);
     }    
     if(M->storage & NL_MATRIX_STORE_COMPRESSED) {
         nlCRSMatrixDestroy(M->compressed);
         NL_DELETE(M->compressed);
-        M->storage = (NLenum)((int)(M->storage) & ~NL_MATRIX_STORE_COMPRESSED);            
+        M->storage = (NLenum)((int)(M->storage) & ~NL_MATRIX_STORE_COMPRESSED);
     }
 #ifdef NL_PARANOID
     NL_CLEAR(NLSparseMatrix,M) ;
@@ -473,7 +473,7 @@ void nlSparseMatrixCompress( NLSparseMatrix* M) {
 
 
 
-/************************************************************************************/
+/*****************************************************************************/
 /* SparseMatrix x Vector routines, internal helper routines */
 
 static void nlSparseMatrix_mult_rows_symmetric(

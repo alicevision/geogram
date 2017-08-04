@@ -1,6 +1,8 @@
 #!/bin/sh
 # Wrapper for the RobotFramework test runner
 
+ulimit -c unlimited
+
 scriptdir=`dirname "$0"`
 . "$scriptdir/testenv.sh" || exit 1
 pybot $args

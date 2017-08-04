@@ -45,28 +45,14 @@
 
 #include "poisson_geogram.h"
 
+// Poisson Reconstruction code triggers many warnings,
+// for now we ignore them...
+
 #ifdef __GNUC__
 #ifndef __ICC
-
-#pragma GCC diagnostic ignored "-Wvariadic-macros"
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
-
-#ifdef __clang__
-#pragma GCC diagnostic ignored "-Wc++11-extensions"
-#pragma GCC diagnostic ignored "-Wtautological-compare"
-
-#ifdef GEO_OS_APPLE
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#endif
-
-#else
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
 #endif
 #endif
 
@@ -75,12 +61,13 @@
 #define isfinite _finite
 #endif
 
+// for std::isfinite()
+using namespace std;
 
 #include "MyTime.h"
 #include "MarchingCubes.h"
 #include "Octree.h"
 #include "SparseMatrix.h"
-#include "CmdLineParser.h"
 #include "PPolynomial.h"
 #include "MemoryUsage.h"
 
@@ -88,6 +75,7 @@
 #include <omp.h>
 #endif
 
+// TODO: redirect to geogram Logger.
 void DumpOutput( const char* format , ... ) {
 }
 
@@ -181,9 +169,22 @@ namespace GEO {
         scale_ = 1.1f;
         cg_accuracy_ = 1e-3f;
         point_weight_ = 4.0f;
+
+        keep_voxel_ = false;
+        voxel_res_ = 0;
+        voxel_values_ = nil;
+    }
+
+    PoissonReconstruction::~PoissonReconstruction() {
+        delete[] voxel_values_;
+        voxel_values_ = nil;
+        voxel_res_ = 0;
     }
     
     void PoissonReconstruction::reconstruct(Mesh* points, Mesh* surface) {
+        delete[] voxel_values_;
+        voxel_values_ = nil;
+        
         Reset<double>();
 
         XForm4x4<double> xForm , iXForm;
@@ -229,7 +230,7 @@ namespace GEO {
         // Feeding my data into Misha Kahzdhan's code.
         {
             Mesh_OrientedPointStream pointStream(*points);
-            tree.template SetTree<
+            tree.SetTree<
                 double , NORMAL_DEGREE , WEIGHT_DEGREE , DATA_DEGREE ,
                 Point3D< unsigned char >
             >(
@@ -243,6 +244,14 @@ namespace GEO {
             );
         }
 
+        // Get bounding box
+        {
+            box_origin_ =
+                vec3(tree.center()[0], tree.center()[1], tree.center()[2]);
+            box_edge_length_ = tree.scale();
+        }
+        
+        
         if( !density_ ) {
             delete densityWeights;
             densityWeights = NULL;
@@ -254,9 +263,9 @@ namespace GEO {
         {
             std::vector< int > indexMap;
             if( NORMAL_DEGREE>Degree )
-                tree.template EnableMultigrid< NORMAL_DEGREE >( &indexMap );
+                tree.EnableMultigrid< NORMAL_DEGREE >( &indexMap );
             else
-                tree.template EnableMultigrid<        Degree >( &indexMap );
+                tree.EnableMultigrid< Degree >( &indexMap );
             if( pointInfo ) pointInfo->remapIndices( indexMap );
             if( normalInfo ) normalInfo->remapIndices( indexMap );
             if( densityWeights ) densityWeights->remapIndices( indexMap );
@@ -265,7 +274,7 @@ namespace GEO {
         }
 
         DenseNodeData< double , Degree > constraints =
-            tree.template SetLaplacianConstraints< Degree >( *normalInfo );
+            tree.SetLaplacianConstraints< Degree >( *normalInfo );
         delete normalInfo;
 
         DenseNodeData< double , Degree > solution =
@@ -280,7 +289,20 @@ namespace GEO {
         isoValue = tree.GetIsoValue(solution, *nodeWeights);        
         delete nodeWeights;
 
-        tree.template GetMCIsoSurface< Degree , WEIGHT_DEGREE , DATA_DEGREE >(
+        if(keep_voxel_) {
+            int res;
+            Pointer(double) values = tree.Evaluate(
+                solution, res, isoValue, voxel_depth_, primal_voxel_
+            );
+            voxel_res_ = index_t(res);
+            voxel_values_ = new float[res*res*res];
+            for(index_t i=0; i<voxel_res_*voxel_res_*voxel_res_; ++i) {
+                voxel_values_[i] = float(values[i]);
+            }
+            DeletePointer(values);
+        }
+        
+        tree.GetMCIsoSurface< Degree , WEIGHT_DEGREE , DATA_DEGREE >(
             densityWeights , colorData , solution , isoValue ,
             mesh , !linear_fit_, !non_manifold_, polygon_mesh_
         );
@@ -292,10 +314,12 @@ namespace GEO {
         }
         
         // Copy mesh to result
+        
         surface->clear();
         surface->vertices.set_dimension(3);
 
-        size_t nb_vertices = mesh.outOfCorePointCount() + mesh.inCorePoints.size();
+        size_t nb_vertices =
+            mesh.outOfCorePointCount() + mesh.inCorePoints.size();
         surface->vertices.create_vertices(index_t(nb_vertices));
         
         for(int i=0; i<int(mesh.inCorePoints.size()); ++i) {

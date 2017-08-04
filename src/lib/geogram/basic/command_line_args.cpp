@@ -196,6 +196,10 @@ namespace {
             "algo:predicates", "fast",
             "Geometric predicates (fast, exact)"
         );
+        declare_arg(
+            "algo:reconstruct", "Co3Ne",
+            "reconstruction algorithm (Co3Ne, Poisson)"
+        );
 #ifdef GEO_OS_ANDROID
         // NDK's default multithreading seems to be not SMP-compliant
         // (missing memory barriers in synchronization primitives)
@@ -396,6 +400,13 @@ namespace {
         declare_arg(
             "co3ne:use_normals", true,
             "Use existing normal attached to data if available"
+        );
+
+        // For now, in co3ne import arg group -> todo: create new import func
+        declare_arg_group("poisson", "Reconstruction", ARG_ADVANCED);
+        declare_arg(
+            "poisson:octree_depth", 8,
+            "Octree depth for Poisson reconstruction if used"
         );
     }
 

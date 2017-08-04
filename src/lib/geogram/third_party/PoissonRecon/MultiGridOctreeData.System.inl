@@ -179,13 +179,17 @@ void Octree< Real >::_setMultiColorIndices( int start , int end , std::vector< s
         indices.resize( modulus*modulus*modulus );
         int count[modulus*modulus*modulus];
         memset( count , 0 , sizeof(int)*modulus*modulus*modulus );
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=start ; i<end ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
         {
                 int d , off[3];
                 _sNodes.treeNodes[i]->depthAndOffset( d , off );
                 int idx = (modulus*modulus) * ( off[2]%modulus ) + modulus * ( off[1]%modulus ) + ( off[0]%modulus );
+#ifdef _OPENMP                                
 #pragma omp atomic
+#endif
                 count[idx]++;
         }
 
@@ -224,7 +228,9 @@ void Octree< Real >::_DownSample( int highDepth , DenseNodeData< C , FEMDegree >
         int dim = _Dimension< FEMDegree >(lowDepth);
 
         // Iterate over all (valid) parent nodes
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=_sNodes.begin(lowDepth) ; i<_sNodes.end(lowDepth) ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
         {
                 TreeOctNode* pNode = _sNodes.treeNodes[i];
@@ -308,7 +314,9 @@ void Octree< Real >::_UpSample( int highDepth , DenseNodeData< C , FEMDegree >& 
         int dim = _Dimension< FEMDegree >( lowDepth );
 
         // For Dirichlet constraints, can't get to all children from parents because boundary nodes are invalid
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=_sNodes.begin(highDepth) ; i<_sNodes.end(highDepth) ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
         {
                 TreeOctNode *cNode = _sNodes.treeNodes[i] , *pNode = cNode->parent;
@@ -399,7 +407,9 @@ void Octree< Real >::_UpSample( int highDepth , ConstPointer( C ) lowCoefficient
         int lowDim = _Dimension< FEMDegree >( lowDepth ) , highDim = _Dimension< FEMDegree >( highDepth );
 
         // Iterate over all parent nodes
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int k=0 ; k<lowDim ; k++ ) for( int j=0 ; j<lowDim ; j++ ) for( int i=0 ; i<lowDim ; i++ )
         {
                 DownSampleKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -546,7 +556,9 @@ void Octree< Real >::_SetPointValuesFromCoarser( SparseNodeData< PointData< Real
         std::vector< PointSupportKey< FEMDegree > > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( lowDepth );
 
+#ifdef _OPENMP                
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=_sNodes.begin(highDepth) ; i<_sNodes.end(highDepth) ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
         {
                 PointSupportKey< FEMDegree >& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -579,7 +591,9 @@ void Octree< Real >::_SetPointConstraintsFromFiner( const SparseNodeData< PointD
         memset( coarserConstraints.data+start , 0 , sizeof( Real ) * range );
         std::vector< PointSupportKey< FEMDegree > > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( lowDepth );
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=_sNodes.begin(lowDepth) ; i<_sNodes.end(lowDepth) ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
         {
                 PointSupportKey< FEMDegree >& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -604,8 +618,10 @@ void Octree< Real >::_SetPointConstraintsFromFiner( const SparseNodeData< PointD
                                                 for( int z=-LeftPointSupportRadius ; z<=RightPointSupportRadius ; z++ )
                                                         if( _IsValidNode< FEMDegree >( neighbors.neighbors[x+LeftPointSupportRadius][y+LeftPointSupportRadius][z+LeftPointSupportRadius] ) )
                                                         {
+#ifdef _OPENMP                
 #pragma omp atomic
-                                                                coarserConstraints[ neighbors.neighbors[x+LeftPointSupportRadius][y+LeftPointSupportRadius][z+LeftPointSupportRadius]->nodeData.nodeIndex - _sNodes.begin(lowDepth) ] +=
+#endif
+        coarserConstraints[ neighbors.neighbors[x+LeftPointSupportRadius][y+LeftPointSupportRadius][z+LeftPointSupportRadius]->nodeData.nodeIndex - _sNodes.begin(lowDepth) ] +=
                                                                         Real(
                                                                         bsData.baseBSplines[idx[0]+x][LeftSupportRadius-x]( p[0] ) *
                                                                         bsData.baseBSplines[idx[1]+y][LeftSupportRadius-y]( p[1] ) *
@@ -763,7 +779,9 @@ int Octree< Real >::_GetMatrixAndUpdateConstraints( const SparseNodeData< PointD
         matrix.Resize( (int)range );
         std::vector< AdjacenctNodeKey > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( depth );
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=0 ; i<(int)range ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i+start] ) )
         {
                 AdjacenctNodeKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -774,7 +792,9 @@ int Octree< Real >::_GetMatrixAndUpdateConstraints( const SparseNodeData< PointD
                 int count = _GetMatrixRowSize< FEMDegree >( neighbors );
 
                 // Allocate memory for the row
+#ifdef _OPENMP                                
 #pragma omp critical (matrix_set_row_size)
+#endif
                 matrix.SetRowSize( i , count );
 
                 // Set the row entries
@@ -816,7 +836,9 @@ int Octree< Real >::_GetSliceMatrixAndUpdateConstraints( const SparseNodeData< P
         matrix.Resize( (int)range );
         std::vector< AdjacenctNodeKey > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( depth );
+#ifdef _OPENMP                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=0 ; i<(int)range ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i+nStart] ) )
         {
                 AdjacenctNodeKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -827,7 +849,9 @@ int Octree< Real >::_GetSliceMatrixAndUpdateConstraints( const SparseNodeData< P
                 int count = _GetMatrixRowSize< FEMDegree >( neighbors );
 
                 // Allocate memory for the row
+#ifdef _OPENMP                                
 #pragma omp critical (matrix_set_row_size)
+#endif
                 {
                         matrix.SetRowSize( i , count );
                 }
@@ -883,7 +907,9 @@ int Octree< Real >::_SolveSystemGS( const BSplineData< FEMDegree >& bsData , Spa
                         // Up-sample the cumulative change in solution @(depth-2) into the cumulative change in solution @(depth-1)
                         if( depth-2>=_minDepth ) _UpSample( depth-1 , metSolution );
                         // Add in the change in solution @(depth-1)
+#ifdef _OPENMP                                        
 #pragma omp parallel for num_threads( threads )
+#endif
                         for( int i=_sNodes.begin(depth-1) ; i<_sNodes.end(depth-1) ; i++ ) metSolution[i] += solution[i];
                         // Evaluate the points @(depth) using the cumulative change in solution @(depth-1)
                         if( _constrainValues )
@@ -925,7 +951,9 @@ int Octree< Real >::_SolveSystemGS( const BSplineData< FEMDegree >& bsData , Spa
                                 Pointer( TreeOctNode* ) const nodes = _sNodes.treeNodes + _sNodes.begin(depth);
                                 // Compute residuals
                                 if( showResidual || inRNorm2 )
+#ifdef _OPENMP                                                
 #pragma omp parallel for num_threads( threads ) reduction( + : bNorm , inRNorm )
+#endif
                                         for( int j=0 ; j<_M[_s].rows ; j++ )
                                         {
                                                 Real temp = Real(0);
@@ -937,7 +965,9 @@ int Octree< Real >::_SolveSystemGS( const BSplineData< FEMDegree >& bsData , Spa
                                                 inRNorm += (temp-B[j]) * (temp-B[j]);
                                         }
                                 else if( bNorm2 )
+#ifdef _OPENMP                                                
 #pragma omp parallel for num_threads( threads ) reduction( + : bNorm )
+#endif
                                         for( int j=0 ; j<_M[_s].rows ; j++ ) bNorm += B[j]*B[j];
                         }
                         t = Time();
@@ -965,7 +995,9 @@ int Octree< Real >::_SolveSystemGS( const BSplineData< FEMDegree >& bsData , Spa
                                 int s = backSlice-backOffset*dir , _s = s % matrixSlices;
                                 ConstPointer( Real ) B = constraints.data + _sNodes.begin( depth , s );
                                 Pointer( Real ) X = solution.data + _sNodes.begin( depth , s );
+#ifdef _OPENMP                                                
 #pragma omp parallel for num_threads( threads ) reduction( + : outRNorm )
+#endif
                                 for( int j=0 ; j<_M[_s].rows ; j++ )
                                 {
                                         Real temp = Real(0);
@@ -1032,7 +1064,9 @@ int Octree< Real >::_SolveSystemCG( const BSplineData< FEMDegree >& bsData , Spa
                         // Up-sample the cumulative change in solution @(depth-2) into the cumulative change in solution @(depth-1)
                         if( depth-2>=_minDepth ) _UpSample( depth-1 , metSolution );
                         // Add in the change in solution @(depth-1)
+#ifdef _OPENMP                                        
 #pragma omp parallel for num_threads( threads )
+#endif
                         for( int i=_sNodes.begin(depth-1) ; i<_sNodes.end(depth-1) ; i++ ) metSolution[i] += solution[i];
                         // Evaluate the points @(depth) using the cumulative change in solution @(depth-1)
                         if( _constrainValues )
@@ -1062,7 +1096,9 @@ int Octree< Real >::_SolveSystemCG( const BSplineData< FEMDegree >& bsData , Spa
         if( showResidual || bNorm2 )
         {
                 bNorm = 0;
+#ifdef _OPENMP                                
 #pragma omp parallel for num_threads( threads ) reduction( + : bNorm )
+#endif
                 for( int i=0 ; i<_sNodes.size( depth ) ; i++ ) bNorm += B[i] * B[i];
         }
         if( showResidual || inRNorm2 )
@@ -1071,9 +1107,13 @@ int Octree< Real >::_SolveSystemCG( const BSplineData< FEMDegree >& bsData , Spa
                 Pointer( Real ) temp = AllocPointer< Real >( _sNodes.size(depth) );
                 if( addDCTerm ) M.MultiplyAndAddAverage( ( ConstPointer( Real ) )X , temp , threads );
                 else            M.Multiply( ( ConstPointer( Real ) )X , temp , threads );
+#ifdef _OPENMP                                
 #pragma omp parallel for num_threads( threads )
+#endif
                 for( int i=0 ; i<_sNodes.size(depth) ; i++ ) temp[i] -= B[i];
+#ifdef _OPENMP                                
 #pragma omp parallel for num_threads( threads ) reduction( + : inRNorm )
+#endif
                 for( int i=0 ; i<_sNodes.size(depth) ; i++ ) inRNorm += temp[i] * temp[i];
                 FreePointer( temp );
         }
@@ -1087,9 +1127,13 @@ int Octree< Real >::_SolveSystemCG( const BSplineData< FEMDegree >& bsData , Spa
                 Pointer( Real ) temp = AllocPointer< Real >( _sNodes.size(depth) );
                 if( addDCTerm ) M.MultiplyAndAddAverage( ( ConstPointer( Real ) )X , temp , threads );
                 else            M.Multiply( ( ConstPointer( Real ) )X , temp , threads );
+#ifdef _OPENMP                                
 #pragma omp parallel for num_threads( threads )
+#endif
                 for( int i=0 ; i<_sNodes.size(depth) ; i++ ) temp[i] -= B[i];
+#ifdef _OPENMP                                
 #pragma omp parallel for num_threads( threads ) reduction( + : outRNorm )
+#endif
                 for( int i=0 ; i<_sNodes.size(depth) ; i++ ) outRNorm += temp[i] * temp[i];
                 FreePointer( temp );
         }
@@ -1231,7 +1275,9 @@ void Octree< Real >::_UpdateConstraintsFromFiner( const typename BSplineIntegrat
         // Iterate over the nodes @( depth )
         std::vector< SupportKey > neighborKeys( std::max< int >( 1 , threads ) );
         for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( depth-1 );
+#ifdef _OPENMP                                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=_sNodes.begin(depth) ; i<_sNodes.end(depth) ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
         {
                 SupportKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -1260,13 +1306,17 @@ void Octree< Real >::_UpdateConstraintsFromFiner( const typename BSplineIntegrat
                                 {
                                         const TreeOctNode* _node = pNeighbors.neighbors[x][y][z];
                                         if( isInterior )
+#ifdef _OPENMP                                                                        
 #pragma omp atomic
+#endif
                                                 coarseConstraints[ _node->nodeData.nodeIndex ] += Real( lapStencil.values[x][y][z] * solution );
                                         else
                                         {
                                                 int _d , _off[3];
                                                 _node->depthAndOffset( _d , _off );
+#ifdef _OPENMP                                                                                
 #pragma omp atomic
+#endif
                                                 coarseConstraints[ _node->nodeData.nodeIndex ] += Real( SystemCoefficients< FEMDegree , FEMDegree >::GetLaplacian( childIntegrator , _off , off ) * solution );
                                         }
                                 }
@@ -1343,7 +1393,9 @@ DenseNodeData< Real , FEMDegree > Octree< Real >::SetLaplacianConstraints( const
                 std::vector< SupportKey > neighborKeys( std::max< int >( 1 , threads ) );
                 for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( _maxDepth );
 
+#ifdef _OPENMP                                
 #pragma omp parallel for num_threads( threads )
+#endif
                 for( int i=_sNodes.begin(d) ; i<_sNodes.end(d) ; i++ )
                 {
                         SupportKey& neighborKey = neighborKeys[ omp_get_thread_num() ];
@@ -1412,7 +1464,9 @@ DenseNodeData< Real , FEMDegree > Octree< Real >::SetLaplacianConstraints( const
                                                         _node->depthAndOffset( _d , _off );
                                                         c = Real( SystemCoefficients< FEMDegree , NormalDegree >::GetDivergence1( childIntegrator , _off , off , normal ) );
                                                 }
+#ifdef _OPENMP                                
 #pragma omp atomic
+#endif
                                                 _constraints[ _node->nodeData.nodeIndex ] += c;
                                         }
                                 }
@@ -1425,7 +1479,9 @@ DenseNodeData< Real , FEMDegree > Octree< Real >::SetLaplacianConstraints( const
         for( int d=maxDepth-1 ; d>_minDepth ; d-- ) _DownSample( d , _constraints );
 
         // Add the accumulated constraints from all finer depths
+#ifdef _OPENMP                                        
 #pragma omp parallel for num_threads( threads )
+#endif
         for( int i=0 ; i<_sNodes.end(maxDepth-1) ; i++ ) constraints[i] += _constraints[i];
 
         _constraints.resize( 0 );
@@ -1433,7 +1489,9 @@ DenseNodeData< Real , FEMDegree > Octree< Real >::SetLaplacianConstraints( const
         DenseNodeData< Point3D< Real > , NormalDegree > coefficients( _sNodes.end( maxDepth-1 ) );
         for( int d=maxDepth-1 ; d>=_minDepth ; d-- )
         {
+#ifdef _OPENMP                                        
 #pragma omp parallel for num_threads( threads )
+#endif
                 for( int i=_sNodes.begin(d) ; i<_sNodes.end(d) ; i++ ) if( _IsValidNode< NormalDegree >( _sNodes.treeNodes[i] ) )
                 {
                         int idx = normalInfo.index( _sNodes.treeNodes[i] );
@@ -1455,7 +1513,9 @@ DenseNodeData< Real , FEMDegree > Octree< Real >::SetLaplacianConstraints( const
                 SystemCoefficients< NormalDegree , FEMDegree >::SetCentralDivergenceStencils( childIntegrator , stencils , false );
                 std::vector< SupportKey > neighborKeys( std::max< int >( 1 , threads ) );
                 for( size_t i=0 ; i<neighborKeys.size() ; i++ ) neighborKeys[i].set( maxDepth );
+#ifdef _OPENMP                                                
 #pragma omp parallel for num_threads( threads )
+#endif
                 for( int i=_sNodes.begin(d) ; i<_sNodes.end(d) ; i++ ) if( _IsValidNode< FEMDegree >( _sNodes.treeNodes[i] ) )
                 {
                         SupportKey& neighborKey = neighborKeys[ omp_get_thread_num() ];

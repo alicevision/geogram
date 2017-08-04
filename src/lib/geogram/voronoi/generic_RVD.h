@@ -729,7 +729,7 @@ namespace GEOGen {
                         t_adj = -adjacent - 1;
                     } else if(adjacent > 0) {
                         // Positive adjacent indices correspond to
-                        // Voronoi seed - Voroni seed link
+                        // Voronoi seed - Voronoi seed link
                         v_adj = adjacent - 1;
                     }
                     // and adjacent indicex equal to zero corresponds

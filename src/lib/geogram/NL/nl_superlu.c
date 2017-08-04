@@ -369,7 +369,7 @@ static NLboolean SuperLU_is_initialized() {
         SuperLU()->Destroy_SuperNode_Matrix != NULL &&
         SuperLU()->Destroy_CompCol_Matrix != NULL &&
         SuperLU()->Destroy_SuperMatrix_Store != NULL &&
-        SuperLU()->dgssv != NULL ;
+        SuperLU()->dgssv != NULL;
 }
 
 /**
@@ -407,45 +407,42 @@ static NLboolean SuperLU_is_initialized() {
 
 /************************************************************************/
 
-NLboolean nlSolve_SUPERLU() {
-
-    /* OpenNL Context */
-    NLSparseMatrix* M  = &(nlCurrentContext->M) ;
-    NLdouble* b          = nlCurrentContext->b ;
-    NLdouble* x          = nlCurrentContext->x ;
-
+NLboolean nlSolve_system_with_SUPERLU(
+    NLSparseMatrix* M, double* x, const double* b,
+    NLenum solver, NLboolean clear_M
+) {
     /* Compressed Row Storage matrix representation */
-    NLuint    n      = nlCurrentContext->n ;
-    NLuint    nnz    = nlSparseMatrixNNZ(M) ; /* Number of Non-Zero coeffs */
-    NLint*    xa     = NL_NEW_ARRAY(NLint, n+1) ;
-    NLdouble* rhs    = NL_NEW_ARRAY(NLdouble, n) ;
-    NLdouble* a      = NL_NEW_ARRAY(NLdouble, nnz) ;
-    NLint*    asub   = NL_NEW_ARRAY(NLint, nnz) ;
+    NLuint    n      = M->n;
+    NLuint    nnz    = nlSparseMatrixNNZ(M); /* Number of Non-Zero coeffs */
+    NLint*    xa     = NL_NEW_ARRAY(NLint, n+1);
+    NLdouble* rhs    = NL_NEW_ARRAY(NLdouble, n);
+    NLdouble* a      = NL_NEW_ARRAY(NLdouble, nnz);
+    NLint*    asub   = NL_NEW_ARRAY(NLint, nnz);
 
     /* Permutation vector */
-    NLint*    perm_r  = NL_NEW_ARRAY(NLint, n) ;
-    NLint*    perm    = NL_NEW_ARRAY(NLint, n) ;
+    NLint*    perm_r  = NL_NEW_ARRAY(NLint, n);
+    NLint*    perm    = NL_NEW_ARRAY(NLint, n);
 
     /* SuperLU variables */
-    SuperMatrix A, B ; /* System       */
-    SuperMatrix L, U ; /* Factorization of A */
-    NLint info ;       /* status code  */
-    DNformat *vals = NULL ; /* access to result */
-    double *rvals  = NULL ; /* access to result */
+    SuperMatrix A, B; /* System       */
+    SuperMatrix L, U; /* Factorization of A */
+    NLint info;       /* status code  */
+    DNformat *vals = NULL; /* access to result */
+    double *rvals  = NULL; /* access to result */
 
     /* SuperLU options and stats */
-    superlu3_options_t options3 ;
-    superlu4_options_t options4 ;
-    SuperLUStat_t     stat ;
+    superlu3_options_t options3;
+    superlu4_options_t options4;
+    SuperLUStat_t     stat;
 
     /* Temporary variables */
-    NLRowColumn* Ri = NULL ;
-    NLuint         i,jj,count ;
+    NLRowColumn* Ri = NULL;
+    NLuint         i,jj,count;
     
     /* Sanity checks */
-    nl_assert(!(M->storage & NL_MATRIX_STORE_SYMMETRIC)) ;
-    nl_assert(M->storage & NL_MATRIX_STORE_ROWS) ;
-    nl_assert(M->m == M->n) ;
+    nl_assert(!(M->storage & NL_MATRIX_STORE_SYMMETRIC));
+    nl_assert(M->storage & NL_MATRIX_STORE_ROWS);
+    nl_assert(M->m == M->n);
 
     if(!SuperLU_is_initialized()) {
         nlError(
@@ -461,27 +458,29 @@ NLboolean nlSolve_SUPERLU() {
      * -------------------------------------------------------
      */
 
-    count = 0 ;
+    count = 0;
     for(i=0; i<n; i++) {
-        Ri = &(M->row[i]) ;
+        Ri = &(M->row[i]);
         xa[i] = (NLint)(count);
         for(jj=0; jj<Ri->size; jj++) {
-            a[count]    = Ri->coeff[jj].value ;
-            asub[count] = (NLint)(Ri->coeff[jj].index) ;
-            count++ ;
+            a[count]    = Ri->coeff[jj].value;
+            asub[count] = (NLint)(Ri->coeff[jj].index);
+            count++;
         }
     }
-    xa[n] = (NLint)(nnz) ;
+    xa[n] = (NLint)(nnz);
 
     /* Save memory for SuperLU */
-    nlSparseMatrixClear(M) ;
+    if(clear_M) {
+        nlSparseMatrixClear(M);
+    }
 
 
     /*
      * Rem: SuperLU does not support symmetric storage.
      * In fact, for symmetric matrix, what we need 
      * is a SuperLLt algorithm (SuperNodal sparse Cholesky),
-     * but it does not exist, anybody wants to implement it ?
+     * TODO: interface other solvers from suitesparse.
      * However, this is not a big problem (SuperLU is just
      * a superset of what we really need.
      */
@@ -495,7 +494,7 @@ NLboolean nlSolve_SUPERLU() {
 
     /* Step 2: create vector */
     SuperLU()->dCreate_Dense_Matrix(
-        &B, (int)n, 1, b, (int)n, 
+        &B, (int)n, 1, (double*)b, (int)n, 
         SLU_DN, /* Fortran-type column-wise storage */
         SLU_D,  /* doubles                          */
         SLU_GE  /* general                          */
@@ -507,40 +506,40 @@ NLboolean nlSolve_SUPERLU() {
      */
 
     if(SuperLU_version() >= 4.0) {
-        SuperLU()->set_default_options(&options4) ;
-        switch(nlCurrentContext->solver) {
+        SuperLU()->set_default_options(&options4);
+        switch(solver) {
         case NL_SUPERLU_EXT: {
-            options4.ColPerm = SLU4_NATURAL ;
-        } break ;
+            options4.ColPerm = SLU4_NATURAL;
+        } break;
         case NL_PERM_SUPERLU_EXT: {
-            options4.ColPerm = SLU4_COLAMD ;
-        } break ;
+            options4.ColPerm = SLU4_COLAMD;
+        } break;
         case NL_SYMMETRIC_SUPERLU_EXT: {
-            options4.ColPerm = SLU4_MMD_AT_PLUS_A ;
-            options4.SymmetricMode = YES ;
-        } break ;
+            options4.ColPerm = SLU4_MMD_AT_PLUS_A;
+            options4.SymmetricMode = YES;
+        } break;
         default: 
-            nl_assert_not_reached ;
+            nl_assert_not_reached;
         }
     } else {
-        SuperLU()->set_default_options(&options3) ;
-        switch(nlCurrentContext->solver) {
+        SuperLU()->set_default_options(&options3);
+        switch(solver) {
         case NL_SUPERLU_EXT: {
-            options3.ColPerm = SLU3_NATURAL ;
-        } break ;
+            options3.ColPerm = SLU3_NATURAL;
+        } break;
         case NL_PERM_SUPERLU_EXT: {
-            options3.ColPerm = SLU3_COLAMD ;
-        } break ;
+            options3.ColPerm = SLU3_COLAMD;
+        } break;
         case NL_SYMMETRIC_SUPERLU_EXT: {
-            options3.ColPerm = SLU3_MMD_AT_PLUS_A ;
-            options3.SymmetricMode = YES ;
-        } break ;
+            options3.ColPerm = SLU3_MMD_AT_PLUS_A;
+            options3.SymmetricMode = YES;
+        } break;
         default: 
-            nl_assert_not_reached ;
+            nl_assert_not_reached;
         }
     }
     
-    SuperLU()->StatInit(&stat) ;
+    SuperLU()->StatInit(&stat);
 
     /* Step 4: call SuperLU main routine
      * ---------------------------------
@@ -567,7 +566,7 @@ NLboolean nlSolve_SUPERLU() {
             x[i] = rvals[i];
         }
     } else {
-        nlError("nlSolve", "SuperLU failed") ;
+        nlError("nlSolve", "SuperLU failed");
     }
 
     /* Step 6: cleanup
@@ -579,8 +578,8 @@ NLboolean nlSolve_SUPERLU() {
      * needs to be deallocated (the arrays have been allocated
      * by us).
      */
-    SuperLU()->Destroy_SuperMatrix_Store(&A) ;
-    SuperLU()->Destroy_SuperMatrix_Store(&B) ;
+    SuperLU()->Destroy_SuperMatrix_Store(&A);
+    SuperLU()->Destroy_SuperMatrix_Store(&B);
 
     /*
      *   These ones need to be fully deallocated (they have been
@@ -590,16 +589,34 @@ NLboolean nlSolve_SUPERLU() {
     SuperLU()->Destroy_CompCol_Matrix(&U);
 
     /* There are some dynamically allocated vectors in the stats */
-    SuperLU()->StatFree(&stat) ;
+    SuperLU()->StatFree(&stat);
 
-    NL_DELETE_ARRAY(xa) ;
-    NL_DELETE_ARRAY(rhs) ;
-    NL_DELETE_ARRAY(a) ;
-    NL_DELETE_ARRAY(asub) ;
-    NL_DELETE_ARRAY(perm_r) ;
-    NL_DELETE_ARRAY(perm) ;
+    NL_DELETE_ARRAY(xa);
+    NL_DELETE_ARRAY(rhs);
+    NL_DELETE_ARRAY(a);
+    NL_DELETE_ARRAY(asub);
+    NL_DELETE_ARRAY(perm_r);
+    NL_DELETE_ARRAY(perm);
 
-    return (info == 0) ;
+    return (info == 0);
+}
+
+/************************************************************************/
+
+NLboolean nlSolve_SUPERLU() {
+    /* Get current linear system from context */
+    NLSparseMatrix* M  = &(nlCurrentContext->M);
+    NLdouble* b          = nlCurrentContext->b;
+    NLdouble* x          = nlCurrentContext->x;
+
+    /* Sanity checks */
+    nl_assert(!(M->storage & NL_MATRIX_STORE_SYMMETRIC));
+    nl_assert(M->storage & NL_MATRIX_STORE_ROWS);
+    nl_assert(M->m == M->n);
+    
+    return nlSolve_system_with_SUPERLU(
+        M, x, b, nlCurrentContext->solver, NL_TRUE
+    );
 }
 
 

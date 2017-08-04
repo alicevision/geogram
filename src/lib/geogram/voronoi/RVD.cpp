@@ -994,7 +994,7 @@ namespace {
                 geo_argused(v_adj);
                 geo_argused(t_adj);
                 f_ += simplex_func_->eval(
-                    v,v1,v2,v3,t
+                    v,v1,v2,v3,t,index_t(t_adj),index_t(v_adj)
                 );
             }
 

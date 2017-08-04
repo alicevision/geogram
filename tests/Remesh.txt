@@ -41,14 +41,6 @@ mask.off (gradation=1)
     [Tags]    weekly_valgrind
     Run Test    mask.off    gradation=1
 
-mask.off (profile=reconstruct)
-    [Tags]    daily_valgrind
-    Run Test    mask.off    profile=reconstruct
-
-mask.off (profile=reconstruct, Psmooth=3)
-    [Tags]    daily_valgrind
-    Run Test    mask.off    profile=reconstruct    co3ne:Psmooth=3
-
 test_isect.obj (profile=convert, isect=true)
     [Tags]    daily_valgrind
     Run Test    test_isect.obj    profile=convert    post=true    post:isect=true

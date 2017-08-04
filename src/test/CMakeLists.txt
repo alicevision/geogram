@@ -7,6 +7,7 @@ add_subdirectory(test_locks)
 add_subdirectory(compute_OTM)
 add_subdirectory(compute_delaunay)
 add_subdirectory(test_expansion_nt)
+add_subdirectory(test_HLBFGS)
 
 if(GEOGRAM_WITH_VORPALINE)
    add_subdirectory(test_volumetric_CVT)

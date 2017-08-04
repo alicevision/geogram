@@ -56,7 +56,7 @@
 extern "C" {
 #endif
 
-/************************************************************************************/
+/******************************************************************************/
 /* Dynamic arrays for sparse row/columns */
 
 /**
@@ -181,7 +181,7 @@ void nlRowColumnClear(NLRowColumn* c) ;
  */
 void nlRowColumnSort(NLRowColumn* c) ;
 
-/************************************************************************************/
+/******************************************************************************/
 /* Compressed Row Storage */
 
 /**
@@ -272,7 +272,7 @@ NLboolean nlCRSMatrixLoad(NLCRSMatrix* M, const char* filename);
  */
 NLboolean nlCRSMatrixSave(NLCRSMatrix* M, const char* filename);
 
-/************************************************************************************/
+/******************************************************************************/
 /* SparseMatrix data structure */
 
 /**
@@ -347,7 +347,8 @@ typedef struct {
     NLdouble*    diag ;
 
     /**
-     * \brief the inverse of the diagonal if (storage & NL_MATRIX_STORE_DIAG_INV), 
+     * \brief the inverse of the diagonal if 
+     *  (storage & NL_MATRIX_STORE_DIAG_INV), 
      * size = diag_size, NULL otherwise 
      */    
     NLdouble*    diag_inv ;
@@ -449,7 +450,7 @@ void nlSparseMatrixComputeDiagInv( NLSparseMatrix* M);
  */
 void nlSparseMatrixCompress( NLSparseMatrix* M);
     
-/************************************************************************************/
+/******************************************************************************/
 /* SparseMatrix x Vector routine */
 
 /**

@@ -44,11 +44,13 @@
  */
  
 
-#ifndef H__OGF_SHAPENET_ALGOS_POISSON__H
-#define H__OGF_SHAPENET_ALGOS_POISSON__H
+#ifndef H_OGF_SHAPENET_ALGOS_POISSON_H
+#define H_OGF_SHAPENET_ALGOS_POISSON_H
 
 #include <geogram/basic/common.h>
+#include <geogram/basic/assert.h>
 #include <geogram/basic/numeric.h>
+#include <geogram/basic/geometry.h>
 
 // Note: This file is not part of Kahzdan's original Poisson reconstruction
 // code.
@@ -69,6 +71,11 @@ namespace GEO {
          */
         PoissonReconstruction();
 
+        /***
+         * \brief PoissonReconstruction destructor.
+         */
+        ~PoissonReconstruction();
+        
         /**
          * \brief Reconstructs a surface.
          * \param[in] points a pointer to a Mesh with the points.
@@ -95,10 +102,83 @@ namespace GEO {
         index_t get_depth() const {
             return index_t(depth_);
         }
+
+        /**
+         * \brief Sets whether voxel data should be kept.
+         * \param[in] x true if voxel data should be kept,
+         *  false otherwise (default).
+         */
+        void set_keep_voxel(bool x) {
+            keep_voxel_ = x;
+        }
+
+        /**
+         * \brief Tests whether voxel data is kept.
+         * \retval true if voxel data is kept
+         * \retval false otherwise
+         */
+        bool get_keep_voxel() const {
+            return keep_voxel_;
+        }
+
+        /**
+         * \brief Gets the voxel values.
+         * \details Can be called if set_keel_voxel(true) 
+         *  was called before calling reconstruct().
+         * \return a pointer to an array of 
+         *  voxel_resolution() *  voxel_resolution() * voxel_resolution()
+         *  floating point coordinates. PoissonReconstruction keeps ownership
+         *  of the allocated memory.
+         */
+        float* voxel_values() const {
+            geo_assert(keep_voxel_);
+            return voxel_values_;
+        }
+
+        /**
+         * \brief Gets the resolution of the created voxel grid.
+         * \details Can be called if set_keel_voxel(true) 
+         *  was called before calling reconstruct().
+         * \return The resolution of the created voxel grid.
+         */
+        index_t voxel_resolution() const {
+            geo_assert(keep_voxel_);            
+            return voxel_res_;
+        }
+
+        /**
+         * \brief Gets the origin of the box.
+         * \return the corner of the box with the
+         *  smallest x,y,z coordinates
+         */
+        const vec3& box_origin() const {
+            return box_origin_;
+        }
+
+        /**
+         * \brief Gets the edge length of the box.
+         * \return the edge length of the box
+         */
+        double box_edge_length() const {
+            return box_edge_length_;
+        }
         
+        // TODO: add setters and getters for the
+        // other parameters (not all of them are
+        // needed though)
+
+    private:
+        /**
+         * \brief Forbids copy.
+         */
+        PoissonReconstruction(const PoissonReconstruction& rhs);
+        
+        /**
+         * \brief Forbids copy.
+         */
+        PoissonReconstruction& operator=(const PoissonReconstruction& rhs);
         
     private:
-
         bool performance_;
         bool complete_;
         bool no_comments_;
@@ -130,6 +210,13 @@ namespace GEO {
         float scale_;
         float cg_accuracy_;
         float point_weight_;
+
+        bool keep_voxel_;
+        index_t voxel_res_;
+        float* voxel_values_;
+
+        vec3 box_origin_;
+        double box_edge_length_;
     };
     
 }

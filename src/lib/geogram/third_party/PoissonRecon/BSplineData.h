@@ -173,20 +173,28 @@ public:
                 struct Evaluator
                 {
                 protected:
-                        friend BSplineEvaluationData;
+                        friend class BSplineEvaluationData<Degree>;
                         int _depth;
                         double _ccValues[2][Size][SupportSize];
                 public:
+                        Evaluator() { // [Bruno]
+                            _depth = 0;
+                            memset(_ccValues, 0, sizeof(_ccValues));
+                        }
                         double value( int fIdx , int cIdx , bool d ) const;
                         int depth( void ) const { return _depth; }
                 };
                 struct ChildEvaluator
                 {
                 protected:
-                        friend BSplineEvaluationData;
+                        friend class BSplineEvaluationData<Degree>;
                         int _parentDepth;
                         double _pcValues[2][Size][ChildSupportSize];
                 public:
+                        ChildEvaluator() { // [Bruno]
+                            _parentDepth = 0;
+                            memset(_pcValues, 0, sizeof(_pcValues));
+                        }
                         double value( int fIdx , int cIdx , bool d ) const;
                         int parentDepth( void ) const { return _parentDepth; }
                         int childDepth( void ) const { return _parentDepth+1; }
@@ -209,20 +217,28 @@ public:
                 struct Evaluator
                 {
                 protected:
-                        friend BSplineEvaluationData;
+                        friend class BSplineEvaluationData<Degree>;
                         int _depth;
                         double _ccValues[2][Size][CornerSize];
                 public:
+                        Evaluator() { //[Bruno]
+                            _depth = 0;
+                            memset(_ccValues, 0, sizeof(_ccValues));
+                        }
                         double value( int fIdx , int cIdx , bool d ) const;
                         int depth( void ) const { return _depth; }
                 };
                 struct ChildEvaluator
                 {
                 protected:
-                        friend BSplineEvaluationData;
+                        friend class BSplineEvaluationData<Degree>;
                         int _parentDepth;
                         double _pcValues[2][Size][ChildCornerSize];
                 public:
+                        ChildEvaluator() { //[Bruno]
+                            _parentDepth = 0;
+                            memset(_pcValues, 0, sizeof(_pcValues));
+                        }
                         double value( int fIdx , int cIdx , bool d ) const;
                         int parentDepth( void ) const { return _parentDepth; }
                         int childDepth( void ) const { return _parentDepth+1; }
@@ -259,10 +275,14 @@ public:
                         else                        return Start;
                 }
         protected:
-                friend BSplineEvaluationData;
+                friend class BSplineEvaluationData<Degree>;
                 int _lowDepth;
                 double _pcValues[Size][UpSampleSize];
         public:
+                UpSampleEvaluator() { // [Bruno]
+                    _lowDepth = 0;
+                    memset(_pcValues, 0, sizeof(_pcValues));
+                }
                 double value( int pIdx , int cIdx ) const;
                 int lowDepth( void ) const { return _lowDepth; }
         };
@@ -310,20 +330,28 @@ public:
                 struct Integrator
                 {
                 protected:
-                        friend BSplineIntegrationData;
+                        friend class BSplineIntegrationData<Degree1,Degree2>;
                         int _depth;
                         double _ccIntegrals[2][2][Size][OverlapSize];
                 public:
+                        Integrator() { // [Bruno]
+                            _depth = 0;
+                            memset(_ccIntegrals, 0, sizeof(_ccIntegrals));
+                        }
                         double dot( int fIdx1 , int fidx2 , bool d1 , bool d2 ) const;
                         int depth( void ) const { return _depth; }
                 };
                 struct ChildIntegrator
                 {
                 protected:
-                        friend BSplineIntegrationData;
+                        friend class BSplineIntegrationData<Degree1,Degree2>;
                         int _parentDepth;
                         double _pcIntegrals[2][2][Size][ChildOverlapSize];
                 public:
+                        ChildIntegrator() { // [Bruno]
+                            _parentDepth = 0;
+                            memset(_pcIntegrals, 0, sizeof(_pcIntegrals)); 
+                        }
                         double dot( int fIdx1 , int fidx2 , bool d1 , bool d2 ) const;
                         int parentDepth( void ) const { return _parentDepth; }
                         int childDepth( void ) const { return _parentDepth+1; }
@@ -368,6 +396,7 @@ public:
         Pointer( typename BSplineEvaluationData< Degree >::BSplineComponents ) baseBSplines;
 
         BSplineData( void );
+        ~BSplineData( void );
 
         void set( int maxDepth , bool dirichlet=false );
 };

@@ -12,6 +12,8 @@ export VORPALINE_BUILD_DIR="/home/levy/Programming/Vorpaline/trunk"
 export VORPALINE_BIN_DIR="/home/levy/Programming/Vorpaline/trunk/bin"
 export VORPALINE_LIB_DIR="/home/levy/Programming/Vorpaline/trunk/lib"
 
+ulimit -c unlimited
+
 args=
 while [ -n "$1" ]; do
     case "$1" in

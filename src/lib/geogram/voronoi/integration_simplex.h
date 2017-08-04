@@ -89,25 +89,33 @@ namespace GEO {
         
         /**
          * \brief Computes the contribution of a given integration
-         *  simplex to the function and its gradient.
+         *  simplex to the function and its gradient. An integration
+         *  simplex is obtained as the intersection between a Voronoi
+         *  cell and a triangle or tetrahedron of a background mesh.
          * \param[in] center_vertex_index index of the first vertex
          *  of the integration simplex, that corresponds to one of 
-         *  the points to be optimized
+         *  the vertices of the Delaunay triangulation
          * \param[in] v0 second vertex of the integration simplex, in
          *  both geometric and symbolic forms
          * \param[in] v1 third vertex of the integration simplex, in
          *  both geometric and symbolic forms
          * \param[in] v2 fourth vertex of the integration simplex, in
          *  both geometric and symbolic forms
-         * \param[in] frame_index index of the frame that defines the
-         *  anisotropy of the current integration simplex
+         * \param[in] t the triangle or tetrahedron of the background mesh
+         * \param[in] t_adj the background mesh tetrahedron adjacent to this
+         *  integration simplex accross (\p v0, \p v1, \p v2) or index_t(-1)
+         *  if no such tetrahedron exists.
+         * \param[in] v_adj if (\p v0, \p v1, \p v2) is supported by a bisector,
+         *  the index of the other extremity of the bisector, else index_t(-1)
          */
          virtual double eval(
              index_t center_vertex_index,
              const GEOGen::Vertex& v0,
              const GEOGen::Vertex& v1,
              const GEOGen::Vertex& v2,
-             index_t frame_index
+             index_t t,
+             index_t t_adj = index_t(-1),
+             index_t v_adj = index_t(-1)
          ) = 0;
 
 
@@ -190,7 +198,8 @@ namespace GEO {
          * \brief Constructs a new IntegrationSimplex.
          * \param[in] mesh the mesh
          * \param[in] volumetric true if volumetric, false if surfacic
-         * \param[in] nb_frames number of frames 
+         * \param[in] nb_frames number of frames, typically number of 
+         *  elements of the background mesh
          * \param[in] nb_comp_per_frame number of components per frame,
          *   3 for 3-axis anisotropy, 1 for vector anisotropy.
          * \param[in] frames a const pointer to the array of 

@@ -46,6 +46,7 @@
 #define OPENNL_SUPERLU_H
 
 #include "nl_private.h"
+#include "nl_matrix.h"
 
 /**
  * \file geogram/NL/nl_superlu.h
@@ -68,6 +69,31 @@
  * \retval NL_FALSE otherwise
  */
 NLboolean nlSolve_SUPERLU(void);
+
+/**
+ * \brief Solves a linear system using SuperLU.
+ * \details This function should not be called directly by client code.
+ *  The SUPERLU extension needs to be initialized, by first calling
+ *   nlInitExtension("SUPERLU")
+ * \param[in] M the sparse matrix of the system. It needs to be square. 
+ *  It will be compressed (transformed into CRS storage) if not already 
+ *  compressed.
+ * \param[out] x the solution of the system
+ * \param[in] b the right-hand side of the system
+ * \param[in] solver one of:
+ *   - NL_SUPERLU_EXT if no pre-ordering should be used
+ *   - NL_PERM_SUPERLU_EXT pre-ordering for general matrices
+ *   - NL_SYMMETRIC_SUPERLU_EXT pre-ordering for symmetric matrices
+ * \param[in] clear_M NL_TRUE if M should be destroyed right before
+ *   calling SUPERLU (to leave more RAM to it), NL_FALSE to keep M
+ *   unchanged.
+ * \retval NL_TRUE if solve was successful
+ * \retval NL_FALSE otherwise
+ */
+NLboolean nlSolve_system_with_SUPERLU(
+    NLSparseMatrix* M, double* x, const double* b, NLenum solver,
+    NLboolean clear_M
+);
 
 /**
  * \brief Initializes the SUPERLU extension
