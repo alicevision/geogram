@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2004-2014, Bruno Levy
+ *  Copyright (c) 2012-2014, Bruno Levy
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
  *
  *  Contact: Bruno Levy
  *
- *     levy@loria.fr
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
  *
  *     ALICE Project
  *     LORIA, INRIA Lorraine, 
@@ -42,18 +43,25 @@
  *
  */
 
-#ifndef __GEOGRAM_POINTS_KD_TREE__
-#define __GEOGRAM_POINTS_KD_TREE__
+#ifndef GEOGRAM_POINTS_KD_TREE
+#define GEOGRAM_POINTS_KD_TREE
 
-#include <geogram/basic.h>
+#include <geogram/basic/common.h>
+#include <geogram/points/nn_search.h>
 #include <algorithm>
+
+/**
+ * \file geogram/points/kd_tree.h
+ * \brief An implementation of NearestNeighborSearch with a kd-tree
+ */
 
 namespace GEO {
 
     /**
-     * \brief A balanced kd-tree for nearest neighbor search.
+     * \brief Implements NearestNeighborSearch using a balanced
+     *  kd-tree.
      */
-    class GEOGRAM_API KdTree {
+    class GEOGRAM_API KdTree : public NearestNeighborSearch {
     public:
         /**
          * \brief Creates a new KdTree.
@@ -61,111 +69,40 @@ namespace GEO {
          */
         KdTree(coord_index_t dim);
 
-        /**
-         * \brief KdTree destructor
-         */
-        ~KdTree();
+        virtual void set_points(index_t nb_points, const double* points);
 
-        /**
-         * \brief Sets the points and create the search data structure.
-         * \param[in] nb_points number of points
-         * \param[in] points an array of nb_points * dimension()
-         */
-        void set_points(index_t nb_points, const double* points);
+        virtual bool stride_supported() const;
 
-        /**
-         * \brief Sets the points and create the search data structure.
-         * \details This variant has a stride parameter. 
-         * \param[in] nb_points number of points
-         * \param[in] points an array of nb_points * dimension()
-         * \param[in] stride number of doubles between two consecutive
-         *  points (stride=dimension() by default).
-         */
-        void set_points(
+        virtual void set_points(
             index_t nb_points, const double* points, index_t stride
         );
 
-        /**
-         * \brief Finds the nearest neighbors of a point given by
-         *  coordinates.
-         * \param[in] nb_neighbors number of neighbors to be searched.
-         *  Should be smaller or equal to nb_points() (else it triggers
-         *  an assertion)
-         * \param[in] query_point as an array of dimension() doubles
-         * \param[out] neighbors array of nb_neighbors index_t
-         * \param[out] neighbors_sq_dist array of nb_neighbors doubles
-         */
-        void get_nearest_neighbors(
+        virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             const double* query_point,
             index_t* neighbors,
             double* neighbors_sq_dist
         ) const;
 
-        /**
-         * \brief Finds the nearest neighbors of a point given by
-         *  its index.
-         * \details For some implementation, may be faster than
-         *  nearest neighbor search by point coordinates.
-         * \param[in] nb_neighbors number of neighbors to be searched.
-         *  Should be smaller or equal to nb_points() (else it triggers
-         *  an assertion)
-         * \param[in] query_point as the index of one of the points that
-         *  was inserted in this NearestNeighborSearch
-         * \param[out] neighbors array of nb_neighbors index_t
-         * \param[out] neighbors_sq_dist array of nb_neighbors doubles
-         */
-        void get_nearest_neighbors(
+        virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             index_t query_point,
             index_t* neighbors,
             double* neighbors_sq_dist
         ) const;
 
+    public:
         /**
-         * \brief Nearest neighbor search.
-         * \param[in] query_point array of dimension() doubles
-         * \return the index of the nearest neighbor from \p query_point
+         * \brief Used by multithread tree construction
+         * in the implementation of set_points()
          */
-        index_t get_nearest_neighbor(
-            const double* query_point
-        ) const {
-            index_t result;
-            double sq_dist;
-            get_nearest_neighbors(1, query_point, &result, &sq_dist);
-            geo_assert(signed_index_t(result) >= 0);
-            return index_t(result);
-        }
-
-        
-        /**
-         * \brief Gets the dimension of the points.
-         * \return the dimension
-         */
-        coord_index_t dimension() const {
-            return dimension_;
-        }
-
-        /**
-         * \brief Gets the number of points.
-         * \return the number of points
-         */
-        index_t nb_points() const {
-            return nb_points_;
-        }
-
-        /**
-         * \brief Gets a point by its index
-         * \param[in] i index of the point
-         * \return a const pointer to the coordinates of the point
-         */
-        const double* point_ptr(index_t i) const {
-            geo_debug_assert(i < nb_points());
-            return points_ + i * stride_;
-        }
-
+        void operator() (index_t i);
 
     protected:
+        /**
+         * \brief KdTree destructor
+         */
+        virtual ~KdTree();
 
         /**
          * \brief Number of points stored in the leafs of the tree.
@@ -186,7 +123,7 @@ namespace GEO {
                 return node_id;
             }
             index_t m = b + (e - b) / 2;
-            return std::max(
+            return geo_max(
                 max_node_index(2 * node_id, b, m),
                 max_node_index(2 * node_id + 1, m, e)
             );
@@ -286,8 +223,8 @@ namespace GEO {
             double maxval = Numeric::min_float64();
             for(index_t i = b; i < e; ++i) {
                 double val = point_ptr(point_index_[i])[coord];
-                minval = std::min(minval, val);
-                maxval = std::max(maxval, val);
+                minval = geo_min(minval, val);
+                maxval = geo_max(maxval, val);
             }
             return maxval - minval;
         }
@@ -362,16 +299,13 @@ namespace GEO {
         ) const;
 
     protected:
-        coord_index_t dimension_;
-        index_t nb_points_;
-        index_t stride_;
-        const double* points_;
-
         vector<index_t> point_index_;
         vector<coord_index_t> splitting_coord_;
         vector<double> splitting_val_;
         vector<double> bbox_min_;
         vector<double> bbox_max_;
+
+        index_t m0_, m1_, m2_, m3_, m4_, m5_, m6_, m7_, m8_;
     };
 }
 

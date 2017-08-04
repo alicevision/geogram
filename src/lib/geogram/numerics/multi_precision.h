@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2004-2014, Bruno Levy
+ *  Copyright (c) 2012-2014, Bruno Levy
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
  *
  *  Contact: Bruno Levy
  *
- *     levy@loria.fr
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
  *
  *     ALICE Project
  *     LORIA, INRIA Lorraine, 
@@ -42,15 +43,18 @@
  *
  */
 
-#ifndef __GEOGRAM_NUMERICS_MULTI_PRECISION__
-#define __GEOGRAM_NUMERICS_MULTI_PRECISION__
+#ifndef GEOGRAM_NUMERICS_MULTI_PRECISION
+#define GEOGRAM_NUMERICS_MULTI_PRECISION
 
-#include <geogram/basic.h>
+#include <geogram/basic/common.h>
+#include <geogram/basic/numeric.h>
+#include <geogram/basic/memory.h>
+#include <geogram/basic/assert.h>
 #include <iostream>
 #include <new>
 
 /**
- * \file vorpalib/numerics/multi_precision.h
+ * \file geogram/numerics/multi_precision.h
  * \brief Implementation of multi-precision arithmetics
  * \details
  *  Multi-precision arithmetics based on expansions, as described by
@@ -159,12 +163,24 @@ namespace GEO {
      * \relates expansion
      */
     inline void square(double a, double& x, double& y) {
+#ifdef FP_FAST_FMA
+        // If the target processor supports the FMA (Fused Multiply Add)
+        // instruction, then the product of two doubles into a length-2
+        // expansion can be implemented as follows. Thanks to Marc Glisse
+        // for the information.
+        // Note: under gcc, automatic generations of fma() for a*b+c needs
+        // to be deactivated, using -ffp-contract=off, else it may break
+        // other functions such as fast_expansion_sum_zeroelim().
+        x = a*a;
+        y = fma(a,a,-x);
+#else
         x = a * a;
         double ahi, alo;
         split(a, ahi, alo);
         double err1 = x - (ahi * ahi);
         double err3 = err1 - ((ahi + ahi) * alo);
         y = (alo * alo) - err3;
+#endif
     }
 
     /************************************************************************/
@@ -177,7 +193,10 @@ namespace GEO {
      *  an expansion can be exactly computed. expansion
      *  is useful to implement exact geometric predicates.
      *  Some of Jonathan Shewchuk's expansion manipulation functions
-     *  are used. The high-level API is implemented by expansion_nt.
+     *  are used.
+     *    A higher-level (but less efficient) interface is available
+     *  through the \ref expansion_nt class (expansion number type, that
+     *  overloads operators). 
      */
     class GEOGRAM_API expansion {
     public:
@@ -214,7 +233,11 @@ namespace GEO {
          *  of this expansion
          */
         const double& operator[] (index_t i) const {
-            geo_debug_assert(i < capacity_);
+            // Note: we allocate capacity+1 storage
+            // systematically, since basic functions
+            // may access one additional value (without
+            // using it)
+            geo_debug_assert(i <= capacity_);
             return x_[i];
         }
 
@@ -224,7 +247,11 @@ namespace GEO {
          *  of this expansion
          */
         double& operator[] (index_t i) {
-            geo_debug_assert(i < capacity_);
+            // Note: we allocate capacity+1 storage
+            // systematically, since basic functions
+            // may access one additional value (without
+            // using it)
+            geo_debug_assert(i <= capacity_);
             return x_[i];
         }
 
@@ -259,8 +286,9 @@ namespace GEO {
             // --> capa+1 to have an additional 'sentry' at the end
             // because fast_expansion_sum_zeroelim() may access
             // an entry past the end (without using it).
-            return sizeof(expansion) - 2 * sizeof(double) +
-                   std::max(capa + 1, index_t(2)) * sizeof(double);
+            return
+                sizeof(expansion) - 2 * sizeof(double) +
+                (capa + 1) * sizeof(double);
         }
 
         /**
@@ -274,10 +302,7 @@ namespace GEO {
          */
         expansion(index_t capa) :
             length_(0),
-            capacity_(std::max(capa + 1, index_t(2))) {
-            // --> capa+1 to have an additional 'sentry' at the end
-            // because fast_expansion_sum_zeroelim() may access
-            // an entry past the end (without using it).
+            capacity_(capa) {
         }
 
         /**
@@ -285,63 +310,17 @@ namespace GEO {
          * \details It can only be a macro (and not an inline function)
          *  since alloca() cannot be called from inline functions.
          * \arg capa required capacity of the expansion.
-         * \relates VOR::expansion
+         * \relates GEO::expansion
          */
+#ifdef CPPCHECK
+        // cppcheck does not understand that the result
+        // of alloca() is passed to the placement syntax
+        // of operator new.
+    expansion& new_expansion_on_stack(index_t capa);         
+#else
 #define new_expansion_on_stack(capa)                           \
     (new (alloca(expansion::bytes(capa)))expansion(capa))
-
-        /**
-         * \brief Gets the base address of an expansion.
-         * \details Some additional space can be allocated and
-         *  associated with an expansion, for instance to store
-         *  the reference count for expansions allocated on heap.
-         *  This function returns the base address of this additional
-         *  space.
-         * \param[in] e a pointer to an expansion allocated on
-         *  the heap, previously created by new_expansion_on_heap()
-         * \return the base address of \p e
-         */
-        static void* expansion_baddr(expansion* e) {
-            return Memory::pointer(e) - sizeof(index_t);
-        }
-
-        /**
-         * \brief Gets the number of references
-         *  (from active expansion_nt objects) that point to an expansion.
-         * \details This function is used by expansion_nt, that allocates
-         *  expansions on the heap and does reference counting.
-         * \param[in] e a pointer to an expansion allocated on
-         *  the heap, previously created by new_expansion_on_heap()
-         * \return the number of active references that point to \p e
-         */
-        static index_t& expansion_refcount(expansion* e) {
-            return *reinterpret_cast<index_t*>(expansion_baddr(e));
-        }
-
-        /**
-         * \brief Increases the reference counter of an expansion.
-         * \param[in] e the expansion
-         * \pre e was allocated using new_expansion_on_heap()
-         */
-        static void ref_expansion(expansion* e) {
-            index_t& refcount = expansion_refcount(e);
-            ++refcount;
-        }
-
-        /**
-         * \brief Decreases the reference counter of an expansion and
-         *  deallocates it whenever it reaches zero.
-         * \param[in] e the expansion
-         * \pre e was allocated using new_expansion_on_heap()
-         */
-        static void unref_expansion(expansion* e) {
-            index_t& refcount = expansion_refcount(e);
-            geo_debug_assert(refcount > 0);
-            --refcount;
-            if(refcount == 0) {
-                delete_expansion_on_heap(e);
-            }
-        }
+#endif
 
         /**
          * \brief Allocates an expansion on the heap.
@@ -771,10 +750,7 @@ namespace GEO {
         /**
          * \brief Computes the required capacity of an expansion
          *  to store an exact 2x2 determinant.
-         * \param[in] a11 a coefficient of the determinant
-         * \param[in] a12 a coefficient of the determinant
-         * \param[in] a21 a coefficient of the determinant
-         * \param[in] a22 a coefficient of the determinant
+         * \param[in] a11 , a12 , a21 , a22 coefficients of the determinant
          * \return the required capacity of an expansion to store
          *  the exact determinant \p a11 * \p a22 - \p a21 * \p a12
          */
@@ -792,10 +768,7 @@ namespace GEO {
          *  (should not be used by client code).
          * \details Do not use directly, use expansion_det2x2()
          * macro instead.
-         * \param[in] a11 a coefficient of the determinant
-         * \param[in] a12 a coefficient of the determinant
-         * \param[in] a21 a coefficient of the determinant
-         * \param[in] a22 a coefficient of the determinant
+         * \param[in] a11 , a12 , a21 , a22 coefficients of the determinant
          * \return the new value of this expansion, with
          *  the exact determinant \p a11 * \p a22 - \p a21 * \p a12
          * \pre capacity() >= det_2x2_capacity(a11,a12,,a21,a22)
@@ -808,15 +781,8 @@ namespace GEO {
         /**
          * \brief Computes the required capacity of an expansion
          *  to store an exact 3x3 determinant.
-         * \param[in] a11 a coefficient of the determinant
-         * \param[in] a12 a coefficient of the determinant
-         * \param[in] a13 a coefficient of the determinant
-         * \param[in] a21 a coefficient of the determinant
-         * \param[in] a22 a coefficient of the determinant
-         * \param[in] a23 a coefficient of the determinant
-         * \param[in] a31 a coefficient of the determinant
-         * \param[in] a32 a coefficient of the determinant
-         * \param[in] a33 a coefficient of the determinant
+         * \param[in] a11 , a12 , a13 , a21 , a22 , a23 , a31 , a32 , a33
+         *   coefficients of the determinant
          * \return the required capacity of an expansion to store
          *  the exact value of the determinant
          */
@@ -841,15 +807,8 @@ namespace GEO {
          *  (should not be used by client code).
          * \details Do not use directly, use expansion_det3x3()
          * macro instead.
-         * \param[in] a11 a coefficient of the determinant
-         * \param[in] a12 a coefficient of the determinant
-         * \param[in] a13 a coefficient of the determinant
-         * \param[in] a21 a coefficient of the determinant
-         * \param[in] a22 a coefficient of the determinant
-         * \param[in] a23 a coefficient of the determinant
-         * \param[in] a31 a coefficient of the determinant
-         * \param[in] a32 a coefficient of the determinant
-         * \param[in] a33 a coefficient of the determinant
+         * \param[in] a11 , a12 , a13 , a21 , a22 , a23 , a31 , a32 , a33
+         *   coefficients of the determinant
          * \return the new value of this expansion, with
          *  the exact 3x3 determinant
          * \pre capacity() >=
@@ -865,12 +824,8 @@ namespace GEO {
          * \brief Computes the required capacity of an expansion
          *  to store an exact 3x3 determinant where the
          *  first row is 1 1 1.
-         * \param[in] a21 a coefficient of the determinant
-         * \param[in] a22 a coefficient of the determinant
-         * \param[in] a23 a coefficient of the determinant
-         * \param[in] a31 a coefficient of the determinant
-         * \param[in] a32 a coefficient of the determinant
-         * \param[in] a33 a coefficient of the determinant
+         * \param[in] a21 , a22 , a23 , a31 , a32 , a33 coefficients 
+         *  of the determinant
          * \return the required capacity of an expansion to store
          *  the exact value of the determinant
          */
@@ -889,12 +844,8 @@ namespace GEO {
          *  where the first row is 1 1 1(should not be used by client code).
          * \details Do not use directly, use expansion_det_111_3x3()
          * macro instead.
-         * \param[in] a21 a coefficient of the determinant
-         * \param[in] a22 a coefficient of the determinant
-         * \param[in] a23 a coefficient of the determinant
-         * \param[in] a31 a coefficient of the determinant
-         * \param[in] a32 a coefficient of the determinant
-         * \param[in] a33 a coefficient of the determinant
+         * \param[in] a21 , a22 , a23 , a31 , a32 , a33 coefficients 
+         *  of the determinant
          * \return the new value of this expansion, with
          *  the exact 3x3 determinant
          * \pre capacity() >= det__111_2x3capacity(a21,a22,a23,a31,a32,a33)
@@ -963,16 +914,39 @@ namespace GEO {
             coord_index_t dim
         );
 
+
+        /**
+         * \brief Computes the required capacity to store the 
+         *  length of a 3d vector.
+         * \param[in] x , y , z coordinates of the vector
+         * \return the capacity required to store the squared norm
+         *   of [x,y,z]
+         */
+        static index_t length2_capacity(
+            const expansion& x, const expansion& y, const expansion& z
+        ) {
+            return square_capacity(x) + square_capacity(y) + square_capacity(z);
+        }
+
+        /**
+         * \brief Assigns the lenght of a vector to this expansion 
+         *  (should not be used by client code). Do not call this
+         *  function directy, use expansion_length2() macro instead.
+         * \param[in] x , y , z coordinates of the vector
+         * \return the new value of this expansion, with the squared
+         *  length of [x,y,z]
+         */
+        expansion& assign_length2(
+            const expansion& x, const expansion& y, const expansion& z
+        );
+        
         // =============== some general purpose functions =========
 
         /**
          * \brief Initializes the expansion class.
          * \details This function needs to be called once in the program,
          *  before using any expansion object and operation (it computes
-         *  some internally-used constants). It is called automatically
-         *  by the constructor of a static global object in 
-         *  multi_precision.cpp (normally client code does not need to
-         *  worry about it).
+         *  some internally-used constants).
          */
         static void initialize();
 
@@ -1079,7 +1053,7 @@ namespace GEO {
          * \return a reference to an expansion, allocated on the stack.
          * \warning Do not return or use the returned reference outside the
          * calling function.
-         * \relates VOR::expansion
+         * \relates GEO::expansion
          */
 #define expansion_sub_product(a, a_length, b)           \
     new_expansion_on_stack(                       \
@@ -1122,7 +1096,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_sum(a, b)            \
     new_expansion_on_stack(           \
@@ -1144,7 +1118,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_sum3(a, b, c)          \
     new_expansion_on_stack(            \
@@ -1168,7 +1142,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 
 #define expansion_sum4(a, b, c, d)          \
@@ -1191,7 +1165,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_diff(a, b)             \
     new_expansion_on_stack(             \
@@ -1213,7 +1187,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_product(a, b)            \
     new_expansion_on_stack(               \
@@ -1235,7 +1209,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_product3(a, b, c)           \
     new_expansion_on_stack(                 \
@@ -1255,7 +1229,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_square(a)             \
     new_expansion_on_stack(             \
@@ -1275,7 +1249,7 @@ namespace GEO {
      * const expansion& a22 = ...;
      * expansion& d12 = expansion_set2x2(a11,a12,a21,a22);
      * \endcode
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_det2x2(a11, a12, a21, a22)          \
     new_expansion_on_stack(                        \
@@ -1296,11 +1270,11 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
-#define expansion_det3x3(a11, a12, a13, a21, a22, a23, a31, a32, a33)        \
-    new_expansion_on_stack(                                          \
-        expansion::det3x3_capacity(a11, a12, a13, a21, a22, a23, a31, a32, a33) \
+#define expansion_det3x3(a11, a12, a13, a21, a22, a23, a31, a32, a33)   \
+    new_expansion_on_stack(                                             \
+        expansion::det3x3_capacity(a11,a12,a13,a21,a22,a23,a31,a32,a33) \
     )->assign_det3x3(a11, a12, a13, a21, a22, a23, a31, a32, a33)
 
     /**
@@ -1318,7 +1292,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_det_111_2x3(a21, a22, a23, a31, a32, a33)           \
     new_expansion_on_stack(                                      \
@@ -1341,7 +1315,7 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_sq_dist(a, b, dim)           \
     new_expansion_on_stack(                  \
@@ -1364,471 +1338,77 @@ namespace GEO {
      * \endcode
      * \warning Do not return or use the returned reference outside the
      * calling function.
-     * \relates VOR::expansion
+     * \relates GEO::expansion
      */
 #define expansion_dot_at(a, b, c, dim)           \
     new_expansion_on_stack(                   \
         expansion::dot_at_capacity(dim)       \
     )->assign_dot_at(a, b, c, dim)
 
+
+    /**
+     * \brief Computes an expansion that represents the exact
+     *  squared length of a 3d vector
+     * \param[in] x,y,z coordinates of the vector (specified as expansion)
+     * \return a reference to an expansion, allocated on the stack.
+     * \code
+     * const expansion& x = ...;
+     * const expansion& y = ...;
+     * const expansion& z = ...;
+     * expansion& l = expansion_length2(x,y,z);
+     * \endcode
+     * \warning Do not return or use the returned reference outside the
+     * calling function.
+     * \relates GEO::expansion
+     */
+#define expansion_length2(x,y,z)              \
+    new_expansion_on_stack(                   \
+       expansion::length2_capacity(x,y,z)     \
+    )->assign_length2(x,y,z)
+    
     /************************************************************************/
 
     /**
-     * \brief Expansion_nt (expansion Number Type) is used to compute the
-     *  sign of polynoms exactly.
-     * \details Expansion_nt can be used like float and double. It supports
-     *  three arithmetic operations (+,-,*), comparisons (>,>=,<,<=,==,!=)
-     *  and exact sign computation. expansion_nt is a reference-counted
-     *  wrapper around an \ref expansion allocated on the heap. When
-     *  performance is a concern, the lower-level expansion class may be
-     *  used instead.
+     * \brief Computes the sign of a 2x2 determinant
+     * \details Specialization using the low-evel API for expansions. 
+     *  This gains some performance as compared to using CGAL's 
+     *  determinant template with expansion_nt.
      */
-    class GEOGRAM_API expansion_nt {
-    public:
-        /**
-         * \brief Constructs a new expansion_nt from a double.
-         * \param[in] x the value to initialize this expansion.
-         */
-        expansion_nt(double x = 0.0) {
-            rep_ = expansion::new_expansion_on_heap(2);
-            expansion::ref_expansion(rep_);
-            rep()[0] = x;
-            rep()[1] = 0.0;
-            rep().set_length(1);
-        }
-
-        /**
-         * \brief Copy-constructor.
-         * \details The stored expansion is shared with \p rhs.
-         * \param[in] rhs the expansion to be copied
-         */
-        expansion_nt(const expansion_nt& rhs) :
-            rep_(rhs.rep_) {
-            expansion::ref_expansion(rep_);
-        }
-
-        /**
-         * \brief Assignment operator.
-         * \details The stored expansion is shared with \p rhs.
-         * \param[in] rhs the expansion to be copied
-         * \return the new value of this expansion (rhs)
-         */
-        expansion_nt& operator= (const expansion_nt& rhs) {
-            if(&rhs != this) {
-                expansion::unref_expansion(rep_);
-                rep_ = rhs.rep_;
-                expansion::ref_expansion(rep_);
-            }
-            return *this;
-        }
-
-        /**
-         * \brief Expansion_nt destructor.
-         * \details The stored expansion is deallocated whenever
-         *  reference counting reaches 0.
-         */
-        ~expansion_nt() {
-            expansion::unref_expansion(rep_);
-            rep_ = nil;
-        }
-
-        /********************************************************************/
-
-        /**
-         * \brief Adds an expansion_nt to this expansion_nt
-         * \param[in] rhs the expansion_nt to be added to this expansion_nt
-         * \return the new value of this expansion_nt
-         */
-        expansion_nt& operator+= (const expansion_nt& rhs);
-
-        /**
-         * \brief Substracts an expansion_nt to this expansion_nt
-         * \param[in] rhs the expansion_nt to be substracted
-         * \return the new value of this expansion_nt
-         */
-        expansion_nt& operator-= (const expansion_nt& rhs);
-
-        /**
-         * \brief Multiplies this expansion_nt by an expansion_nt
-         * \param[in] rhs the expansion_nt to multiply this expansion_nt by
-         * \return the new value of this expansion_nt
-         */
-        expansion_nt& operator*= (const expansion_nt& rhs);
-
-        /**
-         * \brief Adds a double to this expansion_nt
-         * \param[in] rhs the double to be added to this expansion_nt
-         * \return the new value of this expansion_nt
-         */
-        expansion_nt& operator+= (double rhs);
-
-        /**
-         * \brief Substracts a double from this expansion_nt
-         * \param[in] rhs the double to be substracted from this expansion_nt
-         * \return the new value of this expansion_nt
-         */
-        expansion_nt& operator-= (double rhs);
-
-        /**
-         * \brief Multiplies this expansion_nt by a double
-         * \details If the double is a constant (possibly negative) power of
-         *  two (e.g. 0.125, 0.5, 2.0, 4.0 ...), one may use
-         *  scale_fast() instead.
-         * \param[in] rhs the double to multiply this expansion_nt with
-         * \return the new value of this expansion_nt
-         */
-        expansion_nt& operator*= (double rhs);
-
-        /********************************************************************/
-
-        /**
-         * \brief Computes the sum of two expansion_nt%s
-         * \param[in] rhs the expansion_nt to be added to this expansion_nt
-         * \return the sum of this expansion_nt and \p rhs
-         */
-        expansion_nt operator+ (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Computes the difference between two expansion_nt%s
-         * \param[in] rhs the expansion_nt to be substracted from
-         *  this expansion_nt
-         * \return the difference between this expansion_nt and \p rhs
-         */
-        expansion_nt operator- (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Computes the product between two expansion_nt%s
-         * \param[in] rhs the expansion_nt to be multiplied by
-         *  this expansion_nt
-         * \return the product between this expansion_nt and \p rhs
-         */
-        expansion_nt operator* (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Computes the sum of an expansion_nt and a double.
-         * \param[in] rhs the double to be added to this expansion_nt
-         * \return the sum of this expansion_nt and \p rhs
-         */
-        expansion_nt operator+ (double rhs) const;
-
-        /**
-         * \brief Computes the difference between an expansion_nt and a double.
-         * \param[in] rhs the double to be subtracted from this expansion_nt
-         * \return the difference between this expansion_nt and \p rhs
-         */
-        expansion_nt operator- (double rhs) const;
-
-        /**
-         * \brief Computes the product between an expansion_nt and a double.
-         * \param[in] rhs the double to be multiplied by this expansion_nt
-         * \return the product between this expansion_nt and \p rhs
-         */
-        expansion_nt operator* (double rhs) const;
-
-        /********************************************************************/
-
-        /**
-         * \brief Computes the opposite of this expansion_nt.
-         * \return the opposite of this expansion_nt
-         */
-        expansion_nt operator- () const;
-
-        /********************************************************************/
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is greater than \p rhs,
-         *  false otherwise
-         */
-        bool operator> (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is greater or equal than \p rhs,
-         *  false otherwise
-         */
-        bool operator>= (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is smaller than \p rhs,
-         *  false otherwise
-         */
-        bool operator< (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is smaller or equal than \p rhs,
-         *  false otherwise
-         */
-        bool operator<= (const expansion_nt& rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is greater than \p rhs,
-         *  false otherwise
-         */
-        bool operator> (double rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is greater or equal than \p rhs,
-         *  false otherwise
-         */
-        bool operator>= (double rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is smaller than \p rhs,
-         *  false otherwise
-         */
-        bool operator< (double rhs) const;
-
-        /**
-         * \brief Compares this expansion_nt with another one.
-         * \details Internally computes the sign of the difference
-         *  between this expansion_nt and \p rhs.
-         * \return true if this expansion_nt is smaller or equal than \p rhs,
-         *  false otherwise
-         */
-        bool operator<= (double rhs) const;
-
-        /********************************************************************/
-
-        /**
-         * \brief Gets the length of this expansion.
-         * \return the number of components used internally
-         *  to represend this expansion.
-         */
-        index_t length() const {
-            return rep().length();
-        }
-
-        /**
-         * \brief Gets the sign of this expansion_nt.
-         * \return the sign of this expansion_nt, computed exactly.
-         */
-        Sign sign() const {
-            return rep().sign();
-        }
-
-    protected:
-        /**
-         * \brief Constructs a new expansion_nt from an expansion.
-         * \details Used internally
-         * \param[in] rep should be a reference-counted expansion, created
-         *  by new_expansion_on_heap(). Its reference counter is incremented.
-         */
-        expansion_nt(expansion* rep) :
-            rep_(rep) {
-            expansion::ref_expansion(rep_);
-        }
-
-        /**
-         * \brief Gets the internal expansion that represents this
-         *  expansion_nt.
-         * \return a reference to the expansion that represents
-         *  this expansion_nt
-         */
-        expansion& rep() {
-            return *rep_;
-        }
-
-        /**
-         * \brief Gets the internal expansion that represents
-         *  this expansion_nt.
-         * \return a const reference to the expansion that represents
-         *  this expansion_nt
-         */
-        const expansion& rep() const {
-            return *rep_;
-        }
-
-        /**
-         * \brief Tests whether the internal expansion of this expansion_nt is
-         *  shared by other instances of expansion_nt.
-         * \return true if other expansion_nt%s share the same representation as
-         *  this expansion_nt, false otherwise.
-         */
-        bool is_shared() const {
-            return expansion::expansion_refcount(rep_) > 1;
-        }
-
-    private:
-        expansion* rep_;
-        friend expansion_nt operator- (double a, const expansion_nt& b);
-
-        friend expansion_nt expansion_nt_sq_dist(
-            const double* a, const double* b, coord_index_t dim
-        );
-
-        friend expansion_nt expansion_nt_dot_at(
-            const double* a, const double* b, const double* c,
-            coord_index_t dim
-        );
-    };
+    Sign GEOGRAM_API sign_of_expansion_determinant(
+        const expansion& a00,const expansion& a01,  
+        const expansion& a10,const expansion& a11
+    );
+    
+    /**
+     * \brief Computes the sign of a 3x3 determinant
+     * \details Specialization using the low-evel API for expansions. 
+     *  This gains some performance as compared to using CGAL's determinant 
+     *  template with expansion_nt.
+     */
+    Sign GEOGRAM_API sign_of_expansion_determinant(
+        const expansion& a00,const expansion& a01,const expansion& a02,
+        const expansion& a10,const expansion& a11,const expansion& a12,
+        const expansion& a20,const expansion& a21,const expansion& a22
+    );
 
     /**
-     * \brief Computes the sum of a double and an expansion_nt
-     * \param[in] a the double to be added
-     * \param[in] b the expansion_nt to be added
-     * \return an expansion_nt that represents \p a + \p b
-     * \relates expansion_nt
+     * \brief Computes the sign of a 4x4 determinant
+     * \details Specialization using the low-evel API for expansions. 
+     *  This gains some performance as compared to using CGAL's determinant 
+     *  template with expansion_nt.
      */
-    inline expansion_nt operator+ (double a, const expansion_nt& b) {
-        return b + a;
-    }
-
-    /**
-     * \brief Computes the difference between a double and an expansion_nt
-     * \param[in] a the double
-     * \param[in] b the expansion_nt to be substracted
-     * \return an expansion_nt that represents \p a - \p b
-     * \relates expansion_nt
-     */
-    inline expansion_nt operator- (double a, const expansion_nt& b) {
-        expansion_nt result = b - a;
-        result.rep().negate();
-        return result;
-    }
-
-    /**
-     * \brief Computes the product of a double and an expansion_nt
-     * \param[in] a the double
-     * \param[in] b the expansion_nt to be multiplied
-     * \return an expansion_nt that represents \p a * \p b
-     * \relates expansion_nt
-     */
-    inline expansion_nt operator* (double a, const expansion_nt& b) {
-        return b * a;
-    }
-
-    /**
-     * \brief Tests equality between two expansion_nt%s.
-     * \details Implemented by testing whether the difference between
-     * \p a and \p b is 0.
-     * \return true if \p a and \p b represent exactly the same value, false
-     *  otherwise
-     * \relates expansion_nt
-     */
-    inline bool operator== (const expansion_nt& a, const expansion_nt& b) {
-        return (a - b).sign() == ZERO;
-    }
-
-    /**
-     * \brief Tests equality between an expansion_nt and a double.
-     * \details Implemented by testing whether the difference between
-     * \p a and \p b is 0.
-     * \return true if \p a and \p b represent exactly the same value, false
-     *  otherwise
-     * \relates expansion_nt
-     */
-    inline bool operator== (const expansion_nt& a, double b) {
-        return (a - b).sign() == ZERO;
-    }
-
-    /**
-     * \brief Tests equality between a double and an expansion_nt.
-     * \details Implemented by testing whether the difference between
-     * \p a and \p b is 0.
-     * \return true if \p a and \p b represent exactly the same value, false
-     *  otherwise
-     * \relates expansion_nt
-     */
-    inline bool operator== (double a, const expansion_nt& b) {
-        return (a - b).sign() == ZERO;
-    }
-
-    /**
-     * \brief Tests whether two expansion_nt%s differ.
-     * \details Implemented by testing whether the difference between
-     * \p a and \p b is different from 0.
-     * \return true if \p a and \p b do not represent the same exact value,
-     *  false otherwise
-     * \relates expansion_nt
-     */
-    inline bool operator!= (const expansion_nt& a, const expansion_nt& b) {
-        return (a - b).sign() != ZERO;
-    }
-
-    /**
-     * \brief Tests whether an expansion_nt differs from a double.
-     * \details Implemented by testing whether the difference between
-     * \p a and \p b is different from 0.
-     * \return true if \p a and \p b do not represent the same exact value,
-     *  false otherwise
-     * \relates expansion_nt
-     */
-    inline bool operator!= (const expansion_nt& a, double b) {
-        return (a - b).sign() != ZERO;
-    }
-
-    /**
-     * \brief Tests whether a double differs from an expansion_nt.
-     * \details Implemented by testing whether the difference between
-     * \p a and \p b is different from 0.
-     * \return true if \p a and \p b do not represent the same exact value,
-     *  false otherwise
-     * \relates expansion_nt
-     */
-    inline bool operator!= (double a, const expansion_nt& b) {
-        return (a - b).sign() != ZERO;
-    }
-
-    /**
-     * \brief Computes an expansion that represents the square distance between
-     *  two points.
-     * \param[in] a an array of \p dim doubles
-     * \param[in] b an array of \p dim doubles
-     * \param[in] dim the dimension of the points
-     * \return an expansion_nt that represent the exact squared
-     *  distance between \p a and \p b
-     * \relates expansion_nt
-     */
-    inline expansion_nt expansion_nt_sq_dist(
-        const double* a, const double* b, coord_index_t dim
-    ) {
-        expansion* result = expansion::new_expansion_on_heap(
-            expansion::sq_dist_capacity(dim)
-        );
-        result->assign_sq_dist(a, b, dim);
-        return expansion_nt(result);
-    }
-
-    /**
-     * \brief Computes an expansion that represents the dot product of
-     *  two vectors determined by three points.
-     * \param[in] a an array of \p dim doubles
-     * \param[in] b an array of \p dim doubles
-     * \param[in] c an array of \p dim doubles
-     * \param[in] dim the dimension of the points
-     * \return an expansion_nt that represents the exact
-     *  dot product (\p a - \p c).(\p b - \p c)
-     * \relates expansion_nt
-     */
-    inline expansion_nt expansion_nt_dot_at(
-        const double* a, const double* b, const double* c, coord_index_t dim
-    ) {
-        expansion* result = expansion::new_expansion_on_heap(
-            expansion::dot_at_capacity(dim)
-        );
-        result->assign_dot_at(a, b, c, dim);
-        return expansion_nt(result);
-    }
+    Sign GEOGRAM_API sign_of_expansion_determinant(
+        const expansion& a00,const expansion& a01,
+        const expansion& a02,const expansion& a03,
+        const expansion& a10,const expansion& a11,
+        const expansion& a12,const expansion& a13,
+        const expansion& a20,const expansion& a21,
+        const expansion& a22,const expansion& a23,
+        const expansion& a30,const expansion& a31,
+        const expansion& a32,const expansion& a33 
+    );
+    
+    /************************************************************************/
 }
 
 #endif

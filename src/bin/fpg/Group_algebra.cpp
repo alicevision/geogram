@@ -31,7 +31,7 @@ struct Group_item_has_same_degree {
         return a->degree() == b->degree();
     }
 };
-};
+}
 
 unsigned int Group_item::indent_level = 0;
 
@@ -123,7 +123,7 @@ Array_item::is_equal( Group_item *other, bool consider_varset ) {
         else
             todo.erase( it2 );
     }
-    assert( todo.size() == 0 );
+    assert( todo.empty() );
     return true;
 }
 
@@ -273,7 +273,7 @@ Product_item::add( Group_item* other ) {
         } else
             ++this_it;
     }
-    if( this_todo.size() > 0 || other_todo.size() > 0 ) {
+    if( !this_todo.empty() || !other_todo.empty() ) {
         MSG("items left!")
         Group_item *i1 = NULL;
         Group_item *i2 = NULL;
@@ -327,7 +327,7 @@ Group_item::mul( Group_item *other ) {
     //other->dump();
     Leaf_item* other_l = dynamic_cast<Leaf_item*>(other);
     // dont do anything for multiplications with constants:
-    if( other_l != NULL && other_l->variables.size() == 0 )
+    if( other_l != NULL && other_l->variables.empty() )
         return this;
     Product_item *p = dynamic_cast< Product_item* >( other );
     if( p != NULL )
@@ -346,7 +346,7 @@ Product_item::mul( Group_item* other ) {
     Product_item *new_p = new Product_item( *this );
     Leaf_item* other_l = dynamic_cast<Leaf_item*>(other);
     // dont do anything for multiplications with constants:
-    if( other_l != NULL && other_l->variables.size() == 0 )
+    if( other_l != NULL && other_l->variables.empty() )
         return this;
 
     Product_item* other_p = dynamic_cast<Product_item*>(other);
@@ -438,7 +438,8 @@ Leaf_item::collect_groups( Group_varset &groups ) {
 
 void
 Array_item::add_to_group( Variable *var ) {
-   CGAL_error_msg("can only add to leaf_items!");
+    argused(var);
+    CGAL_error_msg("can only add to leaf_items!");
 }
 
 void
@@ -448,4 +449,4 @@ Array_item::collect_groups( Group_varset &groups ) {
         (*it)->collect_groups( groups );
 }
 
-};
+}

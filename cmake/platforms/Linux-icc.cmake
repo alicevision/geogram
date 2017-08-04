@@ -2,7 +2,7 @@
 # Flags common to all Linux based platforms with Intel compiler
 #-------------------------------------------------------------------
 
-include(${CMAKE_SOURCE_DIR}/cmake/platforms/Linux.cmake)
+include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux.cmake)
 
 # Set the Intel compilers
 set(CMAKE_CXX_COMPILER icpc)

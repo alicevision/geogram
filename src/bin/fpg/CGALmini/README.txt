@@ -1,5 +1,5 @@
   This directory contains two includes from CGAL, included here to 
-make it easy to compile FPG under various systems. There are completely
+make it easy to compile FPG under various systems. They are completely
 standalone (it is not necassary to install CGAL, neither BOOST 
 or other CGAL dependancies).
 

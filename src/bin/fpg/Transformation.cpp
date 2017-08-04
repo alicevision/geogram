@@ -381,6 +381,8 @@ Transformation_visitor::visit( AST::FunctionDefinition* fd ) {
 
 void
 Transformation_visitor::update( AST::Node *node_old, AST::Node *node_new ) {
+    argused(node_old);
+    argused(node_new);
     MSG("transforming: old" )
     //node_old->dump(0);
     MSG("transforming: new" )
@@ -391,7 +393,8 @@ template< class T >
 void
 Transformation_visitor::transform( T *&t ) {
     MSG("")
-    unsigned int size = node_stack.size();
+    unsigned int size = (unsigned int)(node_stack.size());
+    argused(size);
     handle( t );
     assert( node_stack.size() == size + 1 );
     T *new_t = pop<T>();

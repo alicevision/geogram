@@ -11,7 +11,7 @@
 namespace AST {
   struct FunctionDefinition;
   struct Node;
-};
+}
 
 class Collect_variables;
 
@@ -42,7 +42,7 @@ struct SymbolEnvironment {
     bool hasFunction( const std::string& id );
     AST::FunctionDefinition* findFunctionDef( const std::string& id, unsigned int arity );
     AST::FunctionDefinition* findFunctionDef( FunctionType *fun_type );
-    int numberOfBlocks() const { return env.size(); }
+    int numberOfBlocks() const { return int(env.size()); }
 
     Block* getCurrentBlock() ;
 

@@ -22,7 +22,6 @@ Group_index_value::Group_index_value( Expression_filter* filter, Group_algebra::
 Abstract_value *
 Group_index_value::get_initial_value( Variable *var ) {
     MSG( "group index: " << var->group_index )
-    assert( var->group_index >= 0 );
     Group_index_value* giv = new Group_index_value( filter, new Group_algebra::Leaf_item( var->degree, var->group_index ) );
     giv->var = var;
     return giv;
@@ -37,6 +36,7 @@ Group_index_value::downcast( Abstract_value* value ) {
 
 Group_index_value*
 Group_index_value::add( Abstract_value* other, AST::BinaryExpression *e ) {
+    argused(e);
     MSG("")
     Group_index_value *g = clone();
     Group_index_value *h = downcast(other);
@@ -53,6 +53,7 @@ Group_index_value::sub( Abstract_value* other, AST::BinaryExpression *e ) {
 
 Group_index_value*
 Group_index_value::div( Abstract_value* other ) {
+    argused(other);
     CGAL_error_msg( "division not supported" );
     return NULL;
 }
@@ -104,6 +105,7 @@ Group_index_value::assign( AST::AssignmentExpression* aexp ) {
 
 Group_index_value*
 Group_index_value::join( Abstract_value* other ) {
+    argused(other);
     CGAL_error_msg( "sqrt not supported" );
     return NULL;
 }

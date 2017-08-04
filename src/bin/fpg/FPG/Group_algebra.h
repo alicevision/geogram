@@ -70,6 +70,6 @@ struct Sum_item : public Array_item {
     virtual void          dump();
 };
 
-};
+}
 
 #endif

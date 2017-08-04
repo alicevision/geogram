@@ -8,6 +8,7 @@
 #define CGAL_BASIC
 #include <iostream>
 #include <cassert>
+#include <string>
 
 inline void CGAL_error_msg(const std::string& msg) {
    std::cerr << "CGAL error:" << msg << std::endl;

@@ -10,7 +10,7 @@ namespace Flags {
     bool prettyprint = false; // pretty print the (desugared) program
     bool dumpAST = false;     // print the AST
     bool xstdin = false;       // read from stdin
-};
+}
 
 
 inline
@@ -74,7 +74,7 @@ open_and_parse( std::string filename ) {
         symbol_env.resolve_function_calls( translation_unit );
         translation_unit->computeType();
         return true;
-    }
+    } 
     return false;
 }
 

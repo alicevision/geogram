@@ -63,6 +63,7 @@ struct Variable : public Symbol {
        : Symbol( id ),
          type( type ),
          is_constant(false),
+         value(0),
          group_index(0),
          degree(1)
     {}
@@ -91,7 +92,7 @@ struct FunctionType: public Type {
     { addParameter( new Variable( name, type ) );  }
     void addParameter( Variable *var );
     std::string name() const;
-    int numberOfParameters() const { return parameters.size(); }
+    int numberOfParameters() const { return int(parameters.size()); }
     Type *getReturnType() const { return return_type; }
     virtual bool isConvertible( Type *target_type ) const;
     // only count non-bonud types

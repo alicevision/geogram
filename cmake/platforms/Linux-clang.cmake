@@ -2,24 +2,20 @@
 # Flags common to all Linux based platforms with GNU compiler
 #-------------------------------------------------------------------
 
-include(${CMAKE_SOURCE_DIR}/cmake/platforms/Linux.cmake)
+include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux.cmake)
 
 # Warning flags
 set(NORMAL_WARNINGS -Wall -Wextra)
+
 set(FULL_WARNINGS
     -Weverything
-    -Wno-unused-macros
-    -Wno-disabled-macro-expansion
-    -Wno-covered-switch-default
-    -Wno-padded
-    -Wno-float-equal
-    # Ignore warnings about global variables ctors and dtors
+    -Wno-padded # Disable generating a message each time padding is used
+    -Wno-float-equal # Sometimes we compare floats (against 0.0 or 1.0 mainly)
     -Wno-global-constructors
     -Wno-exit-time-destructors
-    # Turn this on to detect documentation errors (very useful)
-    -Wno-documentation
-    # Too many of sign conversion problems. Ignore them for the moment.
-    #-Wno-sign-conversion
+    -Wno-old-style-cast # Yes, old-style cast is sometime more legible...
+    -Wno-format-nonliteral # Todo: use Laurent Alonso's trick
+    -Wno-disabled-macro-expansion # Else it complains with stderr
 )
 
 # Compile with full warnings by default
@@ -38,15 +34,12 @@ add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 add_flags(CMAKE_CXX_FLAGS -msse3)
 add_flags(CMAKE_C_FLAGS -msse3)
 
+# C++11 standard
+add_flags(CMAKE_CXX_FLAGS -Qunused-arguments -std=c++11 -Wno-c++98-compat)
+
 # Enable glibc parallel mode
 #add_flags(CMAKE_CXX_FLAGS -D_GLIBCXX_PARALLEL)
 
-# Enable some algebraic transforms
-# (necessary for vectorizing certain reductions and dot products)
-#!!! -- deactivated, because it breaks Shewchuck's predicates --
-#add_flags(CMAKE_CXX_FLAGS -ffast-math -fassociative-math)
-#add_flags(CMAKE_C_FLAGS -ffast-math -fassociative-math)
-#-ftree-vectorizer-verbose=2 
 
 # Generate debug information even in release mode
 #add_flags(CMAKE_CXX_FLAGS_RELEASE -g)

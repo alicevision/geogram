@@ -6,6 +6,12 @@
 
 #include <FPG/Location.h>
 
+/**
+ * \brief Suppresses compiler warnings about unused parameters.
+ */
+template <class T> inline void argused(const T&) {
+}
+
 class Error {
  public:
   Location location;

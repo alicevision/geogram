@@ -37,7 +37,7 @@ struct Funtype_init {
 };
 
 Funtype_init bla;
-};
+}
 
 bool is_float( Type *t ) {
     return t->isEqual(type_float);
@@ -104,6 +104,7 @@ FunctionType::non_bound_arity() {
 bool
 FunctionType::isConvertible( Type *target_type ) const
 {
+    argused(target_type);
     throw InternalError("function types cannot be compared");
 }
 

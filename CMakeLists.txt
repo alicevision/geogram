@@ -1,92 +1,99 @@
 ##############################################################################
-# Geogram root CMakeList
+# Geogram/Vorpaline root CMakeList
 ##############################################################################
-
-# Make sure that GEOGRAM_PLATFORM is defined
-
-if(NOT DEFINED GEOGRAM_PLATFORM)
-    message(FATAL_ERROR
-        " CMake variable GEOGRAM_PLATFORM is not defined.\n"
-        " Please run configure.{sh,bat} to setup the build tree."
-    )
-endif()
 
 # CMake 2.8.11 is required for 2 reasons:
 # - it is the first version that fully supports the specification of Visual
 # Studio toolsets (v110_xp).
 # - it is the version that supports the command string(TIMESTAMP ...)
-
 cmake_minimum_required(VERSION 2.8.11)
 
-project(Geogram)
+# Note: geogram.cmake defines GEOGRAM_WITH_VORPALINE
+# that we could have used instead,
+# but geogram.cmake needs to be included after the project() 
+# command, since project() resets CFLAGS and CXXFLAGS.
 
-set(GEOGRAM_VERSION_MAJOR 0)
-set(GEOGRAM_VERSION_MINOR 9)
-set(GEOGRAM_VERSION_PATCH 0)
-set(GEOGRAM_VERSION ${GEOGRAM_VERSION_MAJOR}.${GEOGRAM_VERSION_MINOR}.${GEOGRAM_VERSION_PATCH})
+if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/lib/vorpalib)
+    project(Vorpaline)
+else()
+    project(Geogram)
+endif()
+
+# Optional modules
+# (can be overriden in CMakeOptions.txt)
+
+if(NOT DEFINED GEOGRAM_WITH_GRAPHICS) 
+    set(GEOGRAM_WITH_GRAPHICS TRUE)
+endif()    
+
+include(cmake/geogram.cmake)
+
+set(VORPALINE_VERSION_MAJOR 1)
+set(VORPALINE_VERSION_MINOR 0)
+set(VORPALINE_VERSION_PATCH 0)
+set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
+
 
 # Determine the current Build-OS (Build-platform without the compiler info)
-string(REGEX REPLACE "-[^-]+$" "" GEOGRAM_OS ${GEOGRAM_PLATFORM})
+string(REGEX REPLACE "-[^-]+$" "" VORPALINE_OS ${VORPALINE_PLATFORM})
 
 # Determine the current build date
-string(TIMESTAMP GEOGRAM_BUILD_DATE "%Y-%m-%d %H:%M:%S")
+string(TIMESTAMP VORPALINE_BUILD_DATE "%Y-%m-%d %H:%M:%S")
 string(TIMESTAMP YEAR "%Y")
 
 # Determine the current build number
 # This is set by Jenkins in environment variable BUILD_NUMBER
-set(GEOGRAM_BUILD_NUMBER $ENV{BUILD_NUMBER})
+set(VORPALINE_BUILD_NUMBER $ENV{BUILD_NUMBER})
+
 
 ##############################################################################
 # Get SVN revision info
 
-#find_package(Subversion QUIET)
-#if(NOT SUBVERSION_FOUND)
-#    message(WARNING "Subversion executable not found - cannot determine current revision")
-#else()
-#    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Geogram)
-#    message(STATUS "Geogram revision is ${Geogram_WC_REVISION}")
-#    set(GEOGRAM_SVN_REVISION ${Geogram_WC_REVISION})
-#endif()
-
-
-##############################################################################
-# Build configuration
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-
-if(EXISTS ${CMAKE_SOURCE_DIR}/CMakeOptions.txt)
-   message(STATUS "Using local options file: ${CMAKE_SOURCE_DIR}/CMakeOptions.txt")
-   include(${CMAKE_SOURCE_DIR}/CMakeOptions.txt)
-endif()
-
-include(${CMAKE_SOURCE_DIR}/cmake/utilities.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/platforms/${GEOGRAM_PLATFORM}/config.cmake)
-
-# This test is there to keep CMake happy about unused variable CMAKE_BUILD_TYPE
-if(CMAKE_BUILD_TYPE STREQUAL "")
-endif()
-
-# Static versus dynamic builds
-if(GEOGRAM_BUILD_DYNAMIC)
-    set(BUILD_SHARED_LIBS TRUE)
-    # Object files in OBJECT libraries are compiled in static mode, event if
-    # BUILD_SHARED_LIBS is true! We must set CMAKE_POSITION_INDEPENDENT_CODE
-    # to force compilation in dynamic mode.
-    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-else()
-    set(BUILD_SHARED_LIBS FALSE)
-endif()
+if(GEOGRAM_WITH_VORPALINE)
+   find_package(Subversion QUIET)
+   if(NOT SUBVERSION_FOUND)
+       message(WARNING "Subversion executable not found - cannot determine current revision")
+   else()
+       Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Vorpaline)
+       message(STATUS "Vorpaline revision is ${Vorpaline_WC_REVISION}")
+       set(VORPALINE_SVN_REVISION ${Vorpaline_WC_REVISION})
+   endif()
+endif()   
 
 ##############################################################################
-# Geogram sources
-
-include_directories(${CMAKE_SOURCE_DIR}/src/lib)
+# Geogram/Vorpaline sources
 
 add_subdirectory(src/lib/geogram)
-#add_subdirectory(src/bin/fpg)
-add_subdirectory(src/bin/delaunay3d)
+add_subdirectory(src/bin/vorpastat)
+add_subdirectory(src/bin/vorpacomp)
+add_subdirectory(src/bin/geodump)
+
+if(GEOGRAM_WITH_FPG)
+   add_subdirectory(src/bin/fpg)
+endif()
+
+if(GEOGRAM_WITH_VORPALINE)
+   add_subdirectory(src/lib/vorpalib)
+   add_subdirectory(src/bin/vorpaline)
+else()
+   add_subdirectory(src/bin/vorpalite)
+endif()
+
+if(GEOGRAM_WITH_GRAPHICS)
+   add_subdirectory(src/lib/geogram_gfx)
+   add_subdirectory(src/bin/vorpaview)
+endif()
+
+add_subdirectory(src/lib/third_party)
+add_subdirectory(src/test)
+
+if(GEOGRAM_WITH_GRAPHICS)
+   add_subdirectory(src/demos)
+endif()
+
+add_subdirectory(doc)
+add_subdirectory(tests)
+
 
 ##############################################################################
 # Cleanup from previous builds
@@ -95,17 +102,21 @@ file(REMOVE ${CMAKE_BINARY_DIR}/doc/LICENSE.txt)
 
 
 ##############################################################################
-# Geogram installation
+# Vorpaline installation
 
 # Configure CPack
 
-set(CPACK_SYSTEM_NAME ${GEOGRAM_OS})
-SET(CPACK_PACKAGE_VENDOR "INRIA - ALICE")
+set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
+set(CPACK_SYSTEM_NAME ${VORPALINE_OS})
+set(CPACK_PACKAGE_VENDOR "INRIA - ALICE")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A flexible mesh generator")
 
-set(CPACK_PACKAGE_VERSION_MAJOR ${GEOGRAM_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${GEOGRAM_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${GEOGRAM_VERSION_PATCH})
-set(CPACK_PACKAGE_VERSION ${GEOGRAM_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${VORPALINE_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${VORPALINE_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${VORPALINE_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION ${VORPALINE_VERSION})
+set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION})
+set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY true)
 
 if(WIN32)
     set(CPACK_GENERATOR ZIP)
@@ -113,20 +124,36 @@ else()
     set(CPACK_GENERATOR TGZ)
 endif()
 
-# Enable composant-based packaging for archive generators (TGZ, ZIP)
+# Enable component-based packaging for archive generators (TGZ, ZIP)
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 
-set(CPACK_COMPONENTS_ALL runtime devkit devkit-full)
+set(CPACK_COMPONENTS_ALL runtime devkit devkit-full doc-devkit doc-devkit-full)
 set(CPACK_COMPONENTS_GROUPING "IGNORE")
 
-set(CPACK_COMPONENT_RUNTIME_DISPLAY_NAME "Geogram Application")
+set(CPACK_COMPONENT_RUNTIME_DISPLAY_NAME "Vorpaline Application")
 set(CPACK_COMPONENT_RUNTIME_GROUP "Runtime")
 
-set(CPACK_COMPONENT_DEVKIT_DISPLAY_NAME "Geogram Developer Kit")
+set(CPACK_COMPONENT_DEVKIT_DISPLAY_NAME "Vorpaline Developer Kit")
 set(CPACK_COMPONENT_DEVKIT_GROUP "Development")
 
-set(CPACK_COMPONENT_DEVKIT-FULL_DISPLAY_NAME "Geogram Full Developer Kit")
+set(CPACK_COMPONENT_DEVKIT-FULL_DISPLAY_NAME "Vorpaline Full Developer Kit")
 set(CPACK_COMPONENT_DEVKIT-FULL_GROUP "Development")
+
+set(CPACK_COMPONENT_DOC-DEVKIT_DISPLAY_NAME "Vorpaline API Developer Kit Documentation")
+set(CPACK_COMPONENT_DOC-DEVKIT_GROUP "Documentation")
+
+set(CPACK_COMPONENT_DOC-DEVKIT-FULL_DISPLAY_NAME "Vorpaline Full Developer Kit Documentation")
+set(CPACK_COMPONENT_DOC-DEVKIT-FULL_GROUP "Documentation")
+
+set(CPACK_COMPONENT_DOC-DEVKIT-INTERNAL_DISPLAY_NAME "Vorpaline Internal Developer Kit Documentation")
+set(CPACK_COMPONENT_DOC-DEVKIT-INTERNAL_GROUP "Documentation")
+
+# Copy the helper script to build individual packages to the binary directory
+configure_file(
+    tools/make_package.pl.in
+    make_package.pl
+    @ONLY
+)
 
 # This must always be last!
 include(CPack)

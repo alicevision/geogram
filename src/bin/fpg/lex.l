@@ -133,7 +133,7 @@ int caller;
 
 [ \t\v\n\f]		{ count(); }
 
-.			{ count(); yyerror("bad character"); }
+.			{ count(); yyerror((char*)("bad character")); }
 
 %%
 
@@ -145,17 +145,18 @@ int yywrap() {
 void comment() {
     char c, c1;
 loop:
-    while ((c = yyinput()) != '*' && c != 0)
+    while ((c = (char)yyinput()) != '*' && c != 0)
         /*putchar(c)*/;
 
-    if ((c1 = yyinput()) != '/' && c != 0)
+    if ((c1 = (char)yyinput()) != '/' && c != 0)
     {
         //unput(c1);
         goto loop;
     }
 
-    if (c != 0);
-         /*putchar(c1) ;*/
+    if (c != 0) {
+    }
+    /*putchar(c1) ;*/
 }
 
 

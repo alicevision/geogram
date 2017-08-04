@@ -1,8 +1,8 @@
 #ifndef LOCATION_H
 #define LOCATION_H
 
-#include<string>
-#include<sstream>
+#include <string>
+#include <sstream>
 #include <iostream>
 
 /* describes where "something " is, i.e.,

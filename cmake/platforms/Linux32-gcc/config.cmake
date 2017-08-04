@@ -1,5 +1,5 @@
 set(VORPALINE_ARCH_32 true)
-include(${CMAKE_SOURCE_DIR}/cmake/platforms/Linux-gcc.cmake)
+include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux-gcc.cmake)
 add_flags(CMAKE_CXX_FLAGS -m32)
 add_flags(CMAKE_C_FLAGS -m32)
 

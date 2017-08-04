@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2004-2014, Bruno Levy
+ *  Copyright (c) 2012-2014, Bruno Levy
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
  *
  *  Contact: Bruno Levy
  *
- *     levy@loria.fr
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
  *
  *     ALICE Project
  *     LORIA, INRIA Lorraine, 
@@ -43,6 +44,9 @@
  */
 
 #include <geogram/points/kd_tree.h>
+#include <geogram/basic/geometry_nd.h>
+#include <geogram/basic/process.h>
+#include <geogram/basic/algorithm.h>
 
 namespace {
 
@@ -104,15 +108,25 @@ namespace {
 namespace GEO {
 
     KdTree::KdTree(coord_index_t dim) :
-        dimension_(dim),
-        nb_points_(0),
-        stride_(0),
-        points_(nil),
+        NearestNeighborSearch(dim),
         bbox_min_(dim),
-        bbox_max_(dim) {
+        bbox_max_(dim),
+        m0_(max_index_t()),
+        m1_(max_index_t()),
+        m2_(max_index_t()),
+        m3_(max_index_t()),
+        m4_(max_index_t()),
+        m5_(max_index_t()),
+        m6_(max_index_t()),
+        m7_(max_index_t()),
+        m8_(max_index_t()) {
     }
 
     KdTree::~KdTree() {
+    }
+
+    bool KdTree::stride_supported() const {
+        return true;
     }
 
     void KdTree::set_points(
@@ -132,18 +146,39 @@ namespace GEO {
             point_index_[i] = i;
         }
 
-        create_kd_tree_recursive(1, 0, nb_points);
+        // If there are more than 16*MAX_LEAF_SIZE (=256) points,
+        // create the tree in parallel
+        if(
+            nb_points >= (16 * MAX_LEAF_SIZE) &&
+            Process::maximum_concurrent_threads() > 1
+        ) {
+            m0_ = 0;
+            m8_ = nb_points;
+            // Create the first level of the tree
+            m4_ = split_kd_node(1, m0_, m8_);
+            // Create the second level of the tree
+            //  (using two threads)
+            parallel_for(*this, 2, 4);
+            // Create the third level of the tree
+            //  (using four threads)
+            parallel_for(*this, 4, 8);
+            // Create the fourth level of the tree
+            //  (using eight threads)
+            parallel_for(*this, 8, 16);
+        } else {
+            create_kd_tree_recursive(1, 0, nb_points);
+        }
 
         // Compute the bounding box.
         for(coord_index_t c = 0; c < dimension(); ++c) {
-            bbox_min_[c] = Numeric::max_float64();
-            bbox_max_[c] = Numeric::min_float64();
+            bbox_min_[c] = 1e30;
+            bbox_max_[c] = -1e30;
         }
         for(index_t i = 0; i < nb_points; ++i) {
             const double* p = point_ptr(i);
             for(coord_index_t c = 0; c < dimension(); ++c) {
-                bbox_min_[c] = std::min(bbox_min_[c], p[c]);
-                bbox_max_[c] = std::max(bbox_max_[c], p[c]);
+                bbox_min_[c] = geo_min(bbox_min_[c], p[c]);
+                bbox_max_[c] = geo_max(bbox_max_[c], p[c]);
             }
         }
     }
@@ -152,6 +187,61 @@ namespace GEO {
         index_t nb_points, const double* points
     ) {
         set_points(nb_points, points, dimension());
+    }
+
+    void KdTree::operator() (index_t i) {
+        switch(i) {
+            // Second level of the tree: create two nodes in
+            //  parallel.
+            case 2:
+                m2_ = split_kd_node(2, m0_, m4_);
+                break;
+            case 3:
+                m6_ = split_kd_node(3, m4_, m8_);
+                break;
+
+            // Third level of the tree: create four nodes in
+            // parallel.
+            case 4:
+                m1_ = split_kd_node(4, m0_, m2_);
+                break;
+            case 5:
+                m3_ = split_kd_node(5, m2_, m4_);
+                break;
+            case 6:
+                m5_ = split_kd_node(6, m4_, m6_);
+                break;
+            case 7:
+                m7_ = split_kd_node(7, m6_, m8_);
+                break;
+
+            // Fourth level of the tree: create eight subtrees
+            // in parallel.
+            case 8:
+                create_kd_tree_recursive(8, m0_, m1_);
+                break;
+            case 9:
+                create_kd_tree_recursive(9, m1_, m2_);
+                break;
+            case 10:
+                create_kd_tree_recursive(10, m2_, m3_);
+                break;
+            case 11:
+                create_kd_tree_recursive(11, m3_, m4_);
+                break;
+            case 12:
+                create_kd_tree_recursive(12, m4_, m5_);
+                break;
+            case 13:
+                create_kd_tree_recursive(13, m5_, m6_);
+                break;
+            case 14:
+                create_kd_tree_recursive(14, m6_, m7_);
+                break;
+            case 15:
+                create_kd_tree_recursive(15, m7_, m8_);
+                break;
+        }
     }
 
     index_t KdTree::split_kd_node(
@@ -255,6 +345,8 @@ namespace GEO {
         // TODO: optimized version that uses the fact that
         // we know that query_point is in the search data
         // structure already.
+        // (I tryed something already, see in the Attic, 
+        //  but it did not give any significant speedup).
         get_nearest_neighbors(
             nb_neighbors, point_ptr(q_index), 
             neighbors, neighbors_sq_dist

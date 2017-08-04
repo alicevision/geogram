@@ -1,0 +1,492 @@
+/*
+ *  Copyright (c) 2012-2014, Bruno Levy
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *  * Redistributions of source code must retain the above copyright notice,
+ *  this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright notice,
+ *  this list of conditions and the following disclaimer in the documentation
+ *  and/or other materials provided with the distribution.
+ *  * Neither the name of the ALICE Project-Team nor the names of its
+ *  contributors may be used to endorse or promote products derived from this
+ *  software without specific prior written permission.
+ * 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  If you modify this software, you should include a notice giving the
+ *  name of the person performing the modification, the date of modification,
+ *  and the reason for such modification.
+ *
+ *  Contact: Bruno Levy
+ *
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
+ *
+ *     ALICE Project
+ *     LORIA, INRIA Lorraine, 
+ *     Campus Scientifique, BP 239
+ *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     FRANCE
+ *
+ */
+
+#include <geogram/basic/geofile.h>
+#include <geogram/basic/string.h>
+#include <geogram/basic/logger.h>
+
+namespace GEO {
+    
+    /**************************************************************/
+
+    GeoFileException::~GeoFileException() GEO_NOEXCEPT {
+    }
+    
+    /**************************************************************/
+
+    GeoFile::GeoFile(const std::string& filename) :
+        filename_(filename),
+        file_(nil),
+        current_chunk_class_("0000"),
+        current_chunk_size_(0),
+        current_chunk_file_pos_(0) {
+    }
+    
+    GeoFile::~GeoFile() {
+        if(file_ != nil) {
+            gzclose(file_);
+        }
+    }
+
+    void GeoFile::check_chunk_size() {
+        long chunk_size = gztell(file_) - current_chunk_file_pos_;
+        if(current_chunk_size_ != chunk_size) {
+            throw GeoFileException(
+                std::string("Chunk size mismatch: ") + 
+                " expected " + String::to_string(current_chunk_size_) +
+                "/ got " + String::to_string(chunk_size)
+            );
+        }
+    }
+
+    void GeoFile::check_zlib_version() {
+        if(strcmp(ZLIB_VERSION, zlibVersion())) {
+            Logger::warn("GeoFile") << "ZLib version mismatch !" << std::endl;
+            Logger::warn("GeoFile") << "  from  header: " << ZLIB_VERSION
+                                    << std::endl;
+            Logger::warn("GeoFile") << "  from runtime: " << zlibVersion()
+                                    << std::endl;
+        }
+    }
+    
+    void GeoFile::read_chunk_header() {
+        current_chunk_class_ = read_chunk_class();
+        if(gzeof(file_)) {
+            gzclose(file_);
+            file_ = nil;
+            current_chunk_size_ = 0;
+            current_chunk_class_ = "EOFL";
+            return;
+        }
+        current_chunk_size_ = long(read_size());
+        current_chunk_file_pos_ = gztell(file_);
+    }
+
+    void GeoFile::write_chunk_header(
+        const std::string& chunk_class, size_t size
+    ) {
+        write_chunk_class(chunk_class);
+        write_size(size);
+        current_chunk_file_pos_ = gztell(file_);
+        current_chunk_class_ = chunk_class;
+        current_chunk_size_ = long(size);
+    }
+    
+    index_t GeoFile::read_int() {
+        Numeric::uint32 result=0;
+        int check = gzread(file_, &result, sizeof(Numeric::uint32));
+        if(check == 0 && gzeof(file_)) {
+            result = Numeric::uint32(-1);
+        } else {
+            if(check != sizeof(Numeric::uint32)) {
+                throw GeoFileException("Could not read integer from file");
+            }
+        }
+        return result;
+    }
+    
+    void GeoFile::write_int(index_t x_in) {
+        Numeric::uint32 x = Numeric::uint32(x_in);
+        int check = gzwrite(file_, &x, sizeof(Numeric::uint32));
+        if(check != sizeof(Numeric::uint32)) {
+            throw GeoFileException("Could not write integer to file");
+        }
+    }
+
+    std::string GeoFile::read_string() {
+        std::string result;
+        index_t len=read_int();
+        result.resize(len);
+        if(len != 0) {
+            int check = gzread(file_, &result[0], len);
+            if(index_t(check) != len) {
+                throw GeoFileException("Could not read string data from file");
+            }
+        }
+        return result;
+    }
+    
+    void GeoFile::write_string(const std::string& str) {
+        index_t len = index_t(str.length());
+        write_int(len);
+        if(len != 0) {
+            int check = gzwrite(file_, &str[0], len);
+            if(index_t(check) != len) {
+                throw GeoFileException("Could not write string data to file");
+            }
+        }
+    }
+
+    size_t GeoFile::read_size() {
+        Numeric::uint64 result=0;
+        int check = gzread(file_, &result, sizeof(Numeric::uint64));
+        if(check == 0 && gzeof(file_)) {
+            result = size_t(-1);
+        } else {
+            if(check != sizeof(Numeric::uint64)) {
+                throw GeoFileException("Could not read size from file");
+            }
+        }
+        return size_t(result);
+    }
+    
+    void GeoFile::write_size(size_t x_in) {
+        Numeric::uint64 x = Numeric::uint64(x_in);
+        int check = gzwrite(file_, &x, sizeof(Numeric::uint64));
+        if(check != sizeof(Numeric::uint64)) {
+            throw GeoFileException("Could not write size to file");
+        }
+    }
+
+    std::string GeoFile::read_chunk_class() {
+        std::string result;
+        result.resize(4,'\0');
+        int check = gzread(file_, &result[0], 4);
+        if(check == 0 && gzeof(file_)) {
+            result = "EOFL";
+        } else {
+            if(check != 4) {
+                throw GeoFileException("Could not read chunk class from file");
+            }
+        }
+        return result;
+    }
+
+    void GeoFile::write_chunk_class(const std::string& chunk_class) {
+        geo_assert(chunk_class.length() == 4);
+        int check = gzwrite(file_, &chunk_class[0], 4);
+        if(check != 4) {
+            throw GeoFileException("Could not write chunk class to file");
+        }
+    }
+
+    void GeoFile::write_string_array(const std::vector<std::string>& strings) {
+        write_int(index_t(strings.size()));
+        for(index_t i=0; i<strings.size(); ++i) {
+            write_string(strings[i]);
+        }
+    }
+    
+    void GeoFile::read_string_array(std::vector<std::string>& strings) {
+        index_t nb_strings = read_int();
+        strings.resize(nb_strings);
+        for(index_t i=0; i<nb_strings; ++i) {
+            strings[i] = read_string();
+        }
+    }
+
+    size_t GeoFile::string_array_size(
+        const std::vector<std::string>& strings
+    ) const {
+        size_t result = sizeof(index_t);
+        for(index_t i=0; i<strings.size(); ++i) {
+            result += string_size(strings[i]);
+        }
+        return result;
+    }
+
+    void GeoFile::clear_attribute_maps() {
+        attribute_sets_.clear();
+    }
+    
+    /**********************************************************************/
+    
+    InputGeoFile::InputGeoFile(
+        const std::string& filename
+    ) : GeoFile(filename),
+        current_attribute_set_(nil),
+        current_attribute_(nil)
+    {
+        check_zlib_version();
+        file_ = gzopen(filename.c_str(), "rb");
+        if(file_ == nil) {
+            throw GeoFileException("Could not open file: " + filename);
+        }
+
+        read_chunk_header();
+        if(current_chunk_class_ != "HEAD") {
+            throw GeoFileException(
+                filename + " Does not start with HEAD chunk"
+            );
+        }
+        
+        std::string magic = read_string();
+        if(magic != "GEOGRAM") {
+            throw GeoFileException(
+                filename + " is not a GEOGRAM file"
+            );
+        }
+        std::string version = read_string();
+        Logger::out("I/O") << "GeoFile version: " << version << std::endl;
+        check_chunk_size();
+    }
+
+    const std::string& InputGeoFile::next_chunk() {
+
+        // If the file pointer did not advance as expected
+        // between two consecutive calls of next_chunk, it
+        // means that the client code does not want to
+        // read the current chunk, then it needs to be
+        // skipped.
+        if(gztell(file_) != current_chunk_file_pos_ + current_chunk_size_) {
+            skip_chunk();
+        }
+
+        read_chunk_header();
+        
+        if(current_chunk_class_ == "ATTS") {
+            std::string attribute_set_name = read_string();
+            index_t nb_items = read_int();
+            check_chunk_size();
+            
+            if(find_attribute_set(attribute_set_name) != nil) {
+                throw GeoFileException(
+                    "Duplicate attribute set " + attribute_set_name
+                );
+            }
+            attribute_sets_[attribute_set_name] =
+                AttributeSetInfo(attribute_set_name, nb_items);
+            current_attribute_set_ = find_attribute_set(attribute_set_name);
+            geo_assert(current_attribute_set_ != nil);
+            current_attribute_ = nil;
+            current_comment_ = "";
+        } else if(current_chunk_class_ == "ATTR") {
+            std::string attribute_set_name = read_string();
+            std::string attribute_name = read_string();
+            std::string element_type = read_string();
+            index_t element_size = read_int();
+            index_t dimension = read_int();
+            current_attribute_set_ = find_attribute_set(attribute_set_name);
+            if(current_attribute_set_->find_attribute(attribute_name) != nil) {
+                throw GeoFileException(
+                    "Duplicate attribute " + attribute_name +
+                    " in attribute set " + attribute_set_name
+                );
+            }
+            current_attribute_set_->attributes.push_back(
+                AttributeInfo(
+                    attribute_name,
+                    element_type,
+                    element_size,
+                    dimension
+                )
+            );
+            current_attribute_ =
+                current_attribute_set_->find_attribute(attribute_name);
+            geo_assert(current_attribute_ != nil);
+            current_comment_ = "";
+            
+            if(current_attribute_set_->skip) {
+                skip_chunk();
+                return next_chunk();
+            }
+        } else if(current_chunk_class_ == "CMNT") {
+            current_attribute_ = nil;
+            current_attribute_set_ = nil;
+            current_comment_ = read_string();
+            check_chunk_size();
+        } else if(current_chunk_class_ == "SPTR") {
+            clear_attribute_maps();
+        }
+        return current_chunk_class_;
+    }
+
+    void InputGeoFile::read_attribute(void* addr) {
+        geo_assert(current_chunk_class_ == "ATTR");
+        size_t size =
+            size_t(current_attribute_->element_size) *
+            size_t(current_attribute_->dimension) *
+            size_t(current_attribute_set_->nb_items);
+        int check = gzread(file_, addr, index_t(size));
+        if(size_t(check) != size) {
+            throw GeoFileException(
+                "Could not read attribute " + current_attribute_->name +
+                " in set " + current_attribute_set_->name +
+                " (" + String::to_string(check) + "/"
+                + String::to_string(size) + " bytes read)"
+            );
+        }
+        check_chunk_size();
+    }
+
+    void InputGeoFile::skip_chunk() {
+        gzseek(
+            file_,
+            current_chunk_size_ + current_chunk_file_pos_,
+            SEEK_SET
+        );
+    }
+
+    void InputGeoFile::skip_attribute_set() {
+        geo_assert(current_chunk_class_ == "ATTS");
+        current_attribute_set_->skip = true;
+    }
+
+    void InputGeoFile::read_command_line(
+        std::vector<std::string>& args
+    ) {
+        geo_assert(current_chunk_class() == "CMDL");
+        read_string_array(args);
+        check_chunk_size();
+    }
+    
+    /**************************************************************/
+
+    OutputGeoFile::OutputGeoFile(
+        const std::string& filename, index_t compression_level
+    ) : GeoFile(filename) {
+        check_zlib_version();        
+        if(compression_level == 0) {
+            file_ = gzopen(filename.c_str(), "wb");
+        } else {
+            file_ = gzopen(
+                filename.c_str(),
+                ("wb" + String::to_string(compression_level)).c_str()
+            );
+        }
+        if(file_ == nil) {
+            throw GeoFileException("Could not create file: " + filename);
+        }
+        std::string magic = "GEOGRAM";
+        std::string version = "1.0";
+        write_chunk_header("HEAD", string_size(magic) + string_size(version));
+        write_string(magic);
+        write_string(version);
+        check_chunk_size();
+    }
+
+    void OutputGeoFile::write_attribute_set(
+        const std::string& attribute_set_name, index_t nb_items
+    ) {
+        geo_assert(find_attribute_set(attribute_set_name) == nil);
+
+        attribute_sets_[attribute_set_name] =
+            AttributeSetInfo(attribute_set_name, nb_items);
+
+        write_chunk_header(
+            "ATTS",
+            string_size(attribute_set_name) +
+            sizeof(index_t)
+        );
+        
+        write_string(attribute_set_name);
+        write_int(nb_items);
+
+        check_chunk_size();
+    }
+
+    void OutputGeoFile::write_attribute(
+        const std::string& attribute_set_name,
+        const std::string& attribute_name,
+        const std::string& element_type,
+        size_t element_size,            
+        index_t dimension,
+        const void* data
+    ) {
+        AttributeSetInfo* attribute_set_info = find_attribute_set(
+            attribute_set_name
+        );
+        geo_assert(attribute_set_info != nil);
+        geo_assert(attribute_set_info->find_attribute(attribute_name) == nil);
+
+        size_t data_size =
+            element_size * dimension *
+            attribute_sets_[attribute_set_name].nb_items;
+
+        write_chunk_header(
+            "ATTR",
+            string_size(attribute_set_name) +
+            string_size(attribute_name) +
+            string_size(element_type) +
+            sizeof(index_t) +
+            sizeof(index_t) +
+            data_size
+        );
+        
+        write_string(attribute_set_name);
+        write_string(attribute_name);
+        write_string(element_type);
+        write_int(index_t(element_size));
+        write_int(dimension);
+
+        int check = gzwrite(file_, data, index_t(data_size));
+        if(size_t(check) != data_size) {
+            throw GeoFileException("Could not write attribute data");
+        }
+
+        check_chunk_size();
+        
+        attribute_set_info->attributes.push_back(
+            AttributeInfo(attribute_name, element_type, element_size, dimension)
+        );
+    }
+
+    void OutputGeoFile::write_comment(const std::string& comment) {
+        write_chunk_header(
+            "CMNT",
+            string_size(comment)
+        );
+        write_string(comment);
+        check_chunk_size();
+    }
+
+    void OutputGeoFile::write_command_line(
+        const std::vector<std::string>& args
+    ) {
+        write_chunk_header("CMDL", string_array_size(args));
+        write_string_array(args);
+        check_chunk_size();
+    }
+
+    void OutputGeoFile::write_separator() {
+        clear_attribute_maps();        
+        write_chunk_header("SPTR", 4);
+        write_chunk_class("____");
+        check_chunk_size();
+    }
+    
+    /**************************************************************/    
+}
+

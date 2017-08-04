@@ -53,10 +53,12 @@ struct Static_filter_error : public Abstract_value {
     }
 
     virtual Static_filter_error* div( Abstract_value* other ) {
+        argused(other);
         throw RuntimeError( "Static_filter_error: division not supported" );
     }
 
     virtual Static_filter_error* mul( Abstract_value* other ) {
+        argused(other);        
         return new Static_filter_error( filter, error() * downcast(other)->error() );
     }
 
@@ -67,6 +69,7 @@ struct Static_filter_error : public Abstract_value {
     }
 
     virtual Static_filter_error* join( Abstract_value* other ) {
+        argused(other);        
         throw RuntimeError( "Static_filter_error: join op not supported" );
     }
 

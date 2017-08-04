@@ -26,7 +26,7 @@ void
 Prettyprint_visitor::dumpIndent() {
     if( do_indent == false )
         return;
-    int bla = indent_count;
+    unsigned int bla = indent_count;
     while( bla-- ) out << " ";
 }
 
@@ -106,6 +106,7 @@ Prettyprint_visitor::visit( AST::AssignmentExpression *node ) {
 void
 Prettyprint_visitor::visit( AST::UnaryFunction *node ) {
     AST::Expression *e = node->e;
+    argused(e);
     assert( e != NULL );
     switch( node->kind ) {
     case AST::UnaryFunction::XSIGN : out << "sign"; break;
@@ -132,6 +133,7 @@ Prettyprint_visitor::visit( AST::FunctionCall *node ) {
 
 void
 Prettyprint_visitor::visit( AST::EmptyStatement *node ) {
+    argused(node);
     dumpIndent();
     out << ";" << std::endl;
 }

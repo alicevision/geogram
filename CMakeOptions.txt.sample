@@ -1,0 +1,30 @@
+# Example of CMakeOptions.txt file
+
+set(GEOGRAM_WITH_TETGEN TRUE)
+set(GEOGRAM_WITH_MEDIT TRUE)
+set(GEOGRAM_WITH_GRAPHICS TRUE)
+
+#Uncomment to compile FPG (Meyer and Pion's Floating Point Filter Generator)
+#set(GEOGRAM_WITH_FPG TRUE)
+
+#Uncomment the following line for using FMA instructions (see comments in
+#  geogram/numerics/multi√_precision.h / multi_precision.cpp)
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfma -frounding-math -ffp-contract=off")
+
+# These options can also be specified with configure.sh --with-xxx(=...)
+
+# set(VORPALINE_WITH_GCOV TRUE)
+# Equivalent to: configures.sh --with-gcov
+
+# set(VORPALINE_WITH_GPROF TRUE)
+# Equivalent to: configures.sh --with-gprof
+
+# set(VORPALINE_WITH_ASAN TRUE)
+# Equivalent to: configures.sh --with-asan
+
+# set(VORPALINE_WITH_TSAN TRUE)
+# Equivalent to: configures.sh --with-tsan
+
+# set(VORPALINE_WITH_DDT "/opt/allinea-tools")
+# Equivalent to: configures.sh --with-ddt=/opt/allinea-tools
+

@@ -11,7 +11,8 @@ struct Attribute_visitor : public Generic_visitor {
     bool       use_shortcut_value;
 
     Attribute_visitor( bool interprocedural = true )
-      : Generic_visitor(interprocedural)
+        : Generic_visitor(interprocedural),
+          use_shortcut_value(false)
     {}
 
     void set_default_value( ResultType value ) {

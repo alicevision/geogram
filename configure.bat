@@ -69,13 +69,13 @@ if "%CMAKE_VS_GENERATOR_TOOLSET%" neq "" (
 
 ::set cmake_debug_options=--trace --debug-output
 pushd build\%opsys%
-cmake ..\.. %cmake_debug_options% %cmake_generator_options% -DGEOGRAM_PLATFORM:STRING=%opsys% || exit /B 1
+cmake ..\.. %cmake_debug_options% %cmake_generator_options% -DVORPALINE_PLATFORM:STRING=%opsys% || exit /B 1
 popd
 
 echo.
-echo ============== Geogram build configured ==================
+echo ============== Vorpaline build configured ==================
 echo.
-echo To build geogram:
+echo To build vorpaline:
 echo - go to build/%opsys%
 echo - run 'cmake --build . --config=Release(or Debug) [--target=target_to_build]'
 echo.
@@ -87,3 +87,4 @@ echo.
 :: Clear globals
 
 set opsys=
+exit /B 0

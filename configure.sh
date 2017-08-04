@@ -10,10 +10,11 @@ echo ============= Checking for CMake ============
 echo
 
 if (cmake --version); then
-   echo "Found CMake"
+    echo "Found CMake"
+    echo
 else
-   echo "Error: CMake not found, please install it (see http://www.cmake.org/)"
-   exit 1
+    echo "Error: CMake not found, please install it (see http://www.cmake.org/)"
+    exit 1
 fi
 
 # Parse command line arguments
@@ -25,26 +26,37 @@ while [ -n "$1" ]; do
             cmake_options="$cmake_options --trace"
             shift
             ;;
-
         --with-*=*)
-            cmake_option=`echo "$1" | sed 's/--with-\([^=]*\)=\(.*\)$/-DGEOGRAM_WITH_\U\1\E:STRING="\2"/'`
+            cmake_option=`echo "$1" | sed 's/--with-\([^=]*\)=\(.*\)$/-DVORPALINE_WITH_\U\1\E:STRING="\2"/'`
             cmake_options="$cmake_options $cmake_option"
             shift
             ;;
 
         --with-*)
-            cmake_option=`echo "$1" | sed 's/--with-\(.*\)$/-DGEOGRAM_WITH_\U\1:BOOL=TRUE/'`
+            cmake_option=`echo "$1" | sed 's/--with-\(.*\)$/-DVORPALINE_WITH_\U\1:BOOL=TRUE/'`
             cmake_options="$cmake_options $cmake_option"
             shift
             ;;
-
+        
+        --help-platforms)
+            echo "Supported platforms:"
+            for i in `find cmake/platforms/* -type d`
+            do
+                if [ $i != "xxxcmake/platforms" ]
+                then
+                    echo "*" `basename $i`
+                fi
+            done
+            exit
+            ;;
+            
         --help)
             cat <<END
 NAME
     configure.sh
 
 SYNOPSIS
-    Prepares the build environment for Geogram.
+    Prepares the build environment for Geogram/Vorpaline.
     
     - For Unix builds, the script creates 2 build trees for Debug and Release
     build in a 'build' sub directory under the project root.
@@ -80,8 +92,7 @@ OPTIONS
         the specified directory: ddt-root-dir
 
 PLATFORM
-    Build platform supported by Geogram. See cmake/platforms for supported
-    platforms.
+    Build platforms supported by Geogram/Vorpaline: use configure.sh --help-platforms
 END
             exit
             ;;
@@ -103,13 +114,16 @@ if [ -z "$os" ]; then
     os=`uname -a`
     case "$os" in
         Linux*x86_64*)
-            os=Linux64-gcc
+            os=Linux64-gcc-dynamic
             ;;
         Linux*amd64*)
-            os=Linux64-gcc
+            os=Linux64-gcc-dynamic
             ;;
         Linux*i586*|Linux*i686*)
-            os=Linux32-gcc
+            os=Linux32-gcc-dynamic
+            ;;
+        Darwin*)
+            os=Darwin-clang-dynamic
             ;;
         *)
             echo "Error: OS not supported: $os"
@@ -119,6 +133,12 @@ if [ -z "$os" ]; then
 fi
 
 #  Import plaform specific environment
+
+if [ ! -f cmake/platforms/$os/setvars.sh ]
+then
+    echo $os: no such platform
+    exit 1
+fi
 
 . cmake/platforms/$os/setvars.sh || exit 1
 
@@ -132,7 +152,7 @@ for config in Release Debug; do
 
    build_dir=build/$platform
    mkdir -p $build_dir
-   (cd $build_dir; cmake -DCMAKE_BUILD_TYPE:STRING=$config -DGEOGRAM_PLATFORM:STRING=$os $cmake_options ../../)
+   (cd $build_dir; cmake -DCMAKE_BUILD_TYPE:STRING=$config -DVORPALINE_PLATFORM:STRING=$os $cmake_options ../../)
 done
 
 echo

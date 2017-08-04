@@ -5,14 +5,15 @@
 
 namespace AST {
      class TranslationUnit;
-};
+}
 
 
 namespace Flags {
     extern bool prettyprint; // pretty print the (desugared) program
     extern bool dumpAST;
     extern bool xstdin;
-};
+}
+
 /* parsing stuff */
 extern int lineno;
 extern AST::TranslationUnit *translation_unit;

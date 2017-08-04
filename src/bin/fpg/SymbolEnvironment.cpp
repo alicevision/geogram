@@ -108,9 +108,9 @@ SymbolEnvironment::findVariable( const std::string& id )
 {
     MSG("var access " << id );
     assert( env.size() > 0 );
-    for( int block = env.size() - 1; block >= 0; --block ) {
+    for( int block = int(env.size()) - 1; block >= 0; --block ) {
         //MSG( "looking in block " << block );
-    Variable* var = env[block]->findVariable( id );
+        Variable* var = env[size_t(block)]->findVariable( id );
     if(var)
        return var;
     }
@@ -120,10 +120,10 @@ SymbolEnvironment::findVariable( const std::string& id )
 Type*
 SymbolEnvironment::findType( const std::string& id ) {
     assert( env.size() > 0 );
-    for( int block = env.size() - 1; block >= 0; --block ) {
+    for( int block = int(env.size()) - 1; block >= 0; --block ) {
         //MSG( "looking in block " << block );
-        Types::iterator it = env[block]->types.find( id );
-        if( it != env[block]->types.end() )
+        Types::iterator it = env[size_t(block)]->types.find( id );
+        if( it != env[size_t(block)]->types.end() )
             return it->second;
     }
     return NULL;
@@ -242,7 +242,7 @@ random_identifier( unsigned int size ) {
     result[size] = 0;
     while( size > 0 ) {
         // prevent rounding towards nearest => floor
-        unsigned int i = int(std::floor(drand48() * sizeof(pool)));
+        unsigned int i = (unsigned int)(std::floor(drand48() * sizeof(pool)));
         assert( i < sizeof(pool) );
         --size;
         result[size] = pool[i];

@@ -86,6 +86,24 @@ function(add_flags _var)
     set(${_var} ${flags} PARENT_SCOPE)
 endfunction()
 
+
+#!
+# @brief Adds values to a string
+# @details
+# Convenience macro for adding values individually to a string considered as a
+# space separated list of values.
+# Compared to list_append, the values are not transformed into a semicolon separated list.
+# It differs from add_flags because it does not suppress duplicates values
+# @param[in,out] _var name of the variable that contains the input string
+# @param[in] values list of values to add to @a _var
+#
+function(add_flags_no_remove_duplicates _var)
+    string(REPLACE " " ";" flags "${${_var}};${ARGN}")
+    string(REPLACE ";" " " flags "${flags}")
+    set(${_var} ${flags} PARENT_SCOPE)
+endfunction()
+
+
 #!
 # @brief Removes values from a string
 # @details
@@ -160,7 +178,7 @@ function(configure_file_with_native_paths input_file output_file)
     cmake_parse_arguments(
         ${input_file}
         "AUTODETECT"
-	""
+        ""
         "OPTIONS;VARIABLES"
         ${ARGN}
     )

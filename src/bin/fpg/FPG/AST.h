@@ -51,7 +51,7 @@ struct Node {
     virtual Type* computeType() = 0;
 
     // print out a tree representation of the AST
-    virtual void dump( int level = 0 ) {}
+    virtual void dump( int level = 0 ) { argused(level); }
     void dumpPrefix( int level );
 
     virtual bool hasToplevelVariableDeclaration() { return false; }
@@ -141,7 +141,9 @@ struct BinaryExpression : public Expression {
                 /*COMMA*/ };
 
     BinaryExpression( Expression *e1, Expression *e2, Kind kind )
-      : e1(e1), e2(e2), kind(kind) {}
+        : e1(e1), e2(e2), kind(kind),
+          pointer_arith1(false), pointer_arith2(false) {
+    }
     void dump( int level );
     Type* computeType();
 
@@ -447,11 +449,11 @@ struct Is_equal_to_expression {
 extern Expression *uncertain_return_value;
 
 
-}; // end namespace
+} // end namespace
 
 struct Expression_filter {
     virtual ~Expression_filter() {}
-    virtual bool operator()( AST::Expression *e ) { return false; }
+    virtual bool operator()( AST::Expression *e ) { argused(e); return false; }
 };
 
 AST::Expression* make_fe_condition();

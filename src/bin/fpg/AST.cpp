@@ -258,11 +258,14 @@ update_location( T *node_old, T *node_new ) {
 
 LiteralExpression*
 LiteralExpression::clone( Clone_context *context ) {
+    argused(context);
     return update_location( this, new LiteralExpression( *this ) );
 }
 
 IdentifierExpression*
 IdentifierExpression::clone( Clone_context *context ) {
+    argused(context);
+    
     // at this point, the old variables have already been associated to the new ones.
     // so, why not map them right here:
     MSG( "looking for var " << var->id )
@@ -292,7 +295,10 @@ BinaryExpression::clone( Clone_context *context ) {
 
 ConditionalExpression*
 ConditionalExpression::clone( Clone_context *context ) {
-    return update_location( this, new ConditionalExpression( cond->clone( context ), e1->clone( context ), e2->clone( context ) ) );
+    return update_location(
+        this,
+        new ConditionalExpression( cond->clone( context ), e1->clone( context ), e2->clone( context ) )
+    );
 }
 
 AssignmentExpression*
@@ -320,6 +326,7 @@ FunctionCall::clone( Clone_context *context ) {
 
 EmptyStatement*
 EmptyStatement::clone( Clone_context *context ) {
+    argused(context);
     return update_location( this, new EmptyStatement() );
 }
 
@@ -397,11 +404,13 @@ FunctionDefinition::clone( Clone_context *context ) {
 
 PlainText*
 PlainText::clone( Clone_context *context ) {
+    argused(context);
     return update_location( this, new PlainText( text ) );
 }
 
 PlainTextExpression*
 PlainTextExpression::clone( Clone_context *context ) {
+    argused(context);
     return update_location( this, new PlainTextExpression( text, type ) );
 }
 
@@ -441,13 +450,15 @@ bool is_equal( const Expression* e1, const Expression* e2 ) {
 
 Expression *uncertain_return_value = new PlainTextExpression("FPG_UNCERTAIN_VALUE", type_int);
 
-}; // end namespace AST
+} // end namespace AST
 
 AST::Expression*
 make_fe_condition() {
     return
         new AST::BinaryExpression(
-            new AST::PlainTextExpression( "::fetestexcept( FE_DIVBYZERO | FE_UNDERFLOW | FE_OVERFLOW | FE_INVALID )", type_int ),
+            new AST::PlainTextExpression(
+                "::fetestexcept( FE_DIVBYZERO | FE_UNDERFLOW | FE_OVERFLOW | FE_INVALID )", type_int
+            ),
             new AST::LiteralExpression( 0 ),
             AST::BinaryExpression::EQ
         );

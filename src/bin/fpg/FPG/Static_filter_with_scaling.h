@@ -97,7 +97,7 @@ struct Rewrite_sign_of_fresh_values : public Transformation_visitor {
 
 struct Rewrite_float_comparisons : public Transformation_visitor {
     Rewrite_float_comparisons( Add_bound_variables *add_bounds )
-       : add_bounds( add_bounds )
+        : max_input(0.0), add_bounds( add_bounds )
     {}
 
     virtual void visit( AST::UnaryFunction * );
@@ -129,6 +129,6 @@ protected:
     std::set< Variable *> function_parameters;
 };
 
-};
+}
 
 #endif

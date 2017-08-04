@@ -187,7 +187,7 @@ Group_cache::is_intersection_free( Variable *maxvar /*, std::vector< Variable* >
         std::set< Variable* > intersection;
         std::set_intersection( g.begin(), g.end(), h.begin(), h.end(),
                                std::inserter( intersection, intersection.begin() ) );
-        if( intersection.size() == 0 )
+        if( intersection.empty() )
             continue;
         //bool g_includes_h = std::includes( g.begin(), g.end(), h.begin(), h.end() );
         //bool h_includes_g = std::includes( h.begin(), h.end(), g.begin(), g.end() );
@@ -276,7 +276,7 @@ struct Use_as_max_value : public Abstract_value {
         return v;
     }
     virtual Use_as_max_value*
-    get_initial_value( Variable *var ) { return new Use_as_max_value( true, true ); }
+    get_initial_value( Variable *var ) { argused(var); return new Use_as_max_value( true, true ); }
 
     virtual Use_as_max_value*
     add( Abstract_value* other ) {
@@ -304,14 +304,15 @@ struct Use_as_max_value : public Abstract_value {
 
     virtual Use_as_max_value*
     mul( Abstract_value* other ) {
+        argused(other);
         return new Use_as_max_value(false,false);
     }
 
     //virtual void funcall( AST::Expression* funcall) { if( is_fresh() ) use_as_max_ = true; }
 
-    virtual Use_as_max_value* div( Abstract_value* other )  { CGAL_error(); return NULL; }
+    virtual Use_as_max_value* div( Abstract_value* other )  { argused(other); CGAL_error(); return NULL; }
     virtual Use_as_max_value* sqrt()                        { CGAL_error(); return NULL; }
-    virtual Use_as_max_value* join( Abstract_value* other ) { return this; }
+    virtual Use_as_max_value* join( Abstract_value* other ) { argused(other); return this; }
 
     virtual Use_as_max_value* clone() { return new Use_as_max_value(*this); }
     // returns true if it is equivalent to a default constructed abstract value
@@ -947,6 +948,7 @@ Rewrite_float_comparisons::make_max_term( Group_algebra::Group_item *item ) {
     }
     Group_algebra::Array_item *array = dynamic_cast<Group_algebra::Array_item*>(item);
     bool is_sum  = dynamic_cast<Group_algebra:: Sum_item*>(item) != NULL;
+    argused(is_sum);
     bool is_prod = dynamic_cast<Group_algebra::Product_item*>(item) != NULL;
     assert( is_sum || is_prod  );
     assert( array->items.size() >= 2 );

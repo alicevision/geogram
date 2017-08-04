@@ -16,6 +16,7 @@ Contains_function_call::combine(bool a, bool b) {
 
 void
 Contains_function_call::visit( AST::FunctionCall * funcall ) {
+    argused(funcall);
     result_value = true; // no need for further recursion
 }
 
@@ -175,7 +176,7 @@ Collect_variables::contains( const std::string& varname ) {
 
 unsigned int
 Collect_variables::number_of_variable_names() {
-    return variable_names.size();
+    return (unsigned int)(variable_names.size());
 }
 
 void

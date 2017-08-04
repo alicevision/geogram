@@ -465,7 +465,7 @@ declarator
             Type *type = $1->declare( base_type, id );
             FunctionType* fun_type = dynamic_cast<FunctionType*>(type);
             if( fun_type != NULL ) {
-                if( symbol_env.findFunction( type->id, fun_type->parameters.size() ) != NULL )
+                if( symbol_env.findFunction( type->id, (unsigned int)(fun_type->parameters.size()) ) != NULL )
                     yyerror( std::string( "function " ) + type->id + std::string( " already declared" ) );
                 else {
                     if( is_extern && is_float(fun_type->return_type) && !is_exact )
@@ -538,7 +538,7 @@ group_var_list
 single_group
     : GROUP group_options group_var_list ';' {
         $$ = $3;
-        $$->degree = $2;
+        $$->degree = (unsigned int)($2);
       }
     ;
 
@@ -660,7 +660,7 @@ AST::Expression*
 makeFunctionCall( const std::string &id, AST::ExpressionList *l ) {
     if( l == NULL )
         l = new AST::ExpressionList();
-    FunctionType *fun_type = symbol_env.findFunction( id, l->size() );
+    FunctionType *fun_type = symbol_env.findFunction( id, (unsigned int)(l->size()) );
     if( fun_type == NULL ) {
         yyerror( std::string("function ") + id + " not declared!" );
     }

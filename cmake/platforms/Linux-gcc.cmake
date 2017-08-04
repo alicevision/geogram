@@ -2,7 +2,7 @@
 # Flags common to all Linux based platforms with GNU compiler
 #-------------------------------------------------------------------
 
-include(${CMAKE_SOURCE_DIR}/cmake/platforms/Linux.cmake)
+include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux.cmake)
 
 # Warning flags
 set(NORMAL_WARNINGS -Wall -Wextra)
@@ -10,11 +10,22 @@ set(FULL_WARNINGS
     ${NORMAL_WARNINGS}
     -pedantic
     -Wno-long-long
-    # Detect conversion problems (lot of warnings)
     -Wconversion
-    -Wsign-conversion
-    -Wdouble-promotion
 )
+
+# Determine gcc version and activate additional warnings available in latest versions
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+
+if (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3)
+    message(STATUS "GCC version >= 4.3, activating sign conversion warnings")
+    set(FULL_WARNINGS ${FULL_WARNINGS} -Wsign-conversion)
+endif()
+
+if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
+    message(STATUS "GCC version >= 4.6, activating double promotion warnings")
+    set(FULL_WARNINGS ${FULL_WARNINGS} -Wdouble-promotion)
+endif()
+
 
 # Compile with full warnings by default
 add_definitions(${FULL_WARNINGS})
@@ -23,8 +34,10 @@ add_definitions(${FULL_WARNINGS})
 add_flags(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
 
 # Add static and dynamic bounds checks (optimization required)
-add_flags(CMAKE_CXX_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
-add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
+if (GCC_VERSION VERSION_GREATER 4.0)
+   add_flags(CMAKE_CXX_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
+   add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
+endif()
 
 # Enable SSE3 instruction set
 add_flags(CMAKE_CXX_FLAGS -msse3)
@@ -51,8 +64,19 @@ add_flags(CMAKE_C_FLAGS -msse3)
 
 
 # Compile and link with OpenMP
-add_flags(CMAKE_CXX_FLAGS -fopenmp)
-add_flags(CMAKE_C_FLAGS -fopenmp)
+if (GCC_VERSION VERSION_GREATER 4.0)
+    add_flags(CMAKE_CXX_FLAGS -fopenmp)
+    add_flags(CMAKE_C_FLAGS -fopenmp)
+endif()
+
+# Alaways generate position independant code
+# (to allow linking geogram/vorlalib with DLLs)
+add_flags(CMAKE_CXX_FLAGS -fPIC)
+add_flags(CMAKE_C_FLAGS -fPIC)
+
+# Hide symbols that are not explicitly exported
+add_flags(CMAKE_CXX_FLAGS -fvisibility=hidden)
+add_flags(CMAKE_C_FLAGS -fvisibility=hidden)
 
 
 # Profiler compilation flags
@@ -136,6 +160,5 @@ macro(vor_add_executable)
     if(UNIX)
         target_link_libraries(${ARGV0} m pthread)
     endif()
-
 endmacro()
 

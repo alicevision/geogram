@@ -90,6 +90,6 @@ protected:
     Add_bound_computation *add_bounds;
 };
 
-};
+}
 
 #endif

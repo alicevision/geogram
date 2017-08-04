@@ -1,6 +1,6 @@
 #include "kernel.pckh"
 
-Sign predicate(side3)(
+Sign predicate(side3h)(
     point(p0), point(p1), point(p2), point(p3),
     point(q0), point(q1), point(q2)  DIM
 ) {

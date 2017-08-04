@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 
 //#define DEBUG 0
 #include <FPG/MSG.h>
@@ -12,6 +13,7 @@ Error_bound_value::Error_bound_value()
 
 Abstract_value *
 Error_bound_value::get_initial_value( Variable *var ) {
+    argused(var);
     return new Error_bound_value;
 }
 

@@ -20,6 +20,7 @@ Abstract_interpretation_visitor::Abstract_interpretation_visitor( Abstract_value
 
 void
 Abstract_interpretation_visitor::visit( AST::LiteralExpression* lexp ) {
+    argused(lexp);
     //assert( lexp->is_float() );
     expression_value = new_abstract_value();
 }

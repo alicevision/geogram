@@ -149,7 +149,7 @@ Add_bound_variables::visit( AST::Return *ret ) {
 }
 
 struct Always_true_expression_filter : public Expression_filter {
-    virtual bool operator()( AST::Expression *e ) { return true; }
+    virtual bool operator()( AST::Expression *e ) { argused(e); return true; }
 };
 
 void
