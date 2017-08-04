@@ -348,10 +348,10 @@ extern "C" {
      */
     
     typedef enum {
-        GLUP_CLIP_STANDARD=1,
-        GLUP_CLIP_WHOLE_CELLS=2,
-        GLUP_CLIP_STRADDLING_CELLS=3,
-        GLUP_CLIP_SLICE_CELLS=4
+        GLUP_CLIP_STANDARD=0,
+        GLUP_CLIP_WHOLE_CELLS=1,
+        GLUP_CLIP_STRADDLING_CELLS=2,
+        GLUP_CLIP_SLICE_CELLS=3
     } GLUPclipMode;
 
     /**

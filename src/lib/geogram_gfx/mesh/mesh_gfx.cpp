@@ -226,6 +226,10 @@ namespace GEO {
     }
     
     void MeshGfx::draw_vertices() {
+        if(mesh_ == nil) {
+            return;
+        }
+        
         set_GLUP_parameters();
         set_GLUP_picking(MESH_VERTICES);
         update_buffer_objects_if_needed();
@@ -309,6 +313,10 @@ namespace GEO {
     }
     
     void MeshGfx::draw_edges() {
+        if(mesh_ == nil) {
+            return;
+        }
+        
         set_GLUP_parameters();
         set_GLUP_picking(MESH_EDGES);
         update_buffer_objects_if_needed();
@@ -668,6 +676,9 @@ namespace GEO {
     }
     
     void MeshGfx::draw_surface() {
+        if(mesh_ == nil) {
+            return;
+        }
         set_GLUP_parameters();
         set_GLUP_picking(MESH_FACETS);
         update_buffer_objects_if_needed();
@@ -971,6 +982,9 @@ namespace GEO {
     }
     
     void MeshGfx::draw_volume() {
+        if(mesh_ == nil) {
+            return;
+        }
         if(mesh_->cells.nb() == 0) {
             return;
         }

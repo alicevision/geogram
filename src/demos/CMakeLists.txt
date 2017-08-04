@@ -1,2 +1,2 @@
 add_subdirectory(demo_Delaunay2d)
-
+add_subdirectory(demo_GLUP)

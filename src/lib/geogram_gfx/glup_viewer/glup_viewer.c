@@ -32,7 +32,7 @@
 #include <third_party/glfw/include/GLFW/glfw3.h>
 #endif
 
-#include "glup_viewer_gui.h"
+#include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
 
 #include <stdio.h>
@@ -79,6 +79,9 @@ void glup_viewer_draw_console() {
     glup_viewer_gui_draw_console();
 }
 
+void glup_viewer_draw_status_bar() {
+    glup_viewer_gui_draw_status_bar();
+}
 
 #define glup_viewer_assert(x)                                                  \
     if(!(x)) {                                                                 \
@@ -548,7 +551,10 @@ static void motion(int x, int y) {
                 ) {
                     add_quats(delta_rot, cur_rot_clip, cur_rot_clip);
                 }
-                if(!glup_viewer_is_enabled(GLUP_VIEWER_EDIT_CLIP)) {
+                if(
+                    !glup_viewer_is_enabled(GLUP_VIEWER_CLIP) ||
+                    !glup_viewer_is_enabled(GLUP_VIEWER_EDIT_CLIP)
+                ) {
                     add_quats(delta_rot, cur_rot, cur_rot);
                 }
             }
@@ -663,7 +669,10 @@ static void draw_foreground() {
     glDisable(GL_DEPTH_TEST);
     glupDisable(GLUP_LIGHTING);
 
-    if(glup_viewer_is_enabled(GLUP_VIEWER_SHOW_HELP)) {
+    if(
+        glup_viewer_is_enabled(GLUP_VIEWER_SHOW_HELP) &&
+        !glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)         
+    ) {
         int i;
         
         glupDisable(GLUP_CLIPPING);
@@ -795,10 +804,17 @@ static void draw_background() {
     glupLoadIdentity();
     glupMatrixMode(GLUP_MODELVIEW_MATRIX);
     glupLoadIdentity();
-    glupDisable(GLUP_LIGHTING);
     
+    glupDisable(GLUP_LIGHTING);
+    glupDisable(GLUP_TEXTURING);
+    glupDisable(GLUP_CLIPPING);
+    glupDisable(GLUP_DRAW_MESH);
+    glupDisable(GLUP_PICKING);
+    glupSetCellsShrink(0.0f);
+
     if(background_tex == 0) {
-        
+
+        glupEnable(GLUP_VERTEX_COLORS);        
         glupBegin(GLUP_QUADS);
         glupColor3fv(bkg1);
         glupVertex3f(-1, -1, z);
@@ -832,7 +848,8 @@ static void draw_background() {
     }
     glEnable(GL_DEPTH_TEST);
     glupEnable(GLUP_LIGHTING);
-    glEnable(GL_POLYGON_OFFSET_FILL);        
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glupDisable(GLUP_VERTEX_COLORS);
 }
 
 static void transform_vector(
@@ -1153,7 +1170,7 @@ static void glup_viewer_key_callback(
     glup_viewer_post_redisplay();
 }
 
-static void home() {
+void glup_viewer_home() {
     cur_xlat[0] = cur_xlat[1] = cur_xlat[2] = 0.0;
     params[GLUP_VIEWER_ZOOM] = 1.0;
     trackball(cur_rot, 0.0, 0.0, 0.0, 0.0);
@@ -1185,7 +1202,7 @@ static void init() {
     glup_viewer_add_key_func(27, glup_viewer_exit_main_loop, "quit");
 #endif
     
-    glup_viewer_add_key_func('H', home, "home");
+    glup_viewer_add_key_func('H', glup_viewer_home, "home");
 
     glup_viewer_add_toggle('h', &caps[GLUP_VIEWER_SHOW_HELP], "help");
     glup_viewer_add_toggle(
@@ -1201,7 +1218,7 @@ static void init() {
     glPolygonOffset(1.0, 2.0);
     glEnable(GL_POLYGON_OFFSET_FILL);
     
-    home();
+    glup_viewer_home();
 }
 
 void glup_viewer_set_window_title(char* s) {
@@ -1327,7 +1344,11 @@ void glup_viewer_exit_main_loop() {
     in_main_loop_ = GL_FALSE;
 }
 
-static void glup_viewer_one_frame() {
+
+/* exported, used in glup_viewer_gui.cpp */
+void glup_viewer_one_frame(void);
+
+void glup_viewer_one_frame() {
     int cur_width;
     int cur_height;
     if(!glfwWindowShouldClose(glup_viewer_window) && in_main_loop_) {
