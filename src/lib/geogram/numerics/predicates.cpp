@@ -72,7 +72,7 @@
 #include <geogram/numerics/predicates/orient3d.h>
 #include <geogram/numerics/predicates/det3d.h>
 #include <geogram/numerics/predicates/dot3d.h>
-
+#include <geogram/numerics/predicates/aligned3d.h>
 
 namespace {
     using namespace GEO;
@@ -1394,6 +1394,35 @@ namespace {
     
 
     /**
+     * \brief Tests whether three points are aligned using 
+     *  exact arithmetics.
+     * \param[in] p0 , p1 , p2 the three points
+     * \retval true if the three points are aligned.
+     * \retval false otherwise.
+     */
+    bool aligned_3d_exact(
+	const double* p0, const double* p1, const double* p2
+    ) {
+	const expansion& U_0 = expansion_diff(p1[0],p0[0]);
+	const expansion& U_1 = expansion_diff(p1[1],p0[1]);
+	const expansion& U_2 = expansion_diff(p1[2],p0[2]);
+	
+	const expansion& V_0 = expansion_diff(p2[0],p0[0]);
+	const expansion& V_1 = expansion_diff(p2[1],p0[1]);
+	const expansion& V_2 = expansion_diff(p2[2],p0[2]);
+
+	const expansion& N_0 = expansion_det2x2(U_1, V_1, U_2, V_2);
+	const expansion& N_1 = expansion_det2x2(U_2, V_2, U_0, V_0);
+	const expansion& N_2 = expansion_det2x2(U_0, V_0, U_1, V_1);
+
+	return(
+	    N_0.sign() == 0 &&
+	    N_1.sign() == 0 &&
+	    N_2.sign() == 0
+	);
+    }
+    
+    /**
      * \brief Computes the sign of the dot product between two
      *  vectors using exact arithmetics.
      * \param[in] p0 , p1 , p2 three 3d points.
@@ -1812,6 +1841,20 @@ namespace GEO {
 	    return result;
 	}
 
+	bool aligned_3d(
+	    const double* p0, const double* p1, const double* p2
+	) {
+	    /*
+	    Sign result = Sign(
+		aligned_3d_filter(p0,p1,p2)
+	    );
+	    if(result != 0) {
+		return false;
+	    }
+	    */
+	    return aligned_3d_exact(p0, p1, p2);
+	}
+	
 	Sign dot_3d(
 	    const double* p0, const double* p1, const double* p2
 	) {

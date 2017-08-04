@@ -111,6 +111,7 @@ namespace GEO {
 
 	inline bool same_sign(double a, double b) { return (a > 0) == (b > 0); }
 
+    /*
 	static bool canonical_order_set_A(vec3 A_ref, vec3 B_ref, vec3 C_ref, vec3& A, vec3& B, vec3& C) {
 		// h* gives the halfspace delimited by triangle Aref,Bref,Cref
 		double ha, hb, hc;
@@ -135,7 +136,6 @@ namespace GEO {
 		return true;
 	}
 
-
 	static bool naive_tri_tri_intersect(vec3 v0, vec3 v1, vec3 v2, vec3 u0, vec3 u1, vec3 u2) {
 
 		// the support planes of each triangles produces 2 halfspace.
@@ -152,7 +152,8 @@ namespace GEO {
 
 		return true;
 	}
-
+*/
+    
 	// Extra connectivity dedicaed to surfaces with triangles and quads only.
 	// Halfedges are indiced by 4* facet + local_id => requires padding for triangles
 	struct QuadExtraConnectivity {
@@ -202,7 +203,7 @@ namespace GEO {
 
 		bool valid(index_t h) { return h < 4 * m->facets.nb() && (h%4)<m->facets.nb_vertices(h/4); }
 
-		int fsize(index_t e){ nico_assert(valid(e)); return m->facets.nb_vertices(face(e)); }
+	        index_t fsize(index_t e){ nico_assert(valid(e)); return m->facets.nb_vertices(face(e)); }
 		void set_opp(index_t i, index_t j) { nico_assert(valid(i) && valid(j));  opp_h[i] = j; opp_h[j] = i; }
 		index_t face(index_t e) { nico_assert(valid(e)); return e / 4; }
 		index_t local_id(index_t e) { nico_assert(valid(e)); return e % 4; }
@@ -393,7 +394,7 @@ namespace GEO {
 				fail_c[m->facets.corner(h / 4, h % 4)] = 20;
 
 				index_t f = qem.face(h);
-				if (qem.fsize(h)!=4) continue;
+				if (qem.fsize(f)!=4) continue;
 				fail_c[m->facets.corner(h / 4, h % 4)] = 30;
 
 				if (qem.opp(h) == NOT_AN_ID) continue;
@@ -1494,13 +1495,13 @@ namespace GEO {
 
 
 		//mark charts
-		int nb_charts = 0;
+		index_t nb_charts = 0;
 		Attribute<int> chart(m->facets.attributes(), "chart");
 		FOR(seed, m->facets.nb()) chart[seed] = -1;
 		FOR(seed, m->facets.nb()) {
 			if (chart[seed] != -1) continue;
 			if (m->facets.nb_vertices(seed)==4) continue;
-			chart[seed] = nb_charts;
+			chart[seed] = int(nb_charts);
 			vector<index_t> stack;
 			stack.push_back(seed);
 			while (!stack.empty()) {
@@ -1512,7 +1513,7 @@ namespace GEO {
 					if (qem.fsize(qem.opp(h)) == 4) continue;
 					if (chart[fopp] != -1) continue;
 					stack.push_back(fopp);
-					chart[fopp] = nb_charts;
+					chart[fopp] = int(nb_charts);
 				}
 			}
 			nb_charts++;
@@ -1522,13 +1523,13 @@ namespace GEO {
 		vector<int> subchart_to_charts;
 
 		//mark sub charts
-		int nb_subcharts = 0;
+		index_t nb_subcharts = 0;
 		Attribute<int> subchart(m->facets.attributes(), "subchart");
 		FOR(seed, m->facets.nb()) subchart[seed] = -1;
 		FOR(seed, m->facets.nb()) {
 			if (subchart[seed] != -1) continue;
 			if (m->facets.nb_vertices(seed) == 4) continue;
-			subchart[seed] = nb_subcharts;
+			subchart[seed] = int(nb_subcharts);
 			chart_to_subcharts[chart[seed]] .push_back(subchart[seed]);
 			subchart_to_charts.push_back(chart[seed]);
 
@@ -1546,7 +1547,7 @@ namespace GEO {
 					if (subchart[fopp] != -1) continue;
 					if (dot(n_f, n_fopp) < cos(M_PI / 4.)) continue;// hard edge detected
 					stack.push_back(fopp);
-					subchart[fopp] = nb_subcharts;
+					subchart[fopp] = int(nb_subcharts);
 				}
 			}
 			nb_subcharts++;
@@ -1566,8 +1567,8 @@ namespace GEO {
 			// gather halfedges in border
 			{
 				FOR(h, 4 * m->facets.nb()) if (qem.valid(h))
-					if (subchart[qem.face(h)] == sub
-						&& subchart[qem.face(qem.opp(h))] != sub)
+				    if (index_t(subchart[qem.face(h)]) == sub
+					&& index_t(subchart[qem.face(qem.opp(h))]) != sub)
 						border.push_back(h);
 				if (border.size() < 4) continue;
 			}
@@ -1577,19 +1578,19 @@ namespace GEO {
 				FOR(cur, border.size()) if (qem.fsize(qem.opp(border[cur])) == 4) std::swap(border[0], border[cur]);
 				if (qem.fsize(qem.opp(border[0])) == 0) continue;
 				//link them
-				for (int cur = 0; cur < border.size() - 1; cur++)
-					for (int next = cur + 1; next < border.size(); next++)
+				for (index_t cur = 0; cur < border.size() - 1; cur++)
+					for (index_t next = cur + 1; next < border.size(); next++)
 						if (qem.vertex(qem.next(border[cur])) == qem.vertex(border[next]))
 							std::swap(border[cur + 1], border[next]);
 			}
 			// check that we have a loop
 			{
 				bool topodisk = true;
-				for (int cur = 0; cur < border.size() - 1; cur++)
+				for (index_t cur = 0; cur < border.size() - 1; cur++)
 					topodisk = topodisk && (qem.vertex(qem.next(border[cur])) == qem.vertex(border[cur + 1]));
 				if (!topodisk) { plop(topodisk); continue; }
 			}
-			/*DEBUG*/FOR(cur,border.size()) order[qem.corner(border[cur])] = cur;
+			/*DEBUG*/FOR(cur,border.size()) order[qem.corner(border[cur])] = int(cur);
 
 			// constuct the problem.
 			int chartid = subchart_to_charts[sub];
@@ -1627,8 +1628,8 @@ namespace GEO {
 					plop(i);
 					plop(poly.length());
 					plop(ave_edge_length);
-					int nb_seg = 2 * nint(0.5*poly.length() / ave_edge_length);
-					nb_seg = geo_max(1, nb_seg);
+					index_t nb_seg = index_t(2.0 * nint(0.5*poly.length() / ave_edge_length));
+					nb_seg = geo_max(1u, nb_seg);
 					//FOR(s, nb_seg) l_pts.push_back(poly.interpolate(double(s + 1) / double(nb_seg) - .001));
 					
 					FOR(s, nb_seg - 1) plop(poly.interpolate(double(s + 1) / double(nb_seg) - .001));
@@ -1653,8 +1654,8 @@ namespace GEO {
 			if (Poly3d(l_pts).try_quadrangulate(l_quads)) {
 				int loc_sub = -1;
 				FOR(l, chart_to_subcharts[chartid].size())
-					if (chart_to_subcharts[chartid][l] == sub)
-						loc_sub = l;
+				    if (chart_to_subcharts[chartid][l] == int(sub))
+					loc_sub = int(l);
 				pts[chartid][loc_sub] = l_pts;
 				quads[chartid][loc_sub] = l_quads;
 			}
@@ -1667,7 +1668,7 @@ namespace GEO {
 			chart_remesh_is_ok[chartid] = chart_remesh_is_ok[chartid] && !pts[chartid][lsub].empty();
 
 		vector<index_t> to_kill(m->facets.nb(),false);
-		FOR(f, m->facets.nb()) if (chart[f]>=0) to_kill[f] = chart_remesh_is_ok[chart[f]];
+		FOR(f, m->facets.nb()) if (chart[f]>=0) to_kill[f] = chart_remesh_is_ok[index_t(chart[f])];
 
 
 		FOR(chartid, nb_charts) {

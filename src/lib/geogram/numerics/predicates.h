@@ -477,6 +477,16 @@ namespace GEO {
 	);
 
 	/**
+	 * \brief Tests whether three points are aligned.
+	 * \param[in] p0 , p1 , p2 the three points
+	 * \retval true if the three points are aligned.
+	 * \retval false otherwise.
+	 */
+	bool GEOGRAM_API aligned_3d(
+	    const double* p0, const double* p1, const double* p2
+	);
+	
+	/**
 	 * \brief Computes the sign of the dot product between two
 	 *  vectors.
 	 * \param[in] p0 , p1 , p2 three 3d points.
@@ -486,6 +496,7 @@ namespace GEO {
 	Sign GEOGRAM_API dot_3d(
 	    const double* p0, const double* p1, const double* p2
 	);
+
 	
         /**
          * \brief Displays some statistics about predicates,

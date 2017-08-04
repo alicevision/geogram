@@ -71,6 +71,7 @@ static void print(std::ostream& out, const GEO::expansion_nt& x) {
  * \param x a const reference to the expansion_nt to be printed
  */
 static void print(std::ostream& out, const GEO::rational_nt& x) {
+    out << "estimate=" << x.estimate() << ":";
     print(out,x.num());
     out << " / ";
     print(out,x.denom());
@@ -140,7 +141,6 @@ int main() {
 
     std::cout << "Using rational_nt:" << std::endl;    
     compute2(GEO::rational_nt());
-    
-    
+
     return 0;
 }

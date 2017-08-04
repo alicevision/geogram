@@ -801,8 +801,12 @@ namespace GEO {
          * \return the new value of this rational_nt
          */
         rational_nt& operator+= (const rational_nt& rhs) {
-	    num_ = num_ * rhs.denom_ + rhs.num_ * denom_;	    
-	    denom_ *= rhs.denom_;
+	    if(trivially_has_same_denom(rhs)) {
+		num_ += rhs.num_;
+	    } else {
+		num_ = num_ * rhs.denom_ + rhs.num_ * denom_;	    
+		denom_ *= rhs.denom_;
+	    }
 	    return *this;
 	}
 
@@ -812,8 +816,12 @@ namespace GEO {
          * \return the new value of this rational_nt
          */
         rational_nt& operator-= (const rational_nt& rhs) {
-	    num_ = num_ * rhs.denom_ - rhs.num_ * denom_;	    
-	    denom_ *= rhs.denom_;
+	    if(trivially_has_same_denom(rhs)) {
+		num_ -= rhs.num_;
+	    } else {
+		num_ = num_ * rhs.denom_ - rhs.num_ * denom_;	    
+		denom_ *= rhs.denom_;
+	    }
 	    return *this;
 	}
 
@@ -893,6 +901,12 @@ namespace GEO {
          * \return the sum of this rational_nt and \p rhs
          */
         rational_nt operator+ (const rational_nt& rhs) const {
+	    if(trivially_has_same_denom(rhs)) {
+		return rational_nt(
+		    num_ + rhs.num_,
+		    denom_
+		);
+	    }
 	    return rational_nt(
 		num_ * rhs.denom_ + rhs.num_ * denom_,
 		denom_ * rhs.denom_
@@ -906,6 +920,12 @@ namespace GEO {
          * \return the difference between this rational_nt and \p rhs
          */
         rational_nt operator- (const rational_nt& rhs) const {
+	    if(trivially_has_same_denom(rhs)) {
+		return rational_nt(
+		    num_ - rhs.num_,
+		    denom_
+		);
+	    }
 	    return rational_nt(
 		num_ * rhs.denom_ - rhs.num_ * denom_,
 		denom_ * rhs.denom_
@@ -1102,13 +1122,31 @@ namespace GEO {
 	    num_ = rhs.num_;
 	    denom_ = rhs.denom_;
 	}
+
+	/**
+	 * \brief Tests whether a rational_nt has trivially the same denominator
+	 *  as this rational_nt.
+	 * \details This function is used to implement faster addition, 
+	 *  subtraction and tests when it can be quickly determined that both
+	 *  operands have the same denominator.
+	 * \retval true if it is trivial that \p rhs has the same denominator
+	 *  as this rational_nt.
+	 * \retval false otherwise.
+	 */
+	bool trivially_has_same_denom(const rational_nt& rhs) const {
+	    return(
+		denom_.rep().length() == 1 &&
+		rhs.denom_.rep().length() == 1 &&
+		denom_.component(0) == rhs.denom_.component(0)
+	    );
+	}
 	
       private:
 	expansion_nt num_;
 	expansion_nt denom_;
     };
 
-    /***************************************************************************/
+    /**************************************************************************/
 
     /**
      * \brief Computes the sum of a double and a rational_nt
@@ -1231,7 +1269,7 @@ namespace GEO {
         return (a - b).sign() != ZERO;
     }
 
-    /***************************************************************************/
+    /**************************************************************************/
     
 }
 

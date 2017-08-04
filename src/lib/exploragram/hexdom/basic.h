@@ -138,13 +138,6 @@ namespace GEO {
 	return d == floor(d);
     }
 
- //   // a une periode pres
- //   template <class T> inline
-	//T& aupp(int id, vector<T>& data){
-	//while (id < 0) id += int(data.size());
-	//while (id >= int(data.size())) id -= int(data.size());
-	//return data[id];
- //   }
 
     // a une periode pres    
     template <class T> inline 
@@ -152,6 +145,13 @@ namespace GEO {
 		while (id <0) id += int(data.size());
 		while (id >= int(data.size())) id -= int(data.size());
 		return data[id];
+    }
+
+    // a une periode pres    
+    template <class T> inline 
+        T& aupp(index_t id, vector<T>& data){
+	while (id >= data.size()) id -= data.size();
+	return data[id];
     }
 }
 

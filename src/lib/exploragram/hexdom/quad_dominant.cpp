@@ -100,7 +100,7 @@ namespace GEO {
                 TrglGradient grd(lX[0], lX[1], lX[2]);
                 vec3 grduv[2];
                 FOR(d, 2) grduv[d] = grd.gradient_3d(uv[hex->facets.corner(fid, 0)][d], uv[hex->facets.corner(fid, 1)][d], uv[hex->facets.corner(fid, 2)][d]);
-                FOR(d, 2) FOR(dd, 3) if (Numeric::is_nan(grduv[d][dd])) has_valid_2d_param = false;
+	        FOR(d, 2) FOR(dd, 3) if (Numeric::is_nan(grduv[d][dd])) has_valid_2d_param = false;
 #if 0                
               if (grduv[0].length() > 10. * grduv[1].length()) has_valid_2d_param = false;
               if (grduv[1].length() > 10. * grduv[0].length()) has_valid_2d_param = false;
@@ -226,7 +226,7 @@ namespace GEO {
                     if (to-from > 1000) continue;
                     for (double iso = from; iso < to; iso += 1.) {
                         double c = (iso - v[0]) / (v[1] - v[0]); // v[0] is far from v[1] (U was pre-snapped to integers with .05 tolerance)
-                        if (!Numeric::is_nan(c) && c > 0 && c < 1) {
+ 		        if (!Numeric::is_nan(c) && c > 0 && c < 1) {
                             vec2 u = lU[0] + c*(lU[1] - lU[0]);
                             u[coord] = iso;
                             coeff.push_back(c);
@@ -456,7 +456,7 @@ namespace GEO {
 
                 for (double cur_iso = ceil(std::min(v[0], v[1])); cur_iso < std::max(v[0], v[1]); cur_iso += 1.0) {
                     double c = (cur_iso - v[0]) / (v[1] - v[0]);
-                    if (!Numeric::is_nan(c) && c > 0 && c < 1)
+		    if (!Numeric::is_nan(c) && c > 0 && c < 1)
                         coeff.push_back(c);
                 }
 

@@ -140,7 +140,7 @@ namespace GEO {
 			index_t k = tri[idx];
 			index_t j = idx % n;
 
-			geo_assert(i >= 0 && k >= 0 && j >= 0 && i!=index_t(-1) && k != index_t(-1) && j!=index_t(-1));
+			geo_assert(i!=index_t(-1) && k != index_t(-1) && j!=index_t(-1));
 			triangles.push_back(i);
 			triangles.push_back(k);
 			triangles.push_back(j);
@@ -199,14 +199,14 @@ namespace GEO {
 
 
 	struct Contour2D {
-		void resize(int n) { pos_.resize(n); angu_.resize(n);vid_.resize(n);}
+		void resize(index_t n) { pos_.resize(n); angu_.resize(n);vid_.resize(n);}
 		void compute_angu() {
 			//plop("compute_angu() will not sffice to capture sing 5");
 			angu_.resize(pos_.size());
 			FOR(v, pos_.size()) {
 				angu_[v] = 1;
-				vec2 d0 = pos(v) - pos(v - 1);
-				vec2 d1 = pos(v + 1) - pos(v);
+				vec2 d0 = pos(v) - pos(int(v)-1);
+				vec2 d1 = pos(v+1) - pos(v);
 				double angle = atan2(det(d0, d1), dot(d0, d1));
 				if (angle < M_PI / 4.) angu_[v] = 0;
 				if (angle < -M_PI / 4.) angu_[v] = -1;
@@ -221,6 +221,11 @@ namespace GEO {
 		vec2& pos(int i) { return aupp(i, pos_); }
 		int& angu(int i) { return aupp(i, angu_); }
 		int& vid(int i) { return aupp(i, vid_); }
+	    
+		vec2& pos(index_t i) { return aupp(i, pos_); }
+		int& angu(index_t i) { return aupp(i, angu_); }
+		int& vid(index_t i) { return aupp(i, vid_); }
+	    
 
 		void show() {
 			GEO::Logger::out("HexDom")  << "\npos.size = " << pos_.size() <<  std::endl; FOR(i, pos_.size()) std::cerr << pos_[i] << "\t";
@@ -229,14 +234,20 @@ namespace GEO {
 		}
 		
 		void remove(int i) {
-			i = i%pos_.size();
-			for (int j = i; j < pos_.size() - 1; j++) {
+		        i = i%int(pos_.size());
+			pos_.erase(pos_.begin() + i);
+			angu_.erase(angu_.begin() + i);
+			vid_.erase(vid_.begin() + i);
+			/*
+			for (int j = i; j < index_t(pos_.size() - 1); j++) {
 				pos_[j] = pos_[j + 1];
 				angu_[j] = angu_[j + 1];
 				vid_[j] = vid_[j + 1];
 			}
 			pos_.pop_back(); angu_.pop_back(); vid_.pop_back();
+			*/
 		}
+	    
 
 		vector<vec2> pos_;
 		vector<int> angu_;
@@ -251,7 +262,7 @@ namespace GEO {
 
 		// returns the index of the singularity
 		int init_contour(vector<int>& angu,int sing_valence) {
-			int offset = 0;
+		        index_t offset = 0;
 			// find the best offset
 			double best_dist2 = 1e20;
 			contour.resize(pts.size()+1);
@@ -283,39 +294,39 @@ namespace GEO {
 			}
 
 			// define mapping contour -> pts 
-			FOR(v, pts.size() )  contour.vid(v ) = (offset + v ) % pts.size();
+			FOR(v, pts.size() )  contour.vid(v ) = int(offset + v ) % int(pts.size());
 			contour.vid_.back() = contour.vid_.front();
 			
 			// singularity on border   TODO CHECK angu on singularity !
-			if ((contour.pos(-1) - contour.pos(0)).length2() < .1) { contour.remove(contour.pos_.size() - 1); contour.compute_angu(); return 0; }
+			if ((contour.pos(-1) - contour.pos(0)).length2() < .1) { contour.remove(int(contour.pos_.size()) - 1); contour.compute_angu(); return 0; }
 
 			// add pts 
 			vec2 A = contour.pos(0);
 			vec2 B = contour.pos(-1);
-			if (sing_valence == 3) for (int i = B.x + 1; i < A.x; i++) {
+			if (sing_valence == 3) for (int i = int(B.x + 1.0); i < int(A.x); i++) {
 				contour.pos_.push_back(vec2(i, B.y));	
-				contour.vid_.push_back(pts.size());
+				contour.vid_.push_back(int(pts.size()));
 				pts.push_back(contour.pos_.back());
 			}
 
-			if (sing_valence == 5) for (int i = B.x - 1; i > A.x; i--) {
-				contour.pos_.push_back(vec2(i, B.y));
-				contour.vid_.push_back(pts.size());
+			if (sing_valence == 5) for (int i = int(B.x - 1); i > int(A.x); i--) {
+				contour.pos_.push_back(vec2(double(i), B.y));
+				contour.vid_.push_back(int(pts.size()));
 				pts.push_back(contour.pos_.back());
 			}
 
-			int singularity_index = contour.pos_.size();
+			index_t singularity_index = contour.pos_.size();
 			contour.pos_.push_back(vec2(A.x, B.y));
-			contour.vid_.push_back(pts.size());
+			contour.vid_.push_back(int(pts.size()));
 			pts.push_back(contour.pos_.back());
 			
-			for (int j = B.y - 1; j > A.y; j--) {
-				contour.vid_.push_back(contour.vid(2* singularity_index -contour.pos_.size()));
-				contour.pos_.push_back(vec2(A.x, j));
+			for (int j = int(B.y - 1); j > int(A.y); j--) {
+			    contour.vid_.push_back(contour.vid(2*singularity_index-contour.pos_.size()));
+				contour.pos_.push_back(vec2(A.x, double(j)));
 			}
 			contour.compute_angu();
 			contour.angu(singularity_index) = 2 - sing_valence;
-			return singularity_index;
+			return int(singularity_index);
 		}
 
 
@@ -328,11 +339,11 @@ namespace GEO {
 				if (contour.angu(v) != 1) continue;
 				// cut ear
 				if (contour.angu(v + 1) == 1) {
-					FOR(s, 4) quads.push_back(contour.vid(v - 1 + s));
-					contour.remove(v);
-					contour.remove(v);
-					contour.angu(v - 1)++;
-					contour.angu(v) ++;
+				        FOR(s, 4) quads.push_back(index_t(contour.vid(int(v) - 1 + int(s))));
+					contour.remove(int(v));
+					contour.remove(int(v));
+					contour.angu(int(v) - 1)++;
+					contour.angu(int(v)) ++;
 					return true;
 
 				}
@@ -341,9 +352,9 @@ namespace GEO {
 				bool conflict = false;
 				FOR(vv, contour.pos_.size()) if (vv != v && (contour.pos(vv) - npos).length2() < .1) conflict = true;
 				if (conflict) continue;
-				FOR(s,3) quads.push_back(contour.vid(v - 1+s));
-				quads.push_back(pts.size());
-				contour.vid(v) = pts.size();
+				FOR(s,3) quads.push_back(index_t(contour.vid(int(v) - 1+int(s))));
+				quads.push_back(index_t(pts.size()));
+				contour.vid(v) = int(pts.size());
 				pts.push_back(npos);
 				contour.pos(v) = npos;
 				contour.angu(v-1) ++;
@@ -357,19 +368,19 @@ namespace GEO {
 
 		bool apply(vector<int>& angu,int sing_valence) {
 			int singularity_index=-1;
-			int border_size = pts.size();
+			index_t border_size = pts.size();
 			if (sing_valence == 3|| sing_valence == 5) {
 				singularity_index = init_contour(angu, sing_valence);
 			} else if (sing_valence == 4) {
 				contour.resize(pts.size());
 				vec2 dir(1, 0);
 				contour.pos(0) = vec2(0, 0);
-				for (int v = 1; v < pts.size();v++) {
+				for (index_t v = 1; v < pts.size();v++) {
 					contour.pos(v) = contour.pos(v - 1) + dir;
 					if (angu[v]< 0) dir = -(R90*dir);
 					if (angu[v]> 0) dir = R90*dir;
 				}
-				FOR(v, pts.size()) contour.vid(v) = v;
+				FOR(v, pts.size()) contour.vid(v) = int(v);
 				FOR(v, pts.size()) contour.angu(v) = angu[v];
 				if ((contour.pos_.back() + dir - contour.pos_.front()).length2() > .1) return false; // check that it is closed
 			}
@@ -415,7 +426,7 @@ namespace GEO {
 			FOR(v, pts.size()) FOR(d, 2)  pts[v][d]= nlGetVariable(2*v+d);
 			nlDeleteContext(nlGetCurrent());
 
-			if (contour.pos_.size() > 2) { pts.resize(border_size); quads.clear(); return false; }
+			if (contour.pos_.size() > 2) { pts.resize(index_t(border_size)); quads.clear(); return false; }
 
 			return true;
 		}

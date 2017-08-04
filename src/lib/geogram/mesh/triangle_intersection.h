@@ -102,6 +102,45 @@ namespace GEO {
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     );
+
+    /**
+     * \brief Converts a triangle region code to a string.
+     * \param[in] rgn the triangle region code.
+     * \return the string representation of \p rgn.
+     */
+    std::string GEOGRAM_API region_to_string(TriangleRegion rgn);
+    
+    /**
+     * \brief Prints a triangle intersection element to a stream.
+     * \details Used for debugging purposes.
+     * \param[in] out the stream.
+     * \param[in] I the intersection element to be printed.
+     */
+    inline std::ostream& operator<<(
+	std::ostream& out, const TriangleIsect& I
+    ) {
+	return (
+	    out << "("
+	    << region_to_string(I.first) << ","
+	    << region_to_string(I.second)
+	    << ")"
+	);
+    }
+    
+    /**
+     * \brief Prints the result of a triangle intersection to a stream.
+     * \details Used for debugging purposes.
+     * \param[in] out the stream.
+     * \param[in] II the intersections to be printed.
+     */
+    inline std::ostream& operator<<(
+	std::ostream& out, vector<TriangleIsect>& II
+    ) {
+	for(index_t i=0; i<II.size(); ++i) {
+	    out << II[i] << " ";
+	}
+	return out;
+    }
 }
 
 #endif

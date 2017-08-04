@@ -330,6 +330,12 @@ namespace GEO {
     /************************************************************************/
 
     bool rational_nt::operator> (const rational_nt& rhs) const {
+	if(trivially_has_same_denom(rhs)) {
+	    const expansion& diff_num = expansion_diff(
+		num_.rep(), rhs.num_.rep()
+	    );
+	    return (diff_num.sign() * denom_.sign() > 0);
+	}
 	const expansion& num_a = expansion_product(
 	    num_.rep(), rhs.denom_.rep()
 	);
@@ -337,13 +343,18 @@ namespace GEO {
 	    rhs.num_.rep(), denom_.rep()
 	);
 	const expansion& diff_num = expansion_diff(num_a, num_b);
-	const expansion& diff_denom = expansion_product(
-	    denom_.rep(), rhs.denom_.rep()
+	return (
+	    diff_num.sign() * denom_.sign() * rhs.denom_.sign() > 0
 	);
-	return (diff_num.sign() * diff_denom.sign() > 0);
     }
 
     bool rational_nt::operator>= (const rational_nt& rhs) const {
+	if(trivially_has_same_denom(rhs)) {
+	    const expansion& diff_num = expansion_diff(
+		num_.rep(), rhs.num_.rep()
+	    );
+	    return (diff_num.sign() * denom_.sign() >= 0);
+	}
 	const expansion& num_a = expansion_product(
 	    num_.rep(), rhs.denom_.rep()
 	);
@@ -351,13 +362,18 @@ namespace GEO {
 	    rhs.num_.rep(), denom_.rep()
 	);
 	const expansion& diff_num = expansion_diff(num_a, num_b);
-	const expansion& diff_denom = expansion_product(
-	    denom_.rep(), rhs.denom_.rep()
+	return (
+	    diff_num.sign() * denom_.sign() * rhs.denom_.sign() >= 0
 	);
-	return (diff_num.sign() * diff_denom.sign() >= 0);
     }
 
     bool rational_nt::operator< (const rational_nt& rhs) const {
+	if(trivially_has_same_denom(rhs)) {
+	    const expansion& diff_num = expansion_diff(
+		num_.rep(), rhs.num_.rep()
+	    );
+	    return (diff_num.sign() * denom_.sign() < 0);
+	}
 	const expansion& num_a = expansion_product(
 	    num_.rep(), rhs.denom_.rep()
 	);
@@ -365,13 +381,18 @@ namespace GEO {
 	    rhs.num_.rep(), denom_.rep()
 	);
 	const expansion& diff_num = expansion_diff(num_a, num_b);
-	const expansion& diff_denom = expansion_product(
-	    denom_.rep(), rhs.denom_.rep()
+	return (
+	    diff_num.sign() * denom_.sign() * rhs.denom_.sign() < 0
 	);
-	return (diff_num.sign() * diff_denom.sign() < 0);
     }
 
     bool rational_nt::operator<= (const rational_nt& rhs) const {
+	if(trivially_has_same_denom(rhs)) {
+	    const expansion& diff_num = expansion_diff(
+		num_.rep(), rhs.num_.rep()
+	    );
+	    return (diff_num.sign() * denom_.sign() <= 0);
+	}
 	const expansion& num_a = expansion_product(
 	    num_.rep(), rhs.denom_.rep()
 	);
@@ -379,10 +400,9 @@ namespace GEO {
 	    rhs.num_.rep(), denom_.rep()
 	);
 	const expansion& diff_num = expansion_diff(num_a, num_b);
-	const expansion& diff_denom = expansion_product(
-	    denom_.rep(), rhs.denom_.rep()
+	return (
+	    diff_num.sign() * denom_.sign() * rhs.denom_.sign() <= 0
 	);
-	return (diff_num.sign() * diff_denom.sign() <= 0);
     }
 
     bool rational_nt::operator> (double rhs) const {
@@ -417,5 +437,6 @@ namespace GEO {
 	return (diff_num.sign() * denom_.sign() <= 0);
     }
     
-    /************************************************************************/    
+    /***********************************************************************/
+    
 }

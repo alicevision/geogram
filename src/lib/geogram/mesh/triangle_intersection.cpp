@@ -375,7 +375,7 @@ namespace {
     index_t triangle_dim(
 	const vec3& p1, const vec3& p2, const vec3& p3
     ) {
-	if(PCK::det_3d(p1.data(), p2.data(), p3.data()) != 0) {
+	if(!PCK::aligned_3d(p1.data(), p2.data(), p3.data())) {
 	    return 2;
 	}
 	if(
@@ -618,7 +618,7 @@ namespace {
         vector<TriangleIsect>& out, bool swp
     ) {
 	if(
-	    PCK::det_3d(p0.data(), q0.data(), q1.data()) == 0 &&
+	    PCK::aligned_3d(p0.data(), q0.data(), q1.data()) &&
 	    PCK::dot_3d(p0.data(), q0.data(), q1.data()) < 0
 	) {
 	    add_intersection(out, P, E, swp);
@@ -658,8 +658,8 @@ namespace {
 	// If the two segments are aligned, then there is no strict
 	// intersection.
 	if(
-	    (PCK::det_3d(p0.data(), q0.data(), q1.data()) == 0) &&
-	    (PCK::det_3d(p1.data(), q0.data(), q1.data()) == 0)
+	    (PCK::aligned_3d(p0.data(), q0.data(), q1.data())) &&
+	    (PCK::aligned_3d(p1.data(), q0.data(), q1.data()))
         ) {
 	    return false;
 	}
@@ -849,6 +849,7 @@ namespace {
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     ) {
+	result.resize(0);
 	geo_debug_assert(dim1 != 2 || dim2 != 2);
 	const vec3 *pp0=0, *pp1=0, *pp2=0;
 	const vec3 *qq0=0, *qq1=0, *qq2=0;
@@ -991,18 +992,28 @@ namespace {
 	}
 	return (max_dim > 0);
     }
+
+
 }
 
 /****************************************************************************/
 
 namespace GEO {
 
+    std::string region_to_string(TriangleRegion rgn) {
+	const char* strs[] = {
+	    "P0", "P1", "P2", "E0", "E1", "E2", "T"
+	};
+	geo_assert(int(rgn) < 7);
+	return strs[int(rgn)];
+    }
+    
     bool triangles_intersections(
         const vec3& p0, const vec3& p1, const vec3& p2,
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     ) {
-        result.resize(0);	
+	result.resize(0);	
         {
 	    index_t dim1 = triangle_dim(p0,p1,p2);
 	    index_t dim2 = triangle_dim(q0,q1,q2);
@@ -1015,7 +1026,7 @@ namespace GEO {
 		);
 	    }
 	} 
-
+	
 	switch(
 	    triangle_intersect_supporting_plane(
 		p0, p1, p2, q0, q1, q2, result, false
@@ -1048,7 +1059,13 @@ namespace GEO {
             max_dim = geo_max(max_dim, region_dim(result[i].first));
             max_dim = geo_max(max_dim, region_dim(result[i].second));
         }
-        return (max_dim > 0);
+        bool has_isect = (max_dim > 0);
+	/*
+	if(has_isect) {
+	    std::cout << result << std::endl;
+	}
+	*/
+	return has_isect;
     }
 }
 
