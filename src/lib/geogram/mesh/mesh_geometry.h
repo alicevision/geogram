@@ -174,16 +174,7 @@ namespace GEO {
          * \pre dimension >= 3
          * \note the computed vector is not normalized.
          */
-        inline vec3 mesh_facet_normal(const Mesh& M, index_t f) {
-            index_t v1 = M.facet_corners.vertex(M.facets.corners_begin(f));
-            index_t v2 = M.facet_corners.vertex(M.facets.corners_begin(f) + 1);
-            index_t v3 = M.facet_corners.vertex(M.facets.corners_begin(f) + 2);
-            const vec3& p1 = mesh_vertex(M, v1);
-            const vec3& p2 = mesh_vertex(M, v2);
-            const vec3& p3 = mesh_vertex(M, v3);
-            return cross(p2 - p1, p3 - p1);
-        }
-
+        vec3 GEOGRAM_API  mesh_facet_normal(const Mesh& M, index_t f);
 
         /**
          * \brief Gets the centroid of a facet in a mesh.
@@ -346,7 +337,6 @@ namespace GEO {
 
     /**
      * \brief Computes the volume of a cell in a mesh.
-     * \note only implemented for tetrahedra for now
      * \param[in] M a const reference to the mesh
      * \param[in] c the index of the cell
      * \return the volume of the cell 

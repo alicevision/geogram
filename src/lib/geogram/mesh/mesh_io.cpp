@@ -3458,7 +3458,10 @@ namespace GEO {
             }
         }
 
-        if(FileSystem::extension(filename) != "geogram") {
+        if(
+	    FileSystem::extension(filename) != "geogram" &&
+	    FileSystem::extension(filename) != "geogram_ascii"
+	) {
             M.facets.connect();
             M.cells.connect();
             if(M.cells.nb() != 0 && M.facets.nb() == 0) {

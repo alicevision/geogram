@@ -340,7 +340,7 @@ namespace GEO {
          * \endcode
          */
 #if   defined(GEO_COMPILER_INTEL)
-#define geo_restrict restrict
+#define geo_restrict __restrict
 #elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
 #define geo_restrict __restrict__
 #elif defined(GEO_COMPILER_MSVC)

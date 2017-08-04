@@ -191,9 +191,13 @@ namespace GEO {
          * \return the cosine of the angle between \p a and \p b
          */
         inline double cos_angle(const vec3& a, const vec3& b) {
-            double na2 = length2(a);
-            double nb2 = length2(b);
-            return dot(a, b) / ::sqrt(na2 * nb2);
+	    double lab = ::sqrt(length2(a)*length2(b));
+            double result = (lab > 1e-20) ? (dot(a, b) / lab) : 1.0;
+            // Numerical precision problem may occur, and generate
+            // normalized dot products that are outside the valid
+            // range of acos.
+	    geo_clamp(result, -1.0, 1.0);
+	    return result;
         }
 
         /**
@@ -214,9 +218,13 @@ namespace GEO {
          * \return the cosine of the angle between \p a and \p b
          */
         inline double cos_angle(const vec2& a, const vec2& b) {
-            double na2 = length2(a);
-            double nb2 = length2(b);
-            return dot(a, b) / ::sqrt(na2 * nb2);
+	    double lab = ::sqrt(length2(a)*length2(b));
+            double result = (lab > 1e-20) ? (dot(a, b) / lab) : 1.0;
+            // Numerical precision problem may occur, and generate
+            // normalized dot products that are outside the valid
+            // range of acos.
+	    geo_clamp(result, -1.0, 1.0);
+	    return result;
         }
 
         /**

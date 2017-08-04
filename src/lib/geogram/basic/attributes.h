@@ -650,16 +650,24 @@ namespace GEO {
             AttributeStore::register_attribute_creator(
                 new TypedAttributeStoreCreator<T>, type_name, typeid(T).name()
             );
-            GeoFile::register_ascii_attribute_serializer(
-                type_name,
-                read_ascii_attribute<T>,
-                write_ascii_attribute<T>
-            );
+	    if(type_name == "bool") {
+		GeoFile::register_ascii_attribute_serializer(
+		    type_name,
+		    read_ascii_attribute<bool>,
+		    write_ascii_attribute<bool>
+		);
+	    } else {
+		GeoFile::register_ascii_attribute_serializer(
+		    type_name,
+		    read_ascii_attribute<T>,
+		    write_ascii_attribute<T>
+		);
+	    }
         }
     };
-    
-    /*********************************************************************/    
 
+    /*********************************************************************/    
+    
     /**
      * \brief Managers a set of attributes attached to 
      *  an object.

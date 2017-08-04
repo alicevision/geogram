@@ -588,6 +588,7 @@ namespace GLUP {
         "        result = glup_lighting(result, N); \n"
         "    } \n"
         "    glup_FragColor = result; \n"
+        "    glup_alpha_discard(); \n"
         "} \n"
      );
 
@@ -625,6 +626,7 @@ namespace GLUP {
         "        result = glup_texturing(result, tex_coord); \n"
         "    } \n"
         "    glup_FragColor = result; \n"
+        "    glup_alpha_discard(); \n"
         "} \n"
      );
 
@@ -959,6 +961,7 @@ namespace GLUP {
         "        result = glup_lighting(result, N); \n"
         "    } \n"
         "    glup_FragColor = result; \n"
+        "    glup_alpha_discard(); \n"
         "} \n"
         " \n"
      );
@@ -1121,6 +1124,7 @@ namespace GLUP {
         "        result = glup_lighting(result, N); \n"
         "    } \n"
         "    glup_FragColor = result; \n"
+        "    glup_alpha_discard(); \n"
         "} \n"
         " \n"
      );
@@ -1164,6 +1168,7 @@ namespace GLUP {
         "    } \n"
         " \n"
         "    glup_FragColor = result; \n"
+        "    glup_alpha_discard(); \n"
         "} \n"
         " \n"
      );
@@ -1974,6 +1979,7 @@ namespace GLUP {
         "        result = glup_lighting(result, N); \n"
         "    } \n"
         "    glup_FragColor = result; \n"
+        "    glup_alpha_discard(); \n"
         "} \n"
         " \n"
         " \n"

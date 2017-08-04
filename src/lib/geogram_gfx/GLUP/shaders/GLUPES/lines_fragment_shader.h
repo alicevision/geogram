@@ -31,4 +31,5 @@ void main() {
         result = glup_texturing(result, tex_coord);
     }
     glup_FragColor = result;
+    glup_alpha_discard();    
 }                                                             

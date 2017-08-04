@@ -1,47 +1,5 @@
-/*
- *  Copyright (c) 2012-2014, Bruno Levy
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and/or other materials provided with the distribution.
- *  * Neither the name of the ALICE Project-Team nor the names of its
- *  contributors may be used to endorse or promote products derived from this
- *  software without specific prior written permission.
- * 
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  If you modify this software, you should include a notice giving the
- *  name of the person performing the modification, the date of modification,
- *  and the reason for such modification.
- *
- *  Contact: Bruno Levy
- *
- *     Bruno.Levy@inria.fr
- *     http://www.loria.fr/~levy
- *
- *     ALICE Project
- *     LORIA, INRIA Lorraine, 
- *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
- *     FRANCE
- *
- */
+/* Vorpaline - geogram demo program */
+
 
 
 #include <geogram/basic/common.h>
@@ -62,15 +20,18 @@
 #include <geogram/mesh/mesh_reorder.h>
 #include <geogram/mesh/mesh_frame_field.h>
 #include <geogram/mesh/mesh_tetrahedralize.h>
+#include <geogram/mesh/mesh_decimate.h>
 #include <geogram/mesh/mesh_remesh.h>
 
 #include <geogram/delaunay/LFS.h>
 #include <geogram/voronoi/CVT.h>
+#include <geogram/voronoi/RVD_mesh_builder.h>
 #include <geogram/points/co3ne.h>
 
 #include <geogram/third_party/PoissonRecon/poisson_geogram.h>
 
 #include <typeinfo>
+#include <algorithm>
 
 namespace {
 
@@ -196,7 +157,7 @@ namespace {
             Co3Ne_smooth_and_reconstruct(M_in, nb_neigh, Psmooth_iter, radius);
         }
     }
-    
+
     /**
      * \brief Applies pre-processing to a mesh.
      * \details Pre-processing operations and their parameters are
@@ -217,8 +178,7 @@ namespace {
         for(int k=0; k<nb_kills; ++k) {
             vector<index_t> to_kill(M_in.facets.nb(), 0);
             for(index_t f=0; f<M_in.facets.nb(); ++f) {
-                for(
-                    index_t c=M_in.facets.corners_begin(f);
+                for(index_t c=M_in.facets.corners_begin(f);
                     c<M_in.facets.corners_end(f); ++c
                 ) {
                     if(M_in.facet_corners.adjacent_facet(c) == NO_FACET) {
@@ -246,10 +206,7 @@ namespace {
         
         index_t nb_bins = CmdLine::get_arg_uint("pre:vcluster_bins");
         if(pre && nb_bins != 0) {
-            Logger::err("Remesh")
-                << "Mesh clustering only available in Vorpaline"
-                << std::endl;
-            exit(-1);
+            mesh_decimate_vertex_clustering(M_in, nb_bins);
         } else if(pre && CmdLine::get_arg_bool("pre:repair")) {
             MeshRepairMode mode = MESH_REPAIR_DEFAULT;
             double epsilon = CmdLine::get_arg_percent(
@@ -281,13 +238,13 @@ namespace {
         double anisotropy = 0.02 * CmdLine::get_arg_double("remesh:anisotropy");
         if(anisotropy != 0.0) {
             compute_normals(M_in);
-            unsigned int nb_normal_smooth =
+            index_t nb_normal_smooth =
                 CmdLine::get_arg_uint("pre:Nsmooth_iter");
             if(nb_normal_smooth != 0) {
                 Logger::out("Nsmooth") << "Smoothing normals, "
                     << nb_normal_smooth
                     << " iteration(s)" << std::endl;
-                simple_Laplacian_smooth(M_in, nb_normal_smooth, true);
+                simple_Laplacian_smooth(M_in, index_t(nb_normal_smooth), true);
             }
             set_anisotropy(M_in, anisotropy);
         }
@@ -405,6 +362,311 @@ namespace {
     }
 
     /**
+     * \brief The callback called for each RVD polyhedron. Constructs a 
+     *  mesh with the boundary of all cells.
+     * \details Its member functions are called for each RVD polyhedron, 
+     *  i.e. the intersections between the volumetric mesh tetrahedra and
+     *  the Voronoi cells. Based on set_simplify_xxx(), a smaller number of
+     *  polyhedra can be generated.
+     */
+    class SaveRVDCells : public RVDPolyhedronCallback {
+    public:
+
+	/**
+	 * \brief SaveRVDCells constructor.
+	 * \param[out] output_mesh a reference to the generated mesh 
+	 */
+	SaveRVDCells(Mesh& output_mesh) : output_mesh_(output_mesh), shrink_(0.0) {
+	    cell_vertex_map_ = nil;
+	    global_vertex_map_ = nil;
+	    current_cell_id_ = 0;
+	    generate_ids_ = false;
+	}
+
+	/**
+	 * \brief SaveRVDCells destructor.
+	 */
+	~SaveRVDCells() {
+	    if(generate_ids_) {
+		cell_id_.unbind();
+		seed_id_.unbind();
+		vertex_id_.unbind();
+		delete global_vertex_map_;
+		global_vertex_map_ = nil;
+	    }
+	    delete cell_vertex_map_;
+	    cell_vertex_map_ = nil;
+	}
+
+	/**
+	 * \brief Specifies whether ids should be generated.
+	 * \details If enabled, unique vertex ids, seed ids and cell ids are
+	 *  generated and attached to the mesh vertices ("vertex_id" attribute)
+	 *  and mesh facets ("seed_id" and "cell_id" attributes) respectively.
+	 *  There is a cell_id per generated polyhedron, and seed_id refers to
+	 *  the Voronoi seed (the point that the Voronoi cell is associated with).
+	 * \param[in] x true if ids should be generated, false
+	 *  otherwise (default)
+	 */
+	void set_generate_ids(bool x) {
+	    if(x == generate_ids_) {
+		return;
+	    }
+	    generate_ids_ = x;
+	    if(generate_ids_) {
+		cell_id_.bind(
+		    output_mesh_.facets.attributes(), "cell_id"
+		);
+		seed_id_.bind(
+		    output_mesh_.facets.attributes(), "seed_id"		    
+		);
+		vertex_id_.bind(
+		    output_mesh_.vertices.attributes(), "vertex_id"
+		);
+		global_vertex_map_ = new RVDVertexMap;
+	    } else {
+		cell_id_.unbind();
+		vertex_id_.unbind();
+		delete global_vertex_map_;
+		global_vertex_map_ = nil;
+	    }
+	}
+
+	
+	/**
+	 * \brief Defines the optional shrink factor for cells.
+	 * \param[in] x shrink factor, 0.0 means no shrink, 1.0 means
+	 *  maximum shrink (cell reduced to a point).
+	 */
+	void set_shrink(double x) {
+	    shrink_ = x;
+	    if(shrink_ != 0.0) {
+		set_use_mesh(true);
+	    }
+	}
+	
+	/**
+	 * \brief Called at the beginning of RVD traversal.
+	 */
+	virtual void begin() {
+	    RVDPolyhedronCallback::begin();
+	    output_mesh_.clear();
+	    output_mesh_.vertices.set_dimension(3);
+	}
+
+	/**
+	 * \brief Called at the end of RVD traversal.
+	 */
+	virtual void end() {
+	    RVDPolyhedronCallback::end();
+	    output_mesh_.facets.connect();
+	}
+
+	/**
+	 * \brief Called at the beginning of each RVD polyhedron.
+	 * \param[in] seed , tetrahedron the (seed,tetrahedron) pair that
+	 *  defines the RVD polyhedron, as the intersection between the Voronoi
+	 *  cell of the seed and the tetrahedron.
+	 */
+	virtual void begin_polyhedron(index_t seed, index_t tetrahedron) {
+	    geo_argused(tetrahedron);
+	    geo_argused(seed);
+	    delete cell_vertex_map_;
+	    cell_vertex_map_ = new RVDVertexMap;
+	    cell_vertex_map_->set_first_vertex_index(output_mesh_.vertices.nb());
+	}
+
+	virtual void begin_facet(index_t facet_seed, index_t facet_tet_facet) {
+	    geo_argused(facet_seed);
+	    geo_argused(facet_tet_facet);
+	    current_facet_.resize(0);
+	}
+
+	virtual void vertex(
+	    const double* geometry, const GEOGen::SymbolicVertex& symb
+	) {
+	    index_t v = cell_vertex_map_->find_or_create_vertex(seed(), symb);
+	    if(v >= output_mesh_.vertices.nb()) {
+		output_mesh_.vertices.create_vertex(geometry);
+		if(generate_ids_) {
+		    vertex_id_[v] = int(global_vertex_map_->find_or_create_vertex(seed(), symb));
+		}
+	    }
+	    current_facet_.push_back(v);
+	}
+
+	virtual void end_facet() {
+	    index_t f = output_mesh_.facets.nb();
+	    output_mesh_.facets.create_polygon(current_facet_.size());
+	    for(index_t i=0; i<current_facet_.size(); ++i) {
+		output_mesh_.facets.set_vertex(f,i,current_facet_[i]);
+	    }
+	    if(generate_ids_) {
+		seed_id_[f] = int(seed());
+		cell_id_[f] = int(current_cell_id_);
+	    }
+	}
+
+	virtual void end_polyhedron() {
+	    ++current_cell_id_;
+	}
+
+	virtual void process_polyhedron_mesh() {
+	    if(shrink_ != 0.0 && mesh_.vertices.nb() != 0) {
+		vec3 center(0.0, 0.0, 0.0);
+		for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+		    center += vec3(mesh_.vertices.point_ptr(v));
+		}
+		center = (1.0 / double(mesh_.vertices.nb())) * center;
+		for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+		    vec3 p(mesh_.vertices.point_ptr(v));
+		    p = shrink_ * center + (1.0 - shrink_) * p;
+		    mesh_.vertices.point_ptr(v)[0] = p.x;
+		    mesh_.vertices.point_ptr(v)[1] = p.y;
+		    mesh_.vertices.point_ptr(v)[2] = p.z;		    
+		}
+	    }
+	    RVDPolyhedronCallback::process_polyhedron_mesh();
+	}
+	
+    private:
+	vector<index_t> current_facet_;
+	Mesh& output_mesh_;
+	RVDVertexMap* global_vertex_map_;
+	RVDVertexMap* cell_vertex_map_;
+	double shrink_;
+	bool generate_ids_;
+	Attribute<int> cell_id_;
+	Attribute<int> seed_id_;
+	Attribute<int> vertex_id_;
+	index_t current_cell_id_;
+    };
+
+
+    /**
+     * \brief Generates a polyhedral mesh.
+     * \param[in] input_filename name of the input file, can be
+     *   either a closed surfacic mesh or a tetrahedral mesh
+     * \param[in] output_filename name of the output file
+     * \retval 0 on success
+     * \retval non-zero value otherwise
+     */
+    int polyhedral_mesher(
+        const std::string& input_filename, std::string output_filename
+    ) {
+        Mesh M_in;
+        Mesh M_out;
+	Mesh M_points;
+
+        Logger::div("Polyhedral meshing");
+
+        if(!mesh_load(input_filename, M_in)) {
+            return 1;
+        }
+        
+        if(M_in.cells.nb() == 0) {
+            Logger::out("Poly") << "Mesh is not a volume" << std::endl;
+            Logger::out("Poly") << "Trying to tetrahedralize" << std::endl;
+            if(!mesh_tetrahedralize(M_in)) {
+                return 1;
+            }
+            M_in.cells.compute_borders();
+        }
+
+        CentroidalVoronoiTesselation CVT(&M_in, 3);
+        CVT.set_volumetric(true);
+
+	if(CmdLine::get_arg("poly:points_file") == "") {
+
+	    Logger::div("Generate random samples");
+	    
+	    CVT.compute_initial_sampling(CmdLine::get_arg_uint("remesh:nb_pts"));
+
+	    Logger::div("Optimize sampling");
+
+	    try {
+		index_t nb_iter = CmdLine::get_arg_uint("opt:nb_Lloyd_iter");
+		ProgressTask progress("Lloyd", nb_iter);
+		CVT.set_progress_logger(&progress);
+		CVT.Lloyd_iterations(nb_iter);
+	    }
+	    catch(const TaskCanceled&) {
+	    }
+
+	    try {
+		index_t nb_iter = CmdLine::get_arg_uint("opt:nb_Newton_iter");
+		    ProgressTask progress("Newton", nb_iter);
+		CVT.set_progress_logger(&progress);
+		CVT.Newton_iterations(nb_iter);
+	    }
+	    catch(const TaskCanceled&) {
+	    }
+        
+	    CVT.set_progress_logger(nil);
+	} else {
+	    if(!mesh_load(CmdLine::get_arg("poly:points_file"), M_points)) {
+		return 1;
+	    }
+	    CVT.delaunay()->set_vertices(
+		M_points.vertices.nb(), M_points.vertices.point_ptr(0)
+	    );
+	}
+
+	CVT.RVD()->set_exact_predicates(true);
+	{
+	    SaveRVDCells callback(M_out);
+	    std::string simplify = CmdLine::get_arg("poly:simplify");
+	    if(simplify == "tets_voronoi_boundary") {
+		double angle_threshold =
+		    CmdLine::get_arg_double("poly:normal_angle_threshold");
+		callback.set_simplify_boundary_facets(true, angle_threshold);
+	    } else if(simplify == "tets_voronoi") {
+		callback.set_simplify_voronoi_facets(true);
+	    } else if(simplify == "tets") {
+		callback.set_simplify_internal_tet_facets(true);		
+	    } else if(simplify == "none") {
+		callback.set_simplify_internal_tet_facets(false);				
+	    } else {
+		Logger::err("Poly") << simplify << " invalid cells simplification mode"
+				    << std::endl;
+	    }
+	    callback.set_shrink(CmdLine::get_arg_double("poly:cells_shrink"));
+	    callback.set_generate_ids(CmdLine::get_arg_bool("poly:generate_ids"));
+	    CVT.RVD()->for_each_polyhedron(callback);				
+	}
+
+	if(
+	    FileSystem::extension(output_filename) == "mesh" ||
+	    FileSystem::extension(output_filename) == "meshb"
+	) {
+	    Logger::warn("Poly") << "Specified file format does not handle polygons"
+				 << " (falling back to .obj)"
+				 << std::endl;
+	    output_filename =
+		FileSystem::dir_name(output_filename) + "/" + FileSystem::base_name(output_filename) + ".obj";
+	}
+
+	if(
+	    CmdLine::get_arg_bool("poly:generate_ids") &&
+	    FileSystem::extension(output_filename) != "geogram" &&
+	    FileSystem::extension(output_filename) != "geogram_ascii"
+	) {
+	    Logger::warn("Poly") << "Speficied file format does not handle ids"
+				 << " (use .geogram or .geogram_ascii instead)"
+				 << std::endl;
+	}
+	
+	{
+	    MeshIOFlags flags;
+	    flags.set_attributes(MESH_ALL_ATTRIBUTES);
+	    mesh_save(M_out, output_filename, flags);
+	}
+        
+        return 0;
+    }
+
+    
+    /**
      * \brief Generates a tetrahedral mesh.
      * \param[in] input_filename name of the input file, can be
      *   either a closed surfacic mesh or a tetrahedral mesh
@@ -434,117 +696,36 @@ namespace {
         }
         return 0;
     }
-
-
-    /**
-     * \brief Generates a polyhedral mesh.
-     * \param[in] input_filename name of the input file, can be
-     *   either a closed surfacic mesh or a tetrahedral mesh
-     * \param[in] output_filename name of the output file
-     * \retval 0 on success
-     * \retval non-zero value otherwise
-     */
-    int polyhedral_mesher(
-        const std::string& input_filename, const std::string& output_filename
-    ) {
-        Mesh M_in;
-        Mesh M_out;
-
-        MeshIOFlags flags;
-        flags.set_element(MESH_CELLS);
-
-        Logger::div("Polyhedral meshing");
-
-        if(!mesh_load(input_filename, M_in, flags)) {
-            return 1;
-        }
-        
-        if(M_in.cells.nb() == 0) {
-            Logger::out("Poly") << "Mesh is not a volume" << std::endl;
-            Logger::out("Poly") << "Trying to tetrahedralize" << std::endl;
-            double quality = 2.0;
-            if(!mesh_tetrahedralize(M_in, true, true, quality)) {
-                return 1;
-            }
-            M_in.cells.compute_borders();
-        }
-
-        CentroidalVoronoiTesselation CVT(&M_in, 3);
-        CVT.set_volumetric(true);
-        
-        Logger::div("Generate random samples");
-
-        CVT.compute_initial_sampling(CmdLine::get_arg_uint("remesh:nb_pts"));
-
-        Logger::div("Optimize sampling");
-
-        try {
-            ProgressTask progress("Lloyd", 10);
-            CVT.set_progress_logger(&progress);
-            CVT.Lloyd_iterations(CmdLine::get_arg_uint("opt:nb_Lloyd_iter"));
-        }
-        catch(const TaskCanceled&) {
-        }
-
-        try {
-            ProgressTask progress("Newton", 30);
-            CVT.set_progress_logger(&progress);
-            CVT.Newton_iterations(30);
-        }
-        catch(const TaskCanceled&) {
-        }
-        
-        CVT.set_progress_logger(nil);
-        
-        CVT.RVD()->compute_RVD(M_out, 0, false, false);
-        
-        MeshIOFlags RVDflags;
-        RVDflags.set_elements(MESH_CELLS);
-        RVDflags.set_attribute(MESH_FACET_REGION);
-        RVDflags.set_attributes(MESH_CELL_REGION);
-        mesh_save(M_out, output_filename, RVDflags);
-        
-        return 0;
-    }
-
+    
 }
 
 int main(int argc, char** argv) {
     using namespace GEO;
 
-    GEO::initialize();
-
+    
+    GEO::initialize();    
+    
     try {
 
         Stopwatch total("Total time");
-
+        
         CmdLine::import_arg_group("standard");
         CmdLine::import_arg_group("pre");
         CmdLine::import_arg_group("remesh");
         CmdLine::import_arg_group("algo");
         CmdLine::import_arg_group("post");
         CmdLine::import_arg_group("opt");
-        CmdLine::import_arg_group("co3ne");        
+        CmdLine::import_arg_group("co3ne");
         CmdLine::import_arg_group("tet");
-        CmdLine::import_arg_group("poly");        
+        CmdLine::import_arg_group("poly");
         
         std::vector<std::string> filenames;
 
-#ifdef GEO_OS_ANDROID
-        Logger::out("Math") << "Checking math functions: sin 45 = "
-                            << sin(M_PI/4.0) << std::endl;
-        Logger::out("Math") << "Checking double conversion: 1.2345 = "
-                            << atof("1.2345")
-                            << std::endl;
-        Logger::out("Math") << "Checking math functions: atan(1.0) = "
-                            << atan(1.0) << std::endl;
-        
-#endif        
-
-        
         if(!CmdLine::parse(argc, argv, filenames, "inputfile <outputfile>")) {
             return 1;
         }
+
+        
         std::string input_filename = filenames[0];
         std::string output_filename =
             filenames.size() >= 2 ? filenames[1] : std::string("out.meshb");
@@ -556,6 +737,7 @@ int main(int argc, char** argv) {
             return tetrahedral_mesher(input_filename, output_filename);
         }
 
+	
         if(CmdLine::get_arg_bool("poly")) {
             return polyhedral_mesher(input_filename, output_filename);
         }
@@ -568,10 +750,11 @@ int main(int argc, char** argv) {
             }
         }
 
+        
         if(CmdLine::get_arg_bool("co3ne")) {
             reconstruct(M_in);
         }
-        
+
         if(!preprocess(M_in)) {
             return 1;
         }
@@ -587,17 +770,7 @@ int main(int argc, char** argv) {
         }
 
         Logger::div("remeshing");
-        if(CmdLine::get_arg_bool("remesh:by_parts")) {
-            Logger::err("Remesh")
-                << "By parts remeshing only available in Vorpaline"
-                << std::endl;
-            exit(-1);
-        } else if(CmdLine::get_arg_bool("remesh:sharp_edges")) {
-            Logger::err("Remesh")
-                << "Feature-sensitive remeshing only available in Vorpaline"
-                << std::endl;
-            exit(-1);
-        } else {
+	{
             double gradation = CmdLine::get_arg_double("remesh:gradation");
             if(gradation != 0.0) {
                 compute_sizing_field(

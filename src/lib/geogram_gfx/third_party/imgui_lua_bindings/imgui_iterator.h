@@ -1,3 +1,8 @@
+
+#ifdef _MSC_VER
+#pragma warning ( disable: 4244 4800)
+#endif
+
 //    IMGUI_API ImGuiIO&      GetIO();
 // Unsupported return type ImGuiIO&
 //    IMGUI_API ImGuiStyle&   GetStyle();

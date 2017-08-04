@@ -68,6 +68,7 @@ namespace GEO {
     class Map;
     class IntegrationSimplex;
     class MeshFacetsAABB;
+    class RVDPolyhedronCallback;
 
     /**
      * \brief Computes a Restricted Voronoi Diagram (RVD).
@@ -573,7 +574,21 @@ namespace GEO {
             Mesh& result,
             bool copy_symbolic_info=false
         ) = 0;
-        
+
+
+	/**
+	 * \brief Invokes a user callback for each intersection polyhedron
+	 *  of the restricted Voronoi diagram (volumetric mode only).
+	 * \details Each intersection polyhedron is defined as the intersection
+	 *  between a Voronoi cell and a tetrahedron.
+	 * \param[in] callback the set of user callbacks, as an instance of a
+	 *  class derived from RVDPolyhedronCallback.
+	 */
+	virtual void for_each_polyhedron(
+	    RVDPolyhedronCallback& callback
+	) = 0;
+
+	
         /**
          * \brief Specifies whether the "radius of security"
          *  criterion should be enforced.

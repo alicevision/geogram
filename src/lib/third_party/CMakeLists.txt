@@ -28,4 +28,9 @@ if(GEOGRAM_WITH_GRAPHICS)
   
 endif()
 
-add_subdirectory(numerics)
+# BLAS,LAPACK,CHOLDMOD,SUPERLU and ARPACK
+# used as plug-ins by OpenNL
+
+if(GEOGRAM_WITH_LEGACY_NUMERICS)
+   add_subdirectory(numerics)
+endif()

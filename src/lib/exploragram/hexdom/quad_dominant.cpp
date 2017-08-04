@@ -638,7 +638,7 @@ namespace GEO {
 
 		vector<BBox> locked_regions;
 		int phase = 0;
-		while (1) {
+		for(;;) {
 			bool modified = false;
 			if (0 == phase) {
 				plop("try_remove_vertices_inside_quads(m, locked_regions)");
@@ -1095,7 +1095,7 @@ namespace GEO {
 
 		plop("export_quadtri_from_charts(Mesh* m, Mesh* quadmesh)");
 		vector<BBox> locked_regions;
-		while (1) {
+		for(;;) {
 			try_export_quadtri_from_charts(m, locked_regions);
 			bool fail = lock_self_intersecting_regions(m, locked_regions);
 			if (!fail) break;

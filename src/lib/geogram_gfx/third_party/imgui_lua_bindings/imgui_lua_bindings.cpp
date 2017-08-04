@@ -2,6 +2,9 @@
 #ifdef __GNUC__
 #ifndef __ICC
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wformat-security"
+#endif
 #endif
 #endif
 

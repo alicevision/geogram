@@ -3,8 +3,10 @@
 
 #******************************************************************************
 #usage: snapshot.sh meshfile
-#generated image is in output.png
+#generated image is in "input file name".png (e.g. foobar.geogram.png)
 #******************************************************************************
+
+title=$1
 
 # Size of each snapshot
 geometry=800x800 
@@ -14,7 +16,7 @@ geometry=800x800
 views="1,1,1,70 1,0,0,90 0,1,0,90 0,0,1,0"
 
 # Simulated keypress events (zooms a little bit and hides mesh)
-keys=zzzzzzzzm
+keys=zzzzzzzzSVC
 
 for view in $views
 do
@@ -27,5 +29,8 @@ do
 #    mv /tmp/tmp.ppm $image
 done
 
+
+
+
 # Assemble the images using imagemagick
-montage $images -adjoin output.png
+montage $images -title "$title" -adjoin -border 2 -geometry +5+5 $1.png

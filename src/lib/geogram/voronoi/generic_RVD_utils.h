@@ -398,6 +398,14 @@ namespace GEOGen {
     };
 
     /************************************************************************/
+
+    /**
+     * \brief Stores associations between (tet,seed) pairs and the index of
+     *  a connected component.
+     */    
+    typedef FacetSeedMarking TetSeedMarking;
+
+    /************************************************************************/    
 }
 
 #endif

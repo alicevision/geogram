@@ -87,7 +87,9 @@ static void nlJacobiPreconditionerDestroy(NLJacobiPreconditioner* M) {
     NL_DELETE_ARRAY(M->diag_inv);
 }
 
-static void nlJacobiPreconditionerMult(NLJacobiPreconditioner* M, const double* x, double* y) {
+static void nlJacobiPreconditionerMult(
+    NLJacobiPreconditioner* M, const double* x, double* y
+) {
     NLuint i;
     for(i=0; i<M->n; ++i) {
 	y[i] = x[i] * M->diag_inv[i];
@@ -249,7 +251,9 @@ static void nlSparseMatrixMultUpperInverse(
 }
 
 
-static void nlSSORPreconditionerMult(NLSSORPreconditioner* P, const double* x, double* y) {
+static void nlSSORPreconditionerMult(
+    NLSSORPreconditioner* P, const double* x, double* y
+) {
     NLdouble* diag = P->M->diag;
     NLuint i;
     nlSparseMatrixMultLowerInverse(

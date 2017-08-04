@@ -36,3 +36,5 @@ document.onkeydown = function (e) {
   la ligne qui a declench\'e une erreur.
 
 * Une fonction pour afficher des petits chiffres, pour indiquer les numeros de pixels.
+
+* Parfois \c{c}a se gele, surtout quand on change de bureau virtuel et qu'on revient. Voir si le probleme arrive aussi sous Windows...

@@ -1309,6 +1309,7 @@ namespace GEO {
 
     static int lua_glup_print(lua_State* L) {
 	Console* console = Application::instance()->console();
+	console->show();
 	int nargs = lua_gettop(L);	
 	lua_getglobal(L, "tostring");
 	for(int i=1; i<=nargs; ++i) {
@@ -1638,7 +1639,7 @@ namespace GEO {
         glBindTexture(GL_TEXTURE_2D, geogram_logo_texture_);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2DXPM(geogram_logo_256_xpm, GL_FALSE);
+        glTexImage2DXPM(geogram_logo_256_xpm);
 	
         if(glup_viewer_is_high_dpi()) {
             retina_mode_ = true;                
@@ -2095,7 +2096,7 @@ namespace GEO {
         colormaps_.rbegin()->name = name;
         glGenTextures(1, &colormaps_.rbegin()->texture);
         glBindTexture(GL_TEXTURE_2D, colormaps_.rbegin()->texture);
-        glTexImage2DXPM(xpm_data, GL_TRUE);
+        glTexImage2DXPM(xpm_data);
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -2174,6 +2175,7 @@ namespace GEO {
         cells_shrink_ = 0.0f;
         show_colored_cells_ = false;
         show_hexes_ = true;
+	show_connectors_ = true;
 
         GEO::CmdLine::declare_arg(
             "attributes", true, "load mesh attributes"
@@ -2361,7 +2363,8 @@ namespace GEO {
         glup_viewer_add_toggle('B', &show_surface_borders_, "borders");
         glup_viewer_add_toggle('m', &show_mesh_, "mesh");
         glup_viewer_add_toggle('V', &show_volume_, "volume");
-        glup_viewer_add_toggle('j',  &show_hexes_, "hexes");
+        glup_viewer_add_toggle('j', &show_hexes_, "hexes");
+        glup_viewer_add_toggle('k', &show_connectors_, "connectors");	
         glup_viewer_add_toggle('C', &show_colored_cells_, "colored cells");
 
         glup_viewer_add_key_func(
@@ -2472,6 +2475,7 @@ namespace GEO {
             
             mesh_gfx_.set_shrink(double(cells_shrink_));
             mesh_gfx_.set_draw_cells(GEO::MESH_HEX, show_hexes_);
+            mesh_gfx_.set_draw_cells(GEO::MESH_CONNECTOR, show_connectors_);	    
             if(show_colored_cells_) {
                 mesh_gfx_.set_cells_colors_by_type();
             } else {

@@ -226,7 +226,14 @@ void SparseMatrix< T >::Multiply( ConstPointer( T2 ) in , Pointer( T2 ) out , in
                 ConstPointer( MatrixEntry< T > ) end = start + rowSizes[i];
                 ConstPointer( MatrixEntry< T > ) e;
 
-                for( e=start ; e!=end ; e++ ) {
+		// Note: m_ppElements[i] is potentially uninitialized,
+		// to be fixed.
+
+                for(
+		    e=start ;
+		    e!=end ;
+		    e++
+		) {
                      _out += in[ e->N ] * e->Value;
                 }
                 out[i] = _out;

@@ -51,41 +51,6 @@ namespace {
     using namespace GLUP;
 
     /**
-     * \brief Queries array stride for a variable in a 
-     *   GLSL program using introspection.
-     * \param[in] program the handle of the program
-     * \param[in] varname a string with the name of the array variable
-     * \return the number of bytes between two consecutive elements of the
-     *  array.
-     */
-    static size_t get_uniform_variable_array_stride(
-            GLuint program, const char* varname
-        ) {
-#ifndef GEO_GL_150
-            geo_argused(program);
-            geo_argused(varname);
-            return size_t(-1);
-#else
-            GLuint index = GL_INVALID_INDEX;
-            glGetUniformIndices(program, 1, &varname, &index);
-            if(index == GL_INVALID_INDEX) {
-                Logger::err("GLUP")
-                    << varname 
-                    << ":did not find uniform state variable"
-                    << std::endl;
-                throw GLSL::GLSLCompileError();
-            }
-            geo_assert(index != GL_INVALID_INDEX);
-            GLint stride = -1;
-            glGetActiveUniformsiv(
-                program, 1, &index, GL_UNIFORM_ARRAY_STRIDE, &stride
-            );
-            geo_assert(stride != -1);
-            return size_t(stride);
-#endif            
-    }
-
-    /**
      * \brief Sets an entry in an array with specified stride.
      * \param[in] array the address of the first element of the array
      * \param[in] stride number of bytes between two consecutive elements
@@ -440,11 +405,11 @@ namespace GLUP {
 	//   with Intel,  stride = 16
 	// (by quiering, the following code works on both).
 	
-	size_t config_size_stride = get_uniform_variable_array_stride(
+	size_t config_size_stride = GLSL::get_uniform_variable_array_stride(
 	    program, "MarchingCellStateBlock.config_size[0]"
 	);
 
-	size_t config_stride = get_uniform_variable_array_stride(
+	size_t config_stride = GLSL::get_uniform_variable_array_stride(
 	    program, "MarchingCellStateBlock.config[0]"
 	);
 

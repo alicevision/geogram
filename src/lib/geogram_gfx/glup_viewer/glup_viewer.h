@@ -229,9 +229,7 @@ extern GLUP_VIEWER_API void glup_viewer_set_scene_rotation(
     float xyz[3], float angle
 );
     
-extern GLUP_VIEWER_API void glTexImage2DXPM(
-    char const** xpm_data, GLboolean alpha_is_index
-);
+extern GLUP_VIEWER_API void glTexImage2DXPM(char const** xpm_data);
 extern GLUP_VIEWER_API void glTexImage2Dfile(const char* filename);
 
 extern GLUP_VIEWER_API GLboolean glup_viewer_load_image(

@@ -6,16 +6,16 @@ Library           OperatingSystem
 Library           lib/VorpatestLibrary.py
 
 *** Variables ***
-${DATADIR}        %{VORPATEST_ROOT_DIR}${/}data${/}RVD
+${DATADIR}        %{VORPATEST_ROOT_DIR}${/}data${/}Tets
 
 *** Test Cases ***
-fandisk.obj
+joint_with_tets.meshb
     [Tags]    daily_valgrind
-    Run Test   fandisk.obj    hexdom:stage=all
+    Run Test   joint_with_tets.meshb    hexdom:stage=all
 
 *** Keywords ***
 Run Test
     [Arguments]    ${input_name}=${TEST NAME}    @{options}
     [Documentation]    Runs a hexdom pipeline hex dominant test
     ...    The name of the input file is taken from the test name.
-    run command    hexdom_pipeline    hexdom:tets=${DATADIR}${/}${input_name}    hexdom:SetConstraints:tetrahedralize=true     @{options}
+    run command    hexdom_pipeline    hexdom:tets=${DATADIR}${/}${input_name}    @{options}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2004-2010, Bruno Levy
+ *  Copyright (c) 2012-2016, Bruno Levy
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
  *
  *  Contact: Bruno Levy
  *
- *     levy@loria.fr
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
  *
  *     ALICE Project
  *     LORIA, INRIA Lorraine, 
@@ -42,38 +43,44 @@
  *
  */
 
-#ifndef OPENNL_PRECONDITIONERS_H
-#define OPENNL_PRECONDITIONERS_H
+#ifndef GEOGRAM_MESH_MESH_LSCM
+#define GEOGRAM_MESH_MESH_LSCM
 
-#include "nl_private.h"
-#include "nl_matrix.h"
 
 /**
- * \file geogram/NL/nl_preconditioners.h
- * \brief Internal OpenNL functions that implement preconditioners.
+ * \file geogram/mesh/mesh_LSCM.h
  */
 
-/******************************************************************************/
-/* preconditioners */
+#include <geogram/basic/common.h>
+#include <geogram/basic/numeric.h>
 
-/**
- * \brief Creates a new Jacobi preconditioner
- * \param[in] M the matrix, needs to be of type NL_MATRIX_SPARSE_DYNAMIC
- * \details The inverse of the diagonal is stored in the preconditioner. 
- *  No reference to the input data is kept.
- * \return the Jacobi preconditioner
- */
-NLMatrix nlNewJacobiPreconditioner(NLMatrix M);
+namespace GEO {
+    class Mesh;
 
-/**
- * \brief Creates a new SSOR preconditioner
- * \param[in] M the matrix, needs to be of type NL_MATRIX_SPARSE_DYNAMIC 
- *  and needs to have both rows and columns storage, and symmetric storage.
- * \param[in] omega the relaxation parameter, within range [1.0,2.0].
- * \details A reference to the input matrix is kept and used in the 
- *  computations.
- * \return the SSOR preconditioner.
- */
-NLMatrix nlNewSSORPreconditioner(NLMatrix M, double omega);
+    /**
+     * \brief Computes texture coordinates using Least Squares Conformal Maps.
+     * \details The method is described in the following references:
+     *  - least squares mode: Least Squares Conformal Maps, 
+     *    Levy, Petitjean, Ray, Maillot, ACM SIGGRAPH, 2002
+     *  - spectral mode: Spectral Conformal Parameterization, 
+     *    Mullen, Tong, Alliez, Desbrun, 
+     *    Computer Graphics Forum (SGP conf. proc.), 2008
+     * \param[in,out] M a reference to a surface mesh
+     * \param[in] attribute_name the name of the vertex attribute where 
+     *   texture coordinates are stored.
+     * \param[in] spectral if true, use spectral conformal parameterization, 
+     *   otherwise use least squares conformal maps. Spectral mode requires 
+     *   support of the ARPACK OpenNL extension.
+     * \param[in] angle_attribute_name if specified, the desired angles in 
+     *   the 2D map. If unspecified, the desired angles are read on the 3D
+     *   mesh.
+     */
+    void GEOGRAM_API mesh_compute_LSCM(
+	Mesh& M, const std::string& attribute_name="tex_coord",
+	bool spectral=false,
+	const std::string& angle_attribute_name=""
+    );
+}
+
 
 #endif

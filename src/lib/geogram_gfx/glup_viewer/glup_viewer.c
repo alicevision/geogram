@@ -2021,7 +2021,7 @@ static unsigned char i2a[1024];
  */
 static int char_to_index[256][256];
 
-void glTexImage2DXPM(const char** xpm_data, GLboolean alpha_is_index) {
+void glTexImage2DXPM(const char** xpm_data) {
     int width, height, nb_colors, chars_per_pixel;
     int line = 0;
     int color = 0;
@@ -2044,7 +2044,7 @@ void glTexImage2DXPM(const char** xpm_data, GLboolean alpha_is_index) {
         return;
     }
     for(color = 0; color < nb_colors; color++) {
-        int r, g, b;
+        int r, g, b, a;
         int none ;
         
         key1 = xpm_data[line][0];
@@ -2070,10 +2070,13 @@ void glTexImage2DXPM(const char** xpm_data, GLboolean alpha_is_index) {
         i2r[color] = (unsigned char) r;
         i2g[color] = (unsigned char) g;
         i2b[color] = (unsigned char) b;
-	if(alpha_is_index) {
-	    i2a[color] = (unsigned char) (255 - 255 * color / nb_colors);
+	if(none) {
+	    i2a[color] = 0;
+	} else if(colorcode[6] != '\0' && colorcode[7] != '\0') {
+	    a = 16 * htoi(colorcode[6]) + htoi(colorcode[7]);	    
+	    i2a[color] = (unsigned char) a;
 	} else {
-	    i2a[color] = none ? 0 : 255;
+	    i2a[color] = 255;
 	}
         char_to_index[key1][key2] = color;
         line++;

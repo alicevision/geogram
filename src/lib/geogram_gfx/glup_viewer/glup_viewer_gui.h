@@ -182,6 +182,14 @@ namespace GEO {
         void draw(bool* visible=NULL);
 
 	int TextEditCallback(ImGuiTextEditCallbackData* data);
+
+	void show() {
+	    *visible_flag_ = true;
+	}
+
+	void hide() {
+	    *visible_flag_ = false;
+	}
 	
       protected:
 	bool exec_command(const char* command);
@@ -2280,6 +2288,7 @@ namespace GEO {
         float cells_shrink_;
         bool show_colored_cells_;
         bool show_hexes_;
+	bool show_connectors_;
 
         bool show_attributes_;
         GLuint current_colormap_texture_;

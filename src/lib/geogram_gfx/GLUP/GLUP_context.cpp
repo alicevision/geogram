@@ -1664,7 +1664,7 @@ namespace GLUP {
             toggles_config_ = 0;
             for(index_t i=0; i<uniform_state_.toggle.size(); ++i) {
                 if(uniform_state_.toggle[i].get()) {
-                    toggles_config_ |= (1u << i);
+                    toggles_config_ |= (1u << Numeric::uint16(i));
                 }
             }
         }

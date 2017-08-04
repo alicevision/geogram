@@ -407,7 +407,7 @@ namespace {
             glBindTexture(GL_TEXTURE_2D, texture_);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2DXPM(uv,GL_FALSE);
+            glTexImage2DXPM(uv);
             glupTextureType(GLUP_TEXTURE_2D);
             glupTextureMode(GLUP_TEXTURE_REPLACE);
         }

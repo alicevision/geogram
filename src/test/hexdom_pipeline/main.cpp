@@ -14,6 +14,7 @@
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/mesh/mesh_tetrahedralize.h>
+#include <geogram/mesh/mesh_geometry.h>
 
 namespace {
     using namespace GEO;
@@ -28,6 +29,9 @@ namespace {
 		    FileSystem::extension(filename);
 	    }
 	    filename = CmdLine::get_arg("hexdom:file_prefix") + filename;
+	}
+	if(FileSystem::extension(filename) == "geogram" && CmdLine::get_arg_bool("ASCII")) {
+	    filename = filename + "_ascii";
 	}
 	return filename;
     }
@@ -138,8 +142,30 @@ namespace {
 	    throw(stage + ": invalid stage");
 	}
     }
-
     
+    void show_stats(Mesh& M) {
+	double total_volume=0.0;
+	double hex_volume=0.0;
+	double tet_volume=0.0;
+	for(index_t c=0; c<M.cells.nb(); ++c) {
+	    double V = mesh_cell_volume(M,c);
+	    if(M.cells.type(c) == MESH_HEX) {
+		hex_volume += V;
+	    } else if(M.cells.type(c) == MESH_TET) {
+		tet_volume += V;
+	    }
+	    total_volume += V;
+	}
+	double prop = 0.0;
+	if(total_volume != 0.0) {
+	    prop = 100.0 * (hex_volume / total_volume);
+	}
+        prop = double(int(prop * 10.0)) / 10.0; 
+	Logger::out("hexdom") << "Hex proportion=" << prop << "% vol." << std::endl;
+	Logger::out("hexdom") << "Total volume=" << total_volume << std::endl;
+	Logger::out("hexdom") << "Tets volume=" << tet_volume << std::endl;
+	Logger::out("hexdom") << "Hex volume=" << hex_volume << std::endl;	
+    }
 }
 
 int main(int argc, char** argv) {
@@ -213,19 +239,38 @@ QuadDominant,Hexahedrons,Cavity,HexDominant,all");
     );
 
     CmdLine::declare_arg(
-	 "hexdom:HexDominant:with_pyramids", false, "Generate conformal mesh using pyramids"
+	"hexdom:HexDominant:with_pyramids", false, "Generate conformal mesh using pyramids"
     );
 
+    CmdLine::declare_arg(
+	"stats_only", false, "Show statistics on input mesh"
+    );
+
+    CmdLine::declare_arg("ASCII", false, "use .geogram_ascii instead of .geogram files");
+
+    
     std::vector<std::string> filenames;
     if(!CmdLine::parse(argc, argv, filenames, "<inputfile>")) {
 	return 1;
     }
+
     if(filenames.size() == 1) {
 	CmdLine::set_arg("hexdom:tets", filenames[0]);
     }
     
     try {
-	hexdom_stage(CmdLine::get_arg("hexdom:stage"));
+	if(CmdLine::get_arg_bool("stats_only")) {
+	    if(filenames.size() != 1) {
+		throw("Needs an input file");
+	    }
+	    Mesh M;
+	    if(!mesh_load(filenames[0],M)) {
+		throw("Could not load file");
+	    }
+	    show_stats(M);
+	} else {
+	    hexdom_stage(CmdLine::get_arg("hexdom:stage"));
+	}
     } catch(const std::string& error_string) {
 	Logger::err("HexDom") << "Caught exception, message=   " << error_string
 			      << std::endl;

@@ -746,7 +746,33 @@ namespace GEO {
 #endif            
         }
 
-
+	size_t get_uniform_variable_array_stride(
+            GLuint program, const char* varname
+	) {
+#ifndef GEO_GL_150
+            geo_argused(program);
+            geo_argused(varname);
+            return size_t(-1);
+#else
+            GLuint index = GL_INVALID_INDEX;
+            glGetUniformIndices(program, 1, &varname, &index);
+            if(index == GL_INVALID_INDEX) {
+                Logger::err("GLUP")
+                    << varname 
+                    << ":did not find uniform state variable"
+                    << std::endl;
+                throw GLSL::GLSLCompileError();
+            }
+            geo_assert(index != GL_INVALID_INDEX);
+            GLint stride = -1;
+            glGetActiveUniformsiv(
+                program, 1, &index, GL_UNIFORM_ARRAY_STRIDE, &stride
+            );
+            geo_assert(stride != -1);
+            return size_t(stride);
+#endif            
+	}
+	
         void introspect_program(GLuint program) {
             Logger::out("GLSL") << "Program " << program << " introspection:"
                                 << std::endl;
@@ -1128,7 +1154,8 @@ namespace GEO {
             }
             return program;
         }
-        
+
+	
         
     }
 }

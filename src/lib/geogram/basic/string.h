@@ -52,6 +52,8 @@
 #include <string>
 #include <sstream>
 #include <stdexcept>
+#include <iomanip>
+
 #include <vector>
 #include <stdlib.h>
 #include <string.h>
@@ -208,6 +210,10 @@ namespace GEO {
         template <class T>
         inline std::string to_string(const T& value) {
             std::ostringstream out;
+	    // Makes sure that double-precision number are displayed
+	    // with a sufficient number of digits. This is important
+	    // to avoid losing precision when using ASCII files.
+	    out << std::setprecision(17);
             out << value;
             return out.str();
         }

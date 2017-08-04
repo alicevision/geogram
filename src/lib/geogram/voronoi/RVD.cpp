@@ -47,6 +47,7 @@
 #include <geogram/voronoi/generic_RVD.h>
 #include <geogram/voronoi/RVD_mesh_builder.h>
 #include <geogram/voronoi/integration_simplex.h>
+#include <geogram/voronoi/RVD_polyhedron_callback.h>
 #include <geogram/mesh/mesh_partition.h>
 #include <geogram/mesh/mesh_sampling.h>
 #include <geogram/mesh/mesh_repair.h>
@@ -1484,6 +1485,22 @@ namespace {
             RVD_.set_mesh(tmp_mesh);
         }
 
+        /********************************************************************/
+
+	void for_each_polyhedron(
+	    GEO::RVDPolyhedronCallback& callback
+	) {
+	    bool sym_backup = RVD_.symbolic();
+	    RVD_.set_symbolic(true);
+	    RVD_.set_connected_components_priority(true);
+	    callback.set_dimension(RVD_.mesh()->vertices.dimension());
+	    callback.begin();
+	    RVD_.for_each_polyhedron(callback);
+	    callback.end();
+	    RVD_.set_symbolic(sym_backup);
+	    RVD_.set_connected_components_priority(false);
+	}
+	
         /********************************************************************/
         
         /**

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2004-2010, Bruno Levy
+ *  Copyright (c) 2012-2016, Bruno Levy
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,8 @@
  *
  *  Contact: Bruno Levy
  *
- *     levy@loria.fr
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
  *
  *     ALICE Project
  *     LORIA, INRIA Lorraine, 
@@ -42,38 +43,33 @@
  *
  */
 
-#ifndef OPENNL_PRECONDITIONERS_H
-#define OPENNL_PRECONDITIONERS_H
-
-#include "nl_private.h"
-#include "nl_matrix.h"
+#ifndef GEOGRAM_MESH_MESH_ABF
+#define GEOGRAM_MESH_MESH_ABF
 
 /**
- * \file geogram/NL/nl_preconditioners.h
- * \brief Internal OpenNL functions that implement preconditioners.
+ * \file geogram/mesh/mesh_ABF.h
  */
 
-/******************************************************************************/
-/* preconditioners */
+#include <geogram/basic/common.h>
+#include <geogram/basic/numeric.h>
 
-/**
- * \brief Creates a new Jacobi preconditioner
- * \param[in] M the matrix, needs to be of type NL_MATRIX_SPARSE_DYNAMIC
- * \details The inverse of the diagonal is stored in the preconditioner. 
- *  No reference to the input data is kept.
- * \return the Jacobi preconditioner
- */
-NLMatrix nlNewJacobiPreconditioner(NLMatrix M);
+namespace GEO {
+    class Mesh;
 
-/**
- * \brief Creates a new SSOR preconditioner
- * \param[in] M the matrix, needs to be of type NL_MATRIX_SPARSE_DYNAMIC 
- *  and needs to have both rows and columns storage, and symmetric storage.
- * \param[in] omega the relaxation parameter, within range [1.0,2.0].
- * \details A reference to the input matrix is kept and used in the 
- *  computations.
- * \return the SSOR preconditioner.
- */
-NLMatrix nlNewSSORPreconditioner(NLMatrix M, double omega);
+    /**
+     * \brief Computes texture coordinates using Least Squares Conformal Maps.
+     * \details The method is described in the following reference:
+     *   ABF++: fast and robust angle-based flattening, A. Sheffer, B. Levy,
+     *   M. Mogilnitsky,  A. Bogomyakov, ACM Transactions on Graphics, 2005
+     * \param[in,out] M a reference to a surface mesh. Facets need to be 
+     *   triangulated.
+     * \param[in] attribute_name the name of the vertex attribute where 
+     *   texture coordinates are stored.
+     */
+    void GEOGRAM_API mesh_compute_ABF_plus_plus(
+	Mesh& M, const std::string& attribute_name="tex_coord"
+    );    
+}
 
 #endif
+

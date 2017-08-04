@@ -17,6 +17,7 @@
 #ifndef __ICC
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wc++11-long-long"
+#pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
 #endif
 #endif
 #endif
@@ -60,6 +61,11 @@
 #define LUA_USE_WINDOWS  /* enable goodies for regular Windows */
 #endif
 
+
+/* [Bruno] */
+#ifdef __linux__
+#define LUA_USE_POSIX
+#endif
 
 #if defined(LUA_USE_WINDOWS)
 #define LUA_DL_DLL	/* enable support for DLL */

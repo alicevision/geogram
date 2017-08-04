@@ -49,6 +49,7 @@
 #include <geogram/basic/common.h>
 #include <geogram/basic/numeric.h>
 #include <geogram/voronoi/generic_RVD_utils.h>
+#include <geogram/voronoi/RVD_polyhedron_callback.h>
 #include <geogram/numerics/predicates.h>
 #include <geogram/mesh/index.h>
 #include <geogram/basic/geometry_nd.h>
@@ -635,7 +636,7 @@ namespace GEOGen {
                 const Polyhedron& C
             ) const {
                 GEO::geo_argused(t);
-                const_cast<ACTION&> ( do_it_)(v, C);
+                const_cast<ACTION&> ( do_it_)(v, t, C);
             }
 
         protected:
@@ -1336,7 +1337,9 @@ namespace GEOGen {
             SeedStack adjacent_seeds;
             Polygon F;
             GEO::Attribute<double> vertex_weight;
-            vertex_weight.bind_if_is_defined(mesh_->vertices.attributes(), "weight");
+            vertex_weight.bind_if_is_defined(
+		mesh_->vertices.attributes(), "weight"
+	    );
 
             // The algorithm propagates along both the facet-graph of
             // the surface and the 1-skeleton of the Delaunay triangulation,
@@ -1439,12 +1442,15 @@ namespace GEOGen {
         inline void compute_volumetric(
             const ACTION& action
         ) {
-            // Not implemented yet!
-            geo_assert(!connected_components_priority_);
-
-            this->template compute_volumetric_with_seeds_priority<ACTION>(
-                action
-            );
+	    if(connected_components_priority_) {
+		this->template compute_volumetric_with_cnx_priority<ACTION>(
+		    action
+		);
+	    } else {
+		this->template compute_volumetric_with_seeds_priority<ACTION>(
+		    action
+		);
+	    }
         }
 
         /**
@@ -1484,7 +1490,9 @@ namespace GEOGen {
             SeedStack adjacent_seeds;
             Polyhedron C(dimension());
             GEO::Attribute<double> vertex_weight;
-            vertex_weight.bind_if_is_defined(mesh_->vertices.attributes(), "weight");
+            vertex_weight.bind_if_is_defined(
+		mesh_->vertices.attributes(), "weight"
+	    );
             
             current_polyhedron_ = &C;
             // The algorithm propagates along both the facet-graph of
@@ -1594,6 +1602,196 @@ namespace GEOGen {
             current_polyhedron_ = nil;
         }
 
+
+        /**
+         * \brief Low-level API of Restricted Voronoi Diagram traversal
+         *  with connected components priority.
+         * \details Client code may use for_each_cell() instead.
+         * This version of the algorithm traverses the RVD and ensures that
+         * the group of subfacets that belong to the same restricted Voronoi
+         * cell will be traversed consecutively. It is used by the algorithm
+         * that computes the final surface in CVT (i.e., the dual of the
+         * connected components).
+         * \note This function is less efficient than
+         *  compute_volumetric_with_seeds_priority() but
+         *  is required by some traversals that need to be done in that order.
+         * \tparam ACTION needs to implement:
+         *  operator()(index_t v, index_t t, const Polyhedron& C) const
+         *  where v denotes the index of the current Voronoi cell
+         *  (or Delaunay vertex), c the index of the current tetrahedron
+         *  and C the computed intersection between the Voronoi cell of
+         *  v and tetrahedron t.
+         */
+        template <class ACTION>
+        inline void compute_volumetric_with_cnx_priority(
+            const ACTION& action
+        ) {
+
+            if(
+                tets_begin_ == UNSPECIFIED_RANGE && 
+                tets_end_ == UNSPECIFIED_RANGE
+            ) {
+                tets_begin_ = 0;
+                tets_end_ = mesh_->cells.nb();
+            }
+
+	    geo_assert(tets_begin_ != UNSPECIFIED_RANGE);
+	    geo_assert(tets_end_ != UNSPECIFIED_RANGE);
+	    
+            current_polyhedron_ = nil;
+            init_get_neighbors();
+
+            std::deque<TetSeed> adjacent_seeds;
+            std::stack<index_t> adjacent_tets;
+
+            static const index_t NO_STAMP = index_t(-1);
+            GEO::vector<index_t> tet_stamp(
+                tets_end_ - tets_begin_, NO_STAMP
+            );
+
+            TetSeedMarking visited(
+                tets_end_ - tets_begin_, delaunay_->nb_vertices()
+            );
+
+	    // Yes, facet_seed_marking_ points to the TetSeedMarking,
+	    // (TetSeedMarking is typedef-ed as FacetSeedMarking),
+	    // ugly I know... to be revised.
+            facet_seed_marking_ = &visited;
+            Polyhedron C(dimension());
+	    current_polyhedron_ = &C;
+	    
+            current_connected_component_ = 0;
+            // index_t C_index = tets_end_ + 1; // Unused (see comment later)
+
+            GEO::Attribute<double> vertex_weight;
+            vertex_weight.bind_if_is_defined(
+		mesh_->vertices.attributes(),"weight"
+	    );
+            
+            // The algorithm propagates along both the facet-graph of
+            // the surface and the 1-skeleton of the Delaunay triangulation,
+            // and computes all the relevant intersections between
+            // each Voronoi cell and facet.
+            for(index_t t = tets_begin_; t < tets_end_; ++t) {
+                if(tet_stamp[t - tets_begin_] == NO_STAMP) {
+                    current_tet_ = t;
+                    current_seed_ = find_seed_near_tet(t);
+
+                    adjacent_seeds.push_back(
+                        TetSeed(current_tet_, current_seed_)
+                    );
+
+                    // Propagate along the Delaunay-graph.
+                    while(!adjacent_seeds.empty()) {
+			// Yes, f, because TetSeed is typedef-ed as FacetSeed
+                        current_tet_ = adjacent_seeds.front().f;
+                        current_seed_ = adjacent_seeds.front().seed;
+                        adjacent_seeds.pop_front();
+                        if(
+                            tet_stamp[current_tet_ - tets_begin_] ==
+                            current_seed_
+                        ) {
+                            continue;
+                        }
+
+                        if(visited.is_marked(current_tet_, current_seed_)) {
+                            continue;
+                        }
+
+                        connected_component_changed_ = true;
+                        adjacent_tets.push(current_tet_);
+                        tet_stamp[current_tet_ - tets_begin_] =
+                            current_seed_;
+                        while(!adjacent_tets.empty()) {
+                            current_tet_ = adjacent_tets.top();
+                            adjacent_tets.pop();
+
+                            // Copy the current tet from the Mesh into
+                            // RestrictedVoronoiDiagram's Polyhedron data structure
+                            // (gathers all the necessary information)
+			    
+			    C.initialize_from_mesh_tetrahedron(
+				mesh_, current_tet_, symbolic_, vertex_weight
+			    );
+
+			    // Note: difference with compute_surfacic_with_cnx_priority():
+			    // Since intersect_cell_cell() overwrites C, we
+			    // need to initialize C from the mesh for each visited
+			    // (tet,seed) pair (and the test for current_tet_ change
+			    // with C_index is not used here). 
+			    // C_index = current_tet_;
+
+			    intersect_cell_cell(current_seed_, C);
+                            action(
+                                current_seed_, current_tet_, current_polyhedron()
+                            );
+                            connected_component_changed_ = false;
+
+                            bool touches_RVC_border = false;
+
+                            // Propagate to adjacent tets and adjacent seeds
+                            for(index_t v = 0;
+                                v < current_polyhedron().max_v(); ++v
+                            ) {
+
+				//   Skip clipping planes that are no longer
+				// connected to a cell facet.
+				if(
+				    current_polyhedron().vertex_triangle(v)
+				    == -1
+				) {
+				    continue;
+				}
+
+				signed_index_t id = current_polyhedron().vertex_id(v);
+				if(id < 0) {
+				    // id == 0 corresponds to facet on boundary
+				    //   (skipped)
+				    // id < 0 corresponds to adjacent tet index
+				    signed_index_t s_neigh_t = -id-1;
+				    if(
+				       s_neigh_t >= signed_index_t(tets_begin_) &&
+				       s_neigh_t < signed_index_t(tets_end_)
+				    ) {
+					geo_debug_assert(
+					    s_neigh_t !=
+					    signed_index_t(current_tet_)
+					);
+					index_t neigh_t = index_t(s_neigh_t);
+					if(
+					    tet_stamp[neigh_t - tets_begin_] !=
+					    current_seed_
+					) {
+					    tet_stamp[neigh_t - tets_begin_] =
+						current_seed_;
+					    adjacent_tets.push(neigh_t);
+					}
+				    }
+				} else if(id > 0) {
+				    index_t neigh_s = index_t(id-1);
+                                    touches_RVC_border = true;
+                                    TetSeed ts(current_tet_, neigh_s);
+                                    if(!visited.is_marked(ts)) {
+                                        adjacent_seeds.push_back(ts);
+                                    }				    
+				}
+
+                            }
+                            if(touches_RVC_border) {
+                                visited.mark(
+                                    TetSeed(current_tet_, current_seed_),
+                                    current_connected_component_
+                                );
+                            }
+                        }
+                        ++current_connected_component_;
+                    }
+                }
+            }
+            facet_seed_marking_ = nil;
+        }
+
+	
     public:
         /**
          * \brief Tests whether a (facet,seed) couple was visited.
@@ -1691,7 +1889,9 @@ namespace GEOGen {
             index_t F_index = facets_end_ + 1;
 
             GEO::Attribute<double> vertex_weight;
-            vertex_weight.bind_if_is_defined(mesh_->vertices.attributes(),"weight");
+            vertex_weight.bind_if_is_defined(
+		mesh_->vertices.attributes(),"weight"
+	    );
             
             // The algorithm propagates along both the facet-graph of
             // the surface and the 1-skeleton of the Delaunay triangulation,

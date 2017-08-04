@@ -40,9 +40,17 @@ add_flags(CMAKE_EXE_LINKER_FLAGS -z defs)
 
 # Flags for the Release build type
 #-axSSE3,SSSE3,SSE4.2,AVX -vec-report6
-add_flags(CMAKE_CXX_FLAGS_RELEASE -xHost -ip -axSSE3)
-add_flags(CMAKE_C_FLAGS_RELEASE -xHost -ip -axSSE3)
+#add_flags(CMAKE_CXX_FLAGS_RELEASE -xHost -ip -axSSE3)
+#add_flags(CMAKE_C_FLAGS_RELEASE -xHost -ip -axSSE3)
 
+
+# icc options related with FPU:
+# https://software.intel.com/en-us/node/522979
+# default fp model is "fast" (not good !!)
+# 'strict' implies both 'precise' and 'except'
+
+add_flags(CMAKE_CXX_FLAGS -fp-model strict)
+add_flags(CMAKE_C_FLAGS -fp-model strict)
 
 # Reset the warning level for third parties
 function(vor_reset_warning_level)

@@ -13,6 +13,10 @@
 #Uncomment to disable graphics
 #set(GEOGRAM_WITH_GRAPHICS FALSE)
 
+#Uncomment to disable compilation of legcy numerical libraries
+#(used as OpenNL plugins for SuperLU, CHOLDMOD and ARPACK)
+#set(GEOGRAM_WITH_LEGACY_NUMERICS FALSE)
+
 #Uncomment to compile FPG (Meyer and Pion's Floating Point Filter Generator)
 #set(GEOGRAM_WITH_FPG TRUE)
 
