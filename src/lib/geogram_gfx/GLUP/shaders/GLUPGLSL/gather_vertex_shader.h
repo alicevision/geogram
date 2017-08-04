@@ -7,12 +7,11 @@
 in vec4 vertex_in[glup_nb_vertices_per_GL_v];              
 in vec4 color_in[glup_nb_vertices_per_GL_v];               
 in vec4 tex_coord_in[glup_nb_vertices_per_GL_v];           
-                                                     
+
 out GVertexData {                                    
-    vec4 other_vertex_screen_space[glup_nb_vertices_per_GL_v-1];         
-    vec4 vertex_clip_space[glup_nb_vertices_per_GL_v];            
+    vec4 other_vertex_clip_space[glup_nb_vertices_per_GL_v-1];         
     vec4 color[glup_nb_vertices_per_GL_v];                  
-    vec4 tex_coord[glup_nb_vertices_per_GL_v];              
+    vec4 tex_coord[glup_nb_vertices_per_GL_v];
 } VertexOut;                                         
 
 
@@ -28,14 +27,10 @@ void main(void) {
                 VertexOut.tex_coord[i] = GLUP.texture_matrix * tex_coord_in[i];
             }                                                         
         }
-        if(glupIsEnabled(GLUP_CLIPPING) || glupIsEnabled(GLUP_LIGHTING)) {
-            VertexOut.vertex_clip_space[i] =
-                GLUP.modelview_matrix * vertex_in[i];
-        }
     }
 
     for(int i=1; i<glup_nb_vertices_per_GL_v; ++i) {         
-        VertexOut.other_vertex_screen_space[i-1] =
+        VertexOut.other_vertex_clip_space[i-1] =
             GLUP.modelviewprojection_matrix * vertex_in[i];
     }                                               
     

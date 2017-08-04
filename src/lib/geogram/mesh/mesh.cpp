@@ -2142,6 +2142,39 @@ namespace {
         return result;
     }
 
+
+    /**
+     * \brief Gets the names of all vector attributes from an AttributeManager
+     * \param[in] attributes a const reference to the attribute manager
+     * \param[in] prefix a const rerefenre to a string to be prepended to
+     *  all attribute names
+     * \param[in] max_dim if non-zero, only return vector attributes with 
+     *  dimension lower than max_dim
+     * \return a ';'-separated list of all the vector attributes
+     */
+    std::string get_vector_attributes_impl(
+        const AttributesManager& attributes,
+        const std::string& prefix,
+	index_t max_dim = 0
+    ) {
+        std::string result;
+        vector<std::string> attribute_names;
+        attributes.list_attribute_names(attribute_names);
+
+        for(index_t i=0; i<attribute_names.size(); ++i) {
+            const AttributeStore* store = attributes.
+                find_attribute_store(attribute_names[i]);
+	    if(store->dimension() >= 2 && (max_dim == 0 || store->dimension() <= max_dim)) {
+		if(result != "") {
+		    result += ";";
+		}
+		result += prefix + "." + attribute_names[i];
+	    }
+        }
+        return result;
+    }
+
+    
     /**
      * \brief Appends a string to another one, with ';' delimiters.
      * \details If a is non-empty, a ';' delimiter is inserted.
@@ -2185,6 +2218,36 @@ namespace GEO {
         );
         strappend(result,get_scalar_attributes_impl(
             cell_facets.attributes(),"cell_facets")
+        );        
+        return result;
+    }
+
+
+    std::string Mesh::get_vector_attributes(index_t max_dim) const {
+        std::string result;
+        strappend(
+            result,get_vector_attributes_impl(vertices.attributes(),"vertices",max_dim)
+        );
+        strappend(
+            result,get_vector_attributes_impl(edges.attributes(),"edges",max_dim)
+        );
+        strappend(
+            result,get_vector_attributes_impl(facets.attributes(),"facets",max_dim)
+        );
+        strappend(result,get_vector_attributes_impl(
+                      facet_corners.attributes(),"facet_corners",max_dim
+                  )
+        );
+        strappend(
+            result,get_vector_attributes_impl(cells.attributes(),"cells",max_dim)
+        );
+        strappend(
+            result,get_vector_attributes_impl(
+                cell_corners.attributes(),"cell_corners",max_dim
+            )
+        );
+        strappend(result,get_vector_attributes_impl(
+	      cell_facets.attributes(),"cell_facets",max_dim)
         );        
         return result;
     }

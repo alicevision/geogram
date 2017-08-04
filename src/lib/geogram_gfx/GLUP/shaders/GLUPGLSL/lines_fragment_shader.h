@@ -5,7 +5,6 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUP/fragment_shader_utils.h>
 
-out vec4 glup_FragColor ;                      
 in float gl_ClipDistance[];                                
 
 in VertexData {                            

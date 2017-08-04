@@ -576,6 +576,7 @@ void glupClipPlane(const GLUPdouble* eqn_in) {
     GLUP::mult_matrix_vector(
         state_clip_plane,modelview_invert,state_world_clip_plane
     );
+    // TODO? clip_clip_plane update ?
 }
 
 void glupGetClipPlane(GLUPdouble* eqn) {
@@ -1285,10 +1286,45 @@ void glupTexCoord4d(GLUPdouble s, GLUPdouble t, GLUPdouble u, GLUPdouble v) {
     );        
 }
 
+
+void glupNormal3fv(GLUPfloat* xyz) {
+    GEO_CHECK_GLUP();        
+    GLUP::current_context_->immediate_normal(
+        xyz[0],xyz[1],xyz[2]
+    );
+}
+
+void glupNormal3f(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
+    GEO_CHECK_GLUP();        
+    GLUP::current_context_->immediate_normal(
+        x,y,z
+    );
+}    
+
+void glupNormal3dv(GLUPdouble* xyz) {
+    GEO_CHECK_GLUP();            
+    GLUP::current_context_->immediate_normal(
+        GLfloat(xyz[0]),
+	GLfloat(xyz[1]),
+	GLfloat(xyz[2])
+    );
+}
+
+void glupNormal3d(GLUPdouble x, GLUPdouble y, GLUPdouble z) {
+    GEO_CHECK_GLUP();        
+    GLUP::current_context_->immediate_normal(
+        GLfloat(x),
+        GLfloat(y),
+        GLfloat(z)
+    );
+}    
+
 void glupUseProgram(GLUPuint program) {
     GEO_CHECK_GLUP();    
     GLUP::current_context_->set_user_program(program);
 }
+
+
 
 /****************************************************************************/
 

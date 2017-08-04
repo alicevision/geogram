@@ -322,11 +322,14 @@ namespace GLUP {
 
     /**
      * \brief Index of an ImmediateBuffer in the ImmediateState.
+     * \details GLUP_VERTEX_ID_ATTRIBUTE is used internally
      */
     enum GLUPattribute {
         GLUP_VERTEX_ATTRIBUTE    = 0,
         GLUP_COLOR_ATTRIBUTE     = 1,
-        GLUP_TEX_COORD_ATTRIBUTE = 2
+        GLUP_TEX_COORD_ATTRIBUTE = 2,
+	GLUP_NORMAL_ATTRIBUTE    = 3,
+	GLUP_VERTEX_ID_ATTRIBUTE = 4
     };
 
     /**
@@ -509,7 +512,7 @@ namespace GLUP {
          * \brief ImmediateState constructor.
          */
         ImmediateState() :
-            buffer(3),
+            buffer(4),
             current_vertex_(0),
             max_current_vertex_(0),
             primitive_(GLUP_POINTS),
@@ -518,6 +521,7 @@ namespace GLUP {
             buffer[GLUP_VERTEX_ATTRIBUTE].initialize(4);
             buffer[GLUP_COLOR_ATTRIBUTE].initialize(4);
             buffer[GLUP_TEX_COORD_ATTRIBUTE].initialize(4);
+            buffer[GLUP_NORMAL_ATTRIBUTE].initialize(4);	    
             
             // Vertex is always enabled
             buffer[GLUP_VERTEX_ATTRIBUTE].enable();
@@ -912,11 +916,16 @@ namespace GLUP {
         StateVariable<GLint>               texture_type;        
         VectorStateVariable                clip_plane;
         VectorStateVariable                world_clip_plane;
+        VectorStateVariable                clip_clip_plane;	
         FloatsArrayStateVariable           modelview_matrix;
         FloatsArrayStateVariable           modelviewprojection_matrix;
         FloatsArrayStateVariable           projection_matrix;        
         FloatsArrayStateVariable           normal_matrix;
         FloatsArrayStateVariable           texture_matrix;
+	FloatsArrayStateVariable           inverse_modelviewprojection_matrix;
+        FloatsArrayStateVariable           inverse_modelview_matrix;
+        FloatsArrayStateVariable           inverse_projection_matrix;		
+	VectorStateVariable                viewport;
     };
     
     /**********************************************************************/
@@ -927,7 +936,7 @@ namespace GLUP {
      */
     struct PrimitiveInfo {
 
-        static const index_t nb_toggles_configs = 65;
+        static const index_t nb_toggles_configs = 256;
         
         /**
          * \brief PrimitiveInfo constructor.
@@ -1193,6 +1202,17 @@ namespace GLUP {
             );
         }
 
+        /**
+         * \brief Specifies the current normal vector for the
+         *  immediate mode buffers.
+         * \param[in] x , y , z the current normal vector coordinates.
+         */
+        void immediate_normal(GLfloat x, GLfloat y, GLfloat z) {
+            immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].set_current(
+                x,y,z,0.0f
+            );
+        }
+	
         /**
          * \brief Sets the user program, to be used instead of
          *  the default GLUP programs for drawing the primitives.
@@ -1518,7 +1538,12 @@ namespace GLUP {
          * \brief Setups GLSL programs for connectors.
          */
         virtual void setup_GLUP_CONNECTORS();
-        
+
+        /**
+         * \brief Setups GLSL programs for spheres.
+         */
+        virtual void setup_GLUP_SPHERES();
+	
         /**
          * \brief Initializes the PrimitiveInfo associated with a 
          *  given GLUP primitive.
@@ -1662,7 +1687,7 @@ namespace GLUP {
             index_t toggles_config
         ) {
             if(toggles_config == (1 << GLUP_PICKING)) {
-                geo_debug_assert(toggles_config == 64);
+                geo_debug_assert(toggles_config == 128);
                 setup_shaders_source_for_toggles(
                     (1 << GLUP_PICKING),  // picking=true
                     (1 << GLUP_CLIPPING)  // clipping=undecided (use state)

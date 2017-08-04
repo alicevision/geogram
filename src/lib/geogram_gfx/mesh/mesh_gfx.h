@@ -561,6 +561,8 @@ namespace GEO {
          *   the rightmost color in the colormap
          * \param[in] colormap_texture the texture to be used to display
          *   the attribute colors
+	 * \param[in] repeat the number of times the colorramp should be
+	 *   repeated within the specified range.
          */
         void set_scalar_attribute(
             MeshElementsFlags subelements,
@@ -570,6 +572,25 @@ namespace GEO {
             index_t repeat = 1
         );
 
+	/**
+	 * \brief Sets the parameters for texture mapping.
+	 * \param[in] subelements the subelements that have texture
+	 *  coordinates.
+	 * \param[in] attribute_name the name of the attribute that has the texture
+	 *  coordinates. Can be a 2d or 3d vector attribute.
+	 * \param[in] texture the texture.
+	 * \param[in] repeat the number of times the texture should be repeated
+	 *  in the unit square in texture space.
+	 */
+	void set_texturing(
+	    MeshElementsFlags subelements,
+	    const std::string& attribute_name,
+	    GLuint texture,
+	    index_t texture_dim,
+	    index_t repeat = 1
+	);
+
+	
         /**
          * \brief Unsets scalar attribute display.
          */
@@ -577,8 +598,9 @@ namespace GEO {
             attribute_subelements_ = MESH_NONE;
             attribute_min_ = 0.0;
             attribute_max_ = 0.0;
-            attribute_colormap_texture_ = 0;
+            attribute_texture_ = 0;
             attribute_repeat_ = 1;
+	    attribute_dim_ = 0;
         }
 
     protected:
@@ -627,12 +649,25 @@ namespace GEO {
             cells_color_[type][2] = b;            
         }
 
+	void draw_attribute_as_tex_coord(index_t element) {
+	    if(picking_mode_ == MESH_NONE) {
+		switch(attribute_dim_) {
+		    case 1:
+			glupTexCoord1d(scalar_attribute_[element]);
+			break;
+		    case 2:
+			glupTexCoord2dv(&tex_coord_attribute_[2*element]);
+			break;
+		    case 3:
+			glupTexCoord3dv(&tex_coord_attribute_[3*element]);
+			break;
+		}
+	    }
+	}
+	
         void draw_vertex_with_attribute(index_t vertex) {
-            if(
-                picking_mode_ == MESH_NONE &&
-                attribute_subelements_ == MESH_VERTICES
-            ) {
-                glupTexCoord1d(attribute_[vertex]);
+            if(attribute_subelements_ == MESH_VERTICES) {
+		draw_attribute_as_tex_coord(vertex);
             }
             draw_vertex(vertex);
         }
@@ -640,30 +675,26 @@ namespace GEO {
         void draw_surface_vertex_with_attribute(
             index_t vertex, index_t facet, index_t corner
         ) {
-            if(picking_mode_ == MESH_NONE) {
-                if(attribute_subelements_ == MESH_VERTICES) {
-                    glupTexCoord1d(attribute_[vertex]);
-                } else if(attribute_subelements_ == MESH_FACETS) {
-                    glupTexCoord1d(attribute_[facet]);
-                } else if(attribute_subelements_ == MESH_FACET_CORNERS) {
-                    glupTexCoord1d(attribute_[corner]);                
-                }
-            }
+	    if(attribute_subelements_ == MESH_VERTICES) {
+		draw_attribute_as_tex_coord(vertex);
+	    } else if(attribute_subelements_ == MESH_FACETS) {
+		draw_attribute_as_tex_coord(facet);
+	    } else if(attribute_subelements_ == MESH_FACET_CORNERS) {
+		draw_attribute_as_tex_coord(corner);
+	    }
             draw_vertex(vertex);
         }
 
         void draw_volume_vertex_with_attribute(
             index_t vertex, index_t cell, index_t cell_corner
         ) {
-            if(picking_mode_ == MESH_NONE) {
-                if(attribute_subelements_ == MESH_VERTICES) {                
-                    glupTexCoord1d(attribute_[vertex]);
-                } else if(attribute_subelements_ == MESH_CELLS) {
-                    glupTexCoord1d(attribute_[cell]);
-                } else if(attribute_subelements_ == MESH_CELL_CORNERS) {
-                    glupTexCoord1d(attribute_[cell_corner]);
-                }
-            }
+	    if(attribute_subelements_ == MESH_VERTICES) {
+		draw_attribute_as_tex_coord(vertex);
+	    } else if(attribute_subelements_ == MESH_CELLS) {
+		draw_attribute_as_tex_coord(cell);
+	    } else if(attribute_subelements_ == MESH_CELL_CORNERS) {
+		draw_attribute_as_tex_coord(cell_corner);
+	    }
             draw_vertex(vertex);
         }
 
@@ -851,11 +882,14 @@ namespace GEO {
         
         MeshElementsFlags attribute_subelements_;
         std::string attribute_name_;
+	index_t attribute_dim_;
         double attribute_min_;
         double attribute_max_;
-        GLuint attribute_colormap_texture_;
+        GLuint attribute_texture_;
+	index_t attribute_texture_dim_;
         index_t attribute_repeat_;
-        ReadOnlyScalarAttributeAdapter attribute_;
+        ReadOnlyScalarAttributeAdapter scalar_attribute_;
+	Attribute<double> tex_coord_attribute_;
 
         //   If true, copies OpenGL state automatically
         // at each rendering operation.

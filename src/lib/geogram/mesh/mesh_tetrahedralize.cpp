@@ -98,7 +98,7 @@ namespace GEO {
         delaunay->set_refine(refine);
         delaunay->set_quality(quality);
         delaunay->set_constraints(&M);
-
+	
         try {
             delaunay->set_vertices(0,nil); // No additional vertex
         } catch(const Delaunay::InvalidInput& error_report) {

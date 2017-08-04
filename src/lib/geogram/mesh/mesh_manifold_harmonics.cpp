@@ -49,7 +49,8 @@
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/NL/nl.h>
 
-namespace GEO {
+namespace {
+    using namespace GEO;
 
     /**
      * \brief Computes a coefficient of the P1 Laplacian.
@@ -60,7 +61,7 @@ namespace GEO {
      *  \p v1 and \p v2
      */
     inline double P1_FEM_coefficient(
-	Mesh& M, index_t f, index_t v1, index_t v2
+	const Mesh& M, index_t f, index_t v1, index_t v2
     ) {
 	index_t v3 = NO_VERTEX;
 	for(index_t lv=0; lv<M.facets.nb_vertices(f); ++lv) {
@@ -80,72 +81,41 @@ namespace GEO {
     }
 
 
-    void mesh_compute_manifold_harmonics(
-	Mesh& M, index_t nb_eigens,
-	LaplaceBeltramiDiscretization discretization,
-	const std::string& attribute_name
+    /**
+     * \brief Assemble the stiffness and mass matrices
+     *  of the Laplacian in OpenNL.
+     * \details This function is supposed to be called
+     *  between nlBegin(NL_SYSTEM) and nlEnd().
+     * \param[in] M a const reference to a surface mesh.
+     * \param[in] discretization the discretization of the Laplace-Beltrami 
+     *   operator, one of:
+     *	 - COMBINATORIAL: 1.0 everywhere
+     *	 - UNIFORM: combinatorial divided by node degree
+     *	 - FEM_P1: linear finite elements
+     *	 - FEM_P1_LUMPED: linear finite elements with lumped mass matrix
+     */
+    void assemble_Laplacian_matrices(
+	const Mesh& M,
+	LaplaceBeltramiDiscretization discretization
     ) {
 
-	if(M.vertices.attributes().is_defined(attribute_name)) {
-	    M.vertices.attributes().delete_attribute_store(attribute_name);
-	}
-	
 	// Step 1: compute vertices degrees (used by
 	// uniform weights).
 	// **************************************************
 	
-	vector<index_t> v_degree(M.vertices.nb(), 0);
-	for(index_t c=0; c<M.facet_corners.nb(); ++c) {
-	    index_t v = M.facet_corners.vertex(c);
-	    ++v_degree[v];
+	vector<index_t> v_degree;
+	if(discretization == UNIFORM) {
+	    v_degree.assign(M.vertices.nb(), 0);
+	    for(index_t c=0; c<M.facet_corners.nb(); ++c) {
+		index_t v = M.facet_corners.vertex(c);
+		++v_degree[v];
+	    }
 	}
 
-	// Step 2: configure eigen solver
-	// **************************************************
-	
 	// Sum of row coefficient associated with each vertex
 	vector<double> v_row_sum(M.vertices.nb(), 0.0);
 	
-	if(!nlInitExtension("ARPACK")) {
-	    Logger::err("MH")
-		<< "Could not initialize OpenNL ARPACK extension"
-		<< std::endl;
-	    return;
-	} 
-
-	nlNewContext();
-	
-	nlEigenSolverParameteri(NL_EIGEN_SOLVER, NL_ARPACK_EXT);
-	nlEigenSolverParameteri(NL_NB_VARIABLES, NLint(M.vertices.nb()));
-	nlEigenSolverParameteri(NL_NB_EIGENS, (NLint)nb_eigens);
-	nlEnable(NL_VERBOSE);
-
-	if(discretization == COMBINATORIAL) {
-	    nlEigenSolverParameteri(NL_SYMMETRIC, NL_TRUE);
-	}
-
-	nlEnable(NL_VARIABLES_BUFFER);
-
-	nlBegin(NL_SYSTEM);
-
-	Attribute<double> eigen_vector;
-	eigen_vector.create_vector_attribute(
-	    M.vertices.attributes(), attribute_name, nb_eigens
-	);
-	
-	for(index_t eigen=0; eigen<nb_eigens; ++eigen) {
-	    // Bind directly the variables buffer to the attribute in
-	    // the mesh, to avoid copying data.
-	    nlBindBuffer(
-		NL_VARIABLES_BUFFER,
-		eigen, 
-		&eigen_vector[0] + eigen, // base address for eigenvector
-		NLuint(sizeof(double)*nb_eigens) // number of bytes between two
-		// consecutive components in current eigenvector
-	    );
-	}
-
-	// Step 3: compute stiffness matrix
+	// Step 2: compute stiffness matrix
 	// **************************************************	
 	
 	nlMatrixMode(NL_STIFFNESS_MATRIX);	
@@ -185,7 +155,7 @@ namespace GEO {
 	}
 	nlEnd(NL_MATRIX);
 
-	// Step 4: compute mass matrix
+	// Step 3: compute mass matrix
 	// **************************************************	
 	
 	if(discretization == FEM_P1 || discretization == FEM_P1_LUMPED) {
@@ -222,13 +192,193 @@ namespace GEO {
 	    }
 	    nlEnd(NL_MATRIX);
 	}
+    }
+}
+
+
+namespace GEO {
+
+
+
+    void mesh_compute_manifold_harmonics(
+	Mesh& M, index_t nb_eigens,
+	LaplaceBeltramiDiscretization discretization,
+	const std::string& attribute_name,
+	double shift
+    ) {
+
+	if(M.vertices.attributes().is_defined(attribute_name)) {
+	    M.vertices.attributes().delete_attribute_store(attribute_name);
+	}
+	
+	// Step 1: configure eigen solver
+	// **************************************************
+	
+	
+	if(!nlInitExtension("ARPACK")) {
+	    Logger::err("MH")
+		<< "Could not initialize OpenNL ARPACK extension"
+		<< std::endl;
+	    return;
+	} 
+
+	nlNewContext();
+	
+	nlEigenSolverParameteri(NL_EIGEN_SOLVER, NL_ARPACK_EXT);
+	nlEigenSolverParameteri(NL_NB_VARIABLES, NLint(M.vertices.nb()));
+	nlEigenSolverParameteri(NL_NB_EIGENS, (NLint)nb_eigens);
+	nlEigenSolverParameterd(NL_EIGEN_SHIFT, shift);
+
+	if(discretization == COMBINATORIAL) {
+	    nlEigenSolverParameteri(NL_SYMMETRIC, NL_TRUE);
+	}
+
+	nlEnable(NL_VARIABLES_BUFFER);
+
+	nlBegin(NL_SYSTEM);
+
+	Attribute<double> eigen_vector;
+	eigen_vector.create_vector_attribute(
+	    M.vertices.attributes(), attribute_name, nb_eigens
+	);
+	
+	for(index_t eigen=0; eigen<nb_eigens; ++eigen) {
+	    // Bind directly the variables buffer to the attribute in
+	    // the mesh, to avoid copying data.
+	    nlBindBuffer(
+		NL_VARIABLES_BUFFER,
+		eigen, 
+		&eigen_vector[0] + eigen, // base address for eigenvector
+		NLuint(sizeof(double)*nb_eigens) // number of bytes between two
+		// consecutive components in current eigenvector
+	    );
+	}
+
+	// Step 2: assemble matrices
+	// *************************
+
+	assemble_Laplacian_matrices(M, discretization);
 	
 	nlEnd(NL_SYSTEM);
 
+	// Step 3: solve and cleanup
+	// *************************
+	
 	nlEigenSolve();
 
+	for(index_t i=0; i<nb_eigens; ++i) {
+	    Logger::out("MH") << i << ":" << nlGetEigenValue(i) << std::endl;
+	}
+	
 	nlDeleteContext(nlGetCurrent());
     }
+
+
+    void mesh_compute_manifold_harmonics_by_bands(
+	Mesh& M, index_t nb_eigens,
+	LaplaceBeltramiDiscretization discretization,
+	ManifoldHarmonicsCallback callback,
+	index_t nb_eigens_per_band,
+	double initial_shift,
+	void* client_data
+    ) {
+	
+	// Step 1: configure eigen solver and assemble matrices
+	// ****************************************************
+	
+	if(!nlInitExtension("ARPACK")) {
+	    Logger::err("MH")
+		<< "Could not initialize OpenNL ARPACK extension"
+		<< std::endl;
+	    return;
+	} 
+
+	nlNewContext();
+	
+	nlEigenSolverParameteri(NL_EIGEN_SOLVER, NL_ARPACK_EXT);
+	nlEigenSolverParameteri(NL_NB_VARIABLES, NLint(M.vertices.nb()));
+	nlEigenSolverParameteri(NL_NB_EIGENS, (NLint)nb_eigens_per_band);
+
+	if(discretization == COMBINATORIAL) {
+	    nlEigenSolverParameteri(NL_SYMMETRIC, NL_TRUE);
+	}
+
+	nlBegin(NL_SYSTEM);
+	assemble_Laplacian_matrices(M, discretization);
+	nlEnd(NL_SYSTEM);
+
+
+	// Step 2: main loop
+	// *****************
+
+	double shift = initial_shift;
+	index_t current_eigen = 0;
+	index_t current_band = 0;
+	double latest_eigen = 0.0;
+
+	vector<double> eigen_vector(M.vertices.nb());
+	
+	for(;;) {
+	    
+	    bool compute_band = true;
+	    while(compute_band) {
+		Logger::out("MH")
+		    << "Compute band, shift=" << shift << std::endl;
+		nlEigenSolverParameterd(NL_EIGEN_SHIFT, shift);
+		nlEigenSolve();
+		compute_band = false;
+
+		// Test whether the current band overlaps the previous one.
+		// If this is not the case, go back (move shift towards zero)
+		// a little bit.
+		
+		if(current_band != 0) {
+		    if(::fabs(nlGetEigenValue(0)) > ::fabs(latest_eigen)) {
+			Logger::out("MH")
+			    << "Bands do no overlap (going back a little bit)"
+			    << std::endl;
+			shift -= 0.2*(
+			    nlGetEigenValue(nb_eigens_per_band - 1) -
+			    nlGetEigenValue(0)
+			);
+			compute_band = true;
+		    }
+		}
+		
+	    }
+	    
+	    for(index_t i=0; i<nb_eigens_per_band; ++i) {
+		// Output all the eigenpairs with an eigenvalue that was
+		// not previously seen (ignore the part of the current band
+		// that overlaps the previous band).
+		if(
+		    current_eigen == 0 ||
+		    ::fabs(nlGetEigenValue(i)) > ::fabs(latest_eigen)
+		) {
+		    latest_eigen = nlGetEigenValue(i);
+		    for(index_t j=0; j<M.vertices.nb(); ++j) {
+			eigen_vector[j] = nlMultiGetVariable(j,i);
+		    }
+		    callback(
+			current_eigen,
+			nlGetEigenValue(i), eigen_vector.data(), client_data
+		    );
+		    ++current_eigen;
+		    if(current_eigen >= nb_eigens) {
+			nlDeleteContext(nlGetCurrent());
+			return;
+		    }
+		}
+	    }
+
+	    // Move to next band / next eigen shift.
+	    ++current_band;
+	    shift += 0.8 * (
+		nlGetEigenValue(nb_eigens_per_band - 1) - nlGetEigenValue(0)
+	    );
+	}
+    }
+
     
 }
 

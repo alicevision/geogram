@@ -284,10 +284,10 @@ namespace {
                             int k=0;
                             k<nb_long_per_strip_; ++k
                         ) {
-                            draw_vertex(j+1,k);
+                            draw_vertex(j+1,k);			    
                             draw_vertex(j,k);
-                            draw_vertex(j,k+1);
-                            draw_vertex(j+1,k+1);
+                            draw_vertex(j,k+1);			    
+                            draw_vertex(j+1,k+1);			    
                         }
                     } else if (rendering_style_ == STYLE_CHECKERED) {
                         for(
@@ -323,6 +323,9 @@ namespace {
             vertices_.resize(
                 size_t(3*(1 + nb_lat_per_hemisphere_)*(1 + nb_long_per_strip_))
             );
+            normals_.resize(
+                size_t(3*(1 + nb_lat_per_hemisphere_)*(1 + nb_long_per_strip_))
+            );
 
             //  Make a tiny invisible puncture near the pole, to avoid a
             // singularity that creates a bad shading.
@@ -332,7 +335,7 @@ namespace {
             if(bend_cylinder_) {
                 generateGeometry(
                     vertices_.data(),
-                    nil,
+                    normals_.data(),
                     time_,
                     nb_strips_,
                     0.0 + epsilon,
@@ -346,7 +349,7 @@ namespace {
             } else  {
                 generateGeometry(
                     vertices_.data(),
-                    nil,
+                    normals_.data(),
                     time_,
                     nb_strips_,
                     0.0 + epsilon,
@@ -367,6 +370,9 @@ namespace {
                     float(v) / float(nb_long_per_strip_)
                 );
             }
+	    glupNormal3fv(
+                &(normals_[3*(v * (nb_lat_per_hemisphere_ + 1) + u)])		
+	    );
             glupVertex3fv(
                 &(vertices_[3*(v * (nb_lat_per_hemisphere_ + 1) + u)])
             );
@@ -384,6 +390,7 @@ namespace {
         // Stores all the vertices used to render the sphere.
         // Elements in the array are arranged by [latitude][longitude][coord].
         vector<float> vertices_;
+	vector<float> normals_;
         
         bool vertices_dirty_; // If true, need to regenerate vertices.
 
@@ -424,13 +431,8 @@ namespace {
             half_sphere_ = false;
             half_strips_ = false;
             time_ = 0.0f;
-#ifdef GEO_OS_EMSCRIPTEN
-            res_longitude_ = 50;
-            res_latitude_ = 50;
-#else            
-            res_longitude_ = 100;
-            res_latitude_ = 100;
-#endif            
+            res_longitude_ = 40;
+            res_latitude_ = 40;
             nb_strips_ = 8;
             anim_speed_ = 0.5f;
             proportion_strips_to_display_ = 1.0f;
@@ -440,6 +442,7 @@ namespace {
             bend_cylinder_ = false;
             textured_ = false;
             texture_ = 0;
+	    smooth_ = true;
         }
 
         /**
@@ -539,6 +542,7 @@ namespace {
                     "(not as cool, but cool enough)\n"
                 );
             }
+            ImGui::Checkbox("smooth", &smooth_);
         }
 
         /**
@@ -585,7 +589,13 @@ namespace {
             } else {
                 glupDisable(GLUP_DRAW_MESH);                
             }
-            
+
+	    if(smooth_) {
+		glupEnable(GLUP_VERTEX_NORMALS);
+	    } else {
+		glupDisable(GLUP_VERTEX_NORMALS);		
+	    }
+	    
             if(textured_) {
                 glupEnable(GLUP_TEXTURING);
                 glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
@@ -666,6 +676,7 @@ namespace {
         float alpha_;
         bool textured_;
         GLuint texture_;
+	bool smooth_;
     };
       
 }

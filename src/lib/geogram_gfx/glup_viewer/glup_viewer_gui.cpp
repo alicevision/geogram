@@ -75,6 +75,10 @@
 #include <geogram_gfx/glup_viewer/colormaps/plasma.xpm>
 #include <geogram_gfx/glup_viewer/colormaps/blue_red.xpm>
 
+extern "C" {
+    void glup_viewer_char_callback(void* w, unsigned int c);
+}
+
 namespace {
     /**
      * \brief Removes the underscores from a string and
@@ -1272,6 +1276,27 @@ namespace GEO {
 
         scaling_ = 1.0f;
         retina_mode_ = false;
+
+	GEO::CmdLine::declare_arg(
+	    "gfx:gui", true, "show/hide GUI"
+	);
+
+	GEO::CmdLine::declare_arg(
+	    "gfx:background", true, "fancy/plain background"
+	);
+	
+	GEO::CmdLine::declare_arg(
+	    "gfx:rotate", "",
+	    "initial rotation (four ','-separated doubles: x,y,z,angle)"
+	);
+
+	GEO::CmdLine::declare_arg(
+	    "gfx:snapshot", "", "snapshot image file name (.ppm)"
+	);
+
+	GEO::CmdLine::declare_arg(
+	    "gfx:keypress", "", "initial simulated sequence of pressed keys"
+	);
     }
 
     Application::~Application() {
@@ -1315,6 +1340,18 @@ namespace GEO {
         if(GEO::CmdLine::get_arg_bool("gfx:full_screen")) {
             glup_viewer_enable(GLUP_VIEWER_FULL_SCREEN);
         }
+
+	if(GEO::CmdLine::get_arg_bool("gfx:gui")) {
+	    glup_viewer_enable(GLUP_VIEWER_TWEAKBARS);
+	} else {
+	    glup_viewer_disable(GLUP_VIEWER_TWEAKBARS);	    
+	}
+
+	if(GEO::CmdLine::get_arg_bool("gfx:background")) {
+	    glup_viewer_enable(GLUP_VIEWER_BACKGROUND);	    
+	} else {
+	    glup_viewer_disable(GLUP_VIEWER_BACKGROUND);	    	    
+	}
 
         glup_viewer_main_loop(argc_, argv_);
     }
@@ -1426,11 +1463,28 @@ namespace GEO {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexImage2DXPM(geogram_logo_256_xpm);
-
+	
         if(glup_viewer_is_high_dpi()) {
             retina_mode_ = true;                
             scaling_ = 2.0f;
         }
+
+	std::string rotate = GEO::CmdLine::get_arg("gfx:rotate");
+	if(rotate != "") {
+	    float axis[3];
+	    float angle;
+	    sscanf(
+		rotate.c_str(),
+		"%f,%f,%f,%f",
+		&axis[0], &axis[1], &axis[2], &angle
+	    );
+	    glup_viewer_set_scene_rotation(axis,angle);
+	}
+
+	std::string keys = GEO::CmdLine::get_arg("gfx:keypress");
+	for(size_t i=0; i<keys.length(); ++i) {
+	    glup_viewer_char_callback(nil,(unsigned int)(keys[i]));
+	}
     }
 
     void Application::init_graphics_callback() {
@@ -1456,6 +1510,11 @@ namespace GEO {
             }
             glupClipMode(instance()->clip_mode_);
             instance()->draw_scene();
+	    std::string snapshot = CmdLine::get_arg("gfx:snapshot");
+	    if(snapshot != "") {
+		glup_viewer_snapshot(snapshot.c_str());
+		exit(0);
+	    }
         }
     }
 
@@ -2034,7 +2093,6 @@ namespace GEO {
     }
 
     void SimpleMeshApplication::init_graphics() {
-        Application::init_graphics();
         glup_viewer_add_toggle('p', &show_vertices_, "vertices");
         glup_viewer_add_toggle('S', &show_surface_, "surface");
         glup_viewer_add_toggle('c', &show_surface_colors_, "surface_colors_");
@@ -2062,6 +2120,7 @@ namespace GEO {
 
         init_colormaps();
         current_colormap_texture_ = colormaps_[3].texture;
+        Application::init_graphics();
     }
     
     void SimpleMeshApplication::draw_scene() {

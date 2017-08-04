@@ -5,20 +5,11 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUPES/fragment_shader_utils.h>
 
-#ifdef GL_ES                                                  
-   varying vec4 color;                                        
-   varying vec4 tex_coord;                                    
-   varying float clip_dist;                                   
-   varying highp float primitive_id;
-#define glup_FragColor gl_FragColor
-#else                                                         
-   in vec4 color;                                             
-   in vec4 tex_coord;                                         
-   in float clip_dist;                                        
-   flat in highp int primitive_id;
-   out vec4 glup_FragColor;
-#endif                                                        
-
+   glup_in vec4 color;                                             
+   glup_in vec4 tex_coord;                                         
+   glup_in float clip_dist;
+   glup_flat glup_in float depth_radius;
+   glup_flat glup_in glup_id primitive_id;
 
 void main() {
     
@@ -33,9 +24,7 @@ void main() {
     }                                                          
 
     vec3 N = vec3(V.x, -V.y, sqrt(one_minus_r2));
-#ifdef GL_EXT_frag_depth
-    gl_FragDepthEXT = gl_FragCoord.z - 0.001 * N.z;       
-#endif    
+    glup_FragDepth = gl_FragCoord.z - depth_radius * N.z;
 
     if(glupIsEnabled(GLUP_PICKING)) {
         glup_FragColor = glup_picking(int(primitive_id));        

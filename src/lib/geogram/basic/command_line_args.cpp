@@ -586,12 +586,11 @@ namespace {
             "gfx:GLUP_profile", "auto",
             "one of auto, GLUP150, GLUP440, VanillaGL"
         );
-        declare_arg(
-            "gfx:full_screen", false, "full screen mode"
-        );
+        declare_arg("gfx:full_screen", false, "full screen mode");
         declare_arg(
             "gfx:GLSL_tesselation", true, "use tesselation shaders if available"
         );
+	declare_arg("gfx:geometry", "800x800", "resolution");
     }
     
     

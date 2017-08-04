@@ -27,9 +27,21 @@ struct UniformState {
     bool  clipping_enabled;          
     int   clipping_mode;             
     vec4  clip_plane;                
+    vec4  world_clip_plane;
     
+    mat4 texture_matrix;
+    mat4 modelviewprojection_matrix;
+    mat4 inverse_modelviewprojection_matrix;
+    mat3 normal_matrix;
+
+    vec4 viewport;
+
+    bool  vertex_normals_enabled;
 };                                  
 
 uniform UniformState GLUP;          
 uniform sampler2D texture1Dsampler;                 
-uniform sampler2D texture2Dsampler;         
+uniform sampler2D texture2Dsampler;
+#ifndef GLUP_NO_TEXTURE_3D
+uniform sampler3D texture3Dsampler;         
+#endif

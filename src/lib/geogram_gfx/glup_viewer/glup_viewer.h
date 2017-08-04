@@ -114,19 +114,34 @@ extern GLUP_VIEWER_API void glup_viewer_main_loop(int argc, char** argv);
 extern GLUP_VIEWER_API void glup_viewer_exit_main_loop(void);
 extern GLUP_VIEWER_API void glup_viewer_set_window_title(char* title);
     
-extern GLUP_VIEWER_API void glup_viewer_set_display_func(GlupViewerDisplayFunc f);
-extern GLUP_VIEWER_API void glup_viewer_set_overlay_func(GlupViewerDisplayFunc f);
-extern GLUP_VIEWER_API void glup_viewer_set_keyboard_func(GlupViewerKeyboardFunc f);
+extern GLUP_VIEWER_API void glup_viewer_set_display_func(
+    GlupViewerDisplayFunc f
+);
+
+extern GLUP_VIEWER_API void glup_viewer_set_overlay_func(
+    GlupViewerDisplayFunc f
+);
+
+extern GLUP_VIEWER_API void glup_viewer_set_keyboard_func(
+    GlupViewerKeyboardFunc f
+);
 extern GLUP_VIEWER_API void glup_viewer_set_mouse_func(GlupViewerMouseFunc f);
 extern GLUP_VIEWER_API void glup_viewer_set_init_func(GlupViewerInitFunc f);
-extern GLUP_VIEWER_API void glup_viewer_set_drag_drop_func(GlupViewerDragDropFunc f);
+extern GLUP_VIEWER_API void glup_viewer_set_drag_drop_func(
+    GlupViewerDragDropFunc f
+);
 
 extern GLUP_VIEWER_API GlupViewerDisplayFunc glup_viewer_get_display_func(void);
 extern GLUP_VIEWER_API GlupViewerDisplayFunc glup_viewer_get_overlay_func(void);
-extern GLUP_VIEWER_API GlupViewerKeyboardFunc glup_viewer_get_keyboard_func(void);
+extern GLUP_VIEWER_API GlupViewerKeyboardFunc glup_viewer_get_keyboard_func(
+    void
+);
+    
 extern GLUP_VIEWER_API GlupViewerMouseFunc glup_viewer_get_mouse_func(void);
 extern GLUP_VIEWER_API GlupViewerInitFunc glup_viewer_get_init_func(void);
-extern GLUP_VIEWER_API GlupViewerDragDropFunc glup_viewer_get_drag_drop_func(void);
+extern GLUP_VIEWER_API GlupViewerDragDropFunc glup_viewer_get_drag_drop_func(
+    void
+);
     
 extern GLUP_VIEWER_API void glup_viewer_add_toggle(
     char key, GLboolean* pointer, const char* description
@@ -145,8 +160,12 @@ extern GLUP_VIEWER_API void glup_viewer_clear_text(void);
 extern GLUP_VIEWER_API void glup_viewer_printf(char* format, ...);
 extern GLUP_VIEWER_API void glup_viewer_set_background(int texture);
 extern GLUP_VIEWER_API int glup_viewer_get_background(void);
-extern GLUP_VIEWER_API void glup_viewer_set_background_color(GLfloat r, GLfloat g, GLfloat b);
-extern GLUP_VIEWER_API void glup_viewer_set_background_color2(GLfloat r, GLfloat g, GLfloat b);
+extern GLUP_VIEWER_API void glup_viewer_set_background_color(
+    GLfloat r, GLfloat g, GLfloat b
+);
+extern GLUP_VIEWER_API void glup_viewer_set_background_color2(
+    GLfloat r, GLfloat g, GLfloat b
+);
 extern GLUP_VIEWER_API GLfloat* glup_viewer_get_background_color(void);
 extern GLUP_VIEWER_API GLfloat* glup_viewer_get_background_color2(void);
 
@@ -155,11 +174,16 @@ extern GLUP_VIEWER_API float* glup_viewer_get_light_matrix(void);
 extern GLUP_VIEWER_API float* glup_viewer_get_light_quaternion(void);
 extern GLUP_VIEWER_API float* glup_viewer_get_clip_quaternion(void);
 
+extern GLUP_VIEWER_API void glup_viewer_set_scene_rotation(
+    float xyz[3], float angle
+);
+    
 extern GLUP_VIEWER_API void glTexImage2DXPM(char const** xpm_data);
 extern GLUP_VIEWER_API void glTexImage2Dfile(const char* filename);
 
 extern GLUP_VIEWER_API GLboolean glup_viewer_load_image(
-    const char* filename, GLuint* width, GLuint* height, GLuint* bpp, GLvoid** pixels
+    const char* filename, GLuint* width, GLuint* height, GLuint* bpp,
+    GLvoid** pixels
 );
 
 extern GLUP_VIEWER_API int glup_viewer_fps(void);
@@ -193,6 +217,13 @@ extern GLUP_VIEWER_API void glup_viewer_post_redisplay(void);
 extern GLUP_VIEWER_API void glup_viewer_home(void);
 
 extern GLUP_VIEWER_API GLboolean glup_viewer_is_high_dpi(void);
+
+/**
+ * \brief Saves a copy of the current window to a file.
+ * \details Uses the PPM file format.
+ * \param[in] filename name of the file
+ */
+extern GLUP_VIEWER_API void glup_viewer_snapshot(const char* filename);
     
 #ifdef __cplusplus
 }

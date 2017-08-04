@@ -1268,10 +1268,11 @@ typedef void* NLContext;
 	NLenum buffer, NLuint k, void* addr, NLuint stride
     );
 
+    
 /**
- * @{ 
- * \name EigenSolver
  * @}
+ * \name EigenSolver
+ * @{
  */    
 
 /**
@@ -1286,7 +1287,7 @@ typedef void* NLContext;
 
 /**
  * \brief Specifies to which matrix the subsequent calls
- *  to nlBeginRow(), nlEndRow(), nlAddCoefficient(), nlAddIJCoefficient()
+ *  to nlBegin(), nlEnd(), nlCoefficient(), nlAddIJCoefficient()
  *  will be applied.
  * \param[in] matrix one of NL_STIFFNESS_MATRIX (default), NL_MASS_MATRIX
  * \details Calling nlMatrixMode() resets the current row to 0.
@@ -1324,7 +1325,7 @@ NLAPI void NLAPIENTRY nlMatrixMode(NLenum matrix);
 #define NL_EIGEN_SHIFT 0x2001
 
 /**
- * \brief Symbolic constant for nlEnable()/nlDisable()/nlIsEnabled(),
+ * \brief Symbolic constant for nlEnable() / nlDisable() / nlIsEnabled(),
  *  shift-invert spectral transform.
  */
 #define NL_EIGEN_SHIFT_INVERT 0x2002

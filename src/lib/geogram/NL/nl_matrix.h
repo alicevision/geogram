@@ -97,7 +97,8 @@ struct NLMatrixStruct {
      * \brief Matrix type
      * \details One of NL_MATRIX_SPARSE_DYNAMIC, 
      *  NL_MATRIX_CRS, NL_MATRIX_SUPERLU_EXT,
-     *  NL_CHOLDMOD_MATRIX_EXT
+     *  NL_CHOLDMOD_MATRIX_EXT, NL_MATRIX_FUNCTION,
+     *  NL_MATRIX_OTHER
      */
     NLenum type;
 
@@ -482,6 +483,15 @@ NLAPI void NLAPIENTRY nlSparseMatrixConstruct(
 );
 
 /**
+ * \brief Destroys an NLSparseMatrix
+ * \details Only the memory allocated by the NLSparseMatrix
+ *  is freed. The NLSparseMatrix structure is not freed.
+ * \param[in,out] M a pointer to an NLSparseMatrix
+ * \relates NLSparseMatrix
+ */
+NLAPI void nlSparseMatrixDestroy(NLSparseMatrix* M);
+    
+/**
  * \brief Adds a coefficient to an NLSparseMatrix
  * \details Performs the following operation:
  *  \$ a_{i,j} \leftarrow a_{i,j} + \mbox{value} \$
@@ -495,6 +505,20 @@ NLAPI void NLAPIENTRY nlSparseMatrixAdd(
     NLSparseMatrix* M, NLuint i, NLuint j, NLdouble value
 );
 
+/**
+ * \brief Adds a matrix to another sparse matrix.
+ * \details Does M += mul * N. If N has symmetric storage, then
+ *  M needs also to have symmetric storage.
+ * \param[in,out] M a pointer to an NLSparseMatrix
+ * \param[in] mul a multiplicative factor that pre-multiply
+ *   all coefficients of \p N
+ * \param[in] N a matrix. Needs to be either a NLSparseMatrix or
+ *   a NLCRSMatrix.
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixAddMatrix(
+    NLSparseMatrix* M, double mul, const NLMatrix N
+);	
+    
 /**
  * \brief Zeroes an NLSparseMatrix
  * \details The memory is not freed.

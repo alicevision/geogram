@@ -221,6 +221,12 @@ namespace GLUP {
                     element_ptr(v)
                 );
             }
+	    if(immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].is_enabled()) {
+                glNormal3fv(
+                    immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].
+                    element_ptr(v)
+                );
+	    }
             glVertex4fv(
                 immediate_state_.buffer[GLUP_VERTEX_ATTRIBUTE].element_ptr(v)
             );
@@ -276,8 +282,11 @@ namespace GLUP {
          * \param[in] v1 , v2 , v3 the indices of the three vertices from the
          *  immediate buffer.
          */
-        void flat_shaded_triangle(index_t v1, index_t v2, index_t v3) {
-            if(uniform_state_.toggle[GLUP_LIGHTING].get()) {
+        void draw_triangle(index_t v1, index_t v2, index_t v3) {
+            if(
+		uniform_state_.toggle[GLUP_LIGHTING].get() &&
+		!uniform_state_.toggle[GLUP_VERTEX_NORMALS].get()
+	    ) {
                 output_normal(v1,v2,v3);
             }
             output_vertex(v1);
@@ -290,8 +299,10 @@ namespace GLUP {
          * \param[in] v1 , v2 , v3 , v4 the indices of the three 
          *  vertices from the immediate buffer.
          */
-        void flat_shaded_quad(index_t v1, index_t v2, index_t v3, index_t v4) {
-            if(uniform_state_.toggle[GLUP_LIGHTING].get()) {
+        void draw_quad(index_t v1, index_t v2, index_t v3, index_t v4) {
+            if(uniform_state_.toggle[GLUP_LIGHTING].get() &&
+	       !uniform_state_.toggle[GLUP_VERTEX_NORMALS].get()	       
+	    ) {
                 output_normal(v1,v2,v3,v4);
             }
             output_vertex(v1);
@@ -353,7 +364,13 @@ namespace GLUP {
          *  OpenGL, as connectors primitives.
          */
         void draw_immediate_buffer_GLUP_CONNECTORS();
-        
+
+        /**
+         * \brief Sends the contents of the immediate buffers to 
+         *  OpenGL, as spheres primitives.
+         */
+        void draw_immediate_buffer_GLUP_SPHERES();
+	
         /**
          * \brief Draws all the primitives from the immediate buffer using
          *  the marching cells algorithm.
@@ -380,6 +397,12 @@ namespace GLUP {
          *  texturing.
          */
         GLuint indirect_texturing_program_;
+
+	/**
+	 * \brief A display list that draws a tesselated
+	 *  unit sphere.
+	 */
+	GLuint sphere_display_list_;
     };
 
     /*********************************************************************/

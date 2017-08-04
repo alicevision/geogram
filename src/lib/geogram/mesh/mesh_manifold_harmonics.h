@@ -52,6 +52,7 @@
 
 #include <geogram/basic/common.h>
 #include <geogram/basic/numeric.h>
+#include <geogram/basic/memory.h>
 
 namespace GEO {
     class Mesh;
@@ -74,11 +75,47 @@ namespace GEO {
      *	 - UNIFORM: combinatorial divided by node degree
      *	 - FEM_P1: linear finite elements
      *	 - FEM_P1_LUMPED: linear finite elements with lumped mass matrix
+     * \param[in] shift eigen shift applied to explore a certain part
+     *  of the spectrum.
      */
     void GEOGRAM_API mesh_compute_manifold_harmonics(
 	Mesh& M, index_t nb_eigens,
 	LaplaceBeltramiDiscretization discretization,
-	const std::string& attribute_name = "eigen"
+	const std::string& attribute_name = "eigen",
+	double shift = 0.0
+    );
+
+
+    /**
+     * \brief A function pointer to be used with
+     *  mesh_compute_manifold_harmonics_by_bands()
+     */
+    typedef void (*ManifoldHarmonicsCallback)(
+	index_t eigen_index,
+	double eigen_val, const double* eigen_vector,
+	void* client_data
+    );
+
+    /**
+     * \brief Computes Laplacian eigenfunctions band by band.
+     * \details This function should be used when a large number
+     *  of eigenfunctions should be computed.
+     * \param[in] M a const reference to a surface mesh
+     * \param[in] nb_eigens total number of eigenpairs to compute
+     * \param[in] callback the client function to be called for 
+     *  each computed eigenpair
+     * \param[in] nb_eigens_per_band the number of eigenpairs to
+     *  be computed in each band
+     * \param[in] initial_shift the initial location in the spectrum
+     * \param[in] client_data a pointer passed to the client callback
+     */
+    void GEOGRAM_API mesh_compute_manifold_harmonics_by_bands(
+	Mesh& M, index_t nb_eigens,
+	LaplaceBeltramiDiscretization discretization,
+	ManifoldHarmonicsCallback callback,
+	index_t nb_eigens_per_band = 30,
+	double initial_shift = 0.0,
+	void* client_data = nil
     );
     
 }

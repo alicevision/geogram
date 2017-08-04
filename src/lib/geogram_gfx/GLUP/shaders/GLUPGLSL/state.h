@@ -1,5 +1,5 @@
 layout(shared)                              
-uniform GLUPStateBlock {                    
+uniform GLUPStateBlock {
     
     bool vertex_colors_enabled;                      
     
@@ -10,7 +10,8 @@ uniform GLUPStateBlock {
     vec4  mesh_color;                        
     float mesh_width;                        
                                                               
-    bool lighting_enabled;                   
+    bool lighting_enabled;
+    bool vertex_normals_enabled;
     vec3 light_vector;                       
     vec3 light_half_vector;                  
                                                               
@@ -26,16 +27,21 @@ uniform GLUPStateBlock {
     int   picking_id;                         
     int   base_picking_id;                    
                                                       
-    bool clipping_enabled;                   
+    bool clipping_enabled;
     int   clipping_mode;                     
-    vec4  clip_plane;                        
-    vec4  world_clip_plane;                  
+    vec4  clip_plane; 
+    vec4  world_clip_plane; 
+    vec4  clip_clip_plane; 
                                          
     mat4 modelviewprojection_matrix;         
     mat4 modelview_matrix;
     mat4 projection_matrix;    
     mat3 normal_matrix;                      
     mat4 texture_matrix;
+    mat4 inverse_modelviewprojection_matrix;
+    mat4 inverse_modelview_matrix;    
+    mat4 inverse_projection_matrix;
+    vec4 viewport;
     
     float point_size;                        
 } GLUP;                                     

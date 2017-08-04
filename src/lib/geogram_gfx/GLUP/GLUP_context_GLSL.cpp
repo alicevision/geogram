@@ -78,7 +78,7 @@ namespace GLUP {
             GLSL::compile_program_with_includes_no_link(
                 this,
                 "//stage GL_VERTEX_SHADER\n"
-                "//import <GLUPGLSL/points_and_lines_vertex_shader.h>\n",
+                "//import <GLUPGLSL/points_vertex_shader.h>\n",
                 "//stage GL_FRAGMENT_SHADER\n"
                 "//import <GLUPGLSL/points_fragment_shader.h>\n"                
             )
@@ -91,7 +91,7 @@ namespace GLUP {
             GLSL::compile_program_with_includes_no_link(
                 this,
                 "//stage GL_VERTEX_SHADER\n"
-                "//import <GLUPGLSL/points_and_lines_vertex_shader.h>\n",
+                "//import <GLUPGLSL/vertex_shader.h>\n",
                 "//stage GL_FRAGMENT_SHADER\n"
                 "//import <GLUPGLSL/lines_fragment_shader.h>\n"                
             )
@@ -267,23 +267,28 @@ namespace GLUP {
         marching_pyramid_.bind_uniform_state(program);
     }
 
+    void Context_GLSL150::setup_GLUP_SPHERES() {
+        set_primitive_info(
+            GLUP_SPHERES, GL_POINTS,
+            GLSL::compile_program_with_includes_no_link(
+                this,
+                "//stage GL_VERTEX_SHADER\n"
+                "//import <GLUPGLSL/spheres_vertex_shader.h>\n",
+                "//stage GL_FRAGMENT_SHADER\n"
+                "//import <GLUPGLSL/spheres_fragment_shader.h>\n"                
+            )
+        );
+    }
+    
     /******************* pseudo-files ******************************/
     
     static void OES_extensions(std::vector<GLSL::Source>& sources) {
         sources.push_back(
             "#ifdef GL_ES\n"
-            "   #ifdef GL_OES_texture_3D\n"
-            "      #extension GL_OES_texture_3D : enable \n"
-            "   #endif\n"
-            "   #ifdef GL_OES_standard_derivatives\n"
-            "      #extension GL_OES_standard_derivatives : enable \n"
-            "   #endif\n"
-            "   #ifdef GL_OES_geometry_shader\n"
-            "      #extension GL_OES_geometry_shader : enable \n"
-            "   #endif\n"
-            "   #ifdef GL_OES_tessellation_shader\n"
-            "      #extension GL_OES_tessellation_shader : enable \n"
-            "   #endif\n"
+            "  #extension GL_OES_texture_3D : enable \n"
+            "  #extension GL_OES_standard_derivatives : enable \n"
+            "  #extension GL_OES_geometry_shader : enable \n"
+            "  #extension GL_OES_tessellation_shader : enable \n"
             "#endif\n"
         );
     }
@@ -310,12 +315,8 @@ namespace GLUP {
 #endif
         sources.push_back(
             "#define GLUP_FRAGMENT_SHADER\n"            
-            "#ifdef GL_EXT_frag_depth\n"
-            "   #extension GL_EXT_frag_depth : enable\n"
-            "#endif\n"
-            "#ifdef GL_ARB_conservative_depth\n"
-            "   #extension GL_ARB_conservative_depth : enable\n"
-            "#endif\n"
+            "#extension GL_EXT_frag_depth : enable\n"
+            "#extension GL_ARB_conservative_depth : enable\n"
         );
 
         OES_extensions(sources);        
@@ -324,9 +325,10 @@ namespace GLUP {
     void Context_GLSL150::get_geometry_shader_layout(
         std::vector<GLSL::Source>& sources                        
     ) {
-                switch(primitive_source_) {
+	switch(primitive_source_) {
         case GLUP_POINTS:
         case GLUP_LINES:
+        case GLUP_SPHERES:
             break;
         case GLUP_TRIANGLES:
             sources.push_back(
@@ -512,12 +514,8 @@ namespace GLUP {
 #endif
         sources.push_back(
             "#define GLUP_FRAGMENT_SHADER\n"            
-            "#ifdef GL_EXT_frag_depth\n"
-            "   #extension GL_EXT_frag_depth : enable\n"
-            "#endif\n"
-            "#ifdef GL_ARB_conservative_depth\n"
-            "   #extension GL_ARB_conservative_depth : enable\n"
-            "#endif\n"
+            "#extension GL_EXT_frag_depth : enable\n"
+            "#extension GL_ARB_conservative_depth : enable\n"
         );
 
         OES_extensions(sources);        
@@ -591,6 +589,7 @@ namespace GLUP {
         case GLUP_TETRAHEDRA:
         case GLUP_PRISMS:
         case GLUP_CONNECTORS:
+	case GLUP_SPHERES:
             Context_GLSL150::get_geometry_shader_layout(sources);            
             break;
 

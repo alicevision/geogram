@@ -222,6 +222,13 @@ GLboolean glup_viewer_test_arg_string(const char* param, const char* arg) {
     return (GEO::CmdLine::get_arg(param) == arg) ? GL_TRUE : GL_FALSE;
 }
 
+void glup_viewer_set_screen_size_from_args() {
+    std::string geometry = GEO::CmdLine::get_arg("gfx:geometry");
+    int w,h;
+    sscanf(geometry.c_str(),"%dx%d",&w,&h);
+    glup_viewer_set_screen_size(w,h);
+}
+
 
 #ifdef GEO_OS_EMSCRIPTEN
 

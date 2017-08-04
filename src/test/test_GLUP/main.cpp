@@ -407,6 +407,16 @@ namespace {
         }
     }
 
+    /**
+     * \brief Toggles per-vertex normals.
+     */
+    void toggle_vertex_normals() {
+        if(glupIsEnabled(GLUP_VERTEX_NORMALS)) {
+            glupDisable(GLUP_VERTEX_NORMALS);
+        } else {
+            glupEnable(GLUP_VERTEX_NORMALS);
+        }
+    }
 
     void inc_n() {
         reset_VBOs();
@@ -431,22 +441,23 @@ namespace {
     }
 
     inline void draw_vertex_grid(
-        GEO::index_t i, GEO::index_t j, GEO::index_t k
+        GEO::index_t i, GEO::index_t j, GEO::index_t k, float R=0.0f
     ) {
-        glupColor3f(
-            float(i)/float(n),
-            float(j)/float(n),
-            float(k)/float(n)                        
-        );
+	glupColor3f(
+	    float(i)/float(n),
+	    float(j)/float(n),
+	    float(k)/float(n)                        
+	);
         glupTexCoord3f(
             float(i)/float(n),
             float(j)/float(n),
             float(k)/float(n)                        
         );
-        glupVertex3f(
+        glupVertex4f(
             float(i)/float(n),
             float(j)/float(n),
-            float(k)/float(n)                        
+            float(k)/float(n),
+	    (R == 0.0f) ? 1.0f : R
         );
     }
 
@@ -459,7 +470,8 @@ namespace {
         double z = (sin(phi) + 1.0) / 2.0;
 
         glupColor3d(x,y,z);
-        glupTexCoord3d(x,y,z);                
+        glupTexCoord3d(x,y,z);
+	glupNormal3d(x-0.5,y-0.5,z-0.5);
         glupVertex3d(x,y,z);
     }
     
@@ -480,7 +492,11 @@ namespace {
         reset_VBOs();        
         ++prim;
 
-        if(prim > GLUP_PYRAMIDS) {
+	if(prim == GLUP_CONNECTORS) {
+	    prim = GLUP_SPHERES;
+	}
+	
+        if(prim > GLUP_SPHERES) {
             prim = GLUP_POINTS;
         }
     }
@@ -561,6 +577,27 @@ namespace {
         }
     }
 
+    void display_spheres() {
+	glupBegin(GLUP_SPHERES);
+	for(GEO::index_t i=0; i<n; i+=4) {
+	    for(GEO::index_t j=0; j<n; j+=4) {
+		for(GEO::index_t k=0; k<n; k+=4) {
+		    double waved =
+			sin(3.0*double(i)/double(n)*2.0*M_PI)*
+			sin(3.0*double(j)/double(n)*2.0*M_PI)*
+			sin(3.0*double(k)/double(n)*2.0*M_PI);
+		    float wave = float(0.5*(1.0 + waved));
+		    float Rmin = 0.2f * float(point_size) / float(n);
+		    float Rmax = 0.8f * float(point_size) / float(n);
+		    float R = wave*Rmin + (1.0f-wave)*Rmax;
+		    draw_vertex_grid(i,j,k,R);
+		}
+	    }
+	}
+	glupEnd();
+    }
+
+    
     void display_lines() {
         glLineWidth(1);
         glupBegin(GLUP_LINES);
@@ -792,6 +829,9 @@ namespace {
         case GLUP_PYRAMIDS:
             display_pyramids();
             break;
+	case GLUP_SPHERES:
+	    display_spheres();
+	    break;
         default:
             break;
         }
@@ -846,6 +886,7 @@ int main(int argc, char** argv) {
     glup_viewer_add_key_func('t', toggle_texturing, "toggle texturing");
     glup_viewer_add_key_func('y', cycle_texturing_mode, "texturing mode");
     glup_viewer_add_key_func('C', cycle_clipping_mode, "clipping mode");    
+    glup_viewer_add_key_func('W', toggle_vertex_normals, "toggle vrtx normals");
     
     if(GEO::CmdLine::get_arg_bool("gfx:full_screen")) {
        glup_viewer_enable(GLUP_VIEWER_FULL_SCREEN);

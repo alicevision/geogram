@@ -86,18 +86,21 @@
  *   OpenGL ES 2.0 n'a pas de textures 3D, mais on peut les emuler avec des
  * textures 2D:
  * https://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
+ * mais existe peut-etre une extension (a tester)
  *
  * The shaders
  * ===========
- * The shaders can be compiled either in OpenGL ES mode or in GLSL 1.5 mode,
- *  OpenGL ES mode is used by Emscripten and by non-NVIDIA GPUs (e.g. Intel
- *    and Gallium emulation layer, that do not support GLSL 1.5)
- *  Tested with:
+ * The shaders can be compiled either in OpenGL ES, GLSL 1.3 or GLSL 1.5.
+ *  OpenGL ES mode is used by Emscripten.
+ *  GLSL 1.3 mode is used by desktop OpenGL on:
  *     - Linux Intel i915
- *     - Linux Gallium CPU emulation
- *  GLSL 1.5 mode is used under MACOSX and by NVIDIA GPUs
- *  TODO: test whether OpenGL ES mode works with MACOSX (if yes, I may remove
- *    all the GLSL 1.5 code from here)
+ *     - Linux NVidia
+ *     - Windows
+ *  GLSL 1.5 mode is used by destop OpenGL on MacOSX (MacOSX supports 1.5 
+ *   but does not support 1.3)
+ *
+ * TODO: In the shaders, in/out declarations are selected by #ifdef GL_ES,
+ *  instead of testing GLSL version, is it normal ?
  */
 
 namespace {
@@ -166,8 +169,6 @@ namespace GLUP {
             primitive == GLUP_POINTS
         ) {
             glEnable(GL_POINT_SPRITE);
-            // Not needed anymore it seems
-            // glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
         }
 #endif
     }
@@ -177,19 +178,7 @@ namespace GLUP {
     }
     
     bool Context_ES2::primitive_supports_array_mode(GLUPprimitive prim) const {
-        // Commented-out for now, does not work on Mac/OSX (to be investigated)
-        /*
-        // Special case for triangles: we can draw them in array mode (without
-        // the mesh). Note: we need to make sure that a previous call
-        // initialized the shader before (therefore we test the 'implemented'
-        // flag of the primitive info).
-        if(prim == GLUP_TRIANGLES && primitive_info_[prim].implemented) {
-            return true;
-        }
-        */
-        // return Context::primitive_supports_array_mode(prim);
-
-        // Note: points, lines and triangles without mesh can support array
+        // Note: points, spheres, lines and triangles without mesh can support array
         // mode, but this will not work with picking, therefore it is disabled.
         geo_argused(prim);
         return false;
@@ -250,7 +239,7 @@ namespace GLUP {
 #else
         //TODO: it seems that standard derivatives and vertex array
         //object extension names are not prefixed with GL_OES_ in
-        //OpenGL ES mode (but it is in WebGL, oh my....)
+        //OpenGL ES mode (but they are in WebGL, oh my....)
         
         if(use_ES_profile_) {
             extension_standard_derivatives =
@@ -341,7 +330,7 @@ namespace GLUP {
             nil // no need to copy the buffer, it will be overwritten after.
         );
         
-        for(index_t i=0; i<3; ++i) {
+        for(index_t i=0; i<4; ++i) {
             glGenBuffers(1, &sliced_cells_vertex_attrib_VBO_[i]);
             glBindBuffer(GL_ARRAY_BUFFER, sliced_cells_vertex_attrib_VBO_[i]);
 
@@ -372,34 +361,18 @@ namespace GLUP {
         clip_cells_VAO_(0),
         sliced_cells_elements_VBO_(0),
         sliced_cells_VAO_(0) {
-        for(index_t i=0; i<3; ++i) {
+        for(index_t i=0; i<4; ++i) {
             sliced_cells_vertex_attrib_VBO_[i] = 0;
         }
 #if defined(GEO_OS_EMSCRIPTEN)
         use_ES_profile_ = true;
-#elif defined(GEO_OS_APPLE)
-	// do nothing, do not use ES profile, using GLSL 1.5 shaders
-#else
-	//   Intel and Gallium drivers do not support GLSL 1.5 shaders,
-	// but they support OpenGL ES shaders, therefore if we detect
-	// a non-NVIDIA GPU, we pretend that we are using OpenGL ES,
-	// so that GLUP uses shaders that are understood by the GPU.
-	const char* vendor = (const char*)glGetString(GL_VENDOR);
-	if(!strncmp(vendor,"NVIDIA",6)) {
-	    Logger::out("GLUP") << "GLUPES2 using core profile shaders"
-				<< std::endl;
-	} else {
-	    Logger::out("GLUP") << "GLUPES2 using ES2 shaders"
-				<< std::endl;
-	    use_ES_profile_ = true;
-	}
 #endif
     }
     
     Context_ES2::~Context_ES2() {
         glDeleteBuffers(1,&clip_cells_elements_VBO_);
         glupDeleteVertexArrays(1, &clip_cells_VAO_);
-        for(index_t i=0; i<3; ++i) {
+        for(index_t i=0; i<4; ++i) {
             glDeleteBuffers(1, &sliced_cells_vertex_attrib_VBO_[i]);
         }
         glupDeleteVertexArrays(1, &sliced_cells_VAO_);
@@ -469,6 +442,13 @@ namespace GLUP {
                 uniform_state_.modelview_matrix.get_pointer()
             );
             loc = glGetUniformLocation(
+                latest_program_, "GLUP_VS.projection_matrix"
+            );
+            glUniformMatrix4fv(
+                loc, 1, GL_FALSE,
+                uniform_state_.projection_matrix.get_pointer()
+            );
+            loc = glGetUniformLocation(
                 latest_program_, "GLUP_VS.texture_matrix"
             );
             glUniformMatrix4fv(
@@ -489,8 +469,90 @@ namespace GLUP {
             }
             
             glUniformMatrix3fv(loc, 1, GL_FALSE, normal_matrix);
+
+
+	    loc = glGetUniformLocation(
+		latest_program_, "GLUP_VS.inverse_modelview_matrix"		
+	    );
+	    glUniformMatrix4fv(
+		loc, 1, GL_FALSE, uniform_state_.inverse_modelview_matrix.get_pointer()
+	    );
+	    loc = glGetUniformLocation(
+		latest_program_, "GLUP_VS.inverse_projection_matrix"		
+	    );
+	    glUniformMatrix4fv(
+		loc, 1, GL_FALSE, uniform_state_.inverse_projection_matrix.get_pointer()
+	    );
+	    loc = glGetUniformLocation(
+		latest_program_, "GLUP_VS.inverse_modelviewprojection_matrix"		
+	    );
+	    glUniformMatrix4fv(
+		loc, 1, GL_FALSE, uniform_state_.inverse_modelviewprojection_matrix.get_pointer()
+	    );
+	    
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP_VS.viewport"
+            );
+	    GLint viewport[4];
+	    glGetIntegerv(GL_VIEWPORT, viewport);
+	    glUniform4f(
+		loc,
+		float(viewport[0]),
+		float(viewport[1]),
+		float(viewport[2]),
+		float(viewport[3])		
+	    );
         }
 
+	// Matrices (in fragment shader)
+	{
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP.texture_matrix"
+            );
+            glUniformMatrix4fv(
+                loc, 1, GL_FALSE,
+                uniform_state_.texture_matrix.get_pointer()
+            );
+	    loc = glGetUniformLocation(
+		latest_program_, "GLUP.modelviewprojection_matrix"		
+	    );
+	    glUniformMatrix4fv(
+		loc, 1, GL_FALSE, uniform_state_.modelviewprojection_matrix.get_pointer()
+	    );
+	    loc = glGetUniformLocation(
+		latest_program_, "GLUP.inverse_modelviewprojection_matrix"		
+	    );
+	    glUniformMatrix4fv(
+		loc, 1, GL_FALSE, uniform_state_.inverse_modelviewprojection_matrix.get_pointer()
+	    );
+
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP.normal_matrix"
+            );
+            // Normal matrix is stored in state buffer with padding.
+            float normal_matrix[9];
+            for(index_t i=0; i<3; ++i) {
+                for(index_t j=0; j<3; ++j) {
+                    normal_matrix[i*3+j] =
+                        uniform_state_.normal_matrix.get_pointer()[i*4+j];
+                }
+            }
+            glUniformMatrix3fv(loc, 1, GL_FALSE, normal_matrix);
+
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP.viewport"
+            );
+	    GLint viewport[4];
+	    glGetIntegerv(GL_VIEWPORT, viewport);
+	    glUniform4f(
+		loc,
+		float(viewport[0]),
+		float(viewport[1]),
+		float(viewport[2]),
+		float(viewport[3])		
+	    );
+	}
+	
         // Points (in vertex shader).
         {
             loc = glGetUniformLocation(
@@ -594,6 +656,12 @@ namespace GLUP {
             glUniform4fv(
                 loc, 1, uniform_state_.world_clip_plane.get_pointer()
             );
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP.world_clip_plane"
+            );
+            glUniform4fv(
+                loc, 1, uniform_state_.world_clip_plane.get_pointer()
+            );
         }
     }
 
@@ -622,7 +690,7 @@ namespace GLUP {
             GLSL::compile_program_with_includes_no_link(
                 this,
                 "//stage GL_VERTEX_SHADER\n"
-                "//import <GLUPES/points_and_lines_vertex_shader.h>\n",
+                "//import <GLUPES/points_vertex_shader.h>\n",
                 "//stage GL_FRAGMENT_SHADER\n"
                 "//import <GLUPES/points_fragment_shader.h>\n"                
             )
@@ -635,7 +703,7 @@ namespace GLUP {
             GLSL::compile_program_with_includes_no_link(
                 this,
                 "//stage GL_VERTEX_SHADER\n"
-                "//import <GLUPES/points_and_lines_vertex_shader.h>\n",
+                "//import <GLUPES/vertex_shader.h>\n",
                 "//stage GL_FRAGMENT_SHADER\n"
                 "//import <GLUPES/lines_fragment_shader.h>\n"                
             )
@@ -749,6 +817,19 @@ namespace GLUP {
         );
     }
 
+    void Context_ES2::setup_GLUP_SPHERES() {
+        set_primitive_info(
+            GLUP_SPHERES, GL_POINTS,
+            GLSL::compile_program_with_includes_no_link(
+                this,
+                "//stage GL_VERTEX_SHADER\n"
+                "//import <GLUPES/spheres_vertex_shader.h>\n",
+                "//stage GL_FRAGMENT_SHADER\n"
+                "//import <GLUPES/spheres_fragment_shader.h>\n"                
+            )
+        );
+    }
+    
     bool Context_ES2::cell_by_cell_clipping() const {
         if(!uniform_state_.toggle[GLUP_CLIPPING].get()) {
             return false;
@@ -844,12 +925,12 @@ namespace GLUP {
                 uniform_state_.toggle[GLUP_DRAW_MESH].get()
             ) || uniform_state_.toggle[GLUP_PICKING].get())
         ) {
-            glEnableVertexAttribArray(3);
+            glEnableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
             glBindBuffer(
                 GL_ARRAY_BUFFER, vertex_id_VBO_
             );
             glVertexAttribPointer(
-                3,                 // Attribute number 3
+                GLUP_VERTEX_ID_ATTRIBUTE,
                 1,                 // 1 component per attribute
                 GL_UNSIGNED_SHORT, // components are 16 bits integers
                 GL_FALSE,          // do not normalize
@@ -857,7 +938,7 @@ namespace GLUP {
                 0                  // pointer (relative to bound VBO beginning)
             );
         } else {
-            glDisableVertexAttribArray(3);
+            glDisableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
         }
         
         // Stream the indices into the elements VBO.
@@ -876,7 +957,7 @@ namespace GLUP {
         );
         
         glupBindVertexArray(0);
-        glDisableVertexAttribArray(3);
+        glDisableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
         immediate_state_.reset();
     }
 
@@ -903,6 +984,7 @@ namespace GLUP {
         case GLUP_LINES:
         case GLUP_TRIANGLES:
         case GLUP_QUADS:
+	case GLUP_SPHERES:
         case GLUP_NB_PRIMITIVES:
             geo_assert_not_reached;
         }
@@ -940,7 +1022,7 @@ namespace GLUP {
                     &isect_vertex_attribute_[0][0]
                 );
 
-                for(index_t i=1; i<3; ++i) {
+                for(index_t i=1; i<4; ++i) {
                     if(immediate_state_.buffer[i].is_enabled()) {
                         glEnableVertexAttribArray(i);
                         stream_buffer_object(
@@ -1049,6 +1131,7 @@ namespace GLUP {
         case GLUP_LINES:
         case GLUP_PYRAMIDS:
         case GLUP_CONNECTORS:
+	case GLUP_SPHERES:
             sources.push_back(
                 "#define GLUP_NO_MESH_TEX_COORDS\n"
                 "vec4 get_mesh_tex_coord(in int vertex_id) {\n"
@@ -1072,7 +1155,11 @@ namespace GLUP {
             );
         } else {
             sources.push_back(
-                "#version 150 core          \n"
+#ifdef GEO_OS_APPLE		
+		"#version 150 core          \n"
+#else		
+                "#version 130               \n"
+#endif		
                 "#define GLUP_VERTEX_SHADER \n"
             );
         }
@@ -1087,9 +1174,11 @@ namespace GLUP {
                 "#version 100                                    \n"
                 "#define GLUP_FRAGMENT_SHADER                    \n"
                 "#extension GL_OES_standard_derivatives : enable \n"
-                "#ifdef GL_EXT_frag_depth                        \n"
-                "   #extension GL_EXT_frag_depth : enable        \n"
-                "#endif                                          \n"
+                "#extension GL_EXT_frag_depth : enable           \n"
+		"#extension GL_OES_texture3D : enable            \n"		
+		"#ifndef GL_OES_texture3D                        \n"
+		"   #define GLUP_NO_TEXTURE_3D                   \n"		
+		"#endif                                          \n"
                 "precision mediump float;                        \n"
                 "#ifdef GL_FRAGMENT_PRECISION_HIGH               \n"
                 "   precision highp int;                         \n"
@@ -1097,14 +1186,15 @@ namespace GLUP {
             );
         } else {
             sources.push_back(
-                "#version 150 core                               \n"
+#ifdef GEO_OS_APPLE		
+		"#version 150 core                               \n"
+#else		
+                "#version 130                                    \n"
+#endif		
                 "#define GLUP_FRAGMENT_SHADER                    \n"
-                "#ifdef GL_EXT_frag_depth                        \n"
-                "   #extension GL_EXT_frag_depth : enable        \n"
-                "#endif                                          \n"
+                "#extension GL_EXT_frag_depth: enable            \n"
             );
         }
-        sources.push_back("#define GLUP_NO_TEXTURE_3D\n");
     }
 
     void Context_ES2::get_toggles_pseudo_file(

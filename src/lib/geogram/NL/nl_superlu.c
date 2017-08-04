@@ -271,7 +271,7 @@ typedef void (*FUNPTR_sp_preorder)(
    superlu_options_t *, SuperMatrix*, int*, int*, SuperMatrix*
 );
 typedef int (*FUNPTR_sp_ienv)(int);
-typedef int (*FUNPTR_input_error)(char *, int *);
+typedef int (*FUNPTR_input_error)(const char *, int *);
 
 typedef void (*FUNPTR_dgstrf) (superlu_options_t *options, SuperMatrix *A,
         int relax, int panel_size, int *etree, void *work, int lwork,

@@ -220,36 +220,74 @@ NLboolean nlInitExtension_ARPACK(void) {
 
 /**
  * \brief Creates the OPerator used by ARPACK
- * \param[in] A the left-hand side matrix
- * \param[in] B the optional right-hand side matrix or NULL if unspecified
- * \param[in] shift the shift used in the spectral transform
+ * \param[in] symmetric NL_TRUE if matrix is symmetric and there is no
+ *  right-hand side matrix. NL_FALSE otherwise.
  */
-static NLMatrix create_OP(NLMatrix A, NLMatrix B, double shift, NLboolean symmetric) {
+static NLMatrix create_OP(NLboolean symmetric) {
+    NLuint n = nlCurrentContext->M->n;
+    NLuint i;
     NLMatrix result = NULL;
-    nl_assert(shift == 0.0); /* For now, shift spectral transform unsupported */
-    if(nlCurrentContext->verbose) {
-	fprintf(stderr, "Factorizing matrix...\n");
-    }
     
-    /* 
-     * OP = A^{-1} 
-     */
-    result = nlMatrixFactorize(
-	A, symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
-    );
-    if(nlCurrentContext->verbose) {
-	fprintf(stderr, "Matrix factorized\n");
-    }
-    
-    if(B != NULL) {
+	
+    if(nlCurrentContext->eigen_shift != 0.0) {
+	/*
+	 * A = M
+	 */
+	NLSparseMatrix* A = NL_NEW(NLSparseMatrix);
+	nlSparseMatrixConstruct(A, n, n, NL_MATRIX_STORE_ROWS);
+	nlSparseMatrixAddMatrix(A, 1.0, nlCurrentContext->M);
+	if(nlCurrentContext->B == NULL) {
+	    /*
+	     * A = A - shift * Id
+	     */
+	    for(i=0; i<n; ++i) {
+		nlSparseMatrixAdd(A, i, i, -nlCurrentContext->eigen_shift);
+	    }
+	} else {
+	    /*
+	     * A = A - shift * B
+	     */
+	    nlSparseMatrixAddMatrix(A, -nlCurrentContext->eigen_shift, nlCurrentContext->B);
+	}
+
 	/* 
-	 * OP = A^{-1} * B 
+	 * OP = A^{-1} 
+	 */
+	if(nlCurrentContext->verbose) {
+	    fprintf(stderr, "Factorizing matrix...\n");
+	}
+	result = nlMatrixFactorize(
+	    (NLMatrix)A, symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
+	);
+	if(nlCurrentContext->verbose) {
+	    fprintf(stderr, "Matrix factorized\n");
+	}
+	nlDeleteMatrix((NLMatrix)A);
+    } else {
+	/* 
+	 * OP = M^{-1} 
+	 */
+	if(nlCurrentContext->verbose) {
+	    fprintf(stderr, "Factorizing matrix...\n");
+	}
+	result = nlMatrixFactorize(
+	    nlCurrentContext->M, symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
+	    );
+	if(nlCurrentContext->verbose) {
+	    fprintf(stderr, "Matrix factorized\n");
+	}
+    }
+    
+    if(nlCurrentContext->B != NULL) {
+	/* 
+	 * OP = OP * B
 	 */	
 	result = nlMatrixNewFromProduct(
-	    result, NL_TRUE,
-	    B, NL_FALSE
+	    result, NL_TRUE, /* mem. ownership transferred */
+	    nlCurrentContext->B, NL_FALSE  /* mem. ownership kept by context */
 	);
     }
+
     return result;
 }
 
@@ -265,13 +303,11 @@ static int eigencompare(const void* pi, const void* pj) {
 }
 
 void nlEigenSolve_ARPACK(void) {
+    NLboolean symmetric = nlCurrentContext->symmetric && (nlCurrentContext->B == NULL); 
     int n = (int)nlCurrentContext->M->n; /* Dimension of the matrix */
     int nev = /* Number of eigenvectors requested */
 	(int)nlCurrentContext->nb_systems;
-    NLboolean symmetric = nlCurrentContext->symmetric;    
-    NLMatrix OP = create_OP(
-	nlCurrentContext->M, nlCurrentContext->B, nlCurrentContext->eigen_shift, symmetric
-    );
+    NLMatrix OP = create_OP(symmetric);
     int ncv = (int)(nev * 2.5); /* Length of Arnoldi factorization */
                  /* Rule of thumb in ARPACK documentation: ncv > 2 * nev */
     int* iparam = NULL;
@@ -289,9 +325,9 @@ void nlEigenSolve_ARPACK(void) {
     int ierr;
     int i,k,kk;
     int ldv = (int)n;
-    char* bmat = (char*)"I";  /* Standard problem */
-    char* which = (char*)"LM"; /* Largest eigenvalues, but we invert->smallest */
-    char* howmny = (char*)"A"; /* which eigens should be computed: all */
+    char* bmat = (char*)"I";   /*Standard problem */
+    char* which = (char*)"LM"; /*Largest eigenvalues, but we invert->smallest */
+    char* howmny = (char*)"A"; /*which eigens should be computed: all */
     double tol = nlCurrentContext->threshold;
     int ido = 0;  /* reverse communication variable (which operation ?) */
     int info = 1; /* start with initial value of resid */
@@ -369,8 +405,8 @@ void nlEigenSolve_ARPACK(void) {
 	if(ido == 1) {
 	    nlMultMatrixVector(
 		OP,
-		workd+ipntr[1-1]-1, /* The "-1"'s are for FORTRAN-to-C conversion */
-		workd+ipntr[2-1]-1  /*  to keep the same indices as in ARPACK doc */
+		workd+ipntr[1-1]-1, /*The "-1"'s are for FORTRAN-to-C conversion */
+		workd+ipntr[2-1]-1  /*to keep the same indices as in ARPACK doc */
 	    );
 	} else {
 	    converged = NL_TRUE;
@@ -432,7 +468,7 @@ void nlEigenSolve_ARPACK(void) {
 		}
 	    } else {
 		if(symmetric) {
-		    fprintf(stderr, "dseupd() OK, nconv= %d\n", iparam[3-1]);		
+		    fprintf(stderr, "dseupd() OK, nconv= %d\n", iparam[3-1]);
 		} else {
 		    fprintf(stderr, "dneupd() OK, nconv= %d\n", iparam[3-1]);
 		}
@@ -470,7 +506,9 @@ void nlEigenSolve_ARPACK(void) {
 		index = (int)nlCurrentContext->variable_index[i];
 		nl_assert(index < n);
 		value = v[kk*n+index];
-		NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],(NLuint)i) = value;
+		NL_BUFFER_ITEM(
+		    nlCurrentContext->variable_buffer[k],(NLuint)i
+		) = value;
 	    }
 	}
     }

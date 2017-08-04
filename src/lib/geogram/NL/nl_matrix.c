@@ -353,14 +353,7 @@ static void nlSparseMatrixDestroyRowColumns(NLSparseMatrix* M) {
     M->storage = (NLenum)((int)(M->storage) & ~NL_MATRIX_STORE_COLUMNS);    
 }
 
-/**
- * \brief Destroys an NLSparseMatrix
- * \details Only the memory allocated by the NLSparseMatrix
- *  is freed. The NLSparseMatrix structure is not freed.
- * \param[in,out] M a pointer to an NLSparseMatrix
- * \relates NLSparseMatrix
- */
-static void nlSparseMatrixDestroy(NLSparseMatrix* M) {
+void nlSparseMatrixDestroy(NLSparseMatrix* M) {
     nl_assert(M->type == NL_MATRIX_SPARSE_DYNAMIC);
     nlSparseMatrixDestroyRowColumns(M);
     NL_DELETE_ARRAY(M->diag);
@@ -385,6 +378,73 @@ void nlSparseMatrixAdd(NLSparseMatrix* M, NLuint i, NLuint j, NLdouble value) {
         nlRowColumnAdd(&(M->column[j]), i, value);
     }
 }
+
+static void nlSparseMatrixAddSparseMatrix(
+    NLSparseMatrix* M, double mul, const NLSparseMatrix* N    
+) {
+    NLuint i,j,ii,jj;
+    nl_assert(M->m == N->m);
+    nl_assert(M->n == N->n);
+    if(N->storage & NL_MATRIX_STORE_SYMMETRIC) {
+	nl_assert(M->storage & NL_MATRIX_STORE_SYMMETRIC);
+    }
+    if(N->storage & NL_MATRIX_STORE_ROWS) {
+	for(i=0; i<N->m; ++i) {
+	    for(jj=0; jj<N->row[i].size; ++jj) {
+		nlSparseMatrixAdd(
+		    M,
+		    i, N->row[i].coeff[jj].index,
+		    mul*N->row[i].coeff[jj].value
+		);
+	    }
+	}
+    } else {
+	nl_assert(N->storage & NL_MATRIX_STORE_COLUMNS);	
+	for(j=0; j<N->n; ++j) {
+	    for(ii=0; ii<N->column[j].size; ++ii) {
+		nlSparseMatrixAdd(
+		    M,
+		    N->column[j].coeff[ii].index, j,
+		    mul*N->column[j].coeff[ii].value
+		);
+	    }
+	}
+    }
+}
+
+static void nlSparseMatrixAddCRSMatrix(
+    NLSparseMatrix* M, double mul, const NLCRSMatrix* N    
+) {
+    NLuint i,jj;
+    nl_assert(M->m == N->m);
+    nl_assert(M->n == N->n);
+    for(i=0; i<M->m; ++i) {
+	for(jj=N->rowptr[i]; jj<N->rowptr[i+1]; ++jj) {
+	    nlSparseMatrixAdd(
+		M,
+		i,
+		N->colind[jj],
+		mul*N->val[jj]
+	    );
+	}
+    }
+}
+
+void nlSparseMatrixAddMatrix(
+    NLSparseMatrix* M, double mul, const NLMatrix N
+) {
+    nl_assert(M->m == N->m);
+    nl_assert(M->n == N->n);
+    if(N->type == NL_MATRIX_SPARSE_DYNAMIC) {
+	nlSparseMatrixAddSparseMatrix(M, mul, (const NLSparseMatrix*)N);
+    } else if(N->type == NL_MATRIX_CRS) {
+	nlSparseMatrixAddCRSMatrix(M, mul, (const NLCRSMatrix*)N);	
+    } else {
+	nl_assert_not_reached;
+    }
+}
+    
+
 
 void nlSparseMatrixZero( NLSparseMatrix* M) {
     NLuint i;

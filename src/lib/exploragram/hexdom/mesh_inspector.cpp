@@ -78,7 +78,7 @@ namespace GEO {
         create_non_manifold_facet_adjacence(&copy);
         copy.facets.triangulate();
         try {
-            mesh_tetrahedralize(copy, false, true, 1.);
+            mesh_tetrahedralize(copy, false, false, 1.);
         }
         catch (const GEO::Delaunay::InvalidInput& error_report) {
             FOR(i, error_report.invalid_facets.size()) {

@@ -91,6 +91,8 @@ namespace {
 
             texture_ = 0;
             primitive_ = GLUP_POINTS;
+
+	    smooth_ = true;
         }
 
         /**
@@ -122,6 +124,9 @@ namespace {
             ImGui::Checkbox("colors [c]", &colors_);
             ImGui::Checkbox("texturing [t]", &texturing_);
             ImGui::Checkbox("picking [o]", &picking_);
+	    if(primitive_ == GLUP_TRIANGLES || primitive_ == GLUP_QUADS) {
+		ImGui::Checkbox("smooth", &smooth_);
+	    }
             ImGui::Separator();
             if(primitive_ == GLUP_POINTS) {
                 ImGui::SliderFloat("PtSz.", &point_size_, 1.0f, 50.0f, "%.1f");
@@ -240,7 +245,15 @@ namespace {
             // Polygons and polyhedra can be shrunk, this is useful for meshing
             // applications, sometimes makes it easier to see something.
             glupSetCellsShrink(shrink_);
-            
+
+	    if(primitive_ == GLUP_TRIANGLES || primitive_ == GLUP_QUADS) {
+		if(smooth_) {
+		    glupEnable(GLUP_VERTEX_NORMALS);
+		} else {
+		    glupDisable(GLUP_VERTEX_NORMALS);		    
+		}
+	    }
+	    
             switch(primitive_) {
                 
             case GLUP_POINTS: {
@@ -375,6 +388,8 @@ namespace {
             default:
                 break;
             }
+
+	    glupDisable(GLUP_VERTEX_NORMALS);		    	    
         }
 
         /**
@@ -512,7 +527,8 @@ namespace {
             double z = (sin(phi) + 1.0) / 2.0;
             
             glupColor3d(x,y,z);
-            glupTexCoord3d(x,y,z);                
+            glupTexCoord3d(x,y,z);
+	    glupNormal3d(x-0.5,y-0.5,z-0.5);
             glupVertex3d(x,y,z);
         }
 
@@ -527,6 +543,7 @@ namespace {
         float shrink_;
         index_t n_;
         GLuint texture_;
+	bool smooth_;
     };
       
 }

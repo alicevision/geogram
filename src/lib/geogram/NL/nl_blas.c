@@ -113,7 +113,7 @@ typedef NLint     ftnlen ;
 
 #ifndef NL_USE_BLAS
 
-static int NL_FORTRAN_WRAP(lsame)(char *ca, char *cb)
+static int NL_FORTRAN_WRAP(lsame)(const char *ca, const char *cb)
 {
 /*  -- LAPACK auxiliary routine (version 2.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -189,7 +189,7 @@ static int NL_FORTRAN_WRAP(lsame)(char *ca, char *cb)
     
 } /* lsame_ */
 
-/* Subroutine */ static int NL_FORTRAN_WRAP(xerbla)(char *srname, int *info)
+/* Subroutine */ static int NL_FORTRAN_WRAP(xerbla)(const char *srname, int *info)
 {
 /*  -- LAPACK auxiliary routine (version 2.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -665,7 +665,7 @@ L40:
 #undef DX
 #undef DY
 
-/* Subroutine */ static int NL_FORTRAN_WRAP(dgemv)(char *trans, integer *m, integer *n, doublereal *
+/* Subroutine */ static int NL_FORTRAN_WRAP(dgemv)(const char *trans, integer *m, integer *n, doublereal *
         alpha, doublereal *a, integer *lda, doublereal *x, integer *incx, 
         doublereal *beta, doublereal *y, integer *incy)
 {
@@ -1005,9 +1005,9 @@ extern void NL_FORTRAN_WRAP(dgemv)(
 /* DECK DTPSV */
 /* Subroutine */ 
 static int NL_FORTRAN_WRAP(dtpsv)(
-   char* uplo, 
-   char* trans, 
-   char* diag, 
+   const char* uplo, 
+   const char* trans, 
+   const char* diag, 
    integer* n, 
    doublereal* ap, 
    doublereal* x, 
@@ -1424,9 +1424,9 @@ void dtpsv(
     MatrixUnitTriangular diag, int n, const double *AP,
     double *x, int incx 
 ) {
-    static char *UL[2] = { "U", "L" };
-    static char *T[3]  = { "N", "T", 0 };
-    static char *D[2]  = { "U", "N" };
+    static const char *UL[2] = { "U", "L" };
+    static const char *T[3]  = { "N", "T", 0 };
+    static const char *D[2]  = { "U", "N" };
     NL_FORTRAN_WRAP(dtpsv)(
 	UL[(int)uplo],T[(int)trans],D[(int)diag],&n,(double*)AP,x,&incx
     );
@@ -1439,7 +1439,7 @@ void dgemv(
     const double *A, int ldA, const double *x, int incx,
     double beta, double *y, int incy 
 ) {
-    static char *T[3] = { "N", "T", 0 };
+    static const char *T[3] = { "N", "T", 0 };
     NL_FORTRAN_WRAP(dgemv)(
 	T[(int)trans],&m,&n,&alpha,(double*)A,&ldA,
 	(double*)x,&incx,&beta,y,&incy

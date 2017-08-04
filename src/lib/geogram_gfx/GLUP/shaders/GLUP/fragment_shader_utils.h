@@ -122,28 +122,26 @@ vec4 glup_texturing(in vec4 color, in vec4 tex_coord) {
         tex_color = glup_texture(                        
             texture1Dsampler, tex_coord.xy               
         );                                               
-    }
-#ifdef GLUP_NO_TEXTURE_3D
-    else {                                              
+    } else if(GLUP.texture_type == GLUP_TEXTURE_2D) {
         tex_color = glup_texture(                        
             texture2Dsampler, tex_coord.xy              
         );                                               
-    }                                                     
+    }
+#ifdef GLUP_NO_TEXTURE_3D
+    else {
+	tex_color = vec4(1.0, 0.0, 0.0, 1.0);
+    }
 #else
-    else if(GLUP.texture_type == GLUP_TEXTURE_2D) {            
-        tex_color = texture(                                     
-            texture2Dsampler, tex_coord.xy           
-        );                                                       
-    } else if(GLUP.texture_type == GLUP_TEXTURE_3D) {            
+    else if(GLUP.texture_type == GLUP_TEXTURE_3D) {            
         tex_color = texture(                                     
             texture3Dsampler, tex_coord.xyz           
         );                                                       
-    }                                                            
+    }
+#endif
     if(glupIsEnabled(GLUP_INDIRECT_TEXTURING)) {                           
         tex_color = GLUP.texture_matrix * tex_color;             
-        tex_color = texture(texture1Dsampler, tex_color.xy);     
+        tex_color = glup_texture(texture1Dsampler, tex_color.xy);     
     } 
-#endif    
     if(GLUP.texture_mode == GLUP_TEXTURE_REPLACE) {       
         result = tex_color;                      
     } else if(GLUP.texture_mode==GLUP_TEXTURE_MODULATE) { 
@@ -168,3 +166,12 @@ vec4 glup_lighting(in vec4 color, in vec3 normal) {
     }
     return result;
 }
+
+#ifdef GL_ES        
+#define glup_FragColor gl_FragColor
+#define glup_FragDepth gl_FragDepthEXT
+#else
+out vec4 glup_FragColor;
+#define glup_FragDepth gl_FragDepth 
+#endif
+

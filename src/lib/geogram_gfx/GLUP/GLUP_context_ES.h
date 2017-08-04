@@ -228,6 +228,11 @@ namespace GLUP {
         virtual void setup_GLUP_CONNECTORS();
 
         /**
+         * \copydoc Context::setup_GLUP_CONNECTORS()
+         */
+        virtual void setup_GLUP_SPHERES();
+	
+        /**
          * \copydoc Context::flush_immediate_buffers()
          */
         virtual void flush_immediate_buffers();
@@ -277,7 +282,7 @@ namespace GLUP {
         GLuint clip_cells_VAO_;
 
         GLuint sliced_cells_elements_VBO_;
-        GLuint sliced_cells_vertex_attrib_VBO_[3];
+        GLuint sliced_cells_vertex_attrib_VBO_[4];
         GLuint sliced_cells_VAO_;
     };
 

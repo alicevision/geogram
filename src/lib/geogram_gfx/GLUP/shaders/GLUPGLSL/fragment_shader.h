@@ -5,13 +5,15 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUP/fragment_shader_utils.h>
 
-out vec4 glup_FragColor ;                      
 in float gl_ClipDistance[];                                
 
 in VertexData {                            
     vec4 vertex_clip_space;                       
     vec4 color;                             
     vec4 tex_coord;
+#if GLUP_PRIMITIVE_DIMENSION==2        
+    vec3 normal;
+#endif    
     vec4 mesh_tex_coord;
 } FragmentIn;                              
 
@@ -77,10 +79,28 @@ void main() {
         result = glup_texturing(result, FragmentIn.tex_coord);
     }
     if(glupIsEnabled(GLUP_LIGHTING)) {
-        vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);                     
-        vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);                 
-        vec3 N = normalize(cross(U,V));
-        result = glup_lighting(result, N);
+	vec3 N;
+#if GLUP_PRIMITIVE_DIMENSION==2    	
+	if(glupIsEnabled(GLUP_VERTEX_NORMALS)) {
+	    N = normalize(FragmentIn.normal);
+	    if(!gl_FrontFacing) {
+		N = -N;
+	    }
+	} else
+#endif
+	{
+	    vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);                     
+	    vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);
+	    mat3 M = transpose(
+		mat3(
+		    GLUP.projection_matrix[0].xyz,
+		    GLUP.projection_matrix[1].xyz,
+		    GLUP.projection_matrix[2].xyz
+		)
+	    );
+	    N = -normalize(M*cross(U,V));
+	}
+	result = glup_lighting(result, N);
     }
     if(glupIsEnabled(GLUP_DRAW_MESH)) {
         result = glup_draw_mesh(result, FragmentIn.mesh_tex_coord);

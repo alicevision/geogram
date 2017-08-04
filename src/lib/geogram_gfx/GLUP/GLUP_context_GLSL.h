@@ -129,6 +129,11 @@ namespace GLUP {
         virtual void setup_GLUP_CONNECTORS();
 
         /**
+         * \copydoc Context::setup_GLUP_SPHERES()
+         */
+        virtual void setup_GLUP_SPHERES();
+	
+        /**
          * \copydoc Context::get_vertex_shader_preamble_pseudo_file()
          */
         virtual void get_vertex_shader_preamble_pseudo_file(

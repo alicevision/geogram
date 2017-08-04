@@ -2529,10 +2529,19 @@ namespace GEO {
 
         /**
          * \brief Gets the list of all scalar attributes.
-         * \return a ';'-separated list of all scalar attributes.
+         * \return a ';'-separated list of all scalar attributes. 
          */
         std::string get_scalar_attributes() const;
 
+
+	/**
+	 * \brief Gets the list of all vector attributes.
+	 * \param[in] max_dim if non-zero, only vector attributes of
+	 *  dimension lower than \p max_dim are returned.
+	 * \return a ';'-separated list of all vector attributes.
+	 */
+	std::string get_vector_attributes(index_t max_dim = 0) const;
+	
         /**
          * \brief Gets the number of subelements types.
          * \return the number of subelements types.

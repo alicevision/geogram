@@ -86,6 +86,7 @@ namespace GLUP {
         case GLUP_LINES:
         case GLUP_TRIANGLES:
         case GLUP_QUADS:
+        case GLUP_SPHERES:	    
         case GLUP_NB_PRIMITIVES:
             geo_assert_not_reached;
         }
@@ -148,47 +149,16 @@ namespace GLUP {
         ;
 
         GLSL_compute_intersections_ = std::string() +
-
-            /*
-        "  vec4 isect_point[cell_nb_edges];                   \n"
-        "  vec4 isect_color[cell_nb_edges];                   \n"
-        "  vec4 isect_tex_coord[cell_nb_edges];               \n"
-        "  void compute_intersection(int i, int v1, int v2) { \n"
-        "      vec4 p1 = vertex_in(v1);                       \n"
-        "      vec4 p2 = vertex_in(v2);                       \n"
-        "      float t = -dot(p1, GLUP.world_clip_plane);     \n"
-        "      float d = dot(p2-p1, GLUP.world_clip_plane);   \n"
-        "      if(abs(d) < 1e-6) { t = 0.5; } else { t /= d; }\n"
-        "      isect_point[i] =                               \n"
-        "        GLUP.modelviewprojection_matrix*mix(p1,p2,t);\n"
-        "      if(vertex_colors_enabled()) {                  \n"
-        "         isect_color[i] = mix(                       \n"
-        "             color_in(v1), color_in(v2), t           \n"
-        "         );                                          \n"    
-        "      }                                              \n"
-        "      if(texturing_enabled()) {                      \n"
-        "         isect_tex_coord[i] = mix(                   \n"
-        "             tex_coord_in(v1), tex_coord_in(v2), t   \n"
-        "         );                                          \n"    
-        "      }                                              \n"    
-        "  }                                                  \n"    
-        "  void compute_intersections() {                     \n"
-        ;
-        */
-
         "  vec4 isect_point_clip_space[cell_nb_edges];        \n"
-        "  vec4 isect_point_screen_space[cell_nb_edges];      \n"
         "  vec4 isect_color[cell_nb_edges];                   \n"
         "  vec4 isect_tex_coord[cell_nb_edges];               \n"
         "  void compute_intersection(int i, int v1, int v2) { \n"
         "      vec4 p1 = vertex_clip_space_in(v1);            \n"
         "      vec4 p2 = vertex_clip_space_in(v2);            \n"
-        "      float t = -dot(p1, GLUP.clip_plane);           \n"
-        "      float d = dot(p2-p1, GLUP.clip_plane);         \n"
+        "      float t = -dot(p1, GLUP.clip_clip_plane);      \n"
+        "      float d = dot(p2-p1, GLUP.clip_clip_plane);    \n"
         "      if(abs(d) < 1e-6) { t = 0.5; } else { t /= d; }\n"
         "      isect_point_clip_space[i] = mix(p1,p2,t);      \n"
-        "      isect_point_screen_space[i] =                  \n"
-        "    GLUP.projection_matrix*isect_point_clip_space[i];\n"
         "      if(glupIsEnabled(GLUP_VERTEX_COLORS)) {        \n"
         "         isect_color[i] = mix(                       \n"
         "             color_in(v1), color_in(v2), t           \n"

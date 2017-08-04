@@ -22,7 +22,8 @@ const int GLUP_TETRAHEDRA =4;
 const int GLUP_HEXAHEDRA  =5;               
 const int GLUP_PRISMS     =6;               
 const int GLUP_PYRAMIDS   =7;               
-const int GLUP_CONNECTORS =8;                                    
+const int GLUP_CONNECTORS =8;
+const int GLUP_SPHERES    =9;                                    
 
 const int GLUP_LIGHTING           =0;
 const int GLUP_VERTEX_COLORS      =1;
@@ -30,4 +31,6 @@ const int GLUP_TEXTURING          =2;
 const int GLUP_DRAW_MESH          =3;
 const int GLUP_CLIPPING           =4;
 const int GLUP_INDIRECT_TEXTURING =5;
-const int GLUP_PICKING            =6;
+const int GLUP_VERTEX_NORMALS     =6;
+const int GLUP_PICKING            =7;
+

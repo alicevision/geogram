@@ -878,7 +878,8 @@ void nlMatrixMode(NLenum matrix) {
 		}
 		nlCurrentContext->B = (NLMatrix)(NL_NEW(NLSparseMatrix));
 		nlSparseMatrixConstruct(
-		    (NLSparseMatrix*)(nlCurrentContext->B), n, n, NL_MATRIX_STORE_ROWS
+		    (NLSparseMatrix*)(nlCurrentContext->B),
+		    n, n, NL_MATRIX_STORE_ROWS
 		);
 	    }
 	} break ;
@@ -922,13 +923,17 @@ void nlEigenSolverParameteri(
 }
 
 void nlEigenSolve() {
-    if(getenv("NL_LOW_MEM") == NULL) {
-	nlMatrixCompress(&nlCurrentContext->M);
-	if(nlCurrentContext->B != NULL) {
-	    nlMatrixCompress(&nlCurrentContext->B);
-	}
-    }    
-    nlCurrentContext->eigen_value = NL_NEW_ARRAY(NLdouble,nlCurrentContext->nb_systems);
+    if(nlCurrentContext->eigen_value == NULL) {
+	nlCurrentContext->eigen_value = NL_NEW_ARRAY(
+	    NLdouble,nlCurrentContext->nb_systems
+	);
+    }
+    
+    nlMatrixCompress(&nlCurrentContext->M);
+    if(nlCurrentContext->B != NULL) {
+	nlMatrixCompress(&nlCurrentContext->B);
+    }
+    
     switch(nlCurrentContext->eigen_solver) {
 	case NL_ARPACK_EXT:
 	    nlEigenSolve_ARPACK();

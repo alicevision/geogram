@@ -3,7 +3,7 @@
 int compute_config() {                               
     int result = 0;                                    
     for(int v=0; v<cell_nb_vertices; ++v) {            
-        if(dot(vertex_clip_space_in(v),GLUP.clip_plane) > 0.0) {
+        if(dot(vertex_clip_space_in(v),GLUP.clip_clip_plane) > 0.0) {
             result = result | (1 << v);                   
         }                                                
     }                                                   
@@ -12,7 +12,7 @@ int compute_config() {
 
 void emit_isect_vertex(in int i, in vec4 mesh_tex_coord) {                   
     gl_ClipDistance[0] = 1.0;                         
-    gl_Position = isect_point_screen_space[i];                     
+    gl_Position = isect_point_clip_space[i];                     
     if(glupIsEnabled(GLUP_VERTEX_COLORS)) {
         VertexOut.color = isect_color[i];            
     }                                                 
@@ -23,7 +23,7 @@ void emit_isect_vertex(in int i, in vec4 mesh_tex_coord) {
         VertexOut.mesh_tex_coord = mesh_tex_coord;
     }
     if(glupIsEnabled(GLUP_LIGHTING)) {
-        VertexOut.vertex_clip_space = isect_point_clip_space[i];
+        VertexOut.vertex_clip_space = gl_Position;
     }
     EmitVertex();                                     
 }                                                    

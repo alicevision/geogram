@@ -5,23 +5,16 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUPES/fragment_shader_utils.h>
 
-#ifdef GL_ES
-   varying vec3 vertex_clip_space;                            
-   varying float clip_dist;                                   
-   varying vec4 color;                                        
-   varying vec4 tex_coord;                                    
-   varying vec4 mesh_tex_coord;                               
-   varying highp float primitive_id;                          
-#define glup_FragColor gl_FragColor
-#else
-   in vec3 vertex_clip_space;                                 
-   in float clip_dist;                                 
-   in vec4 color;                                     
-   in vec4 tex_coord;                                 
-   in vec4 mesh_tex_coord;                            
-   flat in highp int primitive_id;
-   out vec4 glup_FragColor;
-#endif                                                        
+   glup_in vec3 vertex_view_space;                                 
+   glup_in float clip_dist;                                 
+   glup_in vec4 color;                                     
+   glup_in vec4 tex_coord;
+   glup_in vec4 mesh_tex_coord;
+   glup_flat glup_in glup_id primitive_id;
+
+#if GLUP_PRIMITIVE_DIMENSION==2
+   glup_in vec3 normal;
+#endif
 
 
 void main() {
@@ -43,9 +36,25 @@ void main() {
 
     vec3 N;
     if(glupIsEnabled(GLUP_LIGHTING)) {
-        vec3 U = dFdx(vertex_clip_space);                     
-        vec3 V = dFdy(vertex_clip_space);                 
-        N = normalize(cross(U,V));                       
+#if GLUP_PRIMITIVE_DIMENSION==2		
+	if(glupIsEnabled(GLUP_VERTEX_NORMALS)) {
+	    N = normalize(normal);
+	    if(!gl_FrontFacing) {
+		N = -N;
+	    }
+	} else
+#endif
+	{
+	    // Note: we still compute view space vertex
+	    // in vertex shader, because we seemingly do
+	    // not have sufficient precision to do the same
+	    // trick as in GLUP_GLSL (i.e. going back to
+	    // view space from clip space using projection
+	    // matrix).
+	    vec3 U = dFdx(vertex_view_space);                     
+	    vec3 V = dFdy(vertex_view_space);                 
+	    N = normalize(cross(U,V));
+	}
     }
     
     glup_FragColor = glup_shading(

@@ -141,6 +141,12 @@ extern "C" {
      * \retval GLfalse otherwise
      */
     GLboolean glup_viewer_test_arg_string(const char* param, const char* arg);
+
+
+    /**
+     * \brief Gets the screen size from the arglist and sends it to GLUP.
+     */
+    void glup_viewer_set_screen_size_from_args();
     
 #ifdef __cplusplus
 }

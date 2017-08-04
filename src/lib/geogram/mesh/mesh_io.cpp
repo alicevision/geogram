@@ -1663,7 +1663,7 @@ namespace GEO {
             const MeshIOFlags& ioflags
         ) {
             geo_argused(ioflags);
-
+            
             // Note: Vertices indexes start by 0 in off format.
 
             LineInput in(filename);
@@ -1737,10 +1737,10 @@ namespace GEO {
                 set_mesh_point(M, i, xyz, 3);
             }
 
-            if(ioflags.has_element(MESH_FACETS)) {
+            if(ioflags.has_element(MESH_FACETS) || ioflags.has_element(MESH_EDGES)) {
                 while(!in.eof() && in.get_line()) {
                     in.get_fields();
-                    if(in.nb_fields() < 4) {
+                   /* if(in.nb_fields() < 4) {
                         Logger::err("I/O")
                             << "Line " << in.line_number()
                             << ": facet line only has " << in.nb_fields()
@@ -1748,7 +1748,7 @@ namespace GEO {
                             << " at least 3 corner fields)"
                             << std::endl;
                         return false;
-                    }
+                    }*/
                     index_t nb_facet_vertices = in.field_as_uint(0);
                     
                     // Note: there can be more fields than the number
@@ -1765,20 +1765,36 @@ namespace GEO {
                             << std::endl;
                         return false;
                     }
-                    index_t f = M.facets.create_polygon(nb_facet_vertices);
                     
-                    for(index_t j = 0; j < nb_facet_vertices; j++) {
-                        index_t vertex_index = in.field_as_uint(j + 1);
-                        if(vertex_index >= M.vertices.nb()) {
-                            Logger::err("I/O")
-                                << "Line " << in.line_number()
-                                << ": facet corner #" << j
-                                << " references an invalid vertex: "
-                                << vertex_index
-                                << std::endl;
-                            return false;
+                    if(nb_facet_vertices >= 3) {    
+                        index_t f = M.facets.create_polygon(nb_facet_vertices);
+
+                        for(index_t j = 0; j < nb_facet_vertices; j++) {
+                            index_t vertex_index = in.field_as_uint(j + 1);
+                            if(vertex_index >= M.vertices.nb()) {
+                                Logger::err("I/O")
+                                    << "Line " << in.line_number()
+                                    << ": facet corner #" << j
+                                    << " references an invalid vertex: "
+                                    << vertex_index
+                                    << std::endl;
+                                return false;
+                            }
+                            M.facets.set_vertex(f, j, vertex_index);
                         }
-                        M.facets.set_vertex(f, j, vertex_index);
+                    } else if(nb_facet_vertices == 2) {    
+                        index_t vertex_index0=in.field_as_uint(1);
+                        index_t vertex_index1=in.field_as_uint(2);
+                        
+                        if(vertex_index0 >= M.vertices.nb() || vertex_index1 >= M.vertices.nb()) {
+                                Logger::err("I/O")
+                                    << "Line " << in.line_number()
+                                    << ": edge"
+                                    << " references an invalid vertex: "
+                                    << vertex_index0 <<" or "<<vertex_index1
+                                    << std::endl;
+                                return false; }
+                        M.edges.create_edge(vertex_index0, vertex_index1);
                     }
                 }
             }
@@ -1803,9 +1819,14 @@ namespace GEO {
             }
             output << "OFF" << std::endl;
 
-            output << M.vertices.nb() << " "
+            /*output << M.vertices.nb() << " "
                 << M.facets.nb() << " "
                 << M.facet_corners.nb() / 2
+                << std::endl;*/
+            
+            output << M.vertices.nb() << " "
+                << M.facets.nb() << " "
+                << M.edges.nb()
                 << std::endl;
 
             // Output Vertices
@@ -1826,6 +1847,14 @@ namespace GEO {
                         output << M.facet_corners.vertex(c) << " ";
                     }
                     output << std::endl;
+                }
+            }
+            
+            if(ioflags.has_element(MESH_EDGES)) {
+                // Output edges
+                for(index_t e = 0; e < M.edges.nb(); ++e) 
+                {
+                    output << "2 "<< M.edges.vertex(e, 0)<<" "<<M.edges.vertex(e, 1)<< std::endl;
                 }
             }
             return true;
@@ -3281,7 +3310,95 @@ namespace GEO {
             return false;
         }
     };
-    
+
+   
+    /**
+     * \brief IO handler for PDB (Protein DataBase) files.
+     */ 
+    class PDBIOHandler : public MeshIOHandler {
+    public:
+        virtual bool load(
+            const std::string& filename, Mesh& M,
+            const MeshIOFlags& ioflags
+        ) {
+	    geo_argused(ioflags);
+	    M.clear();
+	    M.vertices.set_dimension(3);
+	    std::ifstream in(filename.c_str());
+	    if(!in) {
+		return false;
+	    }
+	    Attribute<char> atom_type(M.vertices.attributes(), "atom_type");
+	    Attribute<char> chain_id(M.vertices.attributes(), "chain_id");
+	    while(in) {
+		std::string line;
+		getline(in, line);
+		while(line.length() < 80) {
+		    line.push_back(' ');
+		}
+		std::string record_name = get_columns(line, 1, 6) ;
+		if(record_name == "ATOM  " || record_name == "HETATM") {
+		    std::string serial      = get_columns(line, 7, 11);
+		    std::string name        = get_columns(line, 11, 16);
+		    std::string altLoc      = get_columns(line, 17, 17);
+		    std::string resName     = get_columns(line, 18, 20);
+		    std::string chainID     = get_columns(line, 22, 22);
+		    std::string resSeq      = get_columns(line, 23, 26);
+		    std::string iCode       = get_columns(line, 27, 27);
+		    double x          = to_double(get_columns(line, 31, 38));
+		    double y          = to_double(get_columns(line, 39, 46));
+		    double z          = to_double(get_columns(line, 47, 54));
+		    //double occupancy  = to_double(get_columns(line, 55, 60));
+		    //double tempFactor = to_double(get_columns(line, 61, 66));
+		    std::string element     = get_columns(line, 77, 78);
+		    std::string charge      = get_columns(line, 79, 80);
+
+		    index_t v = M.vertices.create_vertex();
+		    if(M.vertices.single_precision()) {
+			M.vertices.single_precision_point_ptr(v)[0] = float(x);
+			M.vertices.single_precision_point_ptr(v)[1] = float(y);
+			M.vertices.single_precision_point_ptr(v)[2] = float(z);
+		    } else {
+			M.vertices.point_ptr(v)[0] = x;
+			M.vertices.point_ptr(v)[1] = y;
+			M.vertices.point_ptr(v)[2] = z;
+		    }
+		    atom_type[v] = name[3];
+		    chain_id[v] = chainID[0];
+		}
+	    }
+	    return true;
+	}
+       
+        /**
+         * \copydoc MeshIOHandler::save()
+         */
+        virtual bool save(
+            const Mesh& M, const std::string& filename,
+            const MeshIOFlags& ioflags = MeshIOFlags()
+        ) {
+            geo_argused(M);
+            geo_argused(filename);
+            geo_argused(ioflags);
+            Logger::err("I/O")
+                << "PDB file format not supported for writing"
+                << std::endl;
+            return false;
+        }
+    protected:
+	
+	inline std::string get_columns(
+	    const std::string& s, unsigned int from_c, unsigned int to_c
+	) const {
+	    return s.substr(from_c - 1, to_c - from_c + 1) ;
+	}
+	
+	inline double to_double(const std::string& s) {
+	    return String::to_double(s);
+	}
+    };
+   
+   
 }
 
 /****************************************************************************/
@@ -3463,6 +3580,8 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram");
         geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram_ascii");
         geo_register_MeshIOHandler_creator(GraphiteIOHandler, "graphite");
+        geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb");
+        geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb1");		
     }
 
     

@@ -56,11 +56,14 @@ namespace GLUP {
     using namespace GEO;
 
     /***********************************************************************/
-
+    
+    GLuint create_sphere_display_list();
+	
     Context_VanillaGL::Context_VanillaGL() {
         use_core_profile_ = false;
         use_ES_profile_ = false;
         indirect_texturing_program_ = 0;
+	sphere_display_list_ = create_sphere_display_list();
     }
 
     Context_VanillaGL::~Context_VanillaGL() {
@@ -68,6 +71,10 @@ namespace GLUP {
             glDeleteProgramsARB(1, &indirect_texturing_program_);
             indirect_texturing_program_ = 0;
         }
+	if(sphere_display_list_ != 0) {
+	    glDeleteLists(sphere_display_list_, 1);
+	    sphere_display_list_ = 0;
+	}
     }
 
     const char* Context_VanillaGL::profile_name() const {
@@ -76,13 +83,13 @@ namespace GLUP {
     
     void Context_VanillaGL::begin(GLUPprimitive primitive) {
 
-        if(!primitive_info_[primitive].implemented) {
-            Logger::warn("GLUP")
-                << "glupBegin(): "
-                << glup_primitive_name(primitive)
-                << " not implemented in this profile" << std::endl;
-        }
-
+	if(!primitive_info_[primitive].implemented) {
+	    Logger::warn("GLUP")
+		<< "glupBegin(): "
+		<< glup_primitive_name(primitive)
+		<< " not implemented in this profile" << std::endl;
+	}
+	
         update_uniform_buffer();
 
         if(uniform_state_.toggle[GLUP_VERTEX_COLORS].get()) {
@@ -95,6 +102,15 @@ namespace GLUP {
             immediate_state_.buffer[GLUP_TEX_COORD_ATTRIBUTE].enable();
         } else {
             immediate_state_.buffer[GLUP_TEX_COORD_ATTRIBUTE].disable();
+        }
+
+        if(
+	    uniform_state_.toggle[GLUP_LIGHTING].get() &&
+	    uniform_state_.toggle[GLUP_VERTEX_NORMALS].get()
+	) {
+            immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].enable();
+        } else {
+            immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].disable();
         }
         
         immediate_state_.begin(primitive);
@@ -259,8 +275,8 @@ namespace GLUP {
             glDisable(GL_LIGHTING);
             
             // Disable colors and texture coordinates
-            immediate_state_.buffer[1].disable();
-            immediate_state_.buffer[2].disable();
+            immediate_state_.buffer[GLUP_COLOR_ATTRIBUTE].disable();
+            immediate_state_.buffer[GLUP_TEX_COORD_ATTRIBUTE].disable();
 
             //   Disable buffers for interpolated clipping
             // attributes.
@@ -436,7 +452,8 @@ namespace GLUP {
         } else if(
             uniform_state_.toggle[GLUP_DRAW_MESH].get() &&
             immediate_state_.primitive() != GLUP_POINTS &&
-            immediate_state_.primitive() != GLUP_LINES
+            immediate_state_.primitive() != GLUP_LINES  &&
+	    immediate_state_.primitive() != GLUP_SPHERES
         ) {
             // Do it one more time for the mesh
             
@@ -513,6 +530,9 @@ namespace GLUP {
         case GLUP_CONNECTORS:
             draw_immediate_buffer_GLUP_CONNECTORS();
             break;
+	case GLUP_SPHERES:
+            draw_immediate_buffer_GLUP_SPHERES();
+            break;
         case GLUP_NB_PRIMITIVES:
             geo_assert_not_reached;
         }
@@ -532,6 +552,7 @@ namespace GLUP {
         primitive_info_[GLUP_PYRAMIDS].implemented = true;
         primitive_info_[GLUP_PRISMS].implemented = true;
         primitive_info_[GLUP_CONNECTORS].implemented = true;
+        primitive_info_[GLUP_SPHERES].implemented = true;	
     }
     
     Memory::pointer Context_VanillaGL::get_state_variable_address(
@@ -576,7 +597,7 @@ namespace GLUP {
         index_t v = 0;
         while(v < immediate_state_.nb_vertices()) {
             output_picking_id(v/3);
-            flat_shaded_triangle(v,v+1,v+2);
+            draw_triangle(v,v+1,v+2);
             v += 3;
         }
         glEnd();
@@ -587,7 +608,7 @@ namespace GLUP {
         index_t v = 0;
         while(v < immediate_state_.nb_vertices()) {
             output_picking_id(v/4);
-            flat_shaded_quad(v,v+1,v+3,v+2);
+            draw_quad(v,v+1,v+3,v+2);
             v += 4;
         }
         glEnd();
@@ -644,10 +665,10 @@ namespace GLUP {
                     index_t v1 = v0+1;
                     index_t v2 = v0+2;
                     index_t v3 = v0+3;
-                    flat_shaded_triangle(v0,v1,v2);                           
-                    flat_shaded_triangle(v1,v0,v3);                             
-                    flat_shaded_triangle(v0,v2,v3);                             
-                    flat_shaded_triangle(v2,v1,v3);
+                    draw_triangle(v0,v1,v2);                           
+                    draw_triangle(v1,v0,v3);                             
+                    draw_triangle(v0,v2,v3);                             
+                    draw_triangle(v2,v1,v3);
                 }
                 v0 += 4;
             }
@@ -671,12 +692,12 @@ namespace GLUP {
                     index_t v5 = v0+5;
                     index_t v6 = v0+6;
                     index_t v7 = v0+7;
-                    flat_shaded_quad(v0,v2,v4,v6);
-                    flat_shaded_quad(v3,v1,v7,v5);
-                    flat_shaded_quad(v1,v0,v5,v4);
-                    flat_shaded_quad(v2,v3,v6,v7);
-                    flat_shaded_quad(v1,v3,v0,v2);
-                    flat_shaded_quad(v4,v6,v5,v7);
+                    draw_quad(v0,v2,v4,v6);
+                    draw_quad(v3,v1,v7,v5);
+                    draw_quad(v1,v0,v5,v4);
+                    draw_quad(v2,v3,v6,v7);
+                    draw_quad(v1,v3,v0,v2);
+                    draw_quad(v4,v6,v5,v7);
                 }
                 v0 += 8;
             }
@@ -698,9 +719,9 @@ namespace GLUP {
                     index_t v3 = v0+3;
                     index_t v4 = v0+4;
                     index_t v5 = v0+5;
-                    flat_shaded_quad(v0,v3,v1,v4);
-                    flat_shaded_quad(v0,v2,v3,v5);
-                    flat_shaded_quad(v1,v4,v2,v5);
+                    draw_quad(v0,v3,v1,v4);
+                    draw_quad(v0,v2,v3,v5);
+                    draw_quad(v1,v4,v2,v5);
                 }
                 v0 += 6;
             }
@@ -715,8 +736,8 @@ namespace GLUP {
                     index_t v3 = v0+3;
                     index_t v4 = v0+4;
                     index_t v5 = v0+5;
-                    flat_shaded_triangle(v0,v1,v2);
-                    flat_shaded_triangle(v5,v4,v3);
+                    draw_triangle(v0,v1,v2);
+                    draw_triangle(v5,v4,v3);
                 }
                 v0 += 6;
             }
@@ -736,7 +757,7 @@ namespace GLUP {
                     index_t v1 = v0+1;
                     index_t v2 = v0+2;
                     index_t v3 = v0+3;
-                    flat_shaded_quad(v0,v1,v3,v2);
+                    draw_quad(v0,v1,v3,v2);
                 }
                 v0 += 5;
             }
@@ -750,10 +771,10 @@ namespace GLUP {
                     index_t v2 = v0+2;
                     index_t v3 = v0+3;
                     index_t v4 = v0+4;
-                    flat_shaded_triangle(v0,v4,v1);
-                    flat_shaded_triangle(v0,v3,v4);
-                    flat_shaded_triangle(v2,v4,v3);
-                    flat_shaded_triangle(v2,v1,v4);
+                    draw_triangle(v0,v4,v1);
+                    draw_triangle(v0,v3,v4);
+                    draw_triangle(v2,v4,v3);
+                    draw_triangle(v2,v1,v4);
                 }
                 v0 += 5;
             }
@@ -773,7 +794,7 @@ namespace GLUP {
                     index_t v1 = v0+1;
                     index_t v2 = v0+2;
                     index_t v3 = v0+3;
-                    flat_shaded_quad(v0,v1,v3,v2);
+                    draw_quad(v0,v1,v3,v2);
                 }
                 v0 += 4;
             }
@@ -786,14 +807,46 @@ namespace GLUP {
                     index_t v1 = v0+1;
                     index_t v2 = v0+2;
                     index_t v3 = v0+3;
-                    flat_shaded_triangle(v2,v1,v0);
-                    flat_shaded_triangle(v3,v2,v0);
+                    draw_triangle(v2,v1,v0);
+                    draw_triangle(v3,v2,v0);
                 }
                 v0 += 4;
             }
             glEnd();
         }
     }
+
+    void Context_VanillaGL::draw_immediate_buffer_GLUP_SPHERES() {
+	// Note: this is not very optimized. We could probably use
+	// a form of instanced drawing supported by early OpenGL,
+	// or use a vertex shader in an old VS dialect supported
+	// everywhere, but anyway VanillaGL is seldom used, so I
+	// will not spend too much on optimizing it (unless I
+	// receive a query for that).
+	// This would require re-implementing shading in the vertex
+	// shader (not too difficult, but annoying ...)
+	glMatrixMode(GL_MODELVIEW);
+	for(index_t v=0; v<immediate_state_.nb_vertices(); ++v) {
+            output_picking_id(v);	    
+            if(immediate_state_.buffer[GLUP_COLOR_ATTRIBUTE].is_enabled()) {
+                glColor4fv(
+                    immediate_state_.buffer[GLUP_COLOR_ATTRIBUTE].element_ptr(v)
+                );
+            }
+            if(immediate_state_.buffer[GLUP_TEX_COORD_ATTRIBUTE].is_enabled()) {
+                glTexCoord4fv(
+                    immediate_state_.buffer[GLUP_TEX_COORD_ATTRIBUTE].
+                    element_ptr(v)
+                );
+            }
+	    const float* p = immediate_state_.buffer[GLUP_VERTEX_ATTRIBUTE].element_ptr(v);
+	    glPushMatrix();
+	    glTranslatef(p[0], p[1], p[2]);
+	    glScalef(p[3], p[3], p[3]);	    	    
+	    glCallList(sphere_display_list_);
+	    glPopMatrix();
+	}
+    }    
     
     void Context_VanillaGL::output_normal(index_t v1, index_t v2, index_t v3) {
         GLfloat* p1 = immediate_state_.buffer[0].element_ptr(v1);
@@ -862,6 +915,7 @@ namespace GLUP {
             (U1[0]*V1[1]-U1[1]*V1[0]) - (U2[0]*V2[1]-U2[1]*V2[0])               
         );
     }
+
 }
 
 #endif

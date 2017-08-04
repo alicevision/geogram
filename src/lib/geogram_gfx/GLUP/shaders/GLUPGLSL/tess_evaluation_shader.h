@@ -7,13 +7,11 @@
 layout(isolines) in;
 
 in VertexData {                                                    
-    vec4 vertex_clip_space;                                       
     vec4 color;                                             
-    vec4 tex_coord;                                         
+    vec4 tex_coord;
 } VertexIn[];                                              
 
 out GTVertexData {                                                 
-    vec4 vertex_screen_space[glup_nb_vertices_per_GL_v];
     vec4 vertex_clip_space[glup_nb_vertices_per_GL_v];                          
     vec4 color[glup_nb_vertices_per_GL_v];                                
     vec4 tex_coord[glup_nb_vertices_per_GL_v];
@@ -28,10 +26,7 @@ void main() {
     int i0 = int(gl_TessCoord.x + 0.5);                                   
     for(int i1=0; i1<glup_nb_vertices_per_GL_v; ++i1) {                    
         int i = i0*glup_nb_vertices_per_GL_v + i1;                        
-        VertexOut.vertex_screen_space[i1] = gl_in[i].gl_Position;
-        if(glupIsEnabled(GLUP_CLIPPING) || glupIsEnabled(GLUP_LIGHTING)) {
-            VertexOut.vertex_clip_space[i1] = VertexIn[i].vertex_clip_space;
-        }
+        VertexOut.vertex_clip_space[i1] = gl_in[i].gl_Position;
     }                                                               
     if(glupIsEnabled(GLUP_VERTEX_COLORS)) {                                   
         for(int i1=0; i1<glup_nb_vertices_per_GL_v; ++i1) {                  
@@ -44,7 +39,7 @@ void main() {
             int i = i0*glup_nb_vertices_per_GL_v + i1;                        
             VertexOut.tex_coord[i1] = VertexIn[i].tex_coord;           
         }                                                             
-    }                                                               
+    }
 }                                                                  
 #else
 
@@ -54,10 +49,7 @@ void main() {
         return;                                                    
     } 
     for(int i=0; i<glup_primitive_nb_vertices; ++i) {
-        VertexOut.vertex_screen_space[i] = gl_in[i].gl_Position;
-        if(glupIsEnabled(GLUP_CLIPPING) || glupIsEnabled(GLUP_LIGHTING)) {
-            VertexOut.vertex_clip_space[i] = VertexIn[i].vertex_clip_space;
-        }
+        VertexOut.vertex_clip_space[i] = gl_in[i].gl_Position;
     }                                                               
     if(glupIsEnabled(GLUP_VERTEX_COLORS)) {                                   
         for(int i=0; i<glup_primitive_nb_vertices; ++i) {       
@@ -68,7 +60,7 @@ void main() {
         for(int i=0; i<glup_primitive_nb_vertices; ++i) {      
             VertexOut.tex_coord[i] = VertexIn[i].tex_coord;            
         }                                                             
-    }                                                               
+    }
 }                                                                  
 
 #endif

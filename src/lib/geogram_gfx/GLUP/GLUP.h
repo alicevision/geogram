@@ -188,13 +188,14 @@ extern "C" {
      */
 
     typedef enum {
-        GLUP_LIGHTING     =0,
-        GLUP_VERTEX_COLORS=1,
-        GLUP_TEXTURING    =2,
-        GLUP_DRAW_MESH    =3,
-        GLUP_CLIPPING     =4,
-        GLUP_INDIRECT_TEXTURING = 5,
-        GLUP_PICKING      =6
+        GLUP_LIGHTING           =0,
+        GLUP_VERTEX_COLORS      =1,
+        GLUP_TEXTURING          =2,
+        GLUP_DRAW_MESH          =3,
+        GLUP_CLIPPING           =4,
+        GLUP_INDIRECT_TEXTURING =5,
+	GLUP_VERTEX_NORMALS     =6,	
+        GLUP_PICKING            =7
     } GLUPtoggle;
 
     void GLUP_API glupEnable(GLUPtoggle toggle);
@@ -511,7 +512,8 @@ extern "C" {
         GLUP_PRISMS     =6,
         GLUP_PYRAMIDS   =7,
         GLUP_CONNECTORS =8,
-        GLUP_NB_PRIMITIVES = 9
+	GLUP_SPHERES    =9,
+        GLUP_NB_PRIMITIVES = 10
     } GLUPprimitive;
 
     /**
@@ -594,6 +596,14 @@ extern "C" {
         GLUPdouble s, GLUPdouble t, GLUPdouble u, GLUPdouble v
     );
 
+
+    void GLUP_API glupNormal3fv(GLUPfloat* xyz);
+    void GLUP_API glupNormal3f(GLUPfloat x, GLUPfloat y, GLUPfloat z);    
+
+    void GLUP_API glupNormal3dv(GLUPdouble* xyz);
+    void GLUP_API glupNormal3d(GLUPdouble x, GLUPdouble y, GLUPdouble z);    
+    
+    
     /**
      * \brief Specifies a GLSL program to be used for drawing the primitives.
      * \details Can be used with both immediate mode (glupBegin()/glupEnd())
@@ -649,7 +659,7 @@ extern "C" {
     /**
      * \brief Gets the name of the bound vertex array object.
      * \details This function uses glGet(GL_VERTEX_ARRAY_BINDING) if
-     *  vertex array objects are supported, else it emulates them.
+     *  vertex array objects are supported, else it emulates it.
      * \return the name of the bound vertex array object or 0
      *  if no vertex array object is bound.
      */

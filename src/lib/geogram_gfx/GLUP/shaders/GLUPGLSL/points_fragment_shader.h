@@ -5,7 +5,6 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUP/fragment_shader_utils.h>
 
-out vec4 glup_FragColor ;                      
 in float gl_ClipDistance[];                                
 
 #ifdef GL_ARB_conservative_depth
@@ -14,7 +13,8 @@ layout (depth_less) out float gl_FragDepth;
 
 in VertexData {                            
     vec4 color;                             
-    vec4 tex_coord;                         
+    vec4 tex_coord;
+    float depth_radius;
 } FragmentIn;                              
 
 void main() {
@@ -32,8 +32,8 @@ void main() {
     }                                                          
 
     vec3 N = vec3(V.x, -V.y, sqrt(one_minus_r2));
-    gl_FragDepth = gl_FragCoord.z - 0.001 * N.z;       
-
+    glup_FragDepth = gl_FragCoord.z - FragmentIn.depth_radius * N.z;       
+    
     if(glupIsEnabled(GLUP_PICKING)) {
         glup_FragColor = glup_picking(gl_PrimitiveID);        
         return;

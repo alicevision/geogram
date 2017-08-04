@@ -68,15 +68,12 @@
 //  experimentalement c'est bon (fait la meme chose qu'OpenGL), mais faudrait
 //  mieux piger tout ca...
 
-// TODO: a-t-on encore besoin de normal_matrix ? Non (mais je le laisse quand
-// meme pour le moment...). A enlever quand meme dans GLUPES qui tourne
-// potentiellement sur telephone...
 
 namespace GLUP {
     using namespace GEO;
     
     /*************************************************************************/
-    
+
     void show_matrix(const GLfloat M[16]) {
         for(index_t i=0; i<4; ++i) {
             for(index_t j=0; j<4; ++j) {
@@ -93,10 +90,10 @@ namespace GLUP {
         std::cerr << std::endl;        
     }
     
-    // Used to determine maximum vertex index, that needs
+    // Used to determine buffer's maximum vertex index, that needs
     // to be an integer multiple of the number of vertices
     // per primitive.
-    index_t nb_vertices_per_primitive[] = {
+    index_t nb_vertices_per_primitive[GLUP_NB_PRIMITIVES] = {
         1, // GLUP_POINTS     =0,
         2, // GLUP_LINES      =1,
         3, // GLUP_TRIANGLES  =2,
@@ -105,7 +102,8 @@ namespace GLUP {
         8, // GLUP_HEXAHEDRA  =5,
         6, // GLUP_PRISMS     =6,
         5, // GLUP_PYRAMIDS   =7,
-        4  // GLUP_CONNECTORS =8        
+        4, // GLUP_CONNECTORS =8,
+	1  // GLUP_SPHERES    =9
     };
 
     static index_t nb_vertices_per_GL_primitive(GLenum primitive) {
@@ -181,7 +179,8 @@ namespace GLUP {
         "GLUP_HEXAHEDRA",
         "GLUP_PRISMS",
         "GLUP_PYRAMIDS",
-        "GLUP_CONNECTORS"
+        "GLUP_CONNECTORS",
+	"GLUP_SPHERES"
     };
 
     const char* Context::glup_primitive_name(GLUPprimitive prim) {
@@ -197,14 +196,17 @@ namespace GLUP {
         3, // GLUP_HEXAHEDRA  =5,
         3, // GLUP_PRISMS     =6,
         3, // GLUP_PYRAMIDS   =7,
-        3  // GLUP_CONNECTORS =8        
+        3, // GLUP_CONNECTORS =8,
+	0  // GLUP_SPHERES    =9
     };
-    
+
+
     /*
     ** Invert 4x4 matrix.
     ** Contributed by David Moore (See Mesa bug #6748)
     */
-    GLboolean invert_matrix(GLfloat inv[16], const GLfloat m[16]) {
+    template <class T> inline
+    GLboolean invert_matrix_generic(T inv[16], const T m[16]) {
         
         inv[0]  = m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15]
                 + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
@@ -239,71 +241,27 @@ namespace GLUP {
         inv[15] = m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10]
                 + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
         
-        GLfloat det =
-            m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+        T det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
         
-        if (det == 0.0f) {
+        if (det == T(0.0)) {
             return GL_FALSE;
         }
         
-        det = 1.0f / det;
+        det = T(1.0) / det;
         
         for (index_t i = 0; i < 16; ++i) {
             inv[i] *= det;
         }
-        
+
         return GL_TRUE;
     }
 
+    GLboolean invert_matrix(GLfloat inv[16], const GLfloat m[16]) {
+	return invert_matrix_generic(inv,m);
+    }
+
     GLboolean invert_matrix(GLdouble inv[16], const GLdouble m[16]) {
-        
-        inv[0]  = m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15]
-                + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
-        inv[4]  = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15]
-                - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
-        inv[8]  = m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15]
-                + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
-        inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14]
-                - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
-        inv[1]  = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15]
-                - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
-        inv[5]  = m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15]
-                + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
-        inv[9]  = -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15]
-                - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
-        inv[13] = m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14]
-                + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
-        inv[2]  = m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15]
-                + m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
-        inv[6]  = -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15]
-                - m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
-        inv[10] = m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15]
-                + m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
-        inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14]
-                - m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
-        inv[3]  = -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11]
-                - m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
-        inv[7]  = m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11]
-                + m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
-        inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11]
-                - m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
-        inv[15] = m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10]
-                + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
-        
-        GLdouble det =
-            m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
-        
-        if (det == 0.0) {
-            return GL_FALSE;
-        }
-        
-        det = 1.0 / det;
-        
-        for (index_t i = 0; i < 16; ++i) {
-            inv[i] *= det;
-        }
-        
-        return GL_TRUE;
+	return invert_matrix_generic(inv,m);
     }
     
     void mult_matrices(
@@ -658,9 +616,12 @@ namespace GLUP {
             StateVariable<GLboolean>(this,"indirect_texturing_enabled",GL_FALSE)
         );
         uniform_state_.toggle.push_back(
+            StateVariable<GLboolean>(this,"vertex_normals_enabled",GL_FALSE)
+        );
+        uniform_state_.toggle.push_back(
             StateVariable<GLboolean>(this,"picking_enabled",GL_FALSE)
         );
-
+	
         uniform_state_.color.push_back(
             VectorStateVariable(this, "front_color", 4)
         );
@@ -691,6 +652,9 @@ namespace GLUP {
         uniform_state_.clip_plane.initialize(this, "clip_plane", 4);
         uniform_state_.world_clip_plane.initialize(
             this, "world_clip_plane", 4
+        );
+        uniform_state_.clip_clip_plane.initialize(
+            this, "clip_clip_plane", 4
         );        
 
         uniform_state_.texture_mode.initialize(
@@ -709,6 +673,16 @@ namespace GLUP {
         uniform_state_.normal_matrix.initialize(this, "normal_matrix");
         uniform_state_.texture_matrix.initialize(this, "texture_matrix");
 
+        uniform_state_.inverse_modelviewprojection_matrix.initialize(
+	    this, "inverse_modelviewprojection_matrix"
+	);
+        uniform_state_.inverse_modelview_matrix.initialize(
+	    this, "inverse_modelview_matrix"
+	);
+        uniform_state_.inverse_projection_matrix.initialize(
+	    this, "inverse_projection_matrix"
+	);	
+	uniform_state_.viewport.initialize(this, "viewport", 4);
 
         uniform_state_.point_size.initialize(this, "point_size", 1.0f);
         
@@ -803,11 +777,29 @@ namespace GLUP {
             copy_vector(
                 uniform_state_.clip_plane.get_pointer(), clip_plane_d, 4
             );
-            mult_matrix_vector(
+
+	    mult_matrix_vector(
                 uniform_state_.world_clip_plane.get_pointer(),
                 uniform_state_.modelview_matrix.get_pointer(),
                 uniform_state_.clip_plane.get_pointer()            
             );
+
+	    GLfloat projection_invert[16];
+	    GLboolean OK = invert_matrix(
+		projection_invert,
+		uniform_state_.projection_matrix.get_pointer()
+	    );
+	    if(!OK) {
+		Logger::warn("GLUP") << "Singular projection matrix"
+				     << std::endl;
+		show_matrix(uniform_state_.projection_matrix.get_pointer());
+	    }
+	    mult_matrix_vector(
+		uniform_state_.clip_clip_plane.get_pointer(),
+		projection_invert,
+		uniform_state_.clip_plane.get_pointer()
+	    );
+	    
         }
         
         if(which_attributes & GLUP_LIGHTING_ATTRIBUTES_BIT) {
@@ -966,7 +958,18 @@ namespace GLUP {
         }
 
         GEO_CHECK_GLUP();        
-        
+
+        if(
+	    uniform_state_.toggle[GLUP_LIGHTING].get() &&
+	    uniform_state_.toggle[GLUP_VERTEX_NORMALS].get()
+	) {
+            immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].enable();
+        } else {
+            immediate_state_.buffer[GLUP_NORMAL_ATTRIBUTE].disable();
+        }
+
+        GEO_CHECK_GLUP();        	
+	
         immediate_state_.begin(primitive);
 
         GEO_CHECK_GLUP();        
@@ -1175,21 +1178,38 @@ namespace GLUP {
 
         GLfloat* modelview = matrix_stack_[GLUP_MODELVIEW_MATRIX].top();
         GLfloat* projection = matrix_stack_[GLUP_PROJECTION_MATRIX].top();
-
+	GLfloat* modelviewproject = uniform_state_.modelviewprojection_matrix.get_pointer();
+	GLfloat* modelviewproject_invert =
+	    uniform_state_.inverse_modelviewprojection_matrix.get_pointer();
+	GLfloat* modelview_invert = uniform_state_.inverse_modelview_matrix.get_pointer();
+	GLfloat* projection_invert = uniform_state_.inverse_projection_matrix.get_pointer();
+	
         copy_vector(
             uniform_state_.modelview_matrix.get_pointer(), modelview, 16
         );
-        mult_matrices(
-            uniform_state_.modelviewprojection_matrix.get_pointer(),
-            modelview, projection
-        );
-        GLfloat modelview_invert[16];
-        GLboolean OK = invert_matrix(modelview_invert, modelview);
+        mult_matrices(modelviewproject, modelview, projection);
+
+        GLboolean OK = invert_matrix(projection_invert, projection);
+        if(!OK) {
+            Logger::warn("GLUP") << "Singular Projection matrix"
+                                 << std::endl;
+            show_matrix(projection);
+        }
+	
+        OK = invert_matrix(modelview_invert, modelview);
         if(!OK) {
             Logger::warn("GLUP") << "Singular ModelView matrix"
                                  << std::endl;
             show_matrix(modelview);
         }
+
+	OK = invert_matrix(modelviewproject_invert, modelviewproject);
+        if(!OK) {
+            Logger::warn("GLUP") << "Singular ModelViewProjection matrix"
+                                 << std::endl;
+            show_matrix(modelviewproject);
+        }
+	
         GLfloat* normal_matrix = uniform_state_.normal_matrix.get_pointer();
         //   Copy the upper leftmost 3x3 part of the transpose of
         // modelview_invert_matrix to normal_matrix
@@ -1222,7 +1242,28 @@ namespace GLUP {
             uniform_state_.modelview_matrix.get_pointer(),
             uniform_state_.clip_plane.get_pointer()            
         );
-        
+
+	OK = invert_matrix(
+	    projection_invert,
+	    uniform_state_.projection_matrix.get_pointer()
+	);
+	if(!OK) {
+	    Logger::warn("GLUP") << "Singular projection matrix"
+				 << std::endl;
+	    show_matrix(uniform_state_.projection_matrix.get_pointer());
+	}
+	mult_matrix_vector(
+	    uniform_state_.clip_clip_plane.get_pointer(),
+	    projection_invert,
+	    uniform_state_.clip_plane.get_pointer()
+	);
+
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+	for(index_t i=0; i<4; ++i) {
+	    uniform_state_.viewport.get_pointer()[i] = GLfloat(viewport[i]);
+	}
+	
         matrices_dirty_ = false;
     }
 
@@ -1310,7 +1351,7 @@ namespace GLUP {
         // Sends the data from the buffers to OpenGL if VBO are used.
         stream_immediate_buffers();
 
-        bool attrib3_enabled = false;
+        bool vertex_id_attrib_enabled = false;
 
         if(vertex_id_VBO_ != 0) {
             if(
@@ -1319,8 +1360,8 @@ namespace GLUP {
                     uniform_state_.toggle[GLUP_DRAW_MESH].get()
                 )
             ) {
-                glEnableVertexAttribArray(3);
-                attrib3_enabled = true;
+                glEnableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
+                vertex_id_attrib_enabled = true;
             }
         }
         
@@ -1376,8 +1417,8 @@ namespace GLUP {
         }
         immediate_state_.reset();
 
-        if(attrib3_enabled) {
-            glDisableVertexAttribArray(3);
+        if(vertex_id_attrib_enabled) {
+            glDisableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
         }
     }
 
@@ -1397,11 +1438,12 @@ namespace GLUP {
             return;
         }
 
-        glBindAttribLocation(program, 0, "vertex_in");
-        glBindAttribLocation(program, 1, "color_in");
-        glBindAttribLocation(program, 2, "tex_coord_in");
+        glBindAttribLocation(program, GLUP_VERTEX_ATTRIBUTE, "vertex_in");
+        glBindAttribLocation(program, GLUP_COLOR_ATTRIBUTE, "color_in");
+        glBindAttribLocation(program, GLUP_TEX_COORD_ATTRIBUTE, "tex_coord_in");
+        glBindAttribLocation(program, GLUP_NORMAL_ATTRIBUTE, "normal_in");	
         if(vertex_id_VBO_ != 0) {
-            glBindAttribLocation(program, 3, "vertex_id_in");            
+            glBindAttribLocation(program, GLUP_VERTEX_ID_ATTRIBUTE, "vertex_id_in");            
         }
         GLSL::link_program(program);
         bind_uniform_state(program);            
@@ -1436,6 +1478,7 @@ namespace GLUP {
         glBindAttribLocation(program, 0, "vertex_in");
         glBindAttribLocation(program, n, "color_in");
         glBindAttribLocation(program, 2*n, "tex_coord_in");
+        glBindAttribLocation(program, 3*n, "normal_in");	
 
         GLSL::link_program(program);
 
@@ -1556,7 +1599,7 @@ namespace GLUP {
             if(vertex_id_VBO_ != 0) {
                 glBindBuffer(GL_ARRAY_BUFFER, vertex_id_VBO_);
                 glVertexAttribPointer(
-                    3,                 // Attribute number 3
+                    GLUP_VERTEX_ID_ATTRIBUTE,
                     1,                 // 1 component per attribute
                     GL_UNSIGNED_SHORT, // components are bytes
                     GL_FALSE,          // do not normalize
@@ -1597,6 +1640,7 @@ namespace GLUP {
                 setup_GLUP_PRISMS();
                 setup_GLUP_PYRAMIDS();
                 setup_GLUP_CONNECTORS();
+                setup_GLUP_SPHERES();		
                 progress.next();
             }
         }
@@ -1629,7 +1673,10 @@ namespace GLUP {
             ";\n" +
             "const int glup_primitive_nb_vertices = " +
             String::to_string(nb_vertices_per_primitive[prim]) +
-            ";\n"
+            ";\n" +
+	    "#define GLUP_PRIMITIVE_DIMENSION " +
+	    String::to_string(primitive_dimension[prim]) +
+            "\n"	    
             ;
         
         return result;
@@ -1681,6 +1728,9 @@ namespace GLUP {
             case GLUP_CONNECTORS:
                 setup_GLUP_CONNECTORS();
                 break;
+            case GLUP_SPHERES:
+                setup_GLUP_SPHERES();
+                break;
             case GLUP_NB_PRIMITIVES:
                 geo_assert_not_reached;
             }
@@ -1714,6 +1764,9 @@ namespace GLUP {
     void Context::setup_GLUP_CONNECTORS() {
     }
 
+    void Context::setup_GLUP_SPHERES() {
+    }
+    
     void Context::shrink_cells_in_immediate_buffers() {
         if(
             uniform_state_.cells_shrink.get() == 0.0f   ||
@@ -1892,7 +1945,7 @@ namespace GLUP {
             glupBindVertexArray(immediate_state_.VAO());
             glBindBuffer(GL_ARRAY_BUFFER, vertex_id_VBO_);
             glVertexAttribPointer(
-                3,                 // Attribute number 3
+                GLUP_VERTEX_ID_ATTRIBUTE,
                 1,                 // 1 component per attribute
                 GL_UNSIGNED_SHORT, // components are 16 bits integers
                 GL_FALSE,          // do not normalize
@@ -2008,6 +2061,7 @@ namespace GLUP {
         case GLUP_LINES:
         case GLUP_TRIANGLES:
         case GLUP_QUADS:
+	case GLUP_SPHERES:
         case GLUP_NB_PRIMITIVES:
             geo_assert_not_reached;
         }

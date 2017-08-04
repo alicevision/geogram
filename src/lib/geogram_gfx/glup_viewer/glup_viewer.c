@@ -1106,7 +1106,9 @@ static void display() {
 
 static void copy_image_to_clipboard();
 
-static void glup_viewer_char_callback(GLFWwindow* w, unsigned int c) {
+void glup_viewer_char_callback(GLFWwindow* w, unsigned int c);
+
+void glup_viewer_char_callback(GLFWwindow* w, unsigned int c) {
     if(glup_viewer_gui_takes_input()) {
         glup_viewer_gui_char_callback(w,c);
         return;
@@ -1208,7 +1210,6 @@ static void init() {
     
     glup_viewer_disable(GLUP_VIEWER_IDLE_REDRAW);
     glup_viewer_enable(GLUP_VIEWER_DRAW_SCENE);
-    glup_viewer_enable(GLUP_VIEWER_BACKGROUND);
 
 #ifndef __EMSCRIPTEN__    
     glup_viewer_add_key_func('q', glup_viewer_exit_main_loop, "quit");
@@ -1425,6 +1426,8 @@ void glup_viewer_main_loop(int argc, char** argv) {
         glup_viewer_W *= 2;
         glup_viewer_H *= 2;
     }
+
+    glup_viewer_set_screen_size_from_args();
     
     if( 
         glup_viewer_get_arg_bool("gfx:fullscreen") ||
@@ -1706,6 +1709,12 @@ void axis_to_quat(float a[3], float phi, float q[4])
     vcopy(a, q);
     vscale(q, (float) sin(((double)phi) / 2.0));
     q[3] = (float) cos(((double)phi) / 2.0);
+}
+
+void glup_viewer_set_scene_rotation(
+    float xyz[3], float angle
+) {
+    axis_to_quat(xyz, (float)((double)angle * M_PI / 180.0), cur_rot);
 }
 
 /*
@@ -2342,3 +2351,44 @@ GLboolean glup_viewer_is_high_dpi(void) {
     return (vidmode->width > 1920);
 #endif    
 }
+
+void glup_viewer_snapshot(const char* filename) {
+    FILE* f = fopen(filename, "wb");
+    int line_size = glup_viewer_W*3;
+    void* data = NULL;
+    char* line1;
+    char* line2;
+    int y;
+    int xx;
+    char tmp;
+    
+    if(f == NULL) {
+	return;
+    }
+
+    /* Read OpenGL frame buffer */
+    data = malloc((size_t)(glup_viewer_W*glup_viewer_H*3));
+    glReadPixels(
+	0, 0, glup_viewer_W, glup_viewer_H,
+	GL_RGB, GL_UNSIGNED_BYTE, data
+    );
+
+    /* Flip image along vertical axis */
+    for(y=0; y<glup_viewer_W/2; ++y) {
+	line1 = (char*)data + line_size*y;
+	line2 = (char*)data + line_size*(glup_viewer_H-1-y);
+	for(xx=0; xx<line_size; ++xx) {
+	    tmp = line1[xx];
+	    line1[xx] = line2[xx];
+	    line2[xx] = tmp;
+	}
+    }
+
+    /* Save as PPM */
+    fprintf(f,"P6\n%d %d\n255\n",glup_viewer_W,glup_viewer_H);
+    fwrite(data,1,(size_t)(glup_viewer_W*glup_viewer_H*3),f);
+    
+    free(data);
+    fclose(f);
+}
+

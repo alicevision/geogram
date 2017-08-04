@@ -5,20 +5,10 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUPES/fragment_shader_utils.h>
 
-#ifdef GL_ES                                                  
-   varying vec4 color;                                        
-   varying vec4 tex_coord;                                    
-   varying float clip_dist;                                   
-   varying highp float primitive_id;
-#define glup_FragColor gl_FragColor
-#else                                                         
-   in vec4 color;                                             
-   in vec4 tex_coord;                                         
-   in float clip_dist;                                        
-   flat in highp int primitive_id;
-   out vec4 glup_FragColor;
-#endif                                                        
-
+glup_in vec4 color;                                             
+glup_in vec4 tex_coord;                                         
+glup_in float clip_dist;
+glup_flat glup_in glup_id primitive_id;
 
 void main() {
     
