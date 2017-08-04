@@ -1,10 +1,6 @@
-Removed internal functions XXX_is_initialized() and replaced them
-with NLExtensionIsInitialized_XXX()
+Added missing operator= for Chart (cannot synthetize it since it has a
+reference).
 
 --This line, and those below, will be ignored--
 
-M    src/lib/geogram/NL/nl_arpack.c
-M    src/lib/geogram/NL/nl_cholmod.c
-M    src/lib/geogram/NL/nl_cuda.c
-M    src/lib/geogram/NL/nl_mkl.c
-M    src/lib/geogram/NL/nl_superlu.c
+M    src/lib/geogram/parameterization/mesh_segmentation.h

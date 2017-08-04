@@ -299,7 +299,8 @@ namespace GEO {
             init = true;
             const char* vendor = (const char*)glGetString(GL_VENDOR);
             use_glGetBufferParameteri64v = (
-                strlen(vendor) >= 6 && !strncmp(vendor, "NVIDIA", 6)
+                strlen(vendor) >= 6 && !strncmp(vendor, "NVIDIA", 6) &&
+		(glGetBufferParameteri64v != nil)
             );
             // Does not seem to be implemented under OpenGL ES
             if(CmdLine::get_arg("gfx:GL_profile") == "ES") {

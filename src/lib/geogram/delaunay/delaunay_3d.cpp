@@ -568,7 +568,7 @@ namespace GEO {
         // locate_inexact() loops forever !
         hint = locate_inexact(p, hint, 2500);
 
-        static Process::spinlock lock = 0;
+        static Process::spinlock lock = GEOGRAM_SPINLOCK_INIT;
 
         // We need to have this spinlock because
         // of random() that is not thread-safe

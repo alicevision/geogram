@@ -391,7 +391,8 @@ namespace GEO {
      */
 #define geo_register_creator(FactoryType, ConcreteType, name) \
     static FactoryType::RegisterCreator<ConcreteType> \
-    CPP_CONCAT(Factory_register_creator_, __LINE__) (name)
+    CPP_CONCAT(Factory_register_creator_, __LINE__) (name); \
+    geo_argused(CPP_CONCAT(Factory_register_creator_, __LINE__))
 }
 
 #endif

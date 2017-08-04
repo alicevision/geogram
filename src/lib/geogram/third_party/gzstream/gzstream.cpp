@@ -158,6 +158,17 @@ void gzstreambase::close() {
             clear( rdstate() | std::ios::badbit);
 }
 
+// ============================================================================
+// [BL] fixing weak vtable problem
+
+   igzstream::~igzstream() {
+   }
+
+   ogzstream::~ogzstream() {
+   }
+   
+// ============================================================================   
+   
 #ifdef GZSTREAM_NAMESPACE
 } // namespace GZSTREAM_NAMESPACE
 #endif

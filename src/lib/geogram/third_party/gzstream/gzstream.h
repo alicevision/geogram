@@ -102,7 +102,8 @@ class GEOGRAM_API igzstream : public gzstreambase, public std::istream {
 public:
     igzstream() : std::istream( &buf) {} 
     igzstream( const char* name, int open_mode = std::ios::in)
-        : gzstreambase( name, open_mode), std::istream( &buf) {}  
+        : gzstreambase( name, open_mode), std::istream( &buf) {}
+    virtual ~igzstream(); // [BL] fixing weak vtable problem
     gzstreambuf* rdbuf() { return gzstreambase::rdbuf(); }
     void open( const char* name, int open_mode = std::ios::in) {
         gzstreambase::open( name, open_mode);
@@ -113,7 +114,8 @@ class GEOGRAM_API ogzstream : public gzstreambase, public std::ostream {
 public:
     ogzstream() : std::ostream( &buf) {}
     ogzstream( const char* name, int mode = std::ios::out)
-        : gzstreambase( name, mode), std::ostream( &buf) {}  
+        : gzstreambase( name, mode), std::ostream( &buf) {}
+    virtual ~ogzstream(); // [BL] fixing weak vtable problem
     gzstreambuf* rdbuf() { return gzstreambase::rdbuf(); }
     void open( const char* name, int open_mode = std::ios::out) {
         gzstreambase::open( name, open_mode);

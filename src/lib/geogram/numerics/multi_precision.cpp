@@ -55,6 +55,10 @@
 #include <geogram/numerics/multi_precision.h>
 #include <geogram/basic/process.h>
 
+#if defined(GEO_OS_APPLE) && defined(__MAC_10_12)
+#include <os/lock.h>
+#endif
+
 namespace {
 
     using namespace GEO;
@@ -747,7 +751,7 @@ namespace GEO {
         expansion_splitter_ += 1.0;
     }
 
-    static Process::spinlock expansions_lock = 0;
+    static Process::spinlock expansions_lock = GEOGRAM_SPINLOCK_INIT;
     
     expansion* expansion::new_expansion_on_heap(index_t capa) {
 	Process::acquire_spinlock(expansions_lock);

@@ -125,6 +125,9 @@ NLdll nlOpenDLL(const char* name, NLenum flags_in) {
     if((flags_in & NL_LINK_GLOBAL) != 0) {
 	flags |= RTLD_GLOBAL;
     }
+    if((flags_in & NL_LINK_QUIET) == 0) {
+	fprintf(stderr,"Trying to load %s\n", name);
+    }
     result = dlopen(name, flags);
     if(result == NULL) {
 	if((flags_in & NL_LINK_QUIET) == 0) {	
@@ -140,6 +143,10 @@ NLdll nlOpenDLL(const char* name, NLenum flags_in) {
 	    }
         }
     }
+    if((flags_in & NL_LINK_QUIET) == 0 && result != NULL) {
+	fprintf(stderr,"Loaded %s\n", name);
+    }
+    
     return result;
 }
 

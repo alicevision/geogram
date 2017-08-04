@@ -261,10 +261,13 @@ namespace GLUP {
             "    draw_triangle(2,1,4,compute_clip_coords());\n"
             "}\n"
         );
+        GEO_CHECK_GLUP();    	
         set_primitive_info_vertex_gather_mode(
             GLUP_PYRAMIDS, GL_POINTS, program
         );
+        GEO_CHECK_GLUP();    	
         marching_pyramid_.bind_uniform_state(program);
+        GEO_CHECK_GLUP();    	
     }
 
     void Context_GLSL150::setup_GLUP_SPHERES() {

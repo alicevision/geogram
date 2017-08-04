@@ -1714,7 +1714,12 @@ void glupGenVertexArrays(GLUPsizei n, GLUPuint* arrays) {
     } else {
 #ifdef GEO_OS_EMSCRIPTEN
         glGenVertexArraysOES(n, arrays);
-#else        
+#else
+	if(glGenVertexArrays == nil) {
+	    GLUP::vertex_array_emulate = true;
+	    glupGenVertexArrays(n,arrays);
+	    return;
+	}
         glGenVertexArrays(n, arrays);
 #endif        
     }
@@ -1728,7 +1733,12 @@ void glupDeleteVertexArrays(GLUPsizei n, const GLUPuint *arrays) {
     } else {
 #ifdef GEO_OS_EMSCRIPTEN
         glDeleteVertexArraysOES(n, arrays);        
-#else        
+#else
+	if(glDeleteVertexArrays == nil) {
+	    GLUP::vertex_array_emulate = true;
+	    glupDeleteVertexArrays(n,arrays);
+	    return;
+	}
         glDeleteVertexArrays(n, arrays);
 #endif        
     }
@@ -1752,7 +1762,12 @@ void glupBindVertexArray(GLUPuint array) {
     } else {
 #ifdef GEO_OS_EMSCRIPTEN
         glBindVertexArrayOES(array);        
-#else        
+#else
+	if(glBindVertexArray == nil) {
+	    GLUP::vertex_array_emulate = true;
+	    glupBindVertexArray(array);
+	    return;
+	}
         glBindVertexArray(array);
 #endif
         GLUP::vertex_array_binding = array;        

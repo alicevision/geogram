@@ -766,7 +766,7 @@ namespace GEO {
         // Step 2: solve for sines and cosines 
         // (Periodic Global Parameterization)
         try {
-            ProgressTask progress("Frames Smth.",5);
+            ProgressTask progress("Frames Smth.",4);
             for(index_t k=0; k<5; ++k) {
                 solve_PGP(M,alpha_sincos,locked,1.0,certainty);
                 progress.progress(k);

@@ -45,6 +45,7 @@
 
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/mesh/mesh.h>
+#include <geogram/points/colocate.h>
 #include <geogram/basic/line_stream.h>
 #include <geogram/basic/b_stream.h>
 #include <geogram/basic/geofile.h>
@@ -148,6 +149,11 @@ namespace GEO {
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
         ) {
+	    bool ignore_tex_coords = false; 
+	        //!ioflags.has_attribute(MESH_VERTEX_TEX_COORD);
+	    
+	    vector<vec2> tex_vertices;
+	    Attribute<double> tex_coord;
             vector<double> P(dimension_);
             if(M.vertices.dimension() != dimension_) {
                 M.vertices.set_dimension(dimension_);
@@ -160,6 +166,7 @@ namespace GEO {
 
             bind_attributes(M, ioflags, true);
             vector<index_t> facet_vertices;
+	    vector<index_t> facet_tex_vertices;
 
             bool first_facet_attribute = true;
             bool read_facet_regions = false;
@@ -177,6 +184,37 @@ namespace GEO {
                         index_t v = M.vertices.create_vertex();
                         set_mesh_point(M, v, P.data(), dimension_);
                     } else if(
+			!ignore_tex_coords &&
+			in.field_matches(0, "vt")
+		    ) {
+			if(!tex_coord_.is_bound()) {
+			    tex_coord_.bind_if_is_defined(
+				M.facet_corners.attributes(), "tex_coord"
+			    );
+			    if(tex_coord.is_bound()) {
+				if(tex_coord_.dimension() != 2) {
+				    tex_coord_.unbind();
+				    ignore_tex_coords = true;
+				}
+			    } else {
+				tex_coord_.create_vector_attribute(
+				    M.facet_corners.attributes(), "tex_coord", 2
+				);
+			    }
+			}
+			
+			if(!ignore_tex_coords) {
+			    if(in.nb_fields() != 3) {
+                                Logger::err("I/O")
+                                    << "Line " << in.line_number()
+                                    << " malformed texture vertex"
+                                    << std::endl;
+                                unbind_attributes();
+                                return false;
+			    }
+			    tex_vertices.push_back(vec2(in.field_as_double(1), in.field_as_double(2)));
+			}
+		    } else if(
                         ioflags.has_element(MESH_FACETS) &&
                         in.field_matches(0, "f")
                     ) {
@@ -191,10 +229,15 @@ namespace GEO {
                         }
 
                         facet_vertices.resize(0);
+			facet_tex_vertices.resize(0);
                         
                         for(index_t i = 1; i < in.nb_fields(); i++) {
+			    char* tex_vertex_str = nil;
                             for(char* ptr = in.field(i); *ptr != '\0'; ptr++) {
                                 if(*ptr == '/') {
+				    if(!ignore_tex_coords && tex_vertex_str == nil) {
+					tex_vertex_str = ptr+1;
+				    }
                                     *ptr = '\0';
                                     break;
                                 }
@@ -226,14 +269,61 @@ namespace GEO {
                                 return false;
                             }
                             facet_vertices.push_back(vertex_index-1);
-                        }
 
+			    if(tex_vertex_str != nil) {
+				int s_tex_vertex_index = atoi(tex_vertex_str);
+				index_t tex_vertex_index = 0;
+				if(s_tex_vertex_index < 0) {
+				    tex_vertex_index = index_t(
+					1+int(tex_vertices.size()) + s_tex_vertex_index
+				    );
+				} else {
+				    tex_vertex_index = index_t(s_tex_vertex_index);
+				}
+				if(
+				    (tex_vertex_index < 1) ||
+				    (tex_vertex_index > tex_vertices.size())
+				) {
+				    Logger::err("I/O")
+					<< "Line " << in.line_number()
+					<< ": facet corner #" << i
+					<< " references an invalid tex vertex: "
+					<< tex_vertex_index
+					<< std::endl;
+				    unbind_attributes();
+				    return false;
+				}
+				if(!ignore_tex_coords) {
+				    facet_tex_vertices.push_back(tex_vertex_index-1);
+				}
+			    }
+			}
+			    
+			if(
+			    facet_tex_vertices.size() != 0 &&
+			    facet_tex_vertices.size() != facet_vertices.size()) {
+                                Logger::err("I/O")
+                                    << "Line " << in.line_number()
+				    << ": some facet vertices do not have tex vertices"
+				    << std::endl;
+				unbind_attributes();
+				return false;
+			}
+			
                         index_t f = M.facets.create_polygon(
                             facet_vertices.size()
                         );
                         for(index_t lv=0; lv<facet_vertices.size(); ++lv) {
                             M.facets.set_vertex(f,lv,facet_vertices[lv]);
                         }
+			if(facet_tex_vertices.size() != 0) {
+			    for(index_t lv=0; lv<facet_vertices.size(); ++lv) {
+				index_t c = M.facets.corners_begin(f) + lv;
+				const vec2 vt = tex_vertices[facet_tex_vertices[lv]];
+				tex_coord_[2*c] = vt.x;
+				tex_coord_[2*c+1] = vt.y;
+			    }
+			}
                     } else if(
                         ioflags.has_element(MESH_FACETS) &&
                         facet_region_.is_bound() &&
@@ -320,13 +410,45 @@ namespace GEO {
                 out << std::endl;
             }
 
+	    // If mesh has facet corner tex coords, then "compress" tex coords
+	    // by generating a single "texture vertex" (vt) for each group of
+	    // corners with the same texture coordinates (makes the .obj file
+	    // smaller).
+	    vector<index_t> vt_old2new;
+	    vector<index_t> vt_index;
+	    if(tex_coord_.is_bound()) {
+		index_t nb_vt = Geom::colocate_by_lexico_sort(
+		    &tex_coord_[0], 2, M.facet_corners.nb(), vt_old2new, 2
+		);
+		vt_index.assign(M.facet_corners.nb(), index_t(-1));
+		index_t cur_vt=0;
+		for(index_t c=0; c<M.facet_corners.nb(); ++c) {
+		    if(vt_old2new[c] == c) {
+			out << "vt " << tex_coord_[2*c] << " " << tex_coord_[2*c+1] << std::endl;
+			vt_index[c] = cur_vt;
+			++cur_vt;
+		    }
+		}
+		geo_assert(cur_vt == nb_vt);
+	    } else if(vertex_tex_coord_.is_bound()) {
+		for(index_t v=0; v<M.vertices.nb(); ++v) {
+		    out << "vt " << vertex_tex_coord_[2*v] << " " << vertex_tex_coord_[2*v+1] << std::endl;
+		}
+	    }
+	    
             if(ioflags.has_element(MESH_FACETS)) {
                 for(index_t f = 0; f < M.facets.nb(); ++f) {
                     out << "f ";
-                    for(index_t i = M.facets.corners_begin(f);
-                        i < M.facets.corners_end(f); ++i
+                    for(index_t c = M.facets.corners_begin(f);
+                        c < M.facets.corners_end(f); ++c
                     ) {
-                        out << M.facet_corners.vertex(i) + 1 << " ";
+                        out << M.facet_corners.vertex(c) + 1;
+			if(tex_coord_.is_bound()) {
+			    out << "/" << vt_index[ vt_old2new[c] ] + 1;
+			} else if(vertex_tex_coord_.is_bound()) {
+			    out << "/" << M.facet_corners.vertex(c) + 1;
+			}
+			out << " ";
                     }
                     out << std::endl;
                 }
@@ -351,8 +473,41 @@ namespace GEO {
         virtual ~OBJIOHandler() {
         }
 
+        virtual void bind_attributes(
+            const Mesh& M, const MeshIOFlags& flags, bool create
+	) {
+	    MeshIOHandler::bind_attributes(M, flags, create);
+	    
+	    tex_coord_.bind_if_is_defined(
+		M.facet_corners.attributes(), "tex_coord"
+	    );
+	    if(tex_coord_.is_bound() && tex_coord_.dimension() != 2) {
+		tex_coord_.unbind();
+	    }
+
+	    vertex_tex_coord_.bind_if_is_defined(
+		M.vertices.attributes(), "tex_coord"
+	    );
+	    if(vertex_tex_coord_.is_bound() && vertex_tex_coord_.dimension() != 2) {
+		vertex_tex_coord_.unbind();
+	    }
+	    
+	}
+
+	virtual void unbind_attributes() {
+	    if(tex_coord_.is_bound()) {
+		tex_coord_.unbind();
+	    }
+	    if(vertex_tex_coord_.is_bound()) {
+		vertex_tex_coord_.unbind();
+	    }
+	    MeshIOHandler::unbind_attributes();
+	}
+	
     private:
         coord_index_t dimension_;
+	Attribute<double> tex_coord_;
+	Attribute<double> vertex_tex_coord_;
     };
     
     
@@ -2727,6 +2882,7 @@ namespace GEO {
             Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
         ) {
+
             M.clear();
             try {
 
@@ -2751,13 +2907,23 @@ namespace GEO {
                         }
                     } 
                 }
-                
+
+		// Create facet "sentry"
+		if(!M.facets.are_simplices()) {
+		    M.facets.facet_ptr_[M.facets.nb()] = M.facet_corners.nb();
+		}
+		
+		// Create cell "sentry"
+		if(!M.cells.are_simplices()) {
+		    M.cells.cell_ptr_[M.cells.nb()] = M.cell_corners.nb();
+		}
+		
                 if(chunk_class == "SPTR") {
                     Logger::out("GeoFile")
                         << "File may contain several objects"
                         << std::endl;
                 }
-                
+		
             } catch(const GeoFileException& exc) {
                 Logger::err("I/O") << exc.what() << std::endl;
                 M.clear();
@@ -2768,15 +2934,6 @@ namespace GEO {
                 return false;
             }
 
-            // Create facet "sentry"
-            if(!M.facets.are_simplices()) {
-                M.facets.facet_ptr_[M.facets.nb()] = M.facet_corners.nb();
-            }
-
-            // Create cell "sentry"
-            if(!M.cells.are_simplices()) {
-                M.cells.cell_ptr_[M.cells.nb()] = M.cell_corners.nb();
-            }
 
             return true;
         }

@@ -30,6 +30,7 @@ option(GEOGRAM_WITH_TRIANGLE "Triangle mesher (Jonathan Shewchuk's triangle)" ON
 option(GEOGRAM_WITH_EXPLORAGRAM "Experimental code (hexahedral meshing vpipeline and optimal transport)" ON)
 option(GEOGRAM_LIB_ONLY "Libraries only (no example programs/no viewer)" OFF)
 option(GEOGRAM_WITH_FPG "Predicate generator (Sylvain Pion's FPG)" OFF)
+option(GEOGRAM_USE_SYSTEM_GLFW3 "Use the version of GLFW3 installed in the system if found" OFF)
 
 set(VORPALINE_PLATFORM "" CACHE STRING "")
 
@@ -37,7 +38,7 @@ include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 4)
-set(VORPALINE_VERSION_PATCH 2)
+set(VORPALINE_VERSION_PATCH 3)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})

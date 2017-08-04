@@ -60,11 +60,6 @@ extern "C" {
 // We cast function pointers to void* and conversely,
 // (I know this is bad), we ignore the warnings.
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpedantic"
-#endif
-
 /**
  * \file geogram/lua/lua_wrap.h
  * \brief Utilities to write lua bindings.
@@ -851,8 +846,10 @@ namespace GEO {
 	 * \param[in] L a pointer to the LUA state.
 	 */
 	static int call(lua_State* L) {
-	    FPTR f = reinterpret_cast<FPTR>(
-		lua_touserdata(L, lua_upvalueindex(1))
+	    FPTR f = FPTR(
+		Memory::generic_pointer_to_function_pointer(
+		    lua_touserdata(L, lua_upvalueindex(1))
+		)
 	    );
 	    return lua_wrap(L, f);
 	}
@@ -864,7 +861,12 @@ namespace GEO {
 	 *  a non-static object's member function.
 	 */
 	static void push(lua_State* L, FPTR f) {
-	    lua_pushlightuserdata(L, reinterpret_cast<void*>(f));
+	    lua_pushlightuserdata(
+		L,
+		Memory::function_pointer_to_generic_pointer(
+		    Memory::function_pointer(f)
+		)
+	    );
 	    lua_pushcclosure(L, lua_wrapper<FPTR>::call, 1);
 	}
     };
@@ -985,10 +987,5 @@ namespace GEO {
     /*************************************************************************/
     
 }
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-
 
 #endif

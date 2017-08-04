@@ -60,6 +60,7 @@
    fun:dlclose
    ...
 }
+
 {
    ZLIB uninitialized memory read
    Memcheck:Cond

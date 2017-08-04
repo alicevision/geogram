@@ -248,6 +248,53 @@ namespace {
     }
 
     /**
+     * \brief Parses the configuration file in the home directory.
+     * \details The configuration file "geogram.ini" in the home directory
+     *  has name=value pairs for pre-initializing command line arguments.
+     *  In addition it has sections indicated by square-breacketed names.
+     *  Only the arguments in the section with the same name as the program
+     *  are taken into account. Section [*] refers to all possible programs.
+     * \param[in] argc number of arguments passed to main()
+     * \param[in] argv array of command line arguments passed to main()
+     */
+    void parse_config_file(int argc, char** argv) {
+	geo_assert(argc >= 1);
+	std::string program_name = String::to_uppercase(FileSystem::base_name(argv[0]));
+	static bool init = false;
+	if(init) {
+	    return;
+	}
+	init = true;
+	Logger::out("geogram.ini") << "Home directory:" << FileSystem::home_directory()
+				   << std::endl;
+	std::string config_filename = FileSystem::home_directory() + "/geogram.ini";
+	std::string section = "*";
+	if(FileSystem::is_file(config_filename)) {
+	    Logger::out("geogram.ini") << "Using configuration file:"
+				       << config_filename
+				       << std::endl;
+	    std::ifstream in(config_filename.c_str());
+	    std::string line;
+	    while(std::getline(in,line)) {
+		if(line.length() >= 3 && line[0] == '[' && line[line.length()-1] == ']') {
+		    section = String::to_uppercase(line.substr(1,line.length()-2));
+		} else if(section == program_name || section == "*") {
+		    size_t pos = line.find("=");
+		    if(pos != std::string::npos) {
+			std::string argname = line.substr(0,pos);
+			std::string argval  = line.substr(pos+1,line.length()-pos-1);
+			if(CmdLine::arg_is_declared(argname)) {
+			    CmdLine::set_arg(argname, argval);
+			} else {
+			    Logger::warn("geogram.ini") << argname << "=" << argval << " ignored" << std::endl;
+			}
+		    }
+		}
+	    }
+	}
+    }
+    
+    /**
      * \brief Parses the command line arguments
      * \details This analyzes command line arguments passed to the main()
      * program in \p argc and \p argv. Arguments not matching program
@@ -262,6 +309,8 @@ namespace {
     bool parse_internal(
         int argc, char** argv, std::vector<std::string>& unparsed_args
     ) {
+	parse_config_file(argc, argv);
+	
         bool ok = true;
         desc_->argv0 = argv[0];
         unparsed_args.clear();

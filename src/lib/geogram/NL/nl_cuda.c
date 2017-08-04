@@ -690,13 +690,17 @@ NLboolean nlInitExtension_CUDA(void) {
     struct cudaDeviceProp deviceProp;
     int cublas_version;
     int cusparse_version;
+    NLenum flags = NL_LINK_LAZY | NL_LINK_GLOBAL;
+    if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
+	flags |= NL_LINK_QUIET;
+    }
     
     if(nlExtensionIsInitialized_CUDA()) {
 	return NL_TRUE;
     }
 
     CUDA()->DLL_cudart = nlOpenDLL(
-	LIBPREFIX "cudart" LIBEXTENSION, NL_LINK_LAZY | NL_LINK_GLOBAL
+	LIBPREFIX "cudart" LIBEXTENSION, flags
     );
 
     find_cuda_func(cudaGetDeviceCount);
@@ -731,7 +735,7 @@ NLboolean nlInitExtension_CUDA(void) {
     }
     
     CUDA()->DLL_cublas = nlOpenDLL(
-	LIBPREFIX "cublas" LIBEXTENSION, NL_LINK_LAZY | NL_LINK_GLOBAL
+	LIBPREFIX "cublas" LIBEXTENSION, flags
     );
 
     find_cublas_func(cublasCreate);
@@ -757,7 +761,7 @@ NLboolean nlInitExtension_CUDA(void) {
     printf("OpenNL CUDA: cublas version = %d\n", cublas_version);
     
     CUDA()->DLL_cusparse = nlOpenDLL(
-	LIBPREFIX "cusparse" LIBEXTENSION, NL_LINK_LAZY | NL_LINK_GLOBAL
+	LIBPREFIX "cusparse" LIBEXTENSION, flags
     );
     find_cusparse_func(cusparseCreate);
     find_cusparse_func(cusparseDestroy);
@@ -1030,7 +1034,7 @@ static void* cuda_blas_malloc(
     NLBlas_t blas, NLmemoryType type, size_t size
 ) {
     void* result = NULL;
-    blas->used_ram[type] += size;
+    blas->used_ram[type] += (NLulong)size;
     blas->max_used_ram[type] = MAX(
 	blas->max_used_ram[type],blas->used_ram[type]
     );
@@ -1045,7 +1049,7 @@ static void* cuda_blas_malloc(
 static void cuda_blas_free(
     NLBlas_t blas, NLmemoryType type, size_t size, void* ptr
 ) {
-    blas->used_ram[type] -= size;
+    blas->used_ram[type] -= (NLulong)size;
     if(type == NL_HOST_MEMORY) {
 	free(ptr);
     } else {
@@ -1126,8 +1130,8 @@ static void cuda_blas_dgemv(
     nl_arg_used(blas);
     /* TODO: update FLOPS */
     CUDA()->cublasDgemv(
-	CUDA()->HNDL_cublas, trans, m, n, &alpha,
-	A, ldA, x, incx, &beta, y, incy
+	CUDA()->HNDL_cublas, (cublasOperation_t)trans,
+	m, n, &alpha, A, ldA, x, incx, &beta, y, incy
     );
 }
 
@@ -1139,7 +1143,11 @@ static void cuda_blas_dtpsv(
     nl_arg_used(blas);
     /* TODO: update FLOPS */
     CUDA()->cublasDtpsv(
-	CUDA()->HNDL_cublas, uplo, trans, diag, n, AP, x, incx	
+	CUDA()->HNDL_cublas,
+	(cublasFillMode_t)uplo,
+	(cublasOperation_t)trans,
+	(cublasDiagType_t)diag, n,
+	AP, x, incx	
     );
 }
 

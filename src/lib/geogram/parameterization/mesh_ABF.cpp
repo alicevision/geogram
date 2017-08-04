@@ -88,19 +88,26 @@ namespace {
 		    }
 		}
 	    }
+	    verbose_ = false;
 	}
 
 	~ABFPlusPlus() {
 	    deallocate_variables();
 	}
 
+	void set_verbose(bool x) {
+	    verbose_ = x;
+	}
+	
 	bool parameterize() {
 	    allocate_variables();
 	    compute_beta();
 	    angle_.bind(mesh_.facet_corners.attributes(),"angle");
 	    if(!solve_angles()) {
-		Logger::err("ABF++") << "Did not converge." << std::endl ; 
-		Logger::err("ABF++") << "Switching to LSCM" << std::endl ; 
+		if(verbose_) {
+		    Logger::err("ABF++") << "Did not converge." << std::endl ; 
+		    Logger::err("ABF++") << "Switching to LSCM" << std::endl ;
+		}
 		// Note: AnglesToUV with angles measured on the mesh
 		//  (i.e. beta's) = LSCM !!!
 		for(index_t c=0; c<mesh_.facet_corners.nb(); ++c) {
@@ -272,8 +279,11 @@ namespace {
 		double errf_k = errf() ;
 
 
-		Logger::out("ABF++") << "iter= " << k << " errf= " << errf_k 
-				     << std::endl ;
+		if(verbose_) {
+		    Logger::out("ABF++")
+			<< "iter= " << k << " errf= " << errf_k 
+			<< std::endl ;
+		}
 
 		
 		if(Numeric::is_nan(errf_k) || errf_k > 1e18) {
@@ -282,7 +292,9 @@ namespace {
 
 
 		if(errf_k <= newton_tolf_) {
-		    Logger::out("ABF++") << "converged" << std::endl ;
+		    if(verbose_) {
+			Logger::out("ABF++") << "converged" << std::endl ;
+		    }
 		    return true ;
 		}
 
@@ -297,16 +309,21 @@ namespace {
 		// weight the threshold by the size of the mesh.
 
 		if(Numeric::is_nan(errx) || errx > 1e15) {
-		    Logger::err("ABF++") << "errx: " << errx << std::endl ;
+		    if(verbose_) {
+			Logger::err("ABF++") << "errx: " << errx << std::endl ;
+		    }
 		    return false ;
 		}
 
-
-		Logger::out("ABF++") << "iter= " << k << " errx= " << errx
-				     << std::endl ;
+		if(verbose_) {
+		    Logger::out("ABF++") << "iter= " << k << " errx= " << errx
+					 << std::endl ;
+		}
 
 		if(errx <= newton_tolx_) {
-		    Logger::out("ABF++") << "converged" << std::endl ;
+		    if(verbose_) {
+			Logger::out("ABF++") << "converged" << std::endl ;
+		    }
 		    return true ;
 		}
 
@@ -317,7 +334,17 @@ namespace {
 		}
 	    }
 
-	    Logger::out("ABF++") << "ran out of Newton iters" << std::endl ;
+
+	    for(index_t c=0; c<mesh_.facet_corners.nb(); ++c) {
+		if(Numeric::is_nan(alpha_[c])) {
+		    return false;
+		}
+	    }
+	    
+	    
+	    if(verbose_) {
+		Logger::out("ABF++") << "ran out of Newton iters" << std::endl ;
+	    }
 	    return true ;
 	}
 
@@ -392,12 +419,16 @@ namespace {
 		r_[i] -= b2_star_[i];
 	    }
 
-	    Logger::out("ABF++") << "Solving linear system..." << std::endl;
+	    if(verbose_) {
+		Logger::out("ABF++") << "Solving linear system..." << std::endl;
+	    }
 	    NLMatrix Minv =
 		nlMatrixFactorize((NLMatrix)&M_, NL_PERM_SUPERLU_EXT);
 	    nlMultMatrixVector(Minv, r_.data(), dlambda2_.data());
 	    nlDeleteMatrix(Minv);
-	    Logger::out("ABF++") << "Solved" << std::endl;
+	    if(verbose_) {
+		Logger::out("ABF++") << "Solved" << std::endl;
+	    }
 	    
 	    // 4) compute dlambda1 and dalpha in function of dlambda2
 	    
@@ -777,6 +808,8 @@ namespace {
         // ------ Final linear system ---------------------------------
         NLSparseMatrix M_        ; // size = 2.nint * 2.nint
         vector<double> r_        ; // size = 2.nint
+
+	bool verbose_;
     };
     
 }
@@ -784,7 +817,7 @@ namespace {
 namespace GEO {
     
     void mesh_compute_ABF_plus_plus(
-	Mesh& M, const std::string& attribute_name
+	Mesh& M, const std::string& attribute_name, bool verbose
     ) {
 	// Normally, the ABFPlusPlus class can handle non-triangulated
 	// surfaces, but:
@@ -795,6 +828,7 @@ namespace GEO {
 	geo_assert(M.facets.are_simplices());
 	
 	ABFPlusPlus ABF(M);
+	ABF.set_verbose(verbose);
 	ABF.parameterize(); // This computes the "angle" attribute.
 	// Now use LSCM to retreive (u,v) coordinates from the angles.
 	mesh_compute_LSCM(M, attribute_name, false, "angle");

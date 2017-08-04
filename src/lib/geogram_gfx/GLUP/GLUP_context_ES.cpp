@@ -147,9 +147,9 @@ namespace {
      *  the shader.
      */
 
-#define mesh_tex_coord_lookup(tex)           \
-    create_mesh_tex_coord_lookup_function(   \
-        tex, sizeof(tex) / (4*sizeof(float)) \
+#define mesh_tex_coord_lookup(tex)                    \
+    create_mesh_tex_coord_lookup_function(            \
+        tex, index_t(sizeof(tex) / (4*sizeof(float))) \
     )
 }
 
@@ -273,7 +273,7 @@ namespace GLUP {
             << "vertex_array_object: "
             << extension_vertex_array_object
             << std::endl;
-            
+
         create_CPU_side_uniform_buffer();
 
 
@@ -747,7 +747,7 @@ namespace GLUP {
             0, 1, 2
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }
@@ -758,7 +758,7 @@ namespace GLUP {
             0, 2, 3
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }
@@ -771,7 +771,7 @@ namespace GLUP {
             0,1,2
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }
@@ -786,7 +786,7 @@ namespace GLUP {
             4,6,7, 4,7,5
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }
@@ -800,7 +800,7 @@ namespace GLUP {
             1,4,5, 1,5,2
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }
@@ -814,7 +814,7 @@ namespace GLUP {
             2,1,4
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }
@@ -826,7 +826,7 @@ namespace GLUP {
             3,2,0
         };
         setup_primitive_generic(
-            sizeof(element_indices)/sizeof(index_t),
+            index_t(sizeof(element_indices)/sizeof(index_t)),
             element_indices
         );
     }

@@ -12,12 +12,18 @@ endif()
 
 # Since we are in a CMake "object library" (i.e.,
 # a set of object files compiled with same options),
-# the automatically generated geogram_gfx_EXPORTS
+# the automatically generated geogram_EXPORTS
 # pre-processor definition of the parent library
 # is not automatically inherited (this is why
 # I set it manually)
 if(BUILD_SHARED_LIBS)
    add_definitions(-Dgeogram_EXPORTS)
+   if(WIN32)
+# For Windows, nothing to do, because
+# LUA_DL_DLL is by-default activated in luaconf.h
+   else()
+      add_definitions(-DLUA_USE_DLOPEN)   
+   endif()
 endif()
 
 aux_source_directories(SOURCES "Source Files"               .)
@@ -43,3 +49,7 @@ endif()
 
 add_library(geogram_third_party OBJECT ${SOURCES})
 
+set_target_properties(
+    geogram_third_party PROPERTIES
+    FOLDER "GEOGRAM"
+)

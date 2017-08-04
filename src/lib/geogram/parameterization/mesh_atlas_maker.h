@@ -43,35 +43,29 @@
  *
  */
 
-#ifndef GEOGRAM_MESH_MESH_ABF
-#define GEOGRAM_MESH_MESH_ABF
-
-/**
- * \file geogram/mesh/mesh_ABF.h
- */
+#ifndef GEOGRAM_MESH_MESH_ATLAS_MAKER
+#define GEOGRAM_MESH_MESH_ATLAS_MAKER
 
 #include <geogram/basic/common.h>
-#include <geogram/basic/numeric.h>
+
+/**
+ * \file geogram/mesh/mesh_atlas_maker.h
+ */
 
 namespace GEO {
+
     class Mesh;
 
-    /**
-     * \brief Computes texture coordinates using Least Squares Conformal Maps.
-     * \details The method is described in the following reference:
-     *   ABF++: fast and robust angle-based flattening, A. Sheffer, B. Levy,
-     *   M. Mogilnitsky,  A. Bogomyakov, ACM Transactions on Graphics, 2005
-     * \param[in,out] M a reference to a surface mesh. Facets need to be 
-     *   triangulated.
-     * \param[in] attribute_name the name of the vertex attribute where 
-     *   texture coordinates are stored.
-     * \param[in] verbose if true, messages with statistics are displayed 
-     *   in the logger during computation.
-     */
-    void GEOGRAM_API mesh_compute_ABF_plus_plus(
-	Mesh& M, const std::string& attribute_name="tex_coord",
+    enum ChartParameterizer {
+	PARAM_LSCM, PARAM_SPECTRAL_LSCM, PARAM_ABF
+    };
+    
+    void GEOGRAM_API mesh_make_atlas(
+	Mesh& mesh,
+	double hard_angles_threshold = 45.0,
+	ChartParameterizer=PARAM_ABF,
 	bool verbose = false
-    );    
+    );
 }
 
 #endif

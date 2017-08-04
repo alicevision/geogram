@@ -26,5 +26,6 @@ endif()
 
 set_target_properties(geogram_num_3rdparty PROPERTIES
                       VERSION ${VORPALINE_VERSION}
-                      SOVERSION ${VORPALINE_VERSION_MAJOR})
+                      SOVERSION ${VORPALINE_VERSION_MAJOR}
+		      FOLDER "GEOGRAM")
 

@@ -55,6 +55,10 @@
 
 #ifdef GEO_OS_APPLE
 #  define GEO_USE_DEFAULT_SPINLOCK_ARRAY
+#  include <Availability.h>
+#  ifdef __MAC_10_12
+#    include <os/lock.h>
+#  endif
 #endif
 
 /**
@@ -71,6 +75,8 @@ namespace GEO {
         /** A lightweight synchronization structure. */
         typedef arm_mutex_t spinlock;
 
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT 0
         /**
          * \brief Loops until \p x is available then reserves it.
          * \param[in] x a spinlock that should be available.
@@ -92,6 +98,8 @@ namespace GEO {
         /** A lightweight synchronization structure. */
         typedef unsigned char spinlock;
 
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT 0
         /**
          * \brief Loops until \p x is available then reserve it.
          * \param[in] x a spinlock that should be available.
@@ -121,9 +129,22 @@ namespace GEO {
 
 #elif defined(GEO_OS_APPLE)
 
+#ifdef __MAC_10_12
+        /** A lightweight synchronization structure. */
+        typedef os_unfair_lock spinlock;
+        
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT OS_UNFAIR_LOCK_INIT
+        //inline void init_spinlock(spinlock & s) { s = OS_UNFAIR_LOCK_INIT; }
+        //inline bool try_acquire_spinlock (spinlock & s) { return os_unfair_lock_trylock(&s); }
+        inline void acquire_spinlock    (spinlock & s) { os_unfair_lock_lock(&s); }
+        inline void release_spinlock  (spinlock & s) { os_unfair_lock_unlock(&s); }
+#else
         /** A lightweight synchronization structure. */
         typedef OSSpinLock spinlock;
 
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT OS_SPINLOCK_INIT
         inline void acquire_spinlock(volatile spinlock& x) {
             OSSpinLockLock(&x);
         }
@@ -131,12 +152,15 @@ namespace GEO {
         inline void release_spinlock(volatile spinlock& x) {
             OSSpinLockUnlock(&x);
         }
+#endif // __MAC_10_12
 
 #elif defined(GEO_OS_WINDOWS)
 
         /** A lightweight synchronization structure. */
         typedef short spinlock;
 
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT 0
         inline void acquire_spinlock(volatile spinlock& x) {
             while(_InterlockedCompareExchange16(&x, 1, 0) == 1) {
                 // Intel recommends to have a PAUSE asm instruction
@@ -201,7 +225,11 @@ namespace GEO {
              * \param[in] size_in The desired new size.
              */
             void resize(index_t size_in) {
+#if defined(GEO_OS_APPLE) && defined(__MAC_10_12)
+                spinlocks_.assign(size_in, OS_UNFAIR_LOCK_INIT);
+#else
                 spinlocks_.assign(size_in, 0);
+#endif
             }
 
             /**

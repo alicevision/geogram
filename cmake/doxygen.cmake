@@ -50,6 +50,11 @@ if(DOXYGEN_FOUND)
         APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${doc_output_dir}/${doc_type}
     )
 
+    set_target_properties(
+        ${doc_target} PROPERTIES
+	FOLDER "DOC"
+    )
+
   endfunction()
 
 endif()

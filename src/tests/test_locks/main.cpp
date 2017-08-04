@@ -79,7 +79,7 @@ namespace {
         ) :
             single_lock_(single_lock),
             nb_times_(nb_times) {
-            global_lock_ = 0;
+            global_lock_ = GEOGRAM_SPINLOCK_INIT;
             if(!single_lock_) {
                 locks_.resize(size);
             }

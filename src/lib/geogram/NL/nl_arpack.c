@@ -188,14 +188,16 @@ static char* u(const char* str) {
     }
 
 NLboolean nlInitExtension_ARPACK(void) {
+    NLenum flags = NL_LINK_NOW | NL_LINK_USE_FALLBACK;
+    if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
+	flags |= NL_LINK_QUIET;
+    }
+    
     if(ARPACK()->DLL_handle != NULL) {
         return nlExtensionIsInitialized_ARPACK();
     }
-
-    ARPACK()->DLL_handle = nlOpenDLL(
-	ARPACK_LIB_NAME,
-	NL_LINK_NOW | NL_LINK_USE_FALLBACK
-    );
+    
+    ARPACK()->DLL_handle = nlOpenDLL(ARPACK_LIB_NAME, flags);
     if(ARPACK()->DLL_handle == NULL) {
         return NL_FALSE;
     }

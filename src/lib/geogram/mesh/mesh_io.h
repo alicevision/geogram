@@ -72,7 +72,7 @@ namespace GEO {
     enum MeshAttributesFlags {
         MESH_NO_ATTRIBUTES = 0,
         MESH_VERTEX_REGION = 1,
-        MESH_VERTEX_NORMAL = 2,
+        MESH_VERTEX_TEX_COORD = 2,
         MESH_VERTEX_COLOR = 4,
         MESH_FACET_REGION = 8,
         MESH_CELL_REGION = 16,
@@ -373,10 +373,10 @@ namespace GEO {
          */
         virtual ~MeshIOHandler();
 
-        void bind_attributes(
+        virtual void bind_attributes(
             const Mesh& M, const MeshIOFlags& flags, bool create
         );
-        void unbind_attributes();
+        virtual void unbind_attributes();
         
     protected:
         Attribute<index_t> vertex_region_;

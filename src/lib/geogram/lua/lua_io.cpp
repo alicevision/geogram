@@ -298,6 +298,42 @@ void init_lua_io(lua_State* L) {
     lua_bindwrapperglobal(L, require);
     lua_bindwrapperglobal(L, print);
     lua_bindwrapperglobal(L, tostring);    
-    
 }
 
+/************************************************************************/
+
+// In lua 5.3, lua_replace, lua_insert and lua_remove are macros, 
+// whereas they are functions in lua 5.2.
+// I redeclare them as functions here, so that we can load extension
+// modules initially meant for use with lua 5.2 (such as "lgi", that
+// allows loading libraries with gobject introspection, such as cairo
+// and Poppler).
+
+#ifdef lua_replace
+#undef lua_replace
+extern "C" int GEOGRAM_API lua_replace(lua_State* L, int idx);
+extern "C" int GEOGRAM_API lua_replace(lua_State* L, int idx) {
+    lua_copy(L, -1, idx);
+    lua_pop(L,1);
+    return 0;
+}
+#endif
+
+#ifdef lua_insert
+#undef lua_insert
+extern "C" int GEOGRAM_API lua_insert(lua_State* L, int idx);
+extern "C" int GEOGRAM_API lua_insert(lua_State* L, int idx) {
+    lua_rotate(L, idx, 1);
+    return 0;
+}
+#endif
+
+#ifdef lua_remove
+#undef lua_remove
+extern "C" int GEOGRAM_API lua_remove(lua_State* L, int idx);
+extern "C" int GEOGRAM_API lua_remove(lua_State* L, int idx) {
+    lua_rotate(L, idx, -1);
+    lua_pop(L,1);
+    return 0;
+}
+#endif

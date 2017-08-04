@@ -987,6 +987,7 @@ namespace GLUP {
             index_t n = nb_vertices_per_primitive[primitive];
             GLenum GL_primitive = primitive_info_[primitive].GL_primitive;
             n /= nb_vertices_per_GL_primitive(GL_primitive);
+
             for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
                 if(immediate_state_.buffer[i].is_enabled()) {                
                     for(index_t j=0; j<n; ++j) {
@@ -1042,17 +1043,21 @@ namespace GLUP {
                 primitive_info_[immediate_state_.primitive()].GL_primitive;
             n /= nb_vertices_per_GL_primitive(GL_primitive);
             for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
-                for(index_t j=0; j<n; ++j) {
-                    GEO_CHECK_GLUP();                                     
-                    glDisableVertexAttribArray(i*n+j);
-                    GEO_CHECK_GLUP();                                     
-                }
+                if(immediate_state_.buffer[i].is_enabled()) {                		
+		    for(index_t j=0; j<n; ++j) {
+			GEO_CHECK_GLUP();
+			glDisableVertexAttribArray(i*n+j);
+			GEO_CHECK_GLUP();                                     
+		    }
+		}
             }
         } else {
             for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
-                GEO_CHECK_GLUP();                
-                glDisableVertexAttribArray(i);
-                GEO_CHECK_GLUP();                                
+                if(immediate_state_.buffer[i].is_enabled()) {		
+		    GEO_CHECK_GLUP();                
+		    glDisableVertexAttribArray(i);
+		    GEO_CHECK_GLUP();
+		}
             }
         }
 
@@ -1448,6 +1453,7 @@ namespace GLUP {
             return;
         }
 
+        GEO_CHECK_GLUP();    	
         glBindAttribLocation(program, GLUP_VERTEX_ATTRIBUTE, "vertex_in");
         glBindAttribLocation(program, GLUP_COLOR_ATTRIBUTE, "color_in");
         glBindAttribLocation(program, GLUP_TEX_COORD_ATTRIBUTE, "tex_coord_in");
@@ -1457,13 +1463,16 @@ namespace GLUP {
 		program, GLUP_VERTEX_ID_ATTRIBUTE, "vertex_id_in"
 	    );            
         }
+        GEO_CHECK_GLUP();    	
         GLSL::link_program(program);
+        GEO_CHECK_GLUP();    	
         bind_uniform_state(program);            
+        GEO_CHECK_GLUP();    	
 
         //  Bind default texture units. We use different texture
         // units because there is a mode where both a 1D and another
         // texture is bound ("indirect texturing").
-
+	
         GLSL::set_program_uniform_by_name(
             program, "texture2Dsampler", GLint(GLUP_TEXTURE_2D_UNIT)
         );        
@@ -1473,6 +1482,8 @@ namespace GLUP {
         GLSL::set_program_uniform_by_name(
             program, "texture3Dsampler", GLint(GLUP_TEXTURE_3D_UNIT)
         );
+	
+        GEO_CHECK_GLUP();    	
     }
 
     void Context::set_primitive_info_vertex_gather_mode(
@@ -1487,19 +1498,24 @@ namespace GLUP {
         // and GLSL does not like to have that in the declaration
         // (when saying layout(binding = nb_vertices), the GLSL
         // compiler does not "see" that nb_vertices is a constant).
+	
+        GEO_CHECK_GLUP();    	
         glBindAttribLocation(program, 0, "vertex_in");
         glBindAttribLocation(program, n, "color_in");
         glBindAttribLocation(program, 2*n, "tex_coord_in");
-        glBindAttribLocation(program, 3*n, "normal_in");	
-
+        glBindAttribLocation(program, 3*n, "normal_in");
+	
+        GEO_CHECK_GLUP();    	
         GLSL::link_program(program);
 
+        GEO_CHECK_GLUP();    		
         bind_uniform_state(program);            
 
         //  Bind default texture units. We use different texture
         // units because there is a mode where both a 1D and another
         // texture is bound ("indirect texturing").
 
+        GEO_CHECK_GLUP();    			
         GLSL::set_program_uniform_by_name(
             program, "texture2Dsampler", GLint(GLUP_TEXTURE_2D_UNIT)
         );        
@@ -1517,16 +1533,20 @@ namespace GLUP {
         //   Note: since the function can be called several times (one
         // per toggles configuration), make sute the VAO does not already
         // exists.
+        GEO_CHECK_GLUP();    			
         if(primitive_info_[glup_primitive].VAO == 0) {
+	    GEO_CHECK_GLUP();    				    
             glupGenVertexArrays(
                 1, &(primitive_info_[glup_primitive].VAO)
             );
+	    GEO_CHECK_GLUP();    				    
             glupBindVertexArray(
                 primitive_info_[glup_primitive].VAO
             );
-
+	    GEO_CHECK_GLUP();    			
             for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
                 glBindBuffer(GL_ARRAY_BUFFER,immediate_state_.buffer[i].VBO());
+		GEO_CHECK_GLUP();    					
                 for(index_t j=0; j<n; ++j) {
                     glVertexAttribPointer(
                         i*n+j,
@@ -1536,6 +1556,7 @@ namespace GLUP {
                         GLsizei(sizeof(GL_FLOAT)*4*n),        // stride
                         (const GLvoid*)(sizeof(GL_FLOAT)*4*j) // pointer   
                     );
+		    GEO_CHECK_GLUP();		    
                 }
             }
 

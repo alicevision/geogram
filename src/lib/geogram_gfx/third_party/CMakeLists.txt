@@ -18,3 +18,7 @@ aux_source_directories(SOURCES "Source Files\\imgui_lua_bindings" imgui_lua_bind
 
 add_library(geogram_gfx_third_party OBJECT ${SOURCES})
 
+set_target_properties(
+    geogram_gfx_third_party PROPERTIES
+    FOLDER "GEOGRAM"
+)

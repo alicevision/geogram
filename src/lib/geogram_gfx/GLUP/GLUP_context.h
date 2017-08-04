@@ -54,7 +54,7 @@
 
 // Uncomment to activate OpenGL error reporting for
 // each call to GLUP functions.
-//#define GLUP_DEBUG
+// #define GLUP_DEBUG
 
 #ifdef GLUP_DEBUG
 #define GEO_CHECK_GLUP() ::GEO::check_gl(__FILE__,__LINE__)
@@ -1441,8 +1441,8 @@ namespace GLUP {
          * \details This function needs to be called before starting using
          *   the extension, even if you are sure that it is supported. In
          *   particular, WebGL specification requires that.
-         * \return true if the extension is supported.
-         * \return false otherwise.
+         * \retval true if the extension is supported.
+         * \retval false otherwise.
          */
         bool extension_is_supported(const std::string& extension);
         

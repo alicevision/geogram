@@ -83,7 +83,7 @@ namespace GEO {
         dimension_(dim),
         cached_base_addr_(nil),
         cached_size_(0),
-        lock_(0)
+        lock_(GEOGRAM_SPINLOCK_INIT)
     {
     }
     

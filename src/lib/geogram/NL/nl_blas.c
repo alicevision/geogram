@@ -1410,7 +1410,7 @@ static void* host_blas_malloc(
     NLBlas_t blas, NLmemoryType type, size_t size
 ) {
     nl_arg_used(type);
-    blas->used_ram[type] += size;
+    blas->used_ram[type] += (NLulong)size;
     blas->max_used_ram[type] = MAX(
 	blas->max_used_ram[type],blas->used_ram[type]
     );
@@ -1421,7 +1421,7 @@ static void host_blas_free(
     NLBlas_t blas, NLmemoryType type, size_t size, void* ptr
 ) {
     nl_arg_used(type);
-    blas->used_ram[type] -= size;
+    blas->used_ram[type] -= (NLulong)size;
     free(ptr);
 }
 

@@ -25,6 +25,14 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+/* 
+ *Lots of documentation tags in GLFW that are
+ * not understood by CLANG.
+ */
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wdocumentation"
+#endif
+
 #ifdef GEO_USE_BUILTIN_GLFW3
 #include <third_party/glfw/include/GLFW/glfw3.h>
 #else

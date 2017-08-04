@@ -43,6 +43,7 @@
  */
 
 #include "nl_mkl.h"
+#include "nl_context.h"
 
 /**
  * \file nl_mkl.c
@@ -169,25 +170,30 @@ static void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* 
 #define MKL_PREFIX  INTEL_PREFIX "mkl/" LIB_DIR
 
 NLboolean nlInitExtension_MKL(void) {
+    NLenum flags = NL_LINK_LAZY | NL_LINK_GLOBAL;
+    if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
+	flags |= NL_LINK_QUIET;
+    }
+    
     if(MKL()->DLL_mkl_intel_lp64 != NULL) {
         return nlExtensionIsInitialized_MKL();
     }
     
     MKL()->DLL_iomp5 = nlOpenDLL(
 	INTEL_PREFIX LIB_DIR "libiomp5.so",
-	NL_LINK_LAZY | NL_LINK_GLOBAL
+	flags
     );    
     MKL()->DLL_mkl_core = nlOpenDLL(
 	MKL_PREFIX "libmkl_core.so",
-	NL_LINK_LAZY | NL_LINK_GLOBAL
+	flags
     );    
     MKL()->DLL_mkl_intel_thread = nlOpenDLL(
 	MKL_PREFIX "libmkl_intel_thread.so",
-	NL_LINK_LAZY | NL_LINK_GLOBAL	
+	flags
     );    
     MKL()->DLL_mkl_intel_lp64 = nlOpenDLL(
 	MKL_PREFIX "libmkl_intel_lp64.so",
-	NL_LINK_LAZY | NL_LINK_GLOBAL	
+	flags
     );
     
     if(

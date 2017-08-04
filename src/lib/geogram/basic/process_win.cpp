@@ -93,7 +93,7 @@ namespace {
      * Windows threads for running concurrent threads and control critical
      * sections.
      */
-    class GEOGRAM_API WindowsThreadManager : public ThreadManager {
+    class WindowsThreadManager : public ThreadManager {
     public:
         /**
          * \brief Creates and initializes the Windows ThreadManager
@@ -178,7 +178,7 @@ namespace {
      * uses Windows Threads Pools for running concurrent threads and control
      * critical sections.
      */
-    class GEOGRAM_API WindowsThreadPoolManager : public WindowsThreadManager {
+    class WindowsThreadPoolManager : public WindowsThreadManager {
     public:
         /**
          * \brief Creates and initializes the Windows Threads Pool manager

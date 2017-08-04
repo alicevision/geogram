@@ -332,7 +332,7 @@ namespace GEO {
          * \param[in] v a 2d vector
          * \return true if one of the coordinates is a NaN, false otherwise
          */
-        inline bool is_nan(const vec2& v) {
+        inline bool has_nan(const vec2& v) {
             return
                 Numeric::is_nan(v.x) ||
                 Numeric::is_nan(v.y);

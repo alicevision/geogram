@@ -18,7 +18,8 @@ add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)
 
 set_target_properties(geogram_gfx PROPERTIES
                       VERSION ${VORPALINE_VERSION}
-                      SOVERSION ${VORPALINE_VERSION_MAJOR})
+                      SOVERSION ${VORPALINE_VERSION_MAJOR}
+		      FOLDER "GEOGRAM")
 
 target_link_libraries(geogram_gfx glfw)
 

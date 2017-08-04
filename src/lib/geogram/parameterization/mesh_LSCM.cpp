@@ -76,7 +76,17 @@ namespace {
 	    mesh_(M), tex_coord_(tex_coord), angle_(angle) {
 	    geo_assert(tex_coord.dimension() == 2);
 	    locked_1_ = index_t(-1);
-	    locked_2_ = index_t(-1);	    
+	    locked_2_ = index_t(-1);
+	    verbose_ = false;
+	}
+
+	/**
+	 * \brief Enables or disables messages.
+	 * \param[in] x if true, messages are displayed on the console
+	 *  with statistics. Default is non-verbose.
+	 */
+	void set_verbose(bool x) {
+	    verbose_ = x;
 	}
 	
 	/**
@@ -109,28 +119,38 @@ namespace {
 	    nlNewContext();
 	    if(spectral_) {
 		if(nlInitExtension("ARPACK")) {
-		    Logger::out("LSCM") << "ARPACK extension initialized"
-					<< std::endl;
+		    if(verbose_) {
+			Logger::out("LSCM") << "ARPACK extension initialized"
+					    << std::endl;
+		    }
 		    nlEigenSolverParameteri(NL_EIGEN_SOLVER, NL_ARPACK_EXT);
 		    nlEigenSolverParameteri(NL_NB_EIGENS, nb_eigens);
-		    nlEnable(NL_VERBOSE);
+		    if(verbose_) {
+			nlEnable(NL_VERBOSE);
+		    }
 		} else {
-		    Logger::out("LSCM")
-			<< "Could not initialize ARPACK extension"
-			<< std::endl;
-		    Logger::out("LSCM")
-			<< "Falling back to least squares mode"
-			<< std::endl;
+		    if(verbose_) {
+			Logger::out("LSCM")
+			    << "Could not initialize ARPACK extension"
+			    << std::endl;
+			Logger::out("LSCM")
+			    << "Falling back to least squares mode"
+			    << std::endl;
+		    }
 		    spectral_ = false;
 		}
 	    } else {
 		if(nlInitExtension("CHOLMOD")) {
-		    Logger::out("LSCM") << "using CHOLMOD"
-					<< std::endl;
+		    if(verbose_) {
+			Logger::out("LSCM") << "using CHOLMOD"
+					    << std::endl;
+		    }
 		    nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT);
 		} else {
-		    Logger::out("LSCM") << "using JacobiCG"
-					<< std::endl;
+		    if(verbose_) {
+			Logger::out("LSCM") << "using JacobiCG"
+					    << std::endl;
+		    }
 		}
 	    }
 	    NLuint nb_vertices = mesh_.vertices.nb();
@@ -151,13 +171,17 @@ namespace {
 	    setup_lscm();
 	    nlEnd(NL_MATRIX);
 	    nlEnd(NL_SYSTEM);
-	    Logger::out("LSCM") << "Solving ..." << std::endl;
+	    if(verbose_) {
+		Logger::out("LSCM") << "Solving ..." << std::endl;
+	    }
 	    
 	    if(spectral_) {
 		nlEigenSolve();
-		for(NLuint i=0; i<nb_eigens; ++i) {
-		    Logger::out("LSCM") << "[" << i << "] "
-					<< nlGetEigenValue(i) << std::endl;
+		if(verbose_) {
+		    for(NLuint i=0; i<nb_eigens; ++i) {
+			Logger::out("LSCM") << "[" << i << "] "
+					    << nlGetEigenValue(i) << std::endl;
+		    }
 		}
 		
 		// Find first "non-zero" eigenvalue
@@ -177,13 +201,15 @@ namespace {
 	    normalize_uv();
 	    
 	    if(!spectral_) {
-		double time;
-		NLint iterations;	    
-		nlGetDoublev(NL_ELAPSED_TIME, &time);
-		nlGetIntegerv(NL_USED_ITERATIONS, &iterations);
-		Logger::out("LSCM") << "Solver time: " << time << std::endl;
-		Logger::out("LSCM") << "Used iterations: "
-				    << iterations << std::endl;
+		if(verbose_) {
+		    double time;
+		    NLint iterations;	    
+		    nlGetDoublev(NL_ELAPSED_TIME, &time);
+		    nlGetIntegerv(NL_USED_ITERATIONS, &iterations);
+		    Logger::out("LSCM") << "Solver time: " << time << std::endl;
+		    Logger::out("LSCM") << "Used iterations: "
+					<< iterations << std::endl;
+		}
 	    }
 	    nlDeleteContext(nlGetCurrent());
 	}
@@ -558,6 +584,8 @@ namespace {
 	 * \brief The indices of the two locked vertices.
 	 */
         index_t locked_1_, locked_2_;
+
+	bool verbose_;
     };
     
 }
@@ -566,7 +594,8 @@ namespace GEO {
 
     void mesh_compute_LSCM(
 	Mesh& M, const std::string& attribute_name, bool spectral,
-	const std::string& angle_attribute_name
+	const std::string& angle_attribute_name,
+	bool verbose
     ) {
 	Attribute<double> tex_coord;
 	tex_coord.bind_if_is_defined(M.vertices.attributes(), attribute_name);
@@ -589,7 +618,7 @@ namespace GEO {
 	);
 	LSCM lscm(M,tex_coord,angle);
 	lscm.set_spectral(spectral);
+	lscm.set_verbose(verbose);
 	lscm.apply();
     }
-    
 }

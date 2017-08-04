@@ -34,6 +34,14 @@
 #include <geogram/basic/progress.h>
 #include <geogram/basic/command_line.h>
 
+/* 
+ *Lots of documentation tags in GLFW that are
+ * not understood by CLANG.
+ */
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wdocumentation"
+#endif
+
 #ifdef GEO_OS_EMSCRIPTEN
 #include <GLFW/glfw3.h>
 #include <emscripten.h>

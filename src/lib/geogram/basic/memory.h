@@ -97,6 +97,9 @@ namespace GEO {
         /** \brief Pointer to unsigned byte(s) */
         typedef byte* pointer;
 
+	/** \brief Generic function pointer */
+	typedef void (*function_pointer)();
+	
         /**
          * \brief Value of the null pointer
          * \internal Should be replaces by nullptr in C++11
@@ -127,6 +130,57 @@ namespace GEO {
             ::memcpy(to, from, size);
         }
 
+	/**
+	 * \brief Converts a function pointer to a generic pointer.
+	 * \details In C++ it is not legal to convert between function pointers
+	 *  and generic pointers using casts. Such conversion may be required when
+	 *  retrieving symbols in dynamically linked libraries, or when interfacing
+	 *  with scripting languages.
+	 * \param[in] fptr the function pointer
+	 * \return a generic pointer with the same address as \p fptr
+	 */
+	inline pointer function_pointer_to_generic_pointer(function_pointer fptr) {
+	    // I know this is ugly, but I did not find a simpler warning-free
+	    // way that is portable between all compilers.
+	    pointer result = nil;
+	    ::memcpy(&result, &fptr, sizeof(pointer));
+	    return result;
+	}
+
+	/**
+	 * \brief Converts a generic pointer to a function pointer.
+	 * \details In C++ it is not legal to convert between function pointers
+	 *  and generic pointers using casts. Such conversion may be required when
+	 *  retrieving symbols in dynamically linked libraries, or when interfacing
+	 *  with scripting languages.
+	 * \param[in] ptr the generic pointer
+	 * \return a function pointer with the same address as \p ptr
+	 */
+	inline function_pointer generic_pointer_to_function_pointer(pointer ptr) {
+	    // I know this is ugly, but I did not find a simpler warning-free
+	    // way that is portable between all compilers.
+	    function_pointer result = nil;
+	    ::memcpy(&result, &ptr, sizeof(pointer));
+	    return result;
+	}
+
+	/**
+	 * \brief Converts a generic pointer to a function pointer.
+	 * \details In C++ it is not legal to convert between function pointers
+	 *  and generic pointers using casts. Such conversion may be required when
+	 *  retrieving symbols in dynamically linked libraries, or when interfacing
+	 *  with scripting languages.
+	 * \param[in] ptr the generic pointer
+	 * \return a function pointer with the same address as \p ptr
+	 */
+	inline function_pointer generic_pointer_to_function_pointer(void* ptr) {
+	    // I know this is ugly, but I did not find a simpler warning-free
+	    // way that is portable between all compilers.
+	    function_pointer result = nil;
+	    ::memcpy(&result, &ptr, sizeof(pointer));
+	    return result;
+	}
+	
         /**
          * \brief Default memory alignment for efficient vector operations
          * \details The memory alignment is given in bytes. Here is a list of

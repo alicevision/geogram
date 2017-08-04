@@ -31,7 +31,8 @@ add_library(geogram ${SOURCES} $<TARGET_OBJECTS:geogram_third_party>)
 
 set_target_properties(geogram PROPERTIES
                       VERSION ${VORPALINE_VERSION}
-                      SOVERSION ${VORPALINE_VERSION_MAJOR})
+                      SOVERSION ${VORPALINE_VERSION_MAJOR}
+		      FOLDER "GEOGRAM")
 
 if(UNIX AND VORPALINE_BUILD_DYNAMIC)
     target_link_libraries(geogram pthread dl)

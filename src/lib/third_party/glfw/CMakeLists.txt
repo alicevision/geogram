@@ -39,6 +39,12 @@ if (APPLE)
     option(GLFW_USE_RETINA "Use the full resolution of Retina displays" ON)
 endif()
 
+# [Bruno Levy]: two many warnings with Apple
+if (APPLE)
+  vor_reset_warning_level()
+   add_definitions(-w)
+endif()
+
 if (UNIX AND NOT APPLE)
     option(GLFW_USE_WAYLAND "Use Wayland for window creation" OFF)
     option(GLFW_USE_MIR     "Use Mir for window creation" OFF)

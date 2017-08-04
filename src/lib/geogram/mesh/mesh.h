@@ -587,7 +587,7 @@ namespace GEO {
         Attribute<float> point_fp32_;
 
         friend class Mesh;
-        friend class GeogramIOHandler;        
+        friend class GeogramIOHandler;
     };
     
     /*************************************************************************/
@@ -2499,6 +2499,11 @@ namespace GEO {
          */
         Mesh(index_t dimension=3, bool single_precision=false);
 
+	/**
+	 * \brief Mesh destructor.
+	 */
+	virtual ~Mesh();
+	
         /**
          * \brief Removes all the elements and attributes of
          *  this mesh.

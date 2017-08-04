@@ -373,14 +373,16 @@ static void nlTerminateExtension_SUPERLU(void) {
 
 
 NLboolean nlInitExtension_SUPERLU(void) {
+    NLenum flags = NL_LINK_NOW | NL_LINK_USE_FALLBACK;
+    if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
+	flags |= NL_LINK_QUIET;
+    }
     
     if(SuperLU()->DLL_handle != NULL) {
         return nlExtensionIsInitialized_SUPERLU();
     }
 
-    SuperLU()->DLL_handle = nlOpenDLL(
-	SUPERLU_LIB_NAME, NL_LINK_NOW | NL_LINK_USE_FALLBACK
-    );
+    SuperLU()->DLL_handle = nlOpenDLL(SUPERLU_LIB_NAME, flags);
     if(SuperLU()->DLL_handle == NULL) {
         return NL_FALSE;
     }

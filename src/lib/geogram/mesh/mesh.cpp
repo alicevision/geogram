@@ -1800,6 +1800,9 @@ namespace GEO {
         vertices.bind_point_attribute(dimension, single_precision);
     }
 
+    Mesh::~Mesh() {
+    }
+    
     void Mesh::clear(bool keep_attributes, bool keep_memory) {
         vertices.clear(keep_attributes, keep_memory);
         edges.clear(keep_attributes, keep_memory);
