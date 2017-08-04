@@ -1,5 +1,8 @@
-include(${CMAKE_SOURCE_DIR}/cmake/opengl.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/opengl.cmake)
 
 aux_source_directories(SOURCES "" .)
-add_executable(demo_Delaunay2d ${SOURCES})
-target_link_libraries(demo_Delaunay2d geogram geogram_gfx ${GLFW_LIBRARIES})
+add_executable(geogram_demo_Delaunay2d ${SOURCES})
+target_link_libraries(
+  geogram_demo_Delaunay2d geogram geogram_gfx ${GLFW_LIBRARIES}
+)
+install_runtime_targets(geogram_demo_Delaunay2d)

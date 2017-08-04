@@ -30,7 +30,7 @@ else
    python $EMSCRIPTEN/tools/file_packager.py $EXENAME'_data.data' --preload $FILES > $EXENAME'_data.js'
    echo generating $EXENAME.html
    cat $SCRIPTDIR/template_emscripten.html | sed -e 's/%EXENAME%/'$EXENAME'/g' \
-       -e 's|<!-- DATAFILE -->|<script async type="text/javascript" src="vorpaview_data.js"></script>|g' \
+       -e 's|<!-- DATAFILE -->|<script async type="text/javascript" src="'$EXENAME'_data.js"></script>|g' \
        > $EXENAME.html
 fi
 

@@ -1,8 +1,17 @@
 # Example of CMakeOptions.txt file
+# Copy to CMakeOptions.txt, then edit the options:
 
-set(GEOGRAM_WITH_TETGEN TRUE)
-set(GEOGRAM_WITH_MEDIT TRUE)
-set(GEOGRAM_WITH_GRAPHICS TRUE)
+#Uncomment to change default installation prefix
+#set(CMAKE_INSTALL_PREFIX /home/myselft/installroot/Geogram)
+
+#Uncomment to generate a Debian package
+#set(CPACK_GENERATOR DEB)
+
+#Uncomment to disable Hang-Si's tetgen
+#set(GEOGRAM_WITH_TETGEN FALSE)
+
+#Uncomment to disable graphics
+#set(GEOGRAM_WITH_GRAPHICS FALSE)
 
 #Uncomment to compile FPG (Meyer and Pion's Floating Point Filter Generator)
 #set(GEOGRAM_WITH_FPG TRUE)

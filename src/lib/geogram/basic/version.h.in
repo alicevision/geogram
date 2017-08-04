@@ -1,12 +1,6 @@
-/*
- *      \V (O |R |P /A |L |I |N |E
- * (C) Bruno Levy, INRIA - ALICE, 2012-2014
- *
- *   Confidential - proprietary software
- */
 
-#ifndef VORPALINE_BASIC_VERSION
-#define VORPALINE_BASIC_VERSION
+#ifndef GEOGRAM_BASIC_VERSION
+#define GEOGRAM_BASIC_VERSION
 
 #define VORPALINE_VERSION_MAJOR "@VORPALINE_VERSION_MAJOR@"
 #define VORPALINE_VERSION_MINOR "@VORPALINE_VERSION_MINOR@"

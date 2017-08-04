@@ -1,4 +1,4 @@
-include(${CMAKE_SOURCE_DIR}/cmake/opengl.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/opengl.cmake)
 
 aux_source_directories(SOURCES "" .)
 add_executable(vorpaview ${SOURCES})

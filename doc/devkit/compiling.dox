@@ -78,6 +78,44 @@ make
 This will generate dynamic libraries and dynamically linked executables. If you want
 statically linked executables, see below.
 
+Installing (optional)
+---------------------
+
+Still from the same directory:
+\code
+sudo make install
+\endcode
+
+This will install Geogram libraries, header files and binaries in /usr/local/Geogram.
+Under recent versions of Mac/OSX (El Capitan), you need to create /usr/local before.
+See [this link](http://digitizor.com/fix-homebrew-permissions-osx-el-capitan/).
+
+If you want to change the installation directory, create a file CMakeOptions.txt in
+the source tree (same directory as the main CMakeFile.txt) with CMAKE_INSTALL_PREFIX
+set to where you want to install Geogram. Example (or see CMakeOptions.txt.sample):
+
+\code
+set (CMAKE_INSTALL_PREFIX /home/myself/installroot/Geogram)
+\endcode
+
+Once Geogram is installed, you can compile the examples in src/tutorial as follows:
+\code
+cd src/tutorial/hello_geogram
+cmake .
+make
+./hello_geogram
+\endcode
+
+If Geogram was not install in its default location (/usr/local/Geogram), you will need
+before to set the environment variable GEOGRAM_INSTALL_ROOT:
+\code
+export GEOGRAM_INSTALL_ROOT=/home/myself/installroot/Geogram)
+cd src/tutorial/hello_geogram
+cmake .
+make
+./hello_geogram
+\endcode
+
 Fine tuning
 -----------
 
@@ -118,6 +156,14 @@ not automatically install the C++ compiler. To install it, manually
 create a C++ project in Visual C++, this will download the compiler and
 Windows Desktop development tools (3Gb !!).
 
+Installing
+----------
+
+- run Visual C++ as administrator (you need that to be allowed to write in "C:\Program Files")
+- build the INSTALL target
+
+
+
 Fine tuning
 -----------
 
@@ -147,6 +193,8 @@ CMakeOptions.txt, modifying it and re-running CMake:
  (geogram_gfx, vorpaview, medit)
 - GEOGRAM_WITH_FPG: set to TRUE to activate compilation of Meyer and Pion's predicate filter generator (required
  if you plan to write new PCK predicates).
+- CMAKE_INSTALL_PREFIX: where to install Geogram (when building the INSTALL target)
+- CPACK_GENERATOR: can be used to generate a Debian package 
 
 Android
 =======
@@ -229,7 +277,7 @@ Emscripten
 [Emscripten](http://kripken.github.io/emscripten-site/) is a C++ to Javascript "transpiler".
 It can create webpages with embedded OpenGL-enabled programs that can be executed in any
 modern webbrower, without needing any plugin. Some examples of web-compiled geogram
-programs are available [here](http://alice.loria.fr/~levy/GLUP). 
+programs are available [here](http://www.loria.fr/~levy/GLUP) and [here](http://www.loria.fr/~levy/GEOGRAM). 
 
 To transform a geogram C++ program into a web appliction,
 you first need to install a version of Emscripten for your system, follow instructions

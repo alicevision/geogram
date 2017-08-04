@@ -22,7 +22,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ${VORPALINE_BUILD_DYNAMIC})
 option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
 option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
 option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-option(GLFW_INSTALL "Generate installation target" OFF)
+option(GLFW_INSTALL "Generate installation target" ON)
 option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
 
 if (WIN32)
@@ -466,12 +466,16 @@ endforeach()
 #--------------------------------------------------------------------
 # Choose library output name
 #--------------------------------------------------------------------
-if (BUILD_SHARED_LIBS AND UNIX)
-    # On Unix-like systems, shared libraries can use the soname system.
-    set(GLFW_LIB_NAME glfw)
-else()
-    set(GLFW_LIB_NAME glfw3)
-endif()
+#if (BUILD_SHARED_LIBS AND UNIX)
+#    # On Unix-like systems, shared libraries can use the soname system.
+#    set(GLFW_LIB_NAME glfw)
+#else()
+#    set(GLFW_LIB_NAME glfw3)
+#endif()
+
+# prefixed by geogram_ so that we do not have any conflict with system's
+# installed lib.
+set(GLFW_LIB_NAME geogram_glfw3)
 
 #--------------------------------------------------------------------
 # Create generated files

@@ -2,7 +2,7 @@
 # Build rules for the documentation
 #
 
-include(${CMAKE_SOURCE_DIR}/cmake/doxygen.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/doxygen.cmake)
 
 if(DOXYGEN_FOUND)
 
@@ -19,10 +19,13 @@ if(DOXYGEN_FOUND)
   configure_file(VERSION.txt.in VERSION.txt @ONLY)
 
   # Install documentation
+  if(GEOGRAM_WITH_VORPALINE)
+      install(FILES README.txt DESTINATION doc COMPONENT runtime)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/LICENSE.txt DESTINATION doc COMPONENT runtime OPTIONAL)
+  endif()
 
-  install(FILES README.txt DESTINATION doc COMPONENT runtime)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/LICENSE.txt DESTINATION doc COMPONENT runtime OPTIONAL)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VERSION.txt DESTINATION doc COMPONENT runtime OPTIONAL)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VERSION.txt DESTINATION doc/geogram COMPONENT runtime OPTIONAL)
+  
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/devkit/html DESTINATION doc/devkit COMPONENT doc-devkit OPTIONAL)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/devkit-full/html DESTINATION doc/devkit COMPONENT doc-devkit-full OPTIONAL)
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/devkit-internal/html DESTINATION doc/devkit COMPONENT doc-devkit-internal OPTIONAL)

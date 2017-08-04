@@ -202,7 +202,7 @@ namespace {
      */
     void display_border() {
         glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 0.0, 0.0, 0.0);
-        glLineWidth(4);
+        glupSetMeshWidth(4);
         glupBegin(GLUP_LINES);
         for(index_t i=0; i<border.size(); ++i) {
             glupVertex(border[i]);
@@ -232,7 +232,7 @@ namespace {
      */
     void display_Delaunay_triangles() {
         glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 0.7f, 0.7f, 0.7f);
-        glLineWidth(1);
+        glupSetMeshWidth(1);
         glupBegin(GLUP_LINES);
         for(index_t c=0; c<delaunay->nb_cells(); ++c) {
             const signed_index_t* cell = delaunay->cell_to_v() + 3*c;
@@ -286,7 +286,7 @@ namespace {
      */
     void display_Voronoi_edges() {
         glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 0.3f, 0.3f, 0.3f);
-        glLineWidth(2);
+        glupSetMeshWidth(2);
         glupBegin(GLUP_LINES);
         for(index_t t=0; t<delaunay->nb_cells(); ++t) {
             vec2 cc = circumcenter(t);
@@ -748,9 +748,6 @@ namespace {
         result = *src ;
     }
 }
-
-/*********************************************************************/
-
 
 /*********************************************************************/
 

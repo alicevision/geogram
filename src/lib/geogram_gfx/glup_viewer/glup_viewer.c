@@ -25,11 +25,14 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#ifdef __EMSCRIPTEN__
-#include <GLFW/glfw3.h>
-#include <emscripten.h>
-#else
+#ifdef GEO_USE_BUILTIN_GLFW3
 #include <third_party/glfw/include/GLFW/glfw3.h>
+#else
+#include <GLFW/glfw3.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
 #endif
 
 #include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
@@ -51,14 +54,22 @@
 #include <png/png.h>
 #endif
 
-#include <setjmp.h>
-
 #ifndef __APPLE__
 #include <malloc.h>
 #endif
 
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(__APPLE__) || defined(__linux__) || defined(__EMSCRIPTEN__)
 #include <unistd.h>
+static void glup_viewer_pause() {
+    usleep(1000);
+}
+#elif defined(WIN32)
+static void glup_viewer_pause() {
+    Sleep(1);
+}
+#else
+static void glup_viewer_pause() {
+}
 #endif
 
 
@@ -74,10 +85,20 @@
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #endif
 
-static GLboolean glup_viewer_needs_redraw = GL_TRUE;
+static int glup_viewer_needs_redraw = 1;
 
 void glup_viewer_post_redisplay() {
-    glup_viewer_needs_redraw = GL_TRUE;
+    /* 
+     * We observed that triggering only one frame redraw can cause some
+     * flickering under MacOS/X (maybe it uses triple buffering ?)
+     */
+    glup_viewer_needs_redraw += 2;
+    /*
+     * Do not queue more than 10 frame redraws
+     */
+    if(glup_viewer_needs_redraw > 10) {
+        glup_viewer_needs_redraw = 10;        
+    }
 }
 
 #define glup_viewer_assert(x)                                                  \
@@ -443,20 +464,13 @@ static GLboolean call_mouse_func(
     return result;
 }
 
-/**
- * Used to systematically redirect events to glup_viewer
- * instead of ImGUI when the viewer wakes up after user input
- * that comes right after a period of inactivity.
- */
-static GLboolean glup_viewer_is_sleeping = GL_FALSE;
-
 static int mouse_x = 0;
 static int mouse_y = 0;
 static int mouse_pressed = 0;
 
 static void mouse(GLFWwindow* w, int button, int action, int mods) {
     glup_viewer_post_redisplay();
-    if(!glup_viewer_is_sleeping && glup_viewer_gui_takes_input()) {
+    if(glup_viewer_gui_takes_input()) {
         glup_viewer_gui_mouse_button_callback(w, button, action, mods);
         return;
     }
@@ -489,7 +503,7 @@ static void mouse(GLFWwindow* w, int button, int action, int mods) {
 
 static void scroll(GLFWwindow* w, double xoffset, double yoffset) {
     glup_viewer_post_redisplay();
-    if(!glup_viewer_is_sleeping && glup_viewer_gui_takes_input()) {
+    if(glup_viewer_gui_takes_input()) {
         glup_viewer_gui_scroll_callback(w, xoffset, yoffset);
         return;
     }
@@ -516,7 +530,7 @@ static void motion(int x, int y);
 static void passive_mouse(GLFWwindow* w, double xf, double yf) {
     glup_viewer_argused(w);    
     glup_viewer_post_redisplay();
-    if(!glup_viewer_is_sleeping && glup_viewer_gui_takes_input()) {
+    if(glup_viewer_gui_takes_input()) {
         return;
     }
     
@@ -532,10 +546,6 @@ static void motion(int x, int y) {
 
     int W = window_w;
     int H = window_h;
-    
-    if(!glup_viewer_is_sleeping && glup_viewer_gui_takes_input()) {
-        return;
-    }
 
     if(call_mouse_func(x, y, -1, GLUP_VIEWER_MOVE)) {
         return;
@@ -1097,7 +1107,7 @@ static void display() {
 static void copy_image_to_clipboard();
 
 static void glup_viewer_char_callback(GLFWwindow* w, unsigned int c) {
-    if(!glup_viewer_is_sleeping && glup_viewer_gui_takes_input()) {
+    if(glup_viewer_gui_takes_input()) {
         glup_viewer_gui_char_callback(w,c);
         return;
     }
@@ -1146,7 +1156,7 @@ static void glup_viewer_key_callback(
     GLFWwindow* w, int key, int scancode, int action, int mods
 ) {
     
-    if(!glup_viewer_is_sleeping && glup_viewer_gui_takes_input()) {
+    if(glup_viewer_gui_takes_input()) {
         glup_viewer_gui_key_callback(w, key, scancode, action, mods);
         return;
     }
@@ -1362,42 +1372,25 @@ void glup_viewer_one_frame() {
         if(glup_viewer_W != cur_width || glup_viewer_H != cur_height) {
             reshape(cur_width, cur_height);
         }
-
         glfwPollEvents();
-        
-        if(glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)) {
-            glup_viewer_gui_begin_frame();
-        } 
-
-
-        /*
-         * Note: for now, the sleeping mechanism is deactivated, does
-         * not work well yet. To activate it, remove 
-         * glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS) from the 
-         * condition below.
-         */
         if(
             glup_viewer_is_enabled(GLUP_VIEWER_IDLE_REDRAW) ||
-            glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS) ||              
-            glup_viewer_needs_redraw
+            glup_viewer_needs_redraw > 0
         ) {
-            display();
-            glup_viewer_needs_redraw = GL_FALSE;
-            if(glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)) {        
+            if(glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)) {
+                glup_viewer_gui_begin_frame();
+                display();
                 glup_viewer_gui_end_frame();
+            } else {
+                display();
             }
-            glfwSwapBuffers(glup_viewer_window);
-            glup_viewer_is_sleeping = GL_FALSE;
+            if(glup_viewer_needs_redraw > 0) {
+                --glup_viewer_needs_redraw;
+            }
         } else {
-#ifndef GEO_OS_EMSCRIPTEN            
-            glup_viewer_is_sleeping = GL_TRUE;
-#endif            
-#if defined(__APPLE__) || defined(__linux__)            
-            usleep(100);
-#endif            
+            glup_viewer_pause();
         }
-
-
+        glfwSwapBuffers(glup_viewer_window);
     }
 }
 

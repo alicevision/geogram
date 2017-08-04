@@ -83,6 +83,10 @@ namespace {
     using namespace GEO;
     using namespace CmdLine;
 
+    // True if displaying help in a way that
+    // it will be easily processed by help2man
+    bool man_mode = false;
+    
     /**
      * \brief Command line argument
      * \details Arg stores information about command line arguments:
@@ -389,7 +393,7 @@ namespace {
                 continue;
             }
 
-            const char* name_marker = advanced_arg ? "*" : " ";
+            const char* name_marker = (advanced_arg && !man_mode) ? "*" : " ";
 
             Line line;
             line.name = name_marker + arg.name;
@@ -416,6 +420,9 @@ namespace {
                 << line.desc
                 << std::endl;
             ui_message(os.str(), max_left_width);
+            if(man_mode) {
+                ui_message("\n");
+            }
         }
     }
 }
@@ -466,6 +473,37 @@ namespace GEO {
                     arg == "/?"
                 ) {
                     show_usage(additional_arg_specs, true);
+                    exit(0);
+                }
+                if(arg == "--help") {
+                    CmdLine::set_arg("log:pretty",false);
+                    man_mode = true;
+                    show_usage(additional_arg_specs, true);
+                    exit(0);
+                }
+                if(arg == "--version" || arg == "--v") {
+                    std::cout << FileSystem::base_name(argv[0])
+                     << " "
+                     << Environment::instance()->get_value("version")
+                     << " (built "
+                     << Environment::instance()->get_value(
+                         "release_date")
+                     << ")"
+                     << std::endl
+                     << "Copyright (C) 2006-2016"
+                     << std::endl
+                     << "The Geogram library used by this program is licensed"
+                     << std::endl
+                     << "under the 3-clauses BSD license."
+                     << std::endl
+                     << "Inria, the ALICE project"
+                     << std::endl
+                     << "   <http://alice.loria.fr/software/geogram>"
+                     << std::endl
+                     << "Report Geogram bugs to the geogram mailing list, see: "
+                     << std::endl
+                     << "   <https://gforge.inria.fr/mail/?group_id=5833>"
+                     << std::endl;
                     exit(0);
                 }
             }
@@ -678,11 +716,7 @@ namespace GEO {
                 << "Usage: " << program_name << " "
                 << additional_args
                 << " <parameter=value>*" << std::endl;
-            if(advanced) {
-                Logger::out("")
-                    << "Showing all parameters (*:advanced parameters)"
-                    << std::endl;
-            } else {
+            if(!advanced) {
                 Logger::out("")
                     << "Showing basic parameters (use " << program_name
                     << " -h to see advanced parameters)"
@@ -859,6 +893,24 @@ namespace GEO {
                 return;
             }
 
+            if(man_mode) {
+                if(title == "") {
+                    return;
+                }
+                ui_out() << std::endl;
+                std::string shortt = short_title;
+                if(shortt.length() > 0 && shortt[0] == '*') {
+                    shortt = shortt.substr(1, shortt.length()-1);
+                    ui_out() << title << " (\"" << shortt << ":*\" options, advanced)"
+                             << std::endl;
+                } else {
+                    ui_out() << title << " (\"" << shortt << ":*\" options)"
+                             << std::endl;
+                }
+                ui_out() << std::endl << std::endl;                
+                return;
+            }
+            
             if(is_redirected()) {
                 ui_out() << std::endl;
                 if(short_title != "" && title != "") {

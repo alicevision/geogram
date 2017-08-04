@@ -2234,7 +2234,6 @@ namespace GEO {
 
     /**
      * \brief IO handler for the PTS file format
-     * \details Currtently only loading is supported
      */
     class GEOGRAM_API PTSIOHandler : public MeshIOHandler {
     public:

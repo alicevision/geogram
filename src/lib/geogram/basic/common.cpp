@@ -53,6 +53,7 @@
 #include <geogram/numerics/predicates.h>
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/mesh/mesh_io.h>
+#include <geogram/version.h>
 #include <sstream>
 #include <iomanip>
 
@@ -71,8 +72,9 @@ namespace GEO {
 #endif
         
         Environment* env = Environment::instance();
-        env->set_value("version", "0.0");
-        env->set_value("release_date", "Jan 2015");
+        env->set_value("version", VORPALINE_VERSION);
+        env->set_value("release_date", VORPALINE_BUILD_DATE);
+        env->set_value("SVN revision", VORPALINE_SVN_REVISION);        
 
         Logger::initialize();
         Process::initialize();

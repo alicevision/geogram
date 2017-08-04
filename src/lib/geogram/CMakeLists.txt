@@ -4,6 +4,8 @@
 set(GEOGRAM_WITH_TETGEN TRUE)
 set(GEOGRAM_WITH_TRIANGLE TRUE)
 
+configure_file(geogram.pc.in ${PROJECT_BINARY_DIR}/geogram.pc @ONLY)
+
 add_subdirectory(third_party)
 
 aux_source_directories(SOURCES "Source Files"            .)
@@ -32,9 +34,13 @@ configure_file(basic/version.h.in version.h @ONLY)
 list(APPEND SOURCES version.h)
 set_source_files_properties(version.h PROPERTIES GENERATED true)
 
-include_directories(${CMAKE_BINARY_DIR}/src/lib)
+include_directories(${PROJECT_BINARY_DIR}/src/lib)
 
 add_library(geogram ${SOURCES} $<TARGET_OBJECTS:geogram_third_party>)
+
+set_target_properties(geogram PROPERTIES
+                      VERSION ${VORPALINE_VERSION}
+                      SOVERSION ${VORPALINE_VERSION_MAJOR})
 
 if(UNIX AND VORPALINE_BUILD_DYNAMIC)
     target_link_libraries(geogram pthread dl)
@@ -65,3 +71,8 @@ install(
     REGEX /license/ EXCLUDE
 )
 
+install(
+        FILES "${PROJECT_BINARY_DIR}/geogram.pc"
+        DESTINATION lib${LIB_SUFFIX}/pkgconfig
+)
+      

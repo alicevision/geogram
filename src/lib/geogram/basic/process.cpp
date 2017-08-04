@@ -67,11 +67,7 @@ namespace {
     index_t max_threads_ = 0;
 
     bool fpe_initialized_ = false;
-#ifdef GEO_DEBUG
-    bool fpe_enabled_ = true;
-#else
     bool fpe_enabled_ = false;
-#endif
 
     bool cancel_initialized_ = false;
     bool cancel_enabled_ = false;

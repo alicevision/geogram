@@ -1,4 +1,13 @@
-include(${CMAKE_SOURCE_DIR}/cmake/opengl.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/opengl.cmake)
+
+if(GEOGRAM_USE_BUILTIN_GLFW3)
+  add_definitions(-DGEO_USE_BUILTIN_GLFW3)
+  set(GEO_GLFW3_LIBNAME geogram_glfw3)
+else()
+  set(GEO_GLFW3_LIBNAME glfw)  
+endif()
+
+configure_file(geogram_gfx.pc.in ${PROJECT_BINARY_DIR}/geogram_gfx.pc @ONLY)
 
 add_subdirectory(third_party)
 
@@ -12,14 +21,39 @@ aux_source_directories(SOURCES "Source Files\\GLUP"        GLUP)
 
 add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)
 
+set_target_properties(geogram_gfx PROPERTIES
+                      VERSION ${VORPALINE_VERSION}
+                      SOVERSION ${VORPALINE_VERSION_MAJOR})
+
 if(VORPALINE_BUILD_DYNAMIC)
     # Must provide all symbols at link time
-    target_link_libraries(geogram_gfx ${OPENGL_LIBRARIES})
     target_link_libraries(geogram_gfx geogram)
-    target_link_libraries(geogram_gfx glfw)        
+    target_link_libraries(geogram_gfx glfw)
+    target_link_libraries(geogram_gfx ${OPENGL_LIBRARIES})
 endif()
 
 # Install the library
 install_devkit_targets(geogram_gfx)
 
-# There are no public header files to install so far
+# Install include files for the standard devkit
+install(
+    DIRECTORY .
+    DESTINATION include/geogram_gfx
+    COMPONENT devkit
+    FILES_MATCHING PATTERN *.h
+)
+
+# Install include files for the full devkit
+install(
+    DIRECTORY .
+    DESTINATION include/geogram_gfx
+    COMPONENT devkit-full
+    FILES_MATCHING PATTERN *.h
+)
+
+install(
+        FILES "${PROJECT_BINARY_DIR}/geogram_gfx.pc"
+        DESTINATION lib${LIB_SUFFIX}/pkgconfig
+)
+
+

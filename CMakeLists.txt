@@ -29,8 +29,8 @@ endif()
 include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
-set(VORPALINE_VERSION_MINOR 0)
-set(VORPALINE_VERSION_PATCH 0)
+set(VORPALINE_VERSION_MINOR 3)
+set(VORPALINE_VERSION_PATCH 4)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 
@@ -61,6 +61,32 @@ if(GEOGRAM_WITH_VORPALINE)
 endif()   
 
 ##############################################################################
+# RPATH (where executables find the .so / DLLs)
+# - Enables RPATH support for MACOSX
+# - Makes RPATH of dynamic libraries and executable point to the directory
+#   where libraries are installed.
+
+set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+
+
+# uninstall target
+# Needs to be created before add_subdirectory() because GLFw has
+# also an uninstall target that will be inhibited if there is
+# already one (Geogram's one needs to be first)
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+
+
+##############################################################################
 # Geogram/Vorpaline sources
 
 add_subdirectory(src/lib/geogram)
@@ -79,13 +105,14 @@ else()
    add_subdirectory(src/bin/vorpalite)
 endif()
 
+add_subdirectory(src/lib/third_party)
+
 if(GEOGRAM_WITH_GRAPHICS)
    add_subdirectory(src/lib/geogram_gfx)
    add_subdirectory(src/bin/vorpaview)
    add_subdirectory(src/bin/geobox)   
 endif()
 
-add_subdirectory(src/lib/third_party)
 add_subdirectory(src/test)
 
 if(GEOGRAM_WITH_GRAPHICS)
@@ -103,14 +130,25 @@ file(REMOVE ${CMAKE_BINARY_DIR}/doc/LICENSE.txt)
 
 
 ##############################################################################
-# Vorpaline installation
+# Geogram installation
+
+
+# FindGeogram.cmake
+
+install(FILES cmake/FindGeogram.cmake DESTINATION lib/cmake COMPONENT devkit)
 
 # Configure CPack
 
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 set(CPACK_SYSTEM_NAME ${VORPALINE_OS})
 set(CPACK_PACKAGE_VENDOR "INRIA - ALICE")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A flexible mesh generator")
+
+
+if(${GEOGRAM_WITH_VORPALINE})
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A flexible mesh generator")
+else()
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "fast, simple and easy-to-use primitives for geometric programming")
+endif()
 
 set(CPACK_PACKAGE_VERSION_MAJOR ${VORPALINE_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${VORPALINE_VERSION_MINOR})
@@ -119,10 +157,20 @@ set(CPACK_PACKAGE_VERSION ${VORPALINE_VERSION})
 set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION})
 set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY true)
 
-if(WIN32)
+if(CPACK_GENERATOR STREQUAL "DEB")
+  set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+  set(CPACK_PACKAGE_CONTACT Bruno.Levy@inria.fr)
+# set(CPACK_PACKAGE_DEPENDS )
+#   TODO: use objdump -p | grep NEEDED to automate...
+#   or GET_PROPERTY(result GLOBAL ENABLED_FEATURES)  (successful FIND_PACKAGE())
+endif()
+
+if(NOT DEFINED CPACK_GENERATOR) 
+  if(WIN32)
     set(CPACK_GENERATOR ZIP)
-else()
+  else()
     set(CPACK_GENERATOR TGZ)
+  endif()
 endif()
 
 # Enable component-based packaging for archive generators (TGZ, ZIP)

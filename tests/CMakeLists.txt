@@ -4,10 +4,10 @@ set(test_scripts testenv runpybot runride)
 
 foreach(script ${test_scripts})
     configure_file_with_native_paths(
-        ${CMAKE_SOURCE_DIR}/tools/${script}.${SHELL_SUFFIX}.in
-        ${CMAKE_BINARY_DIR}/tests/${script}.${SHELL_SUFFIX}
-	AUTODETECT
-	OPTIONS @ONLY
+        ${PROJECT_SOURCE_DIR}/tools/${script}.${SHELL_SUFFIX}.in
+        ${PROJECT_BINARY_DIR}/tests/${script}.${SHELL_SUFFIX}
+        AUTODETECT
+        OPTIONS @ONLY
     )
 endforeach()
 
@@ -15,8 +15,8 @@ endforeach()
 
 if(UNIX)
     configure_file(
-        ${CMAKE_SOURCE_DIR}/tools/valgrind.supp
-        ${CMAKE_BINARY_DIR}/tests/valgrind.supp
+        ${PROJECT_SOURCE_DIR}/tools/valgrind.supp
+        ${PROJECT_BINARY_DIR}/tests/valgrind.supp
         COPYONLY
     )
 endif()
