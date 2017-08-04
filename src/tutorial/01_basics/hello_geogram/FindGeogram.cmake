@@ -33,7 +33,7 @@ set (GEOGRAM_SEARCH_PATHS_SYSTEM
 find_path (GEOGRAM_INCLUDE_DIR
                 geogram/basic/common.h
                 PATHS ${GEOGRAM_SEARCH_PATHS}
-                PATH_SUFFIXES include
+                PATH_SUFFIXES include/geogram1
 )
 
 find_library (GEOGRAM_LIBRARY

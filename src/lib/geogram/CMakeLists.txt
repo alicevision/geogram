@@ -4,7 +4,7 @@
 set(GEOGRAM_WITH_TETGEN TRUE)
 set(GEOGRAM_WITH_TRIANGLE TRUE)
 
-configure_file(geogram.pc.in ${PROJECT_BINARY_DIR}/geogram.pc @ONLY)
+configure_file(geogram.pc.in ${PROJECT_BINARY_DIR}/geogram${VORPALINE_VERSION_MAJOR}.pc @ONLY)
 
 add_subdirectory(third_party)
 
@@ -56,7 +56,7 @@ install_devkit_targets(geogram)
 # Install include files for the standard devkit
 install(
     DIRECTORY api
-    DESTINATION include/geogram
+    DESTINATION include/${VORPALINE_INCLUDE_SUBPATH}/geogram
     COMPONENT devkit
     FILES_MATCHING PATTERN *.h
 )
@@ -64,7 +64,7 @@ install(
 # Install include files for the full devkit
 install(
     DIRECTORY .
-    DESTINATION include/geogram
+    DESTINATION include/${VORPALINE_INCLUDE_SUBPATH}/geogram
     COMPONENT devkit-full
     FILES_MATCHING PATTERN *.h
     # Exclude all files related to licensing
@@ -72,7 +72,7 @@ install(
 )
 
 install(
-        FILES "${PROJECT_BINARY_DIR}/geogram.pc"
+        FILES "${PROJECT_BINARY_DIR}/geogram${VORPALINE_VERSION_MAJOR}.pc"
         DESTINATION lib${LIB_SUFFIX}/pkgconfig
 )
       

@@ -30,9 +30,10 @@ include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 3)
-set(VORPALINE_VERSION_PATCH 4)
+set(VORPALINE_VERSION_PATCH 5)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
+set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
 
 # Determine the current Build-OS (Build-platform without the compiler info)
 string(REGEX REPLACE "-[^-]+$" "" VORPALINE_OS ${VORPALINE_PLATFORM})
@@ -135,7 +136,7 @@ file(REMOVE ${CMAKE_BINARY_DIR}/doc/LICENSE.txt)
 
 # FindGeogram.cmake
 
-install(FILES cmake/FindGeogram.cmake DESTINATION lib/cmake COMPONENT devkit)
+install(FILES cmake/FindGeogram.cmake DESTINATION lib/cmake/modules COMPONENT devkit)
 
 # Configure CPack
 
@@ -160,7 +161,7 @@ set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY true)
 if(CPACK_GENERATOR STREQUAL "DEB")
   set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
   set(CPACK_PACKAGE_CONTACT Bruno.Levy@inria.fr)
-# set(CPACK_PACKAGE_DEPENDS )
+# set(CPACK_PACKAGE_DEPENDS "libglfw3 (>= 3.2-1), libc6 (>= 2.22-11), libstdc++ (>= 6.1.1-4)")
 #   TODO: use objdump -p | grep NEEDED to automate...
 #   or GET_PROPERTY(result GLOBAL ENABLED_FEATURES)  (successful FIND_PACKAGE())
 endif()

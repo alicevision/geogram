@@ -1,0 +1,62 @@
+# Doxygen configuration file for generating
+# the internal developer kit documentation quickly.
+# It is equivalent to the devkit-internal configuration
+# without graph generation to speed-up doc generation.
+# This configuration is not meant for distribution,
+# it is basically used for testing the validity of the
+# internal documentation (warnings, links, ...)
+
+PROJECT_NAME           = "Geogram"
+PROJECT_NUMBER         = "Version 1.3.4"
+PROJECT_BRIEF          = "A programming library of geometric algorithms"
+
+@INCLUDE               = /home/levy/Programming/Vorpaline/trunk/doc/common.dox
+WARN_LOGFILE           = /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal-light.log
+
+# Input files
+
+INPUT                  = /home/levy/Programming/Vorpaline/trunk/src /home/levy/Programming/Vorpaline/trunk/doc/devkit /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal
+FILE_PATTERNS          = *.h *.cpp *.dox
+RECURSIVE              = YES
+TAB_SIZE               = 8
+
+EXCLUDE_PATTERNS       = */.svn/*
+#EXCLUDE                += /home/levy/Programming/Vorpaline/trunk/src/lib/geogram/third_party
+#EXCLUDE                += /home/levy/Programming/Vorpaline/trunk/src/lib/geogram_gfx/third_party
+EXCLUDE                += /home/levy/Programming/Vorpaline/trunk/src/lib/third_party
+
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = /home/levy/Programming/Vorpaline/trunk/
+STRIP_FROM_INC_PATH    = /home/levy/Programming/Vorpaline/trunk/src/lib/
+
+OUTPUT_DIRECTORY       = /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal-light
+GENERATE_TAGFILE       = /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal-light.tags
+
+# Symbols to extract
+
+INTERNAL_DOCS          = YES
+ENABLED_SECTIONS       = internal
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
+
+# Generation options
+
+HAVE_DOT               = YES
+DOT_PATH               = /usr/bin
+
+SOURCE_BROWSER         = YES
+HTML_TIMESTAMP         = YES
+GENERATE_TREEVIEW      = YES
+HIDE_UNDOC_RELATIONS   = NO
+COLLABORATION_GRAPH    = NO
+TEMPLATE_RELATIONS     = NO
+REFERENCES_RELATION    = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+INTERACTIVE_SVG        = NO
+DOT_MULTI_TARGETS      = NO

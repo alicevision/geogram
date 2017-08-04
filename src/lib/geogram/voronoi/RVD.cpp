@@ -1616,6 +1616,9 @@ namespace {
             // Step 3: create search structure
             mesh_vertices_ = Delaunay::create(dimension_, "NN");
             index_t nb_vertices = mesh_->vertices.nb();
+
+            // TODO: BUG !! mesh_vertices_ keeps a ref. to mesh_vertices
+            // that is destroyed when leaving this function.
             vector<double> mesh_vertices(nb_vertices * dimension_);
             for(index_t i = 0; i < nb_vertices; i++) {
                 for(index_t coord = 0; coord < dimension_; coord++) {
@@ -1623,9 +1626,7 @@ namespace {
                         mesh_->vertices.point_ptr(i)[coord];
                 }
             }
-            mesh_vertices_->set_vertices(
-                nb_vertices, mesh_vertices.data()
-            );
+            mesh_vertices_->set_vertices(nb_vertices, mesh_vertices.data());
         }
 
         virtual void project_points_on_surface(

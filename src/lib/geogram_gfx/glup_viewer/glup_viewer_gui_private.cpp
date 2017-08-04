@@ -96,9 +96,11 @@ void glup_viewer_gui_init(GLFWwindow* w) {
     }
 
     ImGuiStyle& style = ImGui::GetStyle();
-    style.WindowRounding = 0.0f;
+    style.WindowRounding = 10.0f;
     style.FrameRounding = 10.0f;
     style.GrabRounding = 10.0f;
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = NULL;
 }
 
 void glup_viewer_gui_cleanup() {

@@ -1841,11 +1841,15 @@ namespace GEO {
          */
         virtual void init_graphics();
 
-
         /**
          * \copydoc Application::load()
          */
         virtual bool load(const std::string& filename);
+
+        /**
+         * \copydoc Application::save()
+         */
+        virtual bool save(const std::string& filename);
         
         /**
          * \brief Gets the instance.
@@ -1961,7 +1965,7 @@ namespace GEO {
          * \brief Makes the attributes visible.
          */
         void show_attributes() {
-            show_attributes_ = false;
+            show_attributes_ = true;
         }
         
         /**
@@ -1999,6 +2003,7 @@ namespace GEO {
         float anim_time_;
 
         bool show_vertices_;
+        bool show_vertices_selection_;
         float vertices_size_;
 
         bool show_surface_;

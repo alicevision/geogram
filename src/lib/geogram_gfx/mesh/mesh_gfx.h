@@ -580,7 +580,7 @@ namespace GEO {
             attribute_colormap_texture_ = 0;
             attribute_repeat_ = 1;
         }
-        
+
     protected:
         
         void draw_vertices_array();

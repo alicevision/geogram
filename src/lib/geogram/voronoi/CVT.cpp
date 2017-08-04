@@ -200,7 +200,7 @@ namespace GEO {
         // instead.
         index_t nb_vertices = index_t(vertices.size() / dimension_);
         vertices_R3.resize(nb_vertices * 3);
-        if(is_projection_) {
+        if(is_projection_) {   
             double* cur = vertices.data();
             for(index_t v = 0; v < nb_vertices; v++) {
                 vertices_R3[3 * v] = cur[0];

@@ -2217,7 +2217,14 @@ namespace GEO {
                         << normal[3*v+1] << ' '
                         << normal[3*v+2] << ' '
                         << std::endl;
-                    
+                } else if(M.vertices.dimension() >= 6 && M.vertices.double_precision()) {
+                    const double* p = M.vertices.point_ptr(v);
+                    out << p[0] << ' '
+                        << p[1] << ' '
+                        << p[2] << ' '
+                        << p[3] << ' '
+                        << p[4] << ' '
+                        << p[5] << std::endl;
                 } else {
                     out << point[0] << ' '
                         << point[1] << ' '

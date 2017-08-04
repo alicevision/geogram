@@ -1,0 +1,59 @@
+# Doxygen configuration file for generating
+# the internal developer kit documentation
+# This includes *all* source files, including third parties,
+# license files and all .cpp files.
+
+PROJECT_NAME           = "Geogram"
+PROJECT_NUMBER         = "Version 1.3.4"
+PROJECT_BRIEF          = "A programming library of geometric algorithms"
+
+@INCLUDE               = /home/levy/Programming/Vorpaline/trunk/doc/common.dox
+WARN_LOGFILE           = /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal.log
+
+# Input files
+
+INPUT                  = /home/levy/Programming/Vorpaline/trunk/src /home/levy/Programming/Vorpaline/trunk/doc/devkit /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal
+FILE_PATTERNS          = *.h *.cpp *.dox
+RECURSIVE              = YES
+TAB_SIZE               = 8
+
+EXCLUDE_PATTERNS       = */.svn/*
+#EXCLUDE                += /home/levy/Programming/Vorpaline/trunk/src/lib/geogram/third_party
+#EXCLUDE                += /home/levy/Programming/Vorpaline/trunk/src/lib/geogram_gfx/third_party
+EXCLUDE                += /home/levy/Programming/Vorpaline/trunk/src/lib/third_party
+
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = /home/levy/Programming/Vorpaline/trunk/
+STRIP_FROM_INC_PATH    = /home/levy/Programming/Vorpaline/trunk/src/lib/
+
+OUTPUT_DIRECTORY       = /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal
+GENERATE_TAGFILE       = /home/levy/Programming/Vorpaline/trunk/doc/devkit-internal.tags
+
+# Symbols to extract
+
+INTERNAL_DOCS          = YES
+ENABLED_SECTIONS       = internal
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
+
+# Generation options
+
+HAVE_DOT               = YES
+DOT_PATH               = /usr/bin
+
+SOURCE_BROWSER         = YES
+HTML_TIMESTAMP         = YES
+GENERATE_TREEVIEW      = YES
+HIDE_UNDOC_RELATIONS   = NO
+COLLABORATION_GRAPH    = YES
+TEMPLATE_RELATIONS     = YES
+REFERENCES_RELATION    = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+INTERACTIVE_SVG        = YES
+DOT_MULTI_TARGETS      = YES

@@ -7,7 +7,7 @@ else()
   set(GEO_GLFW3_LIBNAME glfw)  
 endif()
 
-configure_file(geogram_gfx.pc.in ${PROJECT_BINARY_DIR}/geogram_gfx.pc @ONLY)
+configure_file(geogram_gfx.pc.in ${PROJECT_BINARY_DIR}/geogram_gfx${VORPALINE_VERSION_MAJOR}.pc @ONLY)
 
 add_subdirectory(third_party)
 
@@ -38,7 +38,7 @@ install_devkit_targets(geogram_gfx)
 # Install include files for the standard devkit
 install(
     DIRECTORY .
-    DESTINATION include/geogram_gfx
+    DESTINATION include/${VORPALINE_INCLUDE_SUBPATH}/geogram_gfx
     COMPONENT devkit
     FILES_MATCHING PATTERN *.h
 )
@@ -46,13 +46,13 @@ install(
 # Install include files for the full devkit
 install(
     DIRECTORY .
-    DESTINATION include/geogram_gfx
+    DESTINATION include/${VORPALINE_INCLUDE_SUBPATH}/geogram_gfx
     COMPONENT devkit-full
     FILES_MATCHING PATTERN *.h
 )
 
 install(
-        FILES "${PROJECT_BINARY_DIR}/geogram_gfx.pc"
+        FILES "${PROJECT_BINARY_DIR}/geogram_gfx${VORPALINE_VERSION_MAJOR}.pc"
         DESTINATION lib${LIB_SUFFIX}/pkgconfig
 )
 

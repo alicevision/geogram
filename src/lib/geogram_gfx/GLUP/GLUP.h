@@ -535,7 +535,7 @@ extern "C" {
 
     void GLUP_API glupBegin(GLUPprimitive primitive);
     void GLUP_API glupEnd();
-
+    
     void GLUP_API glupVertex2fv(const GLUPfloat* xy);
     void GLUP_API glupVertex3fv(const GLUPfloat* xyz);
     void GLUP_API glupVertex4fv(const GLUPfloat* xyzw);
