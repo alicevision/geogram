@@ -45,7 +45,9 @@
 #include "nl_matrix.h"
 #include "nl_superlu.h"
 #include "nl_cholmod.h"
+#include "nl_mkl.h"
 #include "nl_context.h"
+#include "nl_blas.h"
 
 /*
  Some warnings about const cast in callback for
@@ -71,15 +73,6 @@ void nlMultMatrixVector(
     NLMatrix M, const double* x, double* y
 ) {
     M->mult_func(M,x,y);
-    if(nlCurrentContext != NULL) {
-	if(M->type == NL_MATRIX_SPARSE_DYNAMIC) {
-	    nlCurrentContext->flops +=
-		(NLulong)(nlSparseMatrixNNZ((NLSparseMatrix*)M)*2);
-	} else if(M->type == NL_MATRIX_CRS) {
-	    nlCurrentContext->flops +=
-		(NLulong)(nlCRSMatrixNNZ((NLCRSMatrix*)M)*2);
-	}
-    }
 }
 
 /************************************************************************/
@@ -296,6 +289,8 @@ static void nlCRSMatrixMult(
             M,x,y,M->sliceptr[slice],M->sliceptr[slice+1]
         );
     }
+
+    nlHostBlas()->flops += (NLulong)(2*nlCRSMatrixNNZ(M));
 }
 
 void nlCRSMatrixConstruct(
@@ -305,7 +300,11 @@ void nlCRSMatrixConstruct(
     M->n = n;
     M->type = NL_MATRIX_CRS;
     M->destroy_func = (NLDestroyMatrixFunc)nlCRSMatrixDestroy;
-    M->mult_func = (NLMultMatrixVectorFunc)nlCRSMatrixMult;
+    if(NLMultMatrixVector_MKL != NULL) {
+	M->mult_func = (NLMultMatrixVectorFunc)NLMultMatrixVector_MKL;
+    } else {
+	M->mult_func = (NLMultMatrixVectorFunc)nlCRSMatrixMult;
+    }
     M->nslices = nslices;
     M->val = NL_NEW_ARRAY(double, nnz);
     M->rowptr = NL_NEW_ARRAY(NLuint, m+1);
@@ -626,6 +625,7 @@ static void nlSparseMatrixMult(
             nlSparseMatrix_mult_cols(A, x, y);
         }
     }
+    nlHostBlas()->flops += (NLulong)(2*nlSparseMatrixNNZ(A));
 }
 
 void nlSparseMatrixConstruct(

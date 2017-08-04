@@ -401,7 +401,8 @@ namespace GLUP {
         uniform_buffer_size_=0;
         uniform_buffer_data_=nil;
         uniform_buffer_dirty_=true;
-        
+	lighting_dirty_=true;
+	
         matrix_mode_ = GLUP_MODELVIEW_MATRIX;
         matrices_dirty_ = true;
 

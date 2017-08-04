@@ -157,6 +157,10 @@ static NLboolean ARPACK_is_initialized() {
         ARPACK()->dneupd != NULL;
 }
 
+NLboolean nlExtensionIsInitialized_ARPACK() {
+    return ARPACK_is_initialized();
+}
+
 static void nlTerminateExtension_ARPACK(void) {
     if(ARPACK()->DLL_handle != NULL) {
         nlCloseDLL(ARPACK()->DLL_handle);
@@ -181,7 +185,7 @@ static char* u(const char* str) {
  * \brief Finds and initializes a function pointer to
  *  one of the functions in ARPACK.
  * \details Function pointers are stored into the 
- *  SuperLUContext returned by the function ARPACK().
+ *  ARPACKContext returned by the function ARPACK().
  *  If a symbol is not found, returns NL_FALSE from the
  *  calling function.
  */
@@ -202,7 +206,10 @@ NLboolean nlInitExtension_ARPACK(void) {
         return ARPACK_is_initialized();
     }
 
-    ARPACK()->DLL_handle = nlOpenDLL(ARPACK_LIB_NAME);
+    ARPACK()->DLL_handle = nlOpenDLL(
+	ARPACK_LIB_NAME,
+	NL_LINK_NOW | NL_LINK_USE_FALLBACK
+    );
     if(ARPACK()->DLL_handle == NULL) {
         return NL_FALSE;
     }

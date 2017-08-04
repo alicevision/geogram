@@ -295,7 +295,8 @@ namespace GEO {
 #define GEO_NORETURN
 #elif defined(GEO_COMPILER_CLANG) || \
     defined(GEO_COMPILER_GCC)   || \
-    defined(GEO_COMPILER_EMSCRIPTEN)
+    defined(GEO_COMPILER_EMSCRIPTEN) || \
+    defined(GEO_COMPILER_INTEL)
 #define GEO_NORETURN __attribute__((noreturn))
 #else
 #define GEO_NORETURN

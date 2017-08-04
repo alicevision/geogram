@@ -1,4 +1,4 @@
-import("turtle")
+require("turtle")
 
 a=30
 level=5

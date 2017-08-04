@@ -14,6 +14,7 @@ aux_source_directories(SOURCES "Source Files\\voronoi"   voronoi)
 aux_source_directories(SOURCES "Source Files\\points"    points)
 aux_source_directories(SOURCES "Source Files\\api"       api)
 aux_source_directories(SOURCES "Source Files\\NL"        NL)
+aux_source_directories(SOURCES "Source Files\\lua"      lua)
 aux_source_directories(SOURCES "Source Files\\parameterization" parameterization)
 
 # Parallel Delaunay now works on both Windows and Unix !

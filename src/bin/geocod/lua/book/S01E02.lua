@@ -1,7 +1,7 @@
 -- FR Fais decoller la fusee de Shift et Tab
 -- EN Launch Shift and Tab's rocket
 
-import("pixel")
+require("pixel")
 
 function GLUP.draw_scene()
 

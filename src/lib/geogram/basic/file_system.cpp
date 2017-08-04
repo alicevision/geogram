@@ -371,6 +371,7 @@ namespace GEO {
             const std::string& path,
             std::vector<std::string>& result, bool recursive
         ) {
+	    // TODO: seems to be bugged, enters infinite recursion...
             get_directory_entries(path, result);
             if(recursive) {
                 for(size_t i = 0; i < result.size(); i++) {

@@ -22,6 +22,11 @@
 #ifndef GLUP_VIEWER
 #define GLUP_VIEWER
 
+/**
+ * \file geogram_gfx/glup_viewer/glup_viewer.h
+ * \brief Low-level C API for the GLUP viewer.
+ */
+
 /* #define WITH_PNG  */
 
 #ifdef __EMSCRIPTEN__

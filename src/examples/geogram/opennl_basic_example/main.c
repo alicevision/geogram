@@ -45,6 +45,7 @@
 
 #include <geogram/NL/nl.h>
 #include <stdio.h>
+#include <string.h>
 
 /**
  * \brief Tests OpenNL solve with 
@@ -67,6 +68,10 @@ static void test_simple_linear_solve(NLint solver) {
     case NL_SOLVER_DEFAULT:
         printf("Using default solver (BiCGStab)\n");
         break;
+    case NL_CG:
+        printf("Using CG\n");
+	symmetric = NL_TRUE;
+	break;
     case NL_GMRES:
         printf("Using GMRES\n");        
         break;
@@ -224,7 +229,10 @@ static void test_least_squares_regression(
 }
 
 
-int main() {
+int main(int argc, char** argv) {
+
+    nlInitialize(argc, argv);
+    
     test_simple_linear_solve(NL_SOLVER_DEFAULT);
     test_simple_linear_solve(NL_GMRES);
     test_simple_linear_solve(NL_BICGSTAB);
@@ -236,5 +244,7 @@ int main() {
     test_least_squares_regression(NL_FALSE, NL_TRUE);    
     test_least_squares_regression(NL_TRUE, NL_FALSE);
     test_least_squares_regression(NL_TRUE, NL_TRUE);        
+
+    
     return 0;
 }

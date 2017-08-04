@@ -43,6 +43,12 @@
 #include <exploragram/basic/common.h>
 #include <geogram/basic/numeric.h>
 
+/**
+ * \file exploragram/optimal_transport/conjugate_gradient.h
+ * \brief a simple in-place conjugate gradient solver for 
+ *  implementing Newton iterations for optimal transport.
+ */
+
 namespace GEO {
 
     /**

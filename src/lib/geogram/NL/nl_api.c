@@ -47,10 +47,11 @@
 #include "nl_context.h"
 #include "nl_iterative_solvers.h"
 #include "nl_preconditioners.h"
-#include "nl_cnc_gpu_cuda.h"
 #include "nl_superlu.h"
 #include "nl_cholmod.h"
 #include "nl_arpack.h"
+#include "nl_mkl.h"
+#include "nl_cuda.h"
 
 /*****************************************************************************/
 
@@ -77,9 +78,6 @@ static NLSparseMatrix* nlGetCurrentSparseMatrix() {
 /*****************************************************************************/
 
 NLboolean nlInitExtension(const char* extension) {
-
-    nl_arg_used(extension);
-
     if(!strcmp(extension, "SUPERLU")) {
         return nlInitExtension_SUPERLU();
     } else if(!strcmp(extension, "CHOLMOD")) {
@@ -91,17 +89,57 @@ NLboolean nlInitExtension(const char* extension) {
 	 *  transform).
 	 */
 	return nlInitExtension_SUPERLU() && nlInitExtension_ARPACK();
+    } else if(!strcmp(extension, "MKL")) {
+	return nlInitExtension_MKL();
+    } else if(!strcmp(extension, "CUDA")) {
+	return nlInitExtension_CUDA();
     }
-
-#ifdef NL_USE_CNC
-    if(!strcmp(extension, "CNC")) {
-        return NL_TRUE;
-    }
-#endif
     return NL_FALSE;
 }
 
+NLboolean nlExtensionIsInitialized(const char* extension) {
+    if(!strcmp(extension, "SUPERLU")) {
+        return nlExtensionIsInitialized_SUPERLU();
+    } else if(!strcmp(extension, "CHOLMOD")) {
+        return nlExtensionIsInitialized_CHOLMOD();
+    } else if(!strcmp(extension, "ARPACK")) {
+	/* 
+	 * SUPERLU is needed by OpenNL's ARPACK driver
+	 * (factorizes the matrix for the shift-invert spectral
+	 *  transform).
+	 */
+	return nlExtensionIsInitialized_SUPERLU() && nlExtensionIsInitialized_ARPACK();
+    } else if(!strcmp(extension, "MKL")) {
+	return nlExtensionIsInitialized_MKL();
+    } else if(!strcmp(extension, "CUDA")) {
+	return nlExtensionIsInitialized_CUDA();
+    }
+    return NL_FALSE;
+}
 
+void nlInitialize(int argc, char** argv) {
+    int i=0;
+    char* ptr=NULL;
+    char extension[255];
+    /* Find all the arguments with the form:
+     * nl:<extension>=true|false
+     * and try to activate the corresponding extensions.
+     */
+    for(i=1; i<argc; ++i) {
+	ptr = strstr(argv[i],"=true");
+	if(!strncmp(argv[i], "nl:", 3) &&
+	   (strlen(argv[i]) > 3) &&
+	   (ptr != NULL)) {
+	    strncpy(extension, argv[i]+3, (size_t)(ptr-argv[i]-3));
+	    extension[(size_t)(ptr-argv[i]-3)] = '\0';
+	    if(nlInitExtension(extension)) {
+		printf("OpenNL %s: initialized\n", extension);
+	    } else {
+		printf("OpenNL %s: could not initialize\n", extension);		
+	    }
+	}
+    }
+}
 
 /*****************************************************************************/
 /* Get/Set parameters */
@@ -526,16 +564,13 @@ static void nlInitializeM() {
     }
 
     /* a least squares problem results in a symmetric matrix */
-    if(
-        nlCurrentContext->least_squares  &&
-       !nlSolverIsCNC((NLint)(nlCurrentContext->solver))
-    ) {
+    if(nlCurrentContext->least_squares) {
         nlCurrentContext->symmetric = NL_TRUE;
     }
 
     if(
 	nlCurrentContext->symmetric &&
-	nlCurrentContext->preconditioner == NL_PRECOND_SSOR
+        nlCurrentContext->preconditioner == NL_PRECOND_SSOR 
     ) {
 	/* 
 	 * For now, only used with SSOR preconditioner, because
@@ -810,13 +845,13 @@ void nlEnd(NLenum prim) {
 
 NLboolean nlSolve() {
     NLboolean result;
-    NLdouble start_time = nlCurrentTime(); 
     nlCheckState(NL_STATE_SYSTEM_CONSTRUCTED);
+    nlCurrentContext->start_time = nlCurrentTime();
     nlCurrentContext->elapsed_time = 0.0;
     nlCurrentContext->flops = 0;    
     result = nlCurrentContext->solver_func();
     nlVectorToVariables();
-    nlCurrentContext->elapsed_time = nlCurrentTime() - start_time;
+    nlCurrentContext->elapsed_time = nlCurrentTime() - nlCurrentContext->start_time;
     nlTransition(NL_STATE_SYSTEM_CONSTRUCTED, NL_STATE_SOLVED);
     return result;
 }

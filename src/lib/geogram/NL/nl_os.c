@@ -113,14 +113,31 @@ double nlCurrentTime() {
 
 #  if defined(NL_OS_UNIX)
 
-NLdll nlOpenDLL(const char* name) {
-    void* result = dlopen(name, RTLD_NOW);  
+NLdll nlOpenDLL(const char* name, NLenum flags_in) {
+    void* result = NULL;
+    int flags = 0;
+    if((flags_in & NL_LINK_NOW) != 0) {
+	flags |= RTLD_NOW;
+    }
+    if((flags_in & NL_LINK_LAZY) != 0) {
+	flags |= RTLD_LAZY;
+    }
+    if((flags_in & NL_LINK_GLOBAL) != 0) {
+	flags |= RTLD_GLOBAL;
+    }
+    result = dlopen(name, flags);
     if(result == NULL) {
-        fprintf(stderr,"Did not find %s,\n", name);
-        fprintf(stderr,"Retrying with libgeogram_num_3rdparty.so\n");
-        result=dlopen("libgeogram_num_3rdparty.so", RTLD_NOW);
-        if(result == NULL) {
-            nlError("nlOpenDLL/dlopen",dlerror());
+	if((flags_in & NL_LINK_QUIET) == 0) {	
+	    fprintf(stderr,"Did not find %s,\n", name);
+	    fprintf(stderr,"Retrying with libgeogram_num_3rdparty.so\n");
+	}
+	if((flags_in & NL_LINK_USE_FALLBACK) != 0) {
+	    result=dlopen("libgeogram_num_3rdparty.so", flags);
+	    if(result == NULL) {
+		if((flags_in & NL_LINK_QUIET) == 0) {		    
+		    nlError("nlOpenDLL/dlopen",dlerror());
+		}
+	    }
         }
     }
     return result;
@@ -146,11 +163,14 @@ NLfunc nlFindFunction(void* handle, const char* name) {
 
 #  elif defined(NL_OS_WINDOWS)
 
-NLdll nlOpenDLL(const char* name) {
+NLdll nlOpenDLL(const char* name, NLenum flags) {
+    /* Note: NL_LINK_LAZY and NL_LINK_GLOBAL are ignored. */
     void* result = LoadLibrary(name);
-    if(result == NULL) {
-        fprintf(stderr,"Did not find %s,\n", name);
-        fprintf(stderr,"Retrying with geogram_num_3rdparty\n");
+    if(result == NULL && ((flags & NL_LINK_USE_FALLBACK) != 0)) {
+	if((flags & NL_LINK_QUIET) == 0) {
+	    fprintf(stderr,"Did not find %s,\n", name);
+	    fprintf(stderr,"Retrying with geogram_num_3rdparty\n");
+	}
         result=LoadLibrary("geogram_num_3rdparty.dll");
     }
     return result;
@@ -168,8 +188,9 @@ NLfunc nlFindFunction(void* handle, const char* name) {
 
 #else
 
-NLdll nlOpenDLL(const char* name) {
+NLdll nlOpenDLL(const char* name, NLenum flags) {
     nl_arg_used(name);
+    nl_arg_used(flags);
 #ifdef NL_OS_UNIX
     nlError("nlOpenDLL","Was not compiled with dynamic linking enabled");
     nlError("nlOpenDLL","(see VORPALINE_BUILD_DYNAMIC in CMakeLists.txt)");        

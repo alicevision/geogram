@@ -2138,7 +2138,7 @@ namespace {
          * \param[in] M the pointset
          */
         Co3Ne(Mesh& M) :
-            mesh_(M), progress_(nil) {
+            mesh_(M) {
             // TODO: interlace threads (more cache friendly)
             RVD_.init(mesh_);
             index_t nb = Process::maximum_concurrent_threads();
@@ -2168,38 +2168,11 @@ namespace {
             set_max_angle(alpha);
         }
 
-
 	/**
-	 * \brief Sets an optional ProgressTask to track progression.
-	 */
-	void set_progress(ProgressTask* progress) {
-	    progress_ = progress;
-	}
-
-	/**
-	 * \brief Gets the optional ProgressTask used to track progression.
-	 * \return a pointer to the ProgressTask or nil if unspecified.
-	 */
-	ProgressTask* get_progress() {
-	    return progress_;
-	}
-	
-	/**
-	 * \brief Runs the threads, and updates the
-	 *  user-specified ProgressTask.
-	 * \details If a ProgressTask was specified by
-	 *  the user, split the threads into smaller
-	 *  chunks, so that the ProgressTask can be 
-	 *  updated out of the parallel section.
+	 * \brief Runs the threads.
 	 */
 	void run_threads() {
-	    if(progress_ == nil) {
-		Process::run_threads(thread_);
-	    } else {
-		progress_->reset(0);
-		Process::run_threads(thread_);		    
-		progress_->reset(100);
-	    }
+	    Process::run_threads(thread_);
 	}
 	
         /**
@@ -2484,7 +2457,6 @@ namespace {
         Co3NeRestrictedVoronoiDiagram RVD_;
         TypedThreadGroup<Co3NeThread> thread_;
         double min_cos_angle_;
-	ProgressTask* progress_;
     };
 
     /************************************************************************/

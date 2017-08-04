@@ -11,7 +11,8 @@ aux_source_directories(SOURCES "Source Files\\api"           api)
 aux_source_directories(SOURCES "Source Files\\basic"         basic)
 aux_source_directories(SOURCES "Source Files\\mesh"          mesh)
 aux_source_directories(SOURCES "Source Files\\GLUP"          GLUP)
-aux_source_directories(SOURCES "Source Files\\GLUP\\shaders" GLUP/shaders/)
+aux_source_directories(SOURCES "Source Files\\GLUP\\shaders" GLUP/shaders)
+aux_source_directories(SOURCES "Source Files\\lua"           lua)
 
 add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)
 

@@ -44,6 +44,7 @@
 
 #include "nl_cholmod.h"
 #include "nl_context.h"
+#include "nl_mkl.h"
 
 /**
  * \file nl_cholmod.c
@@ -270,6 +271,11 @@ static NLboolean CHOLMOD_is_initialized() {
         CHOLMOD()->cholmod_finish != NULL ;
 }
 
+
+NLboolean nlExtensionIsInitialized_CHOLMOD() {
+    return CHOLMOD_is_initialized();
+}
+
 /**
  * \brief Finds and initializes a function pointer to
  *  one of the functions in CHOLMOD.
@@ -303,7 +309,26 @@ NLboolean nlInitExtension_CHOLMOD(void) {
         return CHOLMOD_is_initialized();
     }
 
-    CHOLMOD()->DLL_handle = nlOpenDLL(CHOLMOD_LIB_NAME);
+    /*
+     *   MKL has a built-in CHOLMOD that conflicts with
+     * the CHOLMOD used by OpenNL (to be fixed). For now
+     * we simply output a warning message and deactivate the
+     * CHOLMOD extension if the MKL extension was initialized
+     * before.
+     */
+    if(NLMultMatrixVector_MKL != NULL) {
+	fprintf(
+	    stderr,
+	    "CHOLMOD extension incompatible with MKL (deactivating)"
+	);
+	return NL_FALSE;
+    }
+
+    
+    CHOLMOD()->DLL_handle = nlOpenDLL(
+	CHOLMOD_LIB_NAME,
+	NL_LINK_NOW | NL_LINK_USE_FALLBACK
+    );
     if(CHOLMOD()->DLL_handle == NULL) {
         return NL_FALSE;
     }
@@ -381,7 +406,9 @@ static void nlCholmodFactorizedMatrixMult(
     cholmod_dense_ptr Y=NULL;
 
     memcpy(X->x, x, M->n*sizeof(double));    
-    Y = CHOLMOD()->cholmod_solve(CHOLMOD_A, M->L, X, &CHOLMOD()->cholmod_common);
+    Y = CHOLMOD()->cholmod_solve(
+	CHOLMOD_A, M->L, X, &CHOLMOD()->cholmod_common
+    );
     memcpy(y, Y->x, M->n*sizeof(double));    
     
     CHOLMOD()->cholmod_free_dense(&X, &CHOLMOD()->cholmod_common);

@@ -47,8 +47,9 @@
 #include "nl_preconditioners.h"
 #include "nl_superlu.h"
 #include "nl_cholmod.h"
-#include "nl_cnc_gpu_cuda.h"
 #include "nl_matrix.h"
+#include "nl_mkl.h"
+#include "nl_cuda.h"
 
 NLContextStruct* nlCurrentContext = NULL;
 
@@ -230,14 +231,45 @@ static NLboolean nlSolveDirect() {
 }
 
 static NLboolean nlSolveIterative() {
+    NLboolean use_CUDA = NL_FALSE;
     NLdouble* b = nlCurrentContext->b;
     NLdouble* x = nlCurrentContext->x;
     NLuint n = nlCurrentContext->n;
     NLuint k;
+    NLBlas_t blas = nlHostBlas();
+    NLMatrix M = nlCurrentContext->M;
+    NLMatrix P = nlCurrentContext->P;
+    
+    /*
+     * For CUDA: it is implemented for
+     *   all iterative solvers except GMRES
+     *   Jacobi preconditioner
+     */
+    if(nlExtensionIsInitialized_CUDA() &&
+       (nlCurrentContext->solver != NL_GMRES) && 
+       (nlCurrentContext->preconditioner == NL_PRECOND_NONE ||
+	nlCurrentContext->preconditioner == NL_PRECOND_JACOBI)
+    ) {
+	use_CUDA = NL_TRUE;
+	blas = nlCUDABlas();
+	if(nlCurrentContext->preconditioner == NL_PRECOND_JACOBI) {
+	    P = nlCUDAJacobiPreconditionerNewFromCRSMatrix(M);
+	}
+	M = nlCUDAMatrixNewFromCRSMatrix(M);
+    }
+
+    /* 
+     * We do not count CUDA transfers and CUDA matrix construction
+     * when estimating GFlops
+     */
+    nlCurrentContext->start_time = nlCurrentTime();     
+    nlBlasResetStats(blas);
+    
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
 	nlSolveSystemIterative(
-	    nlCurrentContext->M,
-	    nlCurrentContext->P,
+	    blas,
+	    M,
+	    P,
 	    b,
 	    x,
 	    nlCurrentContext->solver,
@@ -248,8 +280,17 @@ static NLboolean nlSolveIterative() {
 	b += n;
 	x += n;
     }
+
+    nlCurrentContext->flops += blas->flops;
+    
+    if(use_CUDA) {
+	nlDeleteMatrix(M);
+	nlDeleteMatrix(P);
+    }
+    
     return NL_TRUE;
 }
+
 
 
 NLboolean nlDefaultSolver() {
@@ -261,17 +302,7 @@ NLboolean nlDefaultSolver() {
 	case NL_GMRES: {
 	    result = nlSolveIterative();
 	} break;
-	case NL_CNC_FLOAT_CRS_EXT:
-	case NL_CNC_DOUBLE_CRS_EXT:
-	case NL_CNC_FLOAT_BCRS2_EXT:
-	case NL_CNC_DOUBLE_BCRS2_EXT:
-	case NL_CNC_FLOAT_ELL_EXT:
-	case NL_CNC_DOUBLE_ELL_EXT:
-	case NL_CNC_FLOAT_HYB_EXT:
-	case NL_CNC_DOUBLE_HYB_EXT: {
-	    nlSolve_CNC();
-	    result = NL_TRUE;
-	} break;
+
 	case NL_SUPERLU_EXT: 
 	case NL_PERM_SUPERLU_EXT: 
 	case NL_SYMMETRIC_SUPERLU_EXT: 

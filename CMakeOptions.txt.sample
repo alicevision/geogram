@@ -8,31 +8,31 @@
 #set(CPACK_GENERATOR DEB)
 
 #Uncomment to disable Hang-Si's tetgen
-#set(GEOGRAM_WITH_TETGEN FALSE)
+#set(GEOGRAM_WITH_TETGEN OFF)
 
 #Uncomment to disable Jonathan Shewchuk's triangle
-#set(GEOGRAM_WITH_TRIANGLE FALSE)
+#set(GEOGRAM_WITH_TRIANGLE OFF)
 
 #Uncomment to disable Yang Liu's HLBFGS
-#set(GEOGRAM_WITH_HLBFGS FALSE)
+#set(GEOGRAM_WITH_HLBFGS OFF)
 
 #Uncomment to disable graphics
-#set(GEOGRAM_WITH_GRAPHICS FALSE)
+#set(GEOGRAM_WITH_GRAPHICS OFF)
 
 #Uncomment to disable exploragram
 #(hexahedral-dominant testing pipeline and optimal transport
-#set(GEOGRAM_WITH_EXPLORAGRAM FALSE)
+#set(GEOGRAM_WITH_EXPLORAGRAM OFF)
 
 #Uncomment to disable compilation of legacy numerical libraries
 #(used as OpenNL plugins for SuperLU, CHOLDMOD and ARPACK)
-#set(GEOGRAM_WITH_LEGACY_NUMERICS FALSE)
+#set(GEOGRAM_WITH_LEGACY_NUMERICS OFF)
 
 #Uncomment to compile FPG (Meyer and Pion's Floating Point Filter Generator)
-#set(GEOGRAM_WITH_FPG TRUE)
+#set(GEOGRAM_WITH_FPG ON)
 
 #Uncomment to only compile geogram libraries (if set, vorpalite,
 # vorpaview, demo and example programs will not be compiled)
-#set(GEOGRAM_LIB_ONLY TRUE)
+#set(GEOGRAM_LIB_ONLY ON)
 
 #Uncomment this block to generate dynamic libraries
 #

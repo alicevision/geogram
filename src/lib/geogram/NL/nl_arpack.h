@@ -65,9 +65,17 @@
 NLboolean nlInitExtension_ARPACK(void);
 
 /**
+ * \brief Tests whether the ARPACK extension is initialized.
+ * \retval NL_TRUE if the extension is initialized
+ * \retval NL_FALSE otherwise
+ */
+NLboolean nlExtensionIsInitialized_ARPACK(void);
+
+/**
  * \brief Solves the eigen problem in the current context
  *   using ARPACK.
  */
 void nlEigenSolve_ARPACK(void);
+
 
 #endif

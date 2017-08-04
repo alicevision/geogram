@@ -41,6 +41,12 @@
 
 #include <exploragram/basic/common.h>
 
+/**
+ * \file exploragram/optimal_transport/sampling.h
+ * \brief Functions to sample volumes, to be used with
+ *  semi-discrete optimal transport.
+ */
+
 namespace GEO {
     class Mesh;
     class CentroidalVoronoiTesselation;

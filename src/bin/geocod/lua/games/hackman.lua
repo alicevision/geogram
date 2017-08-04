@@ -1,4 +1,4 @@
-import("pixel") 
+require("pixel") 
  
 GLUP.ArcadeStyle() 
  

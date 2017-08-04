@@ -1,7 +1,7 @@
 -- Dessin d'un "creeper"
 -- Par Nathan Levy, Decembre 2016
 
-import("pixel")
+require("pixel")
 
 function GLUP.draw_scene()
    GLUP.SetCellsShrink(0.1)

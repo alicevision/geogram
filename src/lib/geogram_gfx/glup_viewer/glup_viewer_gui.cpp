@@ -46,9 +46,13 @@
 #include <geogram_gfx/glup_viewer/glup_viewer_gui.h>
 #include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
-#include <geogram_gfx/glup_viewer/glup_viewer_lua.h>
 #include <geogram_gfx/glup_viewer/geogram_logo_256.xpm>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
+
+#include <geogram_gfx/lua/lua_glup.h>
+#include <geogram_gfx/lua/lua_glup_viewer.h>
+#include <geogram_gfx/lua/lua_imgui.h>
+#include <geogram/lua/lua_io.h>
 
 #include <geogram/mesh/mesh_io.h>
 
@@ -417,6 +421,9 @@ namespace GEO {
     {
         directory_ = FileSystem::get_current_working_directory() + "/";
 	set_default_filename(default_filename);
+	current_file_index_ = 0;
+	current_directory_index_ = 0;
+	current_write_extension_index_ = 0;
     }
 
     void FileDialog::set_default_filename(const std::string& default_filename) {
@@ -1304,35 +1311,6 @@ namespace GEO {
         }
 
     }
-    
-    /**********************************************************************/
-
-    static int lua_glup_print(lua_State* L) {
-	Console* console = Application::instance()->console();
-	console->show();
-	int nargs = lua_gettop(L);	
-	lua_getglobal(L, "tostring");
-	for(int i=1; i<=nargs; ++i) {
-	    const char *s;
-	    size_t l;
-	    lua_pushvalue(L, -1);  /* function to be called */
-	    lua_pushvalue(L, i);   /* value to print */
-	    lua_call(L, 1, 1);
-	    s = lua_tolstring(L, -1, &l);  /* get result */
-	    if (s == NULL) {
-		return luaL_error(
-		    L, "'tostring' must return a string to 'print'"
-		);
-	    }
-	    if (i>1) {
-		console->printf("\t");
-	    }
-	    console->printf("%s", s);
-	    lua_pop(L, 1);  /* pop result */
-	}
-	console->printf("\n");	
-	return 0;
-    }
 
     /**********************************************************************/
 
@@ -1455,8 +1433,10 @@ namespace GEO {
 	lua_error_occured_ = false;	
 	lua_state_ = luaL_newstate();
 	luaL_openlibs(lua_state_);
-	lua_register(lua_state_, "print", lua_glup_print);
+	init_lua_io(lua_state_);
 	init_lua_glup(lua_state_);
+	init_lua_glup_viewer(lua_state_);		
+	init_lua_imgui(lua_state_);	
     }
 
     Application::~Application() {

@@ -44,7 +44,8 @@
  */
 
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
-#include <geogram_gfx/glup_viewer/glup_viewer_lua.h>
+#include <geogram_gfx/lua/lua_glup.h>
+#include <geogram/lua/lua_io.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/file_system.h>
 #include <algorithm>
@@ -85,7 +86,7 @@ namespace {
                 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
             );
 	    register_embedded_lua_files();
-	    exec_command("import(\"preamble\")");
+	    exec_command("require(\"preamble\")");
         }
 
         /**
@@ -142,7 +143,7 @@ namespace {
 		   ImGui::MenuItem(embedded_files[i].c_str())
 		) {
 		    const char* data;
-		    get_embedded_lua_file(embedded_files[i], &data);
+		    get_embedded_lua_file(embedded_files[i].c_str(), &data);
 		    text_editor_.load_data(data);
 		    run_program();
 		    current_file_ = "";		    			
@@ -156,7 +157,7 @@ namespace {
 		if(ImGui::MenuItem("empty file")) {
 		    text_editor_.clear();
 		    current_file_ = "";
-		    exec_command("import(\"preamble\")");
+		    exec_command("require(\"preamble\")");
 		}
 		ImGui::Separator();
 		ImGui::MenuItem("From template...", NULL, false, false);
@@ -178,7 +179,7 @@ namespace {
 	    if(ImGui::BeginMenu("Load internal lib...")) {
 		ImGui::MenuItem("These files are those", NULL, false, false);
 		ImGui::MenuItem(
-		    "that are read by import(\"...\")", NULL, false, false
+		    "that are read by require(\"...\")", NULL, false, false
 	        );
 		ImGui::MenuItem("You cannot modify them", NULL,false,false);
 		ImGui::MenuItem("(but you can take a look)", NULL,false,false);
@@ -192,9 +193,11 @@ namespace {
 	}
 
 	void run_program() {
-	    exec_command("import(\"preamble\")");	    
+	    exec_command("require(\"preamble\")");	    
 	    if(exec_command(text_editor_.text())) {
 		Logger::out("LUA") << "Program is OK." << std::endl;
+	    } else {
+		adjust_lua_glup_state(lua_state_);		
 	    }
 	    if(!lua_error_occured_ && init_graphics_called_) {
 		exec_command("GLUP.init_graphics()");

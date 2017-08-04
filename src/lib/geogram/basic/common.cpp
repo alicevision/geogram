@@ -125,7 +125,7 @@ namespace GEO {
                 FS.mount(NODEFS, { root: '/' }, '/root');
             }
         );
-#endif        
+#endif
 	initialized = true;
     }
 

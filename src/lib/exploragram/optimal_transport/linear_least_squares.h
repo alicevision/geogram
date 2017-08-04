@@ -43,6 +43,13 @@
 #include <exploragram/basic/common.h>
 #include <geogram/basic/matrix.h>
 
+/**
+ * \file exploragram/optimal_transport/linear_least_squares.h
+ * \brief Functions to compute linear regression with low-degree
+ *  polynomials, used to upscale functions sampled on pointsets
+ *  in Merigot's multilevel algorithm for optimal transport.
+ */
+
 namespace GEO {
     
     /**

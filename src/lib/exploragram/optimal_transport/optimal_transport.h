@@ -47,6 +47,12 @@
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/third_party/HLBFGS/HLBFGS.h>
 
+/**
+ * \file exploragram/optimal_transport/optimal_transport.h
+ * \brief Solver for semi-discrete optimal transport (
+ *  multilevel and Newton).
+ */
+
 namespace OGF {
     class SceneGraph;
 }

@@ -50,13 +50,13 @@
 
 /**
  * \file geogram/NL/nl_cholmod.h
- * \brief Internal OpenNL functions that interfaces Cholmod.
+ * \brief Internal OpenNL functions that interface Cholmod.
  */
 
 /**
- * \brief Factorizes a matrix using SuperLU.
- * \details  The SUPERLU extension needs to be initialized, 
- *   by first calling nlInitExtension("SUPERLU").
+ * \brief Factorizes a matrix using Cholmod.
+ * \details  The Cholmod extension needs to be initialized, 
+ *   by first calling nlInitExtension("CHOLMOD").
  * \param[in] M the input sparse matrix. Should be a
  *   either an NLSparseMatrix or an NLCRSMatrix.
  * \return a factorization P of \p M. Subsequent calls
@@ -73,8 +73,7 @@ NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_CHOLMOD(
  * \brief Initializes the CHOLMOD extension
  * \details This dynamically loads the Cholmod 
  *  library available in the system (if available) and
- *  retreives the symbols in there. It supports Cholmod 3.x
- *  and Cholmod 4.x. 
+ *  retreives the symbols in there. 
  * \retval NL_TRUE if CHOLMOD could be successfully
  *   dynamically loaded and all functions could be
  *   found in it.
@@ -84,5 +83,11 @@ NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_CHOLMOD(
  */
 NLboolean nlInitExtension_CHOLMOD(void);
 
+/**
+ * \brief Tests whether the CHOLMOD extension is initialized.
+ * \retval NL_TRUE if the extension is initialized
+ * \retval NL_FALSE otherwise
+ */
+NLboolean nlExtensionIsInitialized_CHOLMOD(void);
 
 #endif

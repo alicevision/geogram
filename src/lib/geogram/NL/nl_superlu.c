@@ -353,6 +353,10 @@ static NLboolean SuperLU_is_initialized() {
 	SuperLU()->input_error != NULL;
 }
 
+NLboolean nlExtensionIsInitialized_SUPERLU() {
+    return SuperLU_is_initialized();
+}
+
 static void nlTerminateExtension_SUPERLU(void) {
     if(SuperLU()->DLL_handle != NULL) {
         nlCloseDLL(SuperLU()->DLL_handle);
@@ -388,7 +392,9 @@ NLboolean nlInitExtension_SUPERLU(void) {
         return SuperLU_is_initialized();
     }
 
-    SuperLU()->DLL_handle = nlOpenDLL(SUPERLU_LIB_NAME);
+    SuperLU()->DLL_handle = nlOpenDLL(
+	SUPERLU_LIB_NAME, NL_LINK_NOW | NL_LINK_USE_FALLBACK
+    );
     if(SuperLU()->DLL_handle == NULL) {
         return NL_FALSE;
     }

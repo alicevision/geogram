@@ -1,4 +1,5 @@
 /* [Bruno] */
+
 #ifdef __GNUC__
 #ifndef __ICC
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -8,6 +9,9 @@
 #endif
 #endif
 
+#ifdef __ICC
+#pragma warning disable 177
+#endif
 
 #include <stdio.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>

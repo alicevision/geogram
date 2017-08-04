@@ -1,4 +1,4 @@
-import("pixel")
+require("pixel")
 
 N=3*3
 

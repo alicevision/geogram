@@ -1,4 +1,4 @@
-import("pixel")
+require("pixel")
 
 function GLUP.init_graphics()
    GLUP.SetRegionOfInterest(1,1,1,11,11,1)

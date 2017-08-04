@@ -216,6 +216,12 @@
 #pragma warning ( disable: 4311 4312 )
 #endif
 
+// [Bruno] disable some warnings for ICC
+#ifdef __ICC
+#pragma warning disable 869 180 593
+#endif
+
+
 #ifdef SINGLE
 #define REAL float
 #else /* not SINGLE */

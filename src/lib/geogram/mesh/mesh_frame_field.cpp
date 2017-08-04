@@ -55,10 +55,14 @@
 // Some member functions of NormalCycle are not used here.
 // note: NormalCycle will be exported sometime, so for now
 // we deactivate the warning.
+
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wunused-member-function"
 #endif
 
+#ifdef __ICC
+#pragma warning disable 177
+#endif
 
 namespace {
     using namespace GEO;

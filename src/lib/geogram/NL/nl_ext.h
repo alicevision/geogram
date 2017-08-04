@@ -62,16 +62,9 @@ extern "C" {
 #define NL_SOLVER_USER           0x213
 #define NL_CHOLMOD_EXT           0x214
 #define NL_ARPACK_EXT            0x215
-    
-#define NL_CNC_FLOAT_CRS_EXT     0x220
-#define NL_CNC_DOUBLE_CRS_EXT    0x222
-#define NL_CNC_FLOAT_BCRS2_EXT   0x221
-#define NL_CNC_DOUBLE_BCRS2_EXT  0x223
-#define NL_CNC_FLOAT_ELL_EXT     0x224
-#define NL_CNC_DOUBLE_ELL_EXT    0x225
-#define NL_CNC_FLOAT_HYB_EXT     0x229
-#define NL_CNC_DOUBLE_HYB_EXT    0x22a
 
+#define NL_CUDA_PRECOND_ILU_EXT    0x220
+    
 #ifdef __cplusplus
 }
 #endif

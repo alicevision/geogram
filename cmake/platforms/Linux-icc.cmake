@@ -5,9 +5,9 @@
 include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux.cmake)
 
 # Set the Intel compilers
-set(CMAKE_CXX_COMPILER icpc)
-set(CMAKE_C_COMPILER icc)
-set(CMAKE_Fortran_COMPILER ifort)
+set(CMAKE_CXX_COMPILER "/opt/intel/bin/icpc")
+set(CMAKE_C_COMPILER "/opt/intel/bin/icc")
+set(CMAKE_Fortran_COMPILER "/opt/intel/bin/ifort")
 
 # Warning flags
 add_definitions(
@@ -23,30 +23,23 @@ add_definitions(
 # Set the C standard
 add_flags(CMAKE_C_FLAGS -std=c99)
 
-# Add Intel system includes
-add_definitions(
-    -isystem $ENV{INTEL}/include
-    -isystem $ENV{INTEL}/include/intel64
-    -isystem $ENV{INTEL}/mkl/include
-    -isystem $ENV{INTEL}/ipp/include
-)
+# Parallelism: using openmp and enabling the "restrict" keyword.
+add_flags(CMAKE_CXX_FLAGS -qopenmp -restrict)
+add_flags(CMAKE_C_FLAGS -qopenmp -restrict)
 
-# Compile and link with OpenMP
-add_flags(CMAKE_CXX_FLAGS -openmp -restrict)
-add_flags(CMAKE_C_FLAGS -openmp -restrict)
-
-# Link flags to force link of shared libs to resolve all the symbols
+# Link flags to force link of shared libs to resolve all the symbols.
 add_flags(CMAKE_EXE_LINKER_FLAGS -z defs)
 
 # icc options related with FPU:
-# https://software.intel.com/en-us/node/522979
-# default fp model is "fast" (not good !!)
-# 'strict' implies both 'precise' and 'except'
-# Note: it seems that "-frounding-math" is also required
-# (to be checked)
+# geogram needs strict IEEEE floating point (exact predicates depend
+# on it)
+add_flags(CMAKE_CXX_FLAGS -mieee-fp)
+add_flags(CMAKE_C_FLAGS -mieee-fp)
 
-add_flags(CMAKE_CXX_FLAGS -fp-model strict -frounding-math)
-add_flags(CMAKE_C_FLAGS -fp-model strict -frounding-math)
+# debugging symbols: uncomment the following two lines to generate them
+# even in release mode (for debugging for instance).
+#add_flags(CMAKE_CXX_FLAGS -g)
+#add_flags(CMAKE_C_FLAGS -g)
 
 # Reset the warning level for third parties
 function(vor_reset_warning_level)

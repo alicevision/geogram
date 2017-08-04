@@ -1,4 +1,4 @@
-import("turtle")
+require("turtle")
 
 
 function Sierpinski(a, level)

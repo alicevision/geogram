@@ -46,86 +46,21 @@
 
 /**
  * \file geogram/NL/nl_blas.h
- * \brief Some basic linear algebra routines used by OpenNL internally.
+ * \brief Abstract interface to the basic linear algebra routines used by OpenNL internally.
  */
 
 #ifndef OPENNL_BLAS_H
 #define OPENNL_BLAS_H
 
-#ifndef NL_FORTRAN_WRAP
-#define NL_FORTRAN_WRAP(x) x##_
-#endif
-
-
-/******************************************************************************/
-/* C wrappers for BLAS routines */
+/**
+ * \brief The opaque structure used by the BLAS abstraction layer.
+ */
+struct NLBlas;
 
 /**
- * \brief Scales a vector.
- * \details In formula: \f$ x \leftarrow a x \f$
- * \param[in] n dimension of the vector
- * \param[in] a scaling coefficient
- * \param[in,out] x vector to be scaled
- * \param[in] incx straddle between two consecutive coefficients
+ * \brief A handle to a BLAS abstraction layer.
  */
-void dscal( int n, double a, double *x, int incx ) ;
-
-/**
- * \brief Copies a vector.
- * \details In formula: \f$ y \leftarrow x \f$
- * \param[in] n dimension of the vector
- * \param[in] x source vector
- * \param[in] incx straddle between two consecutive coefficients
- *  of the source vector
- * \param[out] y destination vector
- * \param[in] incy straddle between two consecutive coefficients
- *  of the destination vector
- */
-void dcopy( 
-    int n, const double *x, int incx, double *y, int incy 
-) ;
-
-/**
- * \brief Computes a linear combination of two vectors
- * \details In formula: \f$ y \leftarrow a x + y \f$
- * \param[in] n dimension of the vectors
- * \param[in] a scaling coefficient
- * \param[in] x source vector to be scaled and added
- * \param[in] incx straddle between two consecutive coefficients
- *  of the source vector
- * \param[in,out] y the vector that \p a \p x should be added to
- * \param[in] incy straddle between two consecutive coefficients
- *  of the destination vector
- */
-void daxpy( 
-    int n, double a, const double *x, int incx, double *y,
-    int incy 
-) ;
-
-/**
- * \brief Computes the dot product between two vectors
- * \param[in] n dimension of the vectors
- * \param[in] x first vector
- * \param[in] incx straddle between two consecutive coefficients
- *  of the first vector
- * \param[in] y second vector
- * \param[in] incy straddle between two consecutive coefficients
- *  of the second vector
- * \return the dot product between \p x and \p y
- */
-double ddot( 
-    int n, const double *x, int incx, const double *y, int incy 
-) ;
-
-/**
- * \brief Computes the norm of a vector
- * \param[in] n dimension of the vector
- * \param[in] x the vector
- * \param[in] incx straddle between two consecutive coefficients 
- *  of the vector
- * \return the norm of \p x
- */
-double dnrm2( int n, const double *x, int incx ) ;
+typedef struct NLBlas* NLBlas_t;
 
 /**
  * \brief Specifies whether matrix should be transposed.
@@ -143,7 +78,6 @@ typedef enum {
     UpperTriangle=0, LowerTriangle=1
 } MatrixTriangle ;
 
-
 /**
  * \brief Specifies which triangular part of a matrix should be used.
  * \details Used by dtpsv() 
@@ -151,6 +85,168 @@ typedef enum {
 typedef enum {
     UnitTriangular=0, NotUnitTriangular=1
 } MatrixUnitTriangular ;
+
+/**
+ * \brief Specifies on which type of memory a function should be applied.
+ * \details NL_HOST_MEMORY refers to CPU RAM and NL_DEVICE_MEMORY to GPU
+ *  RAM.
+ */
+typedef enum {
+    NL_HOST_MEMORY, NL_DEVICE_MEMORY
+} NLmemoryType;
+
+/**
+ * \brief Allocates memory in host or in device.
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] type whether RAM should be allocated on the CPU
+ *  (NL_HOST_MEMORY) or the GPU (NL_DEVICE_MEMORY)
+ * \param[in] size the number of bytes of the memory bloc to be
+ *  allocated.
+ * \return a pointer to the allocated memory.
+ */
+typedef void* (*FUNPTR_malloc)(
+    NLBlas_t blas, NLmemoryType type, size_t size
+);
+
+/**
+ * \brief Frees memory from host or from device.
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] type whether RAM should be allocated on the CPU
+ *  (NL_HOST_MEMORY) or the GPU (NL_DEVICE_MEMORY)
+ * \param[in] size the number of bytes of the memory bloc to be
+ *  allocated.
+ * \param[in] ptr a pointer to the memory to be freed.
+ */
+typedef void (*FUNPTR_free)(
+    NLBlas_t blas, NLmemoryType type, size_t size, void* ptr
+);
+
+/**
+ * \brief Copies a bloc of memory.
+ * \param[in] blas a handle to the BLAS abstraction layer.
+ * \param[in] to , to_type a pointer to the destination and
+ *  indication of whether the destination is on CPU RAM 
+ *  (NL_HOST_MEMORY) or GPU RAM (NL_DEVICE_MEMORY).
+ * \param[in] from , frm_type a pointer to the source and
+ *  indication of whether the source is on CPU RAM 
+ *  (NL_HOST_MEMORY) or GPU RAM (NL_DEVICE_MEMORY).
+ * \param[in] size number of bytes to be copied.
+ */
+typedef void (*FUNPTR_memcpy)(
+    NLBlas_t blas,
+    void* to, NLmemoryType to_type,
+    void* from, NLmemoryType from_type,
+    size_t size
+);
+
+/**
+ * \brief Copies a vector.
+ * \details In formula: \f$ y \leftarrow x \f$
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] n dimension of the vector
+ * \param[in] x source vector
+ * \param[in] incx straddle between two consecutive coefficients
+ *  of the source vector
+ * \param[out] y destination vector
+ * \param[in] incy straddle between two consecutive coefficients
+ *  of the destination vector
+ */
+typedef void (*FUNPTR_dcopy)(NLBlas_t blas, int n, const double *x, int incx, double *y, int incy);
+
+/**
+ * \brief Scales a vector.
+ * \details In formula: \f$ x \leftarrow a x \f$
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] n dimension of the vector
+ * \param[in] a scaling coefficient
+ * \param[in,out] x vector to be scaled
+ * \param[in] incx straddle between two consecutive coefficients
+ */
+typedef void (*FUNPTR_dscal)(NLBlas_t blas, int n, double a, double *x, int incx);
+
+
+/**
+ * \brief Computes the dot product between two vectors
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] n dimension of the vectors
+ * \param[in] x first vector
+ * \param[in] incx straddle between two consecutive coefficients
+ *  of the first vector
+ * \param[in] y second vector
+ * \param[in] incy straddle between two consecutive coefficients
+ *  of the second vector
+ * \return the dot product between \p x and \p y
+ */
+typedef double (*FUNPTR_ddot)(NLBlas_t blas, int n, const double *x, int incx, const double *y, int incy);
+
+/**
+ * \brief Computes the norm of a vector
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] n dimension of the vector
+ * \param[in] x the vector
+ * \param[in] incx straddle between two consecutive coefficients 
+ *  of the vector
+ * \return the norm of \p x
+ */
+typedef double (*FUNPTR_dnrm2)(NLBlas_t blas, int n, const double *x, int incx);
+
+/**
+ * \brief Computes a linear combination of two vectors
+ * \details In formula: \f$ y \leftarrow a x + y \f$
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] n dimension of the vectors
+ * \param[in] a scaling coefficient
+ * \param[in] x source vector to be scaled and added
+ * \param[in] incx straddle between two consecutive coefficients
+ *  of the source vector
+ * \param[in,out] y the vector that \p a \p x should be added to
+ * \param[in] incy straddle between two consecutive coefficients
+ *  of the destination vector
+ */
+typedef void (*FUNPTR_daxpy)(NLBlas_t blas, int n, double a, const double *x, int incx, double *y, int incy);
+
+
+/**
+ * \brief Computes a matrix-vector product
+ * \details performs one of the matrix-vector operations   
+ * \f$ y = \alpha A x + \beta y \f$   or 
+ * \f$ y = \alpha A^t x + \beta y \f$,
+ * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, 
+ *  x and y are vectors and A is an m by n matrix.   
+ * \param[in] blas a handle to the BLAS abstraction layer
+ * \param[in] trans one of (NoTranspose, Transpose, ConjugateTranspose), 
+ *  specifies the operation to be performed as follows:
+ *  - NoTranspose: \f$ y = \alpha A x + \beta y \f$
+ *  - Transpose: \f$ y = \alpha A^t x + \beta y \f$
+ *  - ConjugateTranspose: \f$ y = \alpha A^t x + \beta y \f$
+ * \param[in] m number of rows of the matrix A
+ * \param[in] n number of columns of the matrix A
+ * \param[in] alpha the scalar \f$ \alpha \f$
+ * \param[in] A an array of dimension (ldA,n). On entry, 
+ *  the leading m by n part of the array A must contain 
+ *  the array of coefficients.
+ * \param[in] ldA specifies the first dimension of A as declared 
+ *  by the caller. ldA must be at least max(1,m).  
+ * \param[in] x array of dimension at least   
+ *  ( 1 + ( n - 1 )*abs( incx ) ) when trans = NoTranspose
+ *  and at least  ( 1 + ( m - 1 )*abs( incx ) ) otherwise.   
+ *  Before entry, the incremented array X must contain the   
+ *  vector x.   
+ * \param[in] incx the increment for the elements of x
+ * \param[in] beta the scalar \f$ \beta \f$
+ * \param[in,out] y an array of dimension
+ *  ( 1 + ( m - 1 )*abs( incy ) ) when trans = NoTranspose
+ *  and at least ( 1 + ( n - 1 )*abs( incy ) ) otherwise.   
+ *  Before entry with beta non-zero, the incremented array y
+ *  must contain the vector y. On exit, y is overwritten by the 
+ *  updated vector y.   
+ * \param[in] incy the increment for the elements of y
+ */
+typedef void (*FUNPTR_dgemv)( 
+    NLBlas_t blas, MatrixTranspose trans, int m, int n, double alpha,
+    const double *A, int ldA, const double *x, int incx,
+    double beta, double *y, int incy 
+);
 
 
 /**
@@ -161,6 +257,7 @@ typedef enum {
  *  non-unit, upper or lower triangular matrix, supplied in packed form.
  *  No test for singularity or near-singularity is included in this 
  *  routine. Such tests must be performed before calling this routine. 
+ * \param[in] blas a handle to the BLAS abstraction layer
  * \param[in] uplo one of (UpperTriangle, LowerTriangle), specifies
  *  whether A is an upper or lower triangular matrix as follows:
  *  - UpperTriangle: A is an upper triangular matrix
@@ -193,51 +290,108 @@ typedef enum {
  * \param[in] incx specifies the increment for the elements of x. 
  *  Must not be zero. 
  */
-void dtpsv( 
-    MatrixTriangle uplo, MatrixTranspose trans,
+typedef void (*FUNPTR_dtpsv)(
+    NLBlas_t blas, MatrixTriangle uplo, MatrixTranspose trans,
     MatrixUnitTriangular diag, int n, const double *AP,
     double *x, int incx 
-) ;
+);
+
+struct NLBlas {
+    FUNPTR_malloc malloc;
+    FUNPTR_free free;
+    FUNPTR_memcpy memcpy;
+
+    FUNPTR_dcopy dcopy;
+    FUNPTR_dscal dscal;
+    FUNPTR_ddot ddot;
+    FUNPTR_dnrm2 dnrm2;
+    FUNPTR_daxpy daxpy;
+    FUNPTR_dgemv dgemv;
+    FUNPTR_dtpsv dtpsv;
+
+    NLboolean has_unified_memory;
+    double start_time;
+    NLulong flops;
+    NLulong used_ram[2];
+    NLulong max_used_ram[2];
+    
+    /* 
+     * Used for stats of the linear solver
+     * (a bit ugly, should not be here, but
+     * more convenient for now...)
+     */
+    double sq_rnorm; 
+    double sq_bnorm;
+};
 
 /**
- * \brief Computes a matrix-vector product
- * \details performs one of the matrix-vector operations   
- * \f$ y = \alpha A x + \beta y \f$   or 
- * \f$ y = \alpha A^t x + \beta y \f$,
- * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, 
- *  x and y are vectors and A is an m by n matrix.   
- * \param[in] trans one of (NoTranspose, Transpose, ConjugateTranspose), 
- *  specifies the operation to be performed as follows:
- *  - NoTranspose: \f$ y = \alpha A x + \beta y \f$
- *  - Transpose: \f$ y = \alpha A^t x + \beta y \f$
- *  - ConjugateTranspose: \f$ y = \alpha A^t x + \beta y \f$
- * \param[in] m number of rows of the matrix A
- * \param[in] n number of columns of the matrix A
- * \param[in] alpha the scalar \f$ \alpha \f$
- * \param[in] A an array of dimension (ldA,n). On entry, 
- *  the leading m by n part of the array A must contain 
- *  the array of coefficients.
- * \param[in] ldA specifies the first dimension of A as declared 
- *  by the caller. ldA must be at least max(1,m).  
- * \param[in] x array of dimension at least   
- *  ( 1 + ( n - 1 )*abs( incx ) ) when trans = NoTranspose
- *  and at least  ( 1 + ( m - 1 )*abs( incx ) ) otherwise.   
- *  Before entry, the incremented array X must contain the   
- *  vector x.   
- * \param[in] incx the increment for the elements of x
- * \param[in] beta the scalar \f$ \beta \f$
- * \param[in,out] y an array of dimension
- *  ( 1 + ( m - 1 )*abs( incy ) ) when trans = NoTranspose
- *  and at least ( 1 + ( n - 1 )*abs( incy ) ) otherwise.   
- *  Before entry with beta non-zero, the incremented array y
- *  must contain the vector y. On exit, y is overwritten by the 
- *  updated vector y.   
- * \param[in] incy the increment for the elements of y
+ * \brief Tests whether BLAS device uses the same address
+ *  space as the CPU. 
+ * \param[in] blas a pointer to the BLAS abstraction layer.
+ * \return NL_TRUE if device and CPU use the same address space.
+ * \retval NL_FALSE otherwise.
  */
-void dgemv( 
-    MatrixTranspose trans, int m, int n, double alpha,
-    const double *A, int ldA, const double *x, int incx,
-    double beta, double *y, int incy 
-) ;
+NLboolean nlBlasHasUnifiedMemory(NLBlas_t blas);
+
+/**
+ * \brief Restes the flops and memory used statistics.
+ * \param[in] blas a pointer to the BLAS abstraction layer.
+ */
+void nlBlasResetStats(NLBlas_t blas);
+
+/**
+ * \brief Gets the number of floating point operations per
+ *  seconds computed since creation of the BLAS abstaction
+ *  layer or since the latest call to nlBlasResetStats().
+ */
+double nlBlasGFlops(NLBlas_t blas);
+
+/**
+ * \brief Gets the currently used amount of memory 
+ *  computed since creation of the BLAS abstaction
+ *  layer or since the latest call to nlBlasResetStats().
+ * \param[in] blas a pointer to the BLAS abstraction layer.
+ * \param[in] type one of NL_HOST_MEMORY, NL_DEVICE_MEMORY.
+ * \return the amount of used memory, in bytes.
+ */
+NLulong nlBlasUsedRam(NLBlas_t blas, NLmemoryType type);
+
+/**
+ * \brief Gets the high mark of used amount of memory
+ *  computed since creation of the BLAS abstaction
+ *  layer or since the latest call to nlBlasResetStats().
+ * \param[in] blas a pointer to the BLAS abstraction layer.
+ * \param[in] type one of NL_HOST_MEMORY, NL_DEVICE_MEMORY.
+ * \return the high mark of the used memory, in bytes.
+ */
+NLulong nlBlasMaxUsedRam(NLBlas_t blas, NLmemoryType type);
+
+/**
+ * \brief Gets a pointer to the BLAS abstraction layer for
+ *  BLAS operation on the host CPU.
+ * \return a pointer to the BLAS abstraction layer.
+ */
+NLBlas_t nlHostBlas();
+
+/**
+ * \brief Allocates a vector of doubles;
+ * \param[in] blas a pointer to the BLAS abstraction layer.
+ * \param[in] memtype one of NL_HOST_MEMORY, NL_DEVICE_MEMORY.
+ * \param[in] dim number of components in the vector.
+ */
+#define NL_NEW_VECTOR(blas, memtype, dim) \
+    (double*)blas->malloc(blas,memtype,(size_t)(dim)*sizeof(double))
+
+/**
+ * \brief Deletes a vector of doubles;
+ * \param[in] blas a pointer to the BLAS abstraction layer.
+ * \param[in] memtype one of NL_HOST_MEMORY, NL_DEVICE_MEMORY.
+ * \param[in] dim number of components in the vector.
+ * \param[in] ptr a pointer to the vector to be deleted.
+ */
+#define NL_DELETE_VECTOR(blas, memtype, dim, ptr) \
+    blas->free(blas,memtype,(size_t)(dim)*sizeof(double),ptr)
+
+/******************************************************************************/
 
 #endif

@@ -521,6 +521,7 @@ public:
      *   topological disk (open surface with one border and no handle).
      */
     LSCM(IndexedMesh& M) : mesh_(&M) {
+	spectral_ = false;
     }
 
     /**
@@ -562,7 +563,7 @@ public:
 	    nlEigenSolverParameteri(NL_EIGEN_SOLVER, NL_ARPACK_EXT);
 	    nlEigenSolverParameteri(NL_NB_EIGENS, nb_eigens);
 	    nlEnable(NL_VERBOSE);
-	}
+	} 
         NLuint nb_vertices = NLuint(mesh_->vertex.size());
 	if(!spectral_) {
 	    project();
@@ -573,7 +574,7 @@ public:
 	if(spectral_) {
 	    nlSolverParameterd(NL_THRESHOLD, 0.0);	    
 	} else {
-	    nlSolverParameterd(NL_THRESHOLD, 1e-10);
+	    nlSolverParameterd(NL_THRESHOLD, 1e-6);
 	}
         nlBegin(NL_SYSTEM);
         mesh_to_solver();
@@ -901,18 +902,18 @@ protected:
 
 
 int main(int argc, char** argv) {
-
     bool spectral = false;
     bool OK = true;
     std::vector<std::string> filenames;
+
+    nlInitialize(argc, argv);
+    
     for(int i=1; i<argc; ++i) {
 	if(!strcmp(argv[i],"spectral=true")) {
 	    spectral = true;
 	} else if(!strcmp(argv[i],"spectral=false")) {
 	    spectral = false;
-	} else if(strchr(argv[i],'=') != NULL) {
-	    OK = false;
-	} else {
+	} else if(strchr(argv[i],'=') == NULL) {
 	    filenames.push_back(argv[i]);
 	}
     }
@@ -921,7 +922,7 @@ int main(int argc, char** argv) {
     
     if(!OK) {
         std::cerr << "usage: " << argv[0]
-		  << " infile.obj <outfile.obj> <spectral=true|false>"
+		  << " infile.obj <outfile.obj> <spectral=true|false>" 
 		  << std::endl;
         return -1;
     }
@@ -929,7 +930,7 @@ int main(int argc, char** argv) {
     if(filenames.size() == 1) {
 	filenames.push_back("out.obj");
     }
-    
+
     IndexedMesh mesh;
     std::cout << "Loading " << filenames[0] << "   ..." << std::endl;
     mesh.load(filenames[0]);

@@ -306,6 +306,13 @@ typedef struct {
      */
     NLdouble         error;
 
+
+    /**
+     * \brief start time marking the beginning of
+     *  latest solve.
+     */
+    NLdouble         start_time;
+    
     /**
      * \brief elapsed time for latest solve.
      */

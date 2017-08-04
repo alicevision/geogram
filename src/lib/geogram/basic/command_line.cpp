@@ -49,6 +49,7 @@
 #include <geogram/basic/file_system.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/process.h>
+#include <geogram/NL/nl.h>
 #include <iostream>
 #include <iomanip>
 
@@ -490,7 +491,7 @@ namespace GEO {
                          "release_date")
                      << ")"
                      << std::endl
-                     << "Copyright (C) 2006-2016"
+                     << "Copyright (C) 2006-2017"
                      << std::endl
                      << "The Geogram library used by this program is licensed"
                      << std::endl
@@ -537,6 +538,7 @@ namespace GEO {
                 return false;
             }
 
+	    nlInitialize(argc, argv);
             return true;
         }
 

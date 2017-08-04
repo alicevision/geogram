@@ -90,7 +90,7 @@ typedef double GLdouble;
 #include <geogram/basic/geometry.h>
 
 /**
- * \file geogram_gfx/basic/common.h
+ * \file geogram_gfx/basic/GL.h
  * \brief Some utility functions for OpenGL graphics.
  */
 

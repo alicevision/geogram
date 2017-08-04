@@ -83,4 +83,11 @@ NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_SUPERLU(
  */
 NLboolean nlInitExtension_SUPERLU(void);
 
+/**
+ * \brief Tests whether the SUPERLU extension is initialized.
+ * \retval NL_TRUE if the extension is initialized
+ * \retval NL_FALSE otherwise
+ */
+NLboolean nlExtensionIsInitialized_SUPERLU(void);
+
 #endif

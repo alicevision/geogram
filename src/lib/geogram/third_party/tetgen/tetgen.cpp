@@ -29,6 +29,11 @@
 // [Bruno] using PCK predicates
 #define USE_PCK
 
+// [Bruno] disable some warnings for ICC
+#ifdef __ICC
+#pragma warning disable 869 593
+#endif
+
 namespace GEO_3rdParty { // [Bruno]
 
 //// io_cxx ///////////////////////////////////////////////////////////////////

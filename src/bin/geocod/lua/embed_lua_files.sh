@@ -21,7 +21,7 @@ cat <<EOF
  * This file was automatically generated, do not edit.
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer_lua.h>
+#include <geogram/lua/lua_io.h>
 
 void register_embedded_lua_files(void);
    

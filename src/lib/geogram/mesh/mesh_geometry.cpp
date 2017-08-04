@@ -255,7 +255,9 @@ namespace GEO {
             Logger::out("LFS") << "Sampling surface" << std::endl;
             CentroidalVoronoiTesselation CVT(&M, 3);
             CVT.compute_initial_sampling(nb_lfs_samples);
+            Logger::out("LFS") << "Optimizing sampling (Lloyd)" << std::endl;
             CVT.Lloyd_iterations(5);
+            Logger::out("LFS") << "Optimizing sampling (Newton)" << std::endl;
             CVT.Newton_iterations(10);
             Logger::out("LFS") << "Computing medial axis" << std::endl;
             LocalFeatureSize LFS(CVT.nb_points(), CVT.embedding(0));

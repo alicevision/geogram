@@ -1,7 +1,7 @@
 --             pixel.lua
--- FR bibliotheque interne, incluse quand on appelle import("pixel")
+-- FR bibliotheque interne, incluse quand on appelle require("pixel")
 -- FR fournit des fonctions simples pour afficher des (gros) pixels
--- EN internal library, included when one calls import("pixel")
+-- EN internal library, included when one calls require("pixel")
 -- EN defines easy-to-use functions for displaying (big) pixels
 
 function GLUP.Pixel3D(x,y,z)

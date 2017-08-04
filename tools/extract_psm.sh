@@ -164,7 +164,12 @@ EOF
 
 extract_header() {
     echo "   generating" $PSM_HEADER ...
-    extract_files $HEADERS > $PSM_HEADER
+    cat <<EOF >$PSM_HEADER
+#ifndef GEO_STATIC_LIBS
+#define GEO_DYNAMIC_LIBS
+#endif
+EOF
+    extract_files $HEADERS >> $PSM_HEADER
 }
 
 # extract_source()
@@ -198,14 +203,25 @@ extract_example() {
         echo "   No example file"
         return;
     fi
+    PSM_EXAMPLE_BIN=$PSM_NAME"_example"
     PSM_EXAMPLE=$PSM_NAME"_example.c"
+    COMPILER=gcc
     if [[ $EXAMPLE =~ ^.*\.cpp$ ]]
     then
-        PSM_EXAMPLE=$PSM_NAME"_example.cpp"        
+        PSM_EXAMPLE=$PSM_NAME"_example.cpp"
+	COMPILER=g++
     fi
     echo "   generating $PSM_EXAMPLE ..."
-    extract_copyright $EXAMPLE > $PSM_EXAMPLE
-    echo >> $PSM_EXAMPLE
+    cat <<EOF >> $PSM_EXAMPLE
+/*
+ * To compile under Linux: 
+ *   $COMPILER -O $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -ldl -lm
+ * To compile under Linux with static linking:
+ *   $COMPILER -O -DGEO_STATIC_LIBS $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -lm
+ */
+EOF
+    echo >> $PSM_EXAMPLE     
+    extract_copyright $EXAMPLE >> $PSM_EXAMPLE    
     echo '#include "'$PSM_HEADER'"' >> $PSM_EXAMPLE
     cat $PSM_DIR/$EXAMPLE | remove_copyright | remove_includes >> $PSM_EXAMPLE
 }

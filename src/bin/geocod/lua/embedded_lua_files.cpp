@@ -2,7 +2,7 @@
  * This file was automatically generated, do not edit.
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer_lua.h>
+#include <geogram/lua/lua_io.h>
 
 void register_embedded_lua_files(void);
    
@@ -40,9 +40,9 @@ void register_embedded_lua_files() {
 
      register_embedded_lua_file("lib/pixel.lua",
         "--             pixel.lua \n"
-        "-- FR bibliotheque interne, incluse quand on appelle import(\"pixel\") \n"
+        "-- FR bibliotheque interne, incluse quand on appelle require(\"pixel\") \n"
         "-- FR fournit des fonctions simples pour afficher des (gros) pixels \n"
-        "-- EN internal library, included when one calls import(\"pixel\") \n"
+        "-- EN internal library, included when one calls require(\"pixel\") \n"
         "-- EN defines easy-to-use functions for displaying (big) pixels \n"
         " \n"
         "function GLUP.Pixel3D(x,y,z) \n"
@@ -97,9 +97,9 @@ void register_embedded_lua_files() {
 
      register_embedded_lua_file("lib/turtle.lua",
         "--             turtle.lua \n"
-        "-- FR bibliotheque interne, incluse quand on appelle import(\"turtle\") \n"
+        "-- FR bibliotheque interne, incluse quand on appelle require(\"turtle\") \n"
         "-- FR fournit des fonctions pour l'affichage graphique en mode \"tortue\" \n"
-        "-- EN internal library, included when one calls import(\"turtle\") \n"
+        "-- EN internal library, included when one calls require(\"turtle\") \n"
         "-- EN defines functions for \"turtle\" graphics \n"
         " \n"
         "turtle={} \n"
@@ -197,7 +197,7 @@ void register_embedded_lua_files() {
      );
 
      register_embedded_lua_file("templates/pixel_program.lua",
-        "import(\"pixel\") \n"
+        "require(\"pixel\") \n"
         " \n"
         "function GLUP.init_graphics() \n"
         "   GLUP.SetRegionOfInterest(1,1,1,11,11,1) \n"
@@ -216,7 +216,7 @@ void register_embedded_lua_files() {
         "end \n"     );
 
      register_embedded_lua_file("templates/turtle_program.lua",
-        "import(\"turtle\") \n"
+        "require(\"turtle\") \n"
         " \n"
         "function GLUP.draw_scene() \n"
         "    home() \n"
@@ -227,7 +227,7 @@ void register_embedded_lua_files() {
         "end \n"     );
 
      register_embedded_lua_file("examples/arbre.lua",
-        "import(\"turtle\") \n"
+        "require(\"turtle\") \n"
         " \n"
         "a=30 \n"
         "level=5 \n"
@@ -318,7 +318,7 @@ void register_embedded_lua_files() {
      );
 
      register_embedded_lua_file("examples/flake.lua",
-        "import(\"turtle\") \n"
+        "require(\"turtle\") \n"
         " \n"
         "function VonKoch(level) \n"
         "   if level==1 then \n"
@@ -360,7 +360,7 @@ void register_embedded_lua_files() {
      );
 
      register_embedded_lua_file("examples/sierpinski.lua",
-        "import(\"turtle\") \n"
+        "require(\"turtle\") \n"
         " \n"
         " \n"
         "function Sierpinski(a, level) \n"
@@ -405,7 +405,7 @@ void register_embedded_lua_files() {
      );
 
      register_embedded_lua_file("examples/sponge.lua",
-        "import(\"pixel\") \n"
+        "require(\"pixel\") \n"
         " \n"
         "N=3*3 \n"
         " \n"
@@ -453,7 +453,7 @@ void register_embedded_lua_files() {
         "-- Dessin d'un \"creeper\" \n"
         "-- Par Nathan Levy, Decembre 2016 \n"
         " \n"
-        "import(\"pixel\") \n"
+        "require(\"pixel\") \n"
         " \n"
         "function GLUP.draw_scene() \n"
         "   GLUP.SetCellsShrink(0.1) \n"
@@ -534,7 +534,7 @@ void register_embedded_lua_files() {
      );
 
      register_embedded_lua_file("games/hackman.lua",
-        "import(\"pixel\") \n"
+        "require(\"pixel\") \n"
         " \n"
         "GLUP.ArcadeStyle() \n"
         " \n"
@@ -922,7 +922,7 @@ void register_embedded_lua_files() {
         "-- FR Repare la fusee de Shift et Tab en utilisant pix et col \n"
         "-- EN Repair Shift and Tab's rocket by using pix and col \n"
         " \n"
-        "import(\"pixel\") \n"
+        "require(\"pixel\") \n"
         " \n"
         "function GLUP.draw_scene() \n"
         " \n"
@@ -967,7 +967,7 @@ void register_embedded_lua_files() {
         "-- FR Fais decoller la fusee de Shift et Tab \n"
         "-- EN Launch Shift and Tab's rocket \n"
         " \n"
-        "import(\"pixel\") \n"
+        "require(\"pixel\") \n"
         " \n"
         "function GLUP.draw_scene() \n"
         " \n"

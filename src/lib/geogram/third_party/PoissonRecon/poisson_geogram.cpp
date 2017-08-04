@@ -56,6 +56,10 @@
 #endif
 #endif
 
+#ifdef __ICC
+#pragma warning disable 869 177 300 2415
+#endif
+
 #ifdef GEO_COMPILER_MSVC
 #define isnan _isnan
 #define isfinite _finite

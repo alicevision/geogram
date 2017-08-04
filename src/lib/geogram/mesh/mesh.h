@@ -1014,6 +1014,22 @@ namespace GEO {
             return facet_corners_.adjacent_facet(corner(f,le));
         }
 
+	/**
+	 * \brief Gets the local index of a facet adjacent to another one.
+	 * \param[in] f a facet
+	 * \param[in] f2 another facet
+	 * \return le such that adjacent(f,le) == f2 or NO_FACET if f and f2
+	 *  are not adjacent.
+	 */
+	index_t find_adjacent(index_t f, index_t f2) const {
+	    for(index_t le=0; le<nb_vertices(f); ++le) {
+		if(adjacent(f,le) == f2) {
+		    return le;
+		}
+	    }
+	    return NO_FACET;
+	}
+	
         /**
          * \brief Sets an adjacent facet by facet and local edge index
          * \param[in] f the facet

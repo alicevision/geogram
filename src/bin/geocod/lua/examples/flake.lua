@@ -1,4 +1,4 @@
-import("turtle")
+require("turtle")
 
 function VonKoch(level)
    if level==1 then

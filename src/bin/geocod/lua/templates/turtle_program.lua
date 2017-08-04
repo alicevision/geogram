@@ -1,4 +1,4 @@
-import("turtle")
+require("turtle")
 
 function GLUP.draw_scene()
     home()

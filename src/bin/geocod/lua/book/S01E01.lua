@@ -1,7 +1,7 @@
 -- FR Repare la fusee de Shift et Tab en utilisant pix et col
 -- EN Repair Shift and Tab's rocket by using pix and col
 
-import("pixel")
+require("pixel")
 
 function GLUP.draw_scene()
 

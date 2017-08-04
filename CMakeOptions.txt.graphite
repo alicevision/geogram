@@ -12,5 +12,5 @@ endif()
 # Only geogram, geogram_gfx and GLFW will be built
 # (skips generation of geogram demos and programs)
 
-set(GEOGRAM_LIB_ONLY TRUE)
+set(GEOGRAM_LIB_ONLY ON)
 

@@ -156,7 +156,6 @@ int main(int argc, char** argv) {
     GEO::initialize();
 
     try {
-
         Stopwatch Wtot("Total time");
 
         std::vector<std::string> filenames;

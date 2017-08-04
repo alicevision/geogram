@@ -47,6 +47,7 @@
 
 #include "nl_private.h"
 #include "nl_matrix.h"
+#include "nl_blas.h"
 
 /**
  * \file geogram/NL/nl_iterative_solvers.h
@@ -61,7 +62,7 @@
  *
  * About the Conjugate Gradient, details can be found in:
  *  Ashby, Manteuffel, Saylor
- *     A taxononmy for conjugate gradient methods
+ *     A taxonomy for conjugate gradient methods
  *     SIAM J Numer Anal 27, 1542-1568 (1990)
  *
  * \param[in] M the matrix of the system
@@ -75,6 +76,7 @@
  * \param[in] inner_iter number of inner iterations, used by GMRES only
  */
 NLAPI NLuint NLAPIENTRY nlSolveSystemIterative(
+    NLBlas_t blas,
     NLMatrix M, NLMatrix P, NLdouble* b, NLdouble* x,
     NLenum solver,
     double eps, NLuint max_iter, NLuint inner_iter

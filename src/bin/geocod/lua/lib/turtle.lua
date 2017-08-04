@@ -1,7 +1,7 @@
 --             turtle.lua
--- FR bibliotheque interne, incluse quand on appelle import("turtle")
+-- FR bibliotheque interne, incluse quand on appelle require("turtle")
 -- FR fournit des fonctions pour l'affichage graphique en mode "tortue"
--- EN internal library, included when one calls import("turtle")
+-- EN internal library, included when one calls require("turtle")
 -- EN defines functions for "turtle" graphics
 
 turtle={}
