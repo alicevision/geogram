@@ -55,19 +55,18 @@
 
 /*
  * Notes:
+ *   J'ai reussi a corriger le bug de picking de primitives WEBGL: ce sont les
+ *  int-s encodes dans des float-s qui font un peu n'importe quoi. En ajoutant
+ *  0.5 au primitive_id a la sortie du vertex shader, ca regle le probleme.
  *
- * Tex coords pour le mesh, et picking:
- * ====================================
- * On pourrait passer de maniere optionelle un attribut de sommets
- * supplementaire, avec le numero du sommet (ou utiliser gl_VertexID
- * si OpenGL ES 3), ceci permettrait les choses suivantes:
- * 1) tex coords implicites (avec un petit tableau constant, et en
- *  utilisant gl_VertexID % nb_vertices_per_glup_primitive comme indice.
- * 2) picking, en utilisant 
- *  glup_primitiveID = gl_VertexID / nb_vertices_per_glup_primitive.
- * Si on fait \c{c}a, attention au code d'emulation de VAO, la fonction
- *  qui recupere l'etat d'un attribut sous WebGL est en general buggee,
- *  il faudra memoriser l'etat soi-meme...
+ *   Il faudra peut-etre quand meme encoder les valeurs de picking de l'etat
+ *  sous forme de vec4 plutot qu'en int, parceque je ne suis pas sur que ces
+ *  ints puissent stocker plus que 65535 (mais le fait que je voie du bleu 
+ *  quand on met plein de primitive tend a montrer que ca marche quand meme...)
+ *
+ *   Il manque encore le picking en mode "slice cell"
+ *
+ *   Les triangles n'ont pas besoin d'indices d'elements je pense ...
  *
  * Slice cells:
  * ============
@@ -79,8 +78,8 @@
  *    faire le deuxi\`eme:
  *       Ca a l'air de marcher pas trop mal.
  *       Rem: le ELEMENT_ARRAY_BUFFER est en entiers 32 bits, certains archis
- *    (telephones etc...) peuvent avoir besoin d'un ELEMENT_ARRAY_BUFFER 16 bits
- *    (ce qu'on pourrait assez facilement avoir...)
+ *    (telephones etc...) peuvent avoir besoin d'un ELEMENT_ARRAY_BUFFER 
+ *    16 bits (ce qu'on pourrait assez facilement avoir...)
  *
  * texture 3D:
  * ===========
@@ -88,6 +87,56 @@
  * textures 2D:
  * https://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
  */
+
+namespace {
+    using namespace GEO;
+
+    /**
+     * \brief Creates the source of a GLSL function that
+     *   gets mesh texture coordinates.
+     * \details This function is necessary because we do not have 
+     *   a way of specifying uniform constant arrays in OpenGL ES 2.0
+     * \param[in] tex_coords an array of 4*\p nb_tex_coords floats
+     * \param[in] nb_tex_coords number of vec4s that define texture coordinates
+     * \return a std::string with the source of the shader
+     */
+    std::string create_mesh_tex_coord_lookup_function(
+        GLUPfloat* tex_coords, index_t nb_tex_coords
+    ) {
+        std::ostringstream output;
+        output <<
+            "vec4 get_mesh_tex_coord(in int vertex_id) { \n"
+            "    int idx = glup_mod(vertex_id," << nb_tex_coords << ");\n";
+        for(index_t i=0; i<nb_tex_coords; ++i) {
+            output << "    if(idx == " << i << ") {";
+            output << " return vec4("
+                   << tex_coords[4*i  ] << ","
+                   << tex_coords[4*i+1] << ","
+                   << tex_coords[4*i+2] << ","
+                   << tex_coords[4*i+3] << "); }\n";
+        }
+        //   Will never get here, but some GLSL compilers will not
+        // accept a function that may not return a value.
+        output << "   return vec4(0.0, 0.0, 0.0, 0.0);\n";
+        output << "}\n";
+        return output.str();
+    }
+
+    /**
+     * \brief Creates the source of a GLSL function that
+     *   gets mesh texture coordinates.
+     * \details The size of the texture coordinates array is
+     *   automatically computed.
+     * \param[in] tex an array of texture coordinates
+     * \return a pointer to a string with the sources of
+     *  the shader.
+     */
+
+#define mesh_tex_coord_lookup(tex)           \
+    create_mesh_tex_coord_lookup_function(   \
+        tex, sizeof(tex) / (4*sizeof(float)) \
+    )
+}
 
 namespace GLUP {
 
@@ -126,175 +175,12 @@ namespace GLUP {
             return true;
         }
         */
-        return Context::primitive_supports_array_mode(prim);
-    }
+        // return Context::primitive_supports_array_mode(prim);
 
-
-    static const char* uniform_state_vs_ES2 = 
-        " struct VSUniformState {              \n"
-        "     mat3  normal_matrix;             \n"
-        "     mat4 modelviewprojection_matrix; \n"
-        "     mat4 modelview_matrix;           \n"
-        "     mat4 texture_matrix;             \n"
-        "     vec4  world_clip_plane;          \n"
-        "     float point_size;                \n"
-        " };                                   \n"
-        "  uniform VSUniformState GLUP_VS;     \n"        
-        ;
-        
-    static const char* uniform_state_fs_ES2 =
-        " struct UniformState {                \n"        
-        "     bool vertex_colors_enabled;      \n"        
-        "                                      \n"        
-        "     vec4  front_color;               \n"
-        "     vec4  back_color;                \n"
-        "                                      \n"        
-        "     bool  draw_mesh_enabled;         \n"
-        "     vec4  mesh_color;                \n"
-        "     float mesh_width;                \n"
-
-        "     bool  lighting_enabled;          \n"
-        "     vec3  light_vector;              \n"
-        "     vec3  light_half_vector;         \n"
-
-        "     bool texturing_enabled;          \n"
-        "     bool indirect_texturing_enabled; \n"             
-        "     int  texture_mode;               \n"
-        "     int  texture_type;               \n"        
-        "                                      \n"        
-        "     float cells_shrink;              \n"
-
-        "     bool  picking_enabled;           \n"         
-        "     int   picking_mode;              \n"
-        "     int   picking_id;                \n" 
-        "     int   base_picking_id;           \n" 
-
-        "     bool  clipping_enabled;          \n"
-        "     int   clipping_mode;             \n"
-        "     vec4  clip_plane;                \n"
-
-        "  };                                  \n"
-        
-        "  uniform UniformState GLUP;          \n"
-        "  uniform sampler2D texture1Dsampler; \n"                
-        "  uniform sampler2D texture2Dsampler; \n"        
-        ;
-
-    static const char* glup_constants = 
-        "  const int GLUP_CLIP_STANDARD         = 0;   \n"
-        "  const int GLUP_CLIP_WHOLE_CELLS      = 1;   \n"
-        "  const int GLUP_CLIP_STRADDLING_CELLS = 2;   \n"
-        "  const int GLUP_CLIP_SLICE_CELLS      = 3;   \n"
-
-        "  const int GLUP_TEXTURE_1D = 1;              \n"
-        "  const int GLUP_TEXTURE_2D = 2;              \n"
-        "  const int GLUP_TEXTURE_3D = 3;              \n"
-
-        "  const int GLUP_TEXTURE_REPLACE  = 0;        \n"
-        "  const int GLUP_TEXTURE_MODULATE = 1;        \n"
-        "  const int GLUP_TEXTURE_ADD      = 2;        \n"
-
-        "  const int GLUP_PICK_PRIMITIVE   = 1;        \n"
-        "  const int GLUP_PICK_CONSTANT    = 2;        \n"
-
-        "  const int GLUP_POINTS     =0;               \n"
-        "  const int GLUP_LINES      =1;               \n"
-        "  const int GLUP_TRIANGLES  =2;               \n"
-        "  const int GLUP_QUADS      =3;               \n"
-        "  const int GLUP_TETRAHEDRA =4;               \n"
-        "  const int GLUP_HEXAHEDRA  =5;               \n"
-        "  const int GLUP_PRISMS     =6;               \n"
-        "  const int GLUP_PYRAMIDS   =7;               \n"
-        "  const int GLUP_CONNECTORS =8;               \n"                     
-        "  const int GLUP_NB_PRIMITIVES = 9;           \n"
-        ;
-
-    static const char* fshader_utils = 
-        "void output_lighting(                                              \n"
-        "   in float sdiffuse, in float spec                                \n"
-        ") {                                                                \n"
-        "   if(sdiffuse > 0.0) {                                            \n"
-        "       vec3 vspec = spec*vec3(1.0,1.0,1.0);                        \n"
-        "       glup_FragColor =                                            \n"
-        "              (sdiffuse*glup_FragColor) + vec4(vspec,1.0);         \n"
-        "       glup_FragColor.rgb += vec3(0.2, 0.2, 0.2);                  \n"
-        "   } else {                                                        \n"
-        "       glup_FragColor = vec4(0.2, 0.2, 0.2, 1.0);                  \n"
-        "   }                                                               \n"
-        "}                                                                  \n"
-
-        "float min3(float x, float y, float z) {                            \n"
-        "   return min(min(x,y),z);                                         \n"
-        "}                                                                  \n"
-
-        "float min4(float x, float y, float z, float w) {                   \n"
-        "   return min(min(x,y),min(z,w));                                  \n"
-        "}                                                                  \n"
-        
-        "float edge_factor1(float bary) {                                   \n"
-        "   float d = fwidth(bary);                                         \n"
-        "   float a = smoothstep(0.0, d*GLUP.mesh_width, bary);             \n"
-        "   return a;                                                       \n"
-        "}                                                                  \n"
-
-        "float edge_factor3(vec3 bary) {                                    \n"
-        "   vec3 d = fwidth(bary);                                          \n"
-        "   vec3 a = smoothstep(                                            \n"
-        "      vec3(0.0, 0.0, 0.0), d*GLUP.mesh_width, bary                 \n"
-        "   );                                                              \n"
-        "   return min3(a.x, a.y ,a.z);                                     \n"
-        "}                                                                  \n"
-
-        "float edge_factor4(vec4 bary) {                                    \n"
-        "   vec4 d = fwidth(bary);                                          \n"
-        "   vec4 a = smoothstep(                                            \n"
-        "      vec4(0.0, 0.0, 0.0, 0.0), d*GLUP.mesh_width, bary            \n"
-        "   );                                                              \n"
-        "   return min4(a.x, a.y, a.z, a.w);                                \n"
-        "}                                                                  \n"
-
-        "float cell_edge_factor(vec2 bary) {                                \n"
-        "   return edge_factor1(1.0-(1.0 - bary.x)*(1.0 - bary.y));         \n"
-        "}                                                                  \n"
-        
-        ;
-
-    const char* Context_ES2::fshader_header() {
-
-        // Note: for OpenGL ES 2.0, #version is 100 (??)
-        //       for OpenGL ES 3.0, #version is 300 es (makes more sense)
-        
-        static const char* fshader_header_ES =
-            "#version 100                                    \n"
-            "#extension GL_OES_standard_derivatives : enable \n"        
-            "precision mediump float;                        \n"
-            "vec4 glup_FragColor;                            \n"
-            "void glup_write_fragment() {                    \n"
-            "    gl_FragColor = glup_FragColor;              \n"
-            "}                                               \n"
-            "vec4 glup_texture(                              \n"
-            "    in sampler2D samp, in vec2 uv               \n"
-            ") {                                             \n"
-            "    return texture2D(samp, uv);                 \n"
-            "}                                               \n"
-            ;
-
-
-        static const char* fshader_header_150 = 
-            "#version 150 core                               \n"
-            "out vec4 glup_FragColor;                        \n"
-            "vec4 glup_texture(                              \n"
-            "    in sampler2D samp, in vec2 uv               \n"
-            ") {                                             \n"
-            "    return texture(samp, uv);                   \n"
-            "}                                               \n"
-            "void glup_write_fragment() { }                  \n"
-            ;
-        return use_ES_profile_ ? fshader_header_ES : fshader_header_150;
-    }
-   
-    const char* Context_ES2::vshader_header() {
-        return use_ES_profile_ ? "#version 100\n" : "#version 150 core \n";
+        // Note: points, lines and triangles without mesh can support array
+        // mode, but this will not work with picking, therefore it is disabled.
+        geo_argused(prim);
+        return false;
     }
 
     /**
@@ -321,6 +207,9 @@ namespace GLUP {
     
     void Context_ES2::setup() {
 
+        bool extension_standard_derivatives = false;
+        bool extension_vertex_array_object = false;
+        
 #ifdef GEO_OS_EMSCRIPTEN
 
 /**
@@ -338,56 +227,45 @@ namespace GLUP {
         );},0) != 0 
 
         
-        extension_standard_derivatives_ = WEBGL_EXTENSION_SUPPORTED(
+        extension_standard_derivatives = WEBGL_EXTENSION_SUPPORTED(
             'OES_standard_derivatives'
         );
 
-        extension_vertex_array_object_ = WEBGL_EXTENSION_SUPPORTED(
+        extension_vertex_array_object = WEBGL_EXTENSION_SUPPORTED(
             'OES_vertex_array_object'
         );
 
-        extension_frag_depth_ = WEBGL_EXTENSION_SUPPORTED(
-            'EXT_frag_depth'
-        );
 #else
         //TODO: it seems that standard derivatives and vertex array
         //object extension names are not prefixed with GL_OES_ in
         //OpenGL ES mode (but it is in WebGL, oh my....)
         
-        extension_frag_depth_ =
-            extension_is_supported("GL_EXT_frag_depth");
-        
         if(use_ES_profile_) {
-            extension_standard_derivatives_ =
+            extension_standard_derivatives =
                 extension_is_supported("GL_OES_standard_derivatives");
             
-            extension_vertex_array_object_ =
+            extension_vertex_array_object =
                 extension_is_supported("GL_OES_vertex_array_object");
         } else {
-            extension_standard_derivatives_ = true;
-            extension_vertex_array_object_ = true;
+            extension_standard_derivatives = true;
+            extension_vertex_array_object = true;
         }
 #endif
 
         //   Switch-on GLUP's emulation for Vertex Array
         // Objects if they are not supported.
-        if(!extension_vertex_array_object_) {
+        if(!extension_vertex_array_object) {
             GLUP::vertex_array_emulate = true;
         }
 
         Logger::out("GLUP") 
             << "standard_derivatives: "
-            << extension_standard_derivatives_
+            << extension_standard_derivatives
             << std::endl;
 
         Logger::out("GLUP")
             << "vertex_array_object: "
-            << extension_vertex_array_object_
-            << std::endl;
-
-        Logger::out("GLUP")
-            << "frag_depth:"
-            << extension_frag_depth_
+            << extension_vertex_array_object
             << std::endl;
             
         create_CPU_side_uniform_buffer();
@@ -422,8 +300,12 @@ namespace GLUP {
             max_nb_elements * sizeof(Numeric::uint32),
             nil // no need to copy the buffer, it will be overwritten after.
         );
-        
+
         glupBindVertexArray(0);
+
+        // Shaders in GLSL 2.0 do not support gl_VertexID, we need to
+        // emulate it.
+        create_vertex_id_VBO();
         
         /************** VAOs and VBOs for sliced cells clipping ******/
 
@@ -451,13 +333,14 @@ namespace GLUP {
                 sliced_cells_vertex_attrib_VBO_[i],
                 GL_ARRAY_BUFFER,
                 max_nb_vertices * sizeof(Numeric::float32) * 4,
-                nil // no need to copy the buffer, it will be overwritten after.
+                nil // no need to copy the buffer, it will be overwritten.
             );
-            
+
             glVertexAttribPointer(
                 i,
                 4,
-                GL_FLOAT, GL_FALSE,
+                GL_FLOAT,
+                GL_FALSE,
                 0,
                 0
             );
@@ -473,13 +356,9 @@ namespace GLUP {
         clip_cells_VAO_(0),
         sliced_cells_elements_VBO_(0),
         sliced_cells_VAO_(0) {
-        extension_standard_derivatives_ = false;        
-        extension_vertex_array_object_ = false;
-        extension_frag_depth_ = false;
         for(index_t i=0; i<3; ++i) {
             sliced_cells_vertex_attrib_VBO_[i] = 0;
         }
-        uses_mesh_tex_coord_ = true;
 #ifdef GEO_OS_EMSCRIPTEN        
         use_ES_profile_ = true;
 #endif        
@@ -498,7 +377,9 @@ namespace GLUP {
     Memory::pointer Context_ES2::get_state_variable_address(
         const char* name
     ) {
-        geo_assert(variable_to_offset_.find(name) != variable_to_offset_.end());
+        geo_assert(
+            variable_to_offset_.find(name) != variable_to_offset_.end()
+        );
         return uniform_buffer_data_ + variable_to_offset_[name];
     }
 
@@ -678,553 +559,95 @@ namespace GLUP {
             loc = glGetUniformLocation(
                 latest_program_, "GLUP_VS.world_clip_plane"
             );
-            glUniform4fv(loc, 1, uniform_state_.world_clip_plane.get_pointer());
+            glUniform4fv(
+                loc, 1, uniform_state_.world_clip_plane.get_pointer()
+            );
+        }
+    }
+
+    void Context_ES2::update_base_picking_id(GLint new_value) {
+        if(uniform_state_.toggle[GLUP_PICKING].get()) {
+            uniform_state_.base_picking_id.set(new_value);
+            if(latest_program_ != 0) {
+                GEO_CHECK_GLUP();                                        
+                GLint loc = glGetUniformLocation(
+                    latest_program_, "GLUP.base_picking_id"
+                );
+                GEO_CHECK_GLUP();
+                glUseProgram(latest_program_);
+                glUniform1i(loc, new_value);
+                GEO_CHECK_GLUP();                
+            }
         }
     }
 
 
 /*****************************************************************************/
 
-    static const char* points_vshader_source =
-        "#ifdef GL_ES                                          \n"
-        "   attribute vec4 vertex_in;                          \n"
-        "   attribute vec4 color_in;                           \n"
-        "   attribute vec4 tex_coord_in;                       \n"
-        "   varying vec4 color;                                \n"
-        "   varying vec4 tex_coord;                            \n"
-        "   varying float clip_dist;                           \n"
-        "#else                                                 \n"
-        "   in vec4 vertex_in;                                 \n"
-        "   in vec4 color_in;                                  \n"
-        "   in vec4 tex_coord_in;                              \n"
-        "   out vec4 color;                                    \n"
-        "   out vec4 tex_coord;                                \n"
-        "   out float clip_dist;                               \n"
-        "#endif                                                \n"
-        "                                                      \n"
-        "void main() {                                         \n"
-        "   if(maybe_clipping_enabled()) {                     \n"
-        "      clip_dist = dot(                                \n"
-        "          vertex_in, GLUP_VS.world_clip_plane         \n"
-        "      );                                              \n"
-        "   }                                                  \n"
-        "   if(maybe_vertex_colors_enabled()) {                \n"
-        "       color = color_in;                              \n"
-        "   }                                                  \n"
-        "   if(maybe_texturing_enabled()) {                    \n"
-        "   tex_coord = GLUP_VS.texture_matrix * tex_coord_in; \n"
-        "   }                                                  \n"
-        "   gl_PointSize = GLUP_VS.point_size;                 \n"
-        "   gl_Position =                                      \n"
-        "     GLUP_VS.modelviewprojection_matrix * vertex_in;  \n"
-        "}                                                     \n"
-        ;
-
-
-    static const char* update_depth =
-        "   void update_depth(in vec3 N) {                             \n"
-        "        gl_FragDepthEXT = gl_FragCoord.z - 0.001 * N.z;       \n"
-        "   }                                                          \n"
-        ;
-
-    static const char* no_update_depth =
-        "   void update_depth(in vec3 N) {                             \n"
-        "   }                                                          \n"
-        ;
-                
-    static const char* points_fshader_source =
-        "#ifdef GL_ES                                                  \n"
-        "   varying vec4 color;                                        \n"
-        "   varying vec4 tex_coord;                                    \n"
-        "   varying float clip_dist;                                   \n"
-        "#else                                                         \n"
-        "   in vec4 color;                                             \n"
-        "   in vec4 tex_coord;                                         \n"
-        "   in float clip_dist;                                        \n"
-        "#endif                                                        \n"
-        "                                                              \n"
-        "void main() {                                                 \n"
-        "   if(clipping_enabled() && (clip_dist < 0.0)) {              \n"
-        "      discard;                                                \n"
-        "   }                                                          \n"
-        "   if(vertex_colors_enabled()) {                              \n"
-        "      glup_FragColor = color;                                 \n"
-        "   } else {                                                   \n"
-        "      glup_FragColor = GLUP.front_color;                      \n"
-        "   }                                                          \n"
-        "   if(texturing_enabled()) {                                  \n"
-        "      vec4 tex_color;                                         \n"
-        "      if(GLUP.texture_type == GLUP_TEXTURE_1D) {              \n"
-        "           tex_color = glup_texture(                          \n"
-        "               texture1Dsampler, tex_coord.xy                 \n"
-        "           );                                                 \n"
-        "      } else {                                                \n"
-        "           tex_color = glup_texture(                          \n"
-        "                texture2Dsampler, tex_coord.xy                \n"
-        "           );                                                 \n"
-        "      }                                                       \n"
-        "      if(GLUP.texture_mode == GLUP_TEXTURE_REPLACE) {         \n"
-        "             glup_FragColor = tex_color;                      \n"
-        "      } else if(GLUP.texture_mode == GLUP_TEXTURE_MODULATE) { \n"
-        "             glup_FragColor *= tex_color;                     \n"
-        "      } else {                                                \n"
-        "             glup_FragColor += tex_color;                     \n"
-        "      }                                                       \n"
-        "   }                                                          \n"
-        "   vec2 V = 2.0*(gl_PointCoord - vec2(0.5, 0.5));             \n"
-        "   float one_minus_r2 = 1.0 - dot(V,V);                       \n"
-        "   if(one_minus_r2 < 0.0) {                                   \n"
-        "      discard;                                                \n"
-        "   }                                                          \n"
-        "   vec3 N = vec3(V.x, -V.y, sqrt(one_minus_r2));              \n"
-        "   update_depth(N);                                           \n"
-        "   float diff = dot(N,GLUP.light_vector);                     \n"
-        "   float spec = dot(N,GLUP.light_half_vector);                \n"
-        "   spec = pow(spec,30.0);                                     \n"
-        "   output_lighting(diff,spec);                                \n"
-        "   glup_write_fragment();                                     \n"
-        "}                                                             \n"
-        ;
-    
     void Context_ES2::setup_GLUP_POINTS() {
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            points_vshader_source,
-            0
+        set_primitive_info(
+            GLUP_POINTS, GL_POINTS,
+            GLSL::compile_program_with_includes_no_link(
+                this,
+                "//stage GL_VERTEX_SHADER\n"
+                "//import <GLUPES/points_and_lines_vertex_shader.h>\n",
+                "//stage GL_FRAGMENT_SHADER\n"
+                "//import <GLUPES/points_fragment_shader.h>\n"                
+            )
         );
-
-        GLuint fshader = 0;
-        if(extension_frag_depth_) {
-            fshader = GLSL::compile_shader(
-                GL_FRAGMENT_SHADER,
-                fshader_header(),                
-                "#extension GL_EXT_frag_depth : enable\n",            
-                uniform_state_fs_ES2,
-                glup_constants,
-                toggles_declaration(),
-                fshader_utils,
-                update_depth,
-                points_fshader_source,
-                0
-            );
-        } else {
-            fshader = GLSL::compile_shader(
-                GL_FRAGMENT_SHADER,
-                fshader_header(),
-                uniform_state_fs_ES2,
-                glup_constants,
-                toggles_declaration(),
-                fshader_utils,
-                no_update_depth,                
-                points_fshader_source,
-                0
-            );
-        }
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info(GLUP_POINTS, GL_POINTS, program);
     }
 
-/*****************************************************************************/
-
-    static const char* lines_vshader_source =
-        "#ifdef GL_ES                                      \n"        
-        "   attribute vec4 vertex_in;                      \n"
-        "   attribute vec4 color_in;                       \n"
-        "   attribute vec4 tex_coord_in;                   \n"
-        "   varying vec4 color;                            \n"
-        "   varying vec4 tex_coord;                        \n"
-        "   varying float clip_dist;                       \n"
-        "#else                                             \n"
-        "   in vec4 vertex_in;                             \n"
-        "   in vec4 color_in;                              \n"
-        "   in vec4 tex_coord_in;                          \n"
-        "   out vec4 color;                                \n"
-        "   out vec4 tex_coord;                            \n"
-        "   out float clip_dist;                           \n"
-        "#endif                                            \n"
-        "                                                  \n"        
-        "void main() {                                           \n"
-        "   if(maybe_clipping_enabled()) {                       \n"
-        "      clip_dist = dot(                                  \n"
-        "          vertex_in, GLUP_VS.world_clip_plane           \n"
-        "      );                                                \n"
-        "   }                                                    \n"
-        "   if(maybe_vertex_colors_enabled()) {                  \n"
-        "       color = color_in;                                \n"
-        "   }                                                    \n"
-        "   if(maybe_texturing_enabled()) {                      \n"
-        "     tex_coord = GLUP_VS.texture_matrix * tex_coord_in; \n"
-        "   }                                                    \n"
-        "   gl_Position =                                        \n"
-        "     GLUP_VS.modelviewprojection_matrix * vertex_in;    \n"
-        "}                                                       \n"
-        ;
-
-    static const char* lines_fshader_source =
-        "#ifdef GL_ES                                                  \n"                
-        "   varying vec4 color;                                        \n"
-        "   varying vec4 tex_coord;                                    \n"
-        "   varying float clip_dist;                                   \n"
-        "#else                                                         \n"
-        "   in vec4 color;                                             \n"
-        "   in vec4 tex_coord;                                         \n"
-        "   in float clip_dist;                                        \n"
-        "#endif                                                        \n"
-        "                                                              \n"
-        "void main() {                                                 \n"
-        "   if(clipping_enabled() && (clip_dist < 0.0)) {              \n"
-        "      discard;                                                \n"
-        "   }                                                          \n"
-        "   if(vertex_colors_enabled()) {                              \n"
-        "      glup_FragColor = color;                                 \n"
-        "   } else {                                                   \n"
-        "      glup_FragColor = GLUP.front_color;                      \n"
-        "   }                                                          \n"
-        "   if(texturing_enabled()) {                                  \n"
-        "      vec4 tex_color;                                         \n"
-        "      if(GLUP.texture_type == GLUP_TEXTURE_1D) {              \n"
-        "           tex_color = glup_texture(                          \n"
-        "               texture1Dsampler, tex_coord.xy                 \n"
-        "           );                                                 \n"
-        "      } else {                                                \n"
-        "           tex_color = glup_texture(                          \n"
-        "                texture2Dsampler, tex_coord.xy                \n"
-        "           );                                                 \n"
-        "      }                                                       \n"
-        "      if(GLUP.texture_mode == GLUP_TEXTURE_REPLACE) {         \n"
-        "             glup_FragColor = tex_color;                      \n"
-        "      } else if(GLUP.texture_mode == GLUP_TEXTURE_MODULATE) { \n"
-        "             glup_FragColor *= tex_color;                     \n"
-        "      } else {                                                \n"
-        "             glup_FragColor += tex_color;                     \n"
-        "      }                                                       \n"
-        "   }                                                          \n"
-        "   glup_write_fragment();                                     \n"
-        "}                                                             \n"
-        ;
-    
     void Context_ES2::setup_GLUP_LINES() {
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            lines_vshader_source,
-            0
+        set_primitive_info(
+            GLUP_LINES, GL_LINES,
+            GLSL::compile_program_with_includes_no_link(
+                this,
+                "//stage GL_VERTEX_SHADER\n"
+                "//import <GLUPES/points_and_lines_vertex_shader.h>\n",
+                "//stage GL_FRAGMENT_SHADER\n"
+                "//import <GLUPES/lines_fragment_shader.h>\n"                
+            )
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            lines_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info(GLUP_LINES, GL_LINES, program);
     }
 
-/*****************************************************************************/
+    void Context_ES2::setup_primitive_generic(
+        index_t nb_elements_per_primitive,
+        index_t* element_indices
+    ) {
 
-    static const char* polygons_vshader_source =
-        "#ifdef GL_ES                                          \n"
-        "   attribute vec4 vertex_in;                          \n"
-        "   attribute vec4 color_in;                           \n"
-        "   attribute vec4 tex_coord_in;                       \n"
-        "   attribute vec4 mesh_tex_coord_in;                  \n"
-        "   varying vec3 vertex_clip_space;                    \n"
-        "   varying float clip_dist;                           \n"        
-        "   varying vec4 color;                                \n"
-        "   varying vec4 tex_coord;                            \n"
-        "   varying vec4 mesh_tex_coord;                       \n"
-        "#else                                                 \n"
-        "   in vec4 vertex_in;                                 \n"
-        "   in vec4 color_in;                                  \n"
-        "   in vec4 tex_coord_in;                              \n"
-        "   in vec4 mesh_tex_coord_in;                         \n"
-        "   out vec3 vertex_clip_space;                        \n"
-        "   out float clip_dist;                               \n"
-        "   out vec4 color;                                    \n"
-        "   out vec4 tex_coord;                                \n"
-        "   out vec4 mesh_tex_coord;                           \n"
-        "#endif                                                \n"
-
-        "void main() {                                         \n"
-        "   if(maybe_clipping_enabled()) {                     \n"
-        "      clip_dist = dot(                                \n"
-        "          vertex_in, GLUP_VS.world_clip_plane         \n"
-        "      );                                              \n"
-        "   }                                                  \n"
-        "   if(maybe_lighting_enabled()) {                     \n"        
-        "      vertex_clip_space =                             \n"
-        "         (GLUP_VS.modelview_matrix * vertex_in).xyz;  \n"
-        "   }                                                  \n"
-        "   if(maybe_vertex_colors_enabled()) {                \n"
-        "      color = color_in;                               \n"
-        "   }                                                  \n"
-        "   if(maybe_texturing_enabled()) {                    \n"
-        "   tex_coord = GLUP_VS.texture_matrix * tex_coord_in; \n"
-        "   }                                                  \n"
-        "   if(maybe_draw_mesh_enabled()) {                    \n"
-        "      mesh_tex_coord=mesh_tex_coord_in;               \n"
-        "   }                                                  \n"
-        "   gl_Position =                                      \n"
-        "     GLUP_VS.modelviewprojection_matrix * vertex_in;  \n"
-        "}                                                     \n"
-        ;
-
-    static const char* polygons_fragment_clipping =
-        "void clip_fragment(in float dist) {          \n"
-        "   if(                                       \n"
-        "     clipping_enabled() &&                   \n"
-        "       dist < 0.0                            \n"
-        "   ) {                                       \n"
-        "      discard;                               \n"
-        "   }                                         \n"
-        "}                                            \n"
-        ;
-
-    static const char* polyhedra_fragment_clipping =
-        "void clip_fragment(in float dist) {          \n"
-        "   if(                                       \n"
-        "     clipping_enabled() &&                   \n"
-        "     GLUP.clipping_mode ==                   \n"
-        "                       GLUP_CLIP_STANDARD && \n"
-        "          dist < 0.0                         \n"
-        "   ) {                                       \n"
-        "      discard;                               \n"
-        "   }                                         \n"
-        "}                                            \n"        
-        ;
-    
-
-    
-    // Clipping and lighting are done in the fragment shader
-    // it is not classical, but:
-    //  - I do not want to compute normals on the CPU side.
-    //  - OpenGLES2 does not have geometry shaders.
-    // It is probably not optimum, but it works reasonably
-    // well, and satisfies my goal of directly playing back
-    // a vertex buffer object.
-
-    // TODO:
-    // Note: dFdX with vectors does not work with some Intel
-    // cards (use vec3(dFdX(v.x),dFdX(v.y),dFdX(v.z))) instead.
-    
-    static const char* polygons_fshader_source =
-        "#ifdef GL_ES                                 \n"
-        "   varying vec3 vertex_clip_space;           \n"
-        "   varying float clip_dist;                  \n"
-        "   varying vec4 color;                       \n"
-        "   varying vec4 tex_coord;                   \n"
-        "   varying vec4 mesh_tex_coord;              \n"
-        "#else                                        \n"
-        "   in vec3 vertex_clip_space;                \n"
-        "   in float clip_dist;                       \n"
-        "   in vec4 color;                            \n"
-        "   in vec4 tex_coord;                        \n"
-        "   in vec4 mesh_tex_coord;                   \n"
-        "#endif                                       \n"
-        
-        "void main() {                                \n"
-        "   clip_fragment(clip_dist);                 \n"
-        "   if(vertex_colors_enabled()) {             \n"
-        "      glup_FragColor = color;                \n"
-        "   } else {                                  \n"
-        "      glup_FragColor = gl_FrontFacing ?      \n"
-        "         GLUP.front_color : GLUP.back_color; \n"
-        "   }                                         \n"
-        "   if(texturing_enabled()) {                 \n"
-        "      vec4 tex_color;                                         \n"
-        "      if(GLUP.texture_type == GLUP_TEXTURE_1D) {              \n"
-        "           tex_color = glup_texture(                          \n"
-        "               texture1Dsampler, tex_coord.xy                 \n"
-        "           );                                                 \n"
-        "      } else {                                                \n"
-        "           tex_color = glup_texture(                          \n"
-        "                texture2Dsampler, tex_coord.xy                \n"
-        "           );                                                 \n"
-        "      }                                                       \n"
-        "      if(GLUP.texture_mode == GLUP_TEXTURE_REPLACE) {         \n"
-        "             glup_FragColor = tex_color;                      \n"
-        "      } else if(GLUP.texture_mode == GLUP_TEXTURE_MODULATE) { \n"
-        "             glup_FragColor *= tex_color;                     \n"
-        "      } else {                                                \n"
-        "             glup_FragColor += tex_color;                     \n"
-        "      }                                                       \n"
-        "   }                                                          \n"
-        "   if(lighting_enabled()) {                                   \n"
-        "      vec3 U = dFdx(vertex_clip_space);                       \n"
-        "      vec3 V = dFdy(vertex_clip_space);                       \n"
-        "      vec3 N = normalize(cross(U,V));                         \n"
-        "      float diff = dot(N,GLUP.light_vector);                  \n"
-        "      float spec = dot(N,GLUP.light_half_vector);             \n"
-        "      spec = pow(spec,30.0);                                  \n"
-        "      output_lighting(diff,spec);                             \n"
-        "   }                                                          \n"
-        "   if(                                                        \n"
-        "      draw_mesh_enabled() &&                                  \n"
-        "        (!clipping_enabled() ||                               \n"
-        "         GLUP.clipping_mode != GLUP_CLIP_SLICE_CELLS)         \n"
-        "    ) {                                                       \n"
-        "       glup_FragColor = mix(                                  \n"
-        "            GLUP.mesh_color,                                  \n"
-        "            glup_FragColor,                                   \n"
-        "            edge_factor(mesh_tex_coord)                       \n"
-        "       );                                                     \n"
-        "   }                                                          \n"
-        "   glup_write_fragment();                                     \n"
-        "}                                                             \n"
-        ;
-
-/*****************************************************************************/
-
-    static const char* triangle_edge_factor_source =
-        " float edge_factor(in vec4 bary) {    \n"
-        "    return edge_factor3(bary.xyz);    \n"
-        " }                                    \n"
-        ;
+        set_primitive_info_immediate_index_mode(
+            primitive_source_, GL_TRIANGLES,
+            GLSL::compile_program_with_includes_no_link(
+                this,
+                "//stage GL_VERTEX_SHADER\n"
+                "//import <GLUPES/vertex_shader.h>\n",
+                "//stage GL_FRAGMENT_SHADER\n"
+                "//import <GLUPES/fragment_shader.h>\n"                
+            ),
+            nb_elements_per_primitive, element_indices
+        );
+    }
     
     void Context_ES2::setup_GLUP_TRIANGLES() {
         static index_t element_indices[3]  = {
             0, 1, 2
         };
-
-        static GLUPfloat tex_coords[12] = {
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f            
-        };
-
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
-        );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            triangle_edge_factor_source,
-            polygons_fragment_clipping,
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-
-        set_primitive_info_immediate_index_mode(
-            GLUP_TRIANGLES, GL_TRIANGLES, program,
-            3, element_indices, tex_coords
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
     }
 
-/*****************************************************************************/
-
-    static const char* quad_edge_factor_source =
-        " float edge_factor(in vec4 bary) {                             \n"
-        "    return edge_factor4(bary);                                 \n"
-        " }                                                             \n"
-        ;
-    
     void Context_ES2::setup_GLUP_QUADS() {
-        
         static index_t element_indices[6]  = {
             0, 1, 2,
             0, 2, 3
         };
-
-        static GLUPfloat tex_coords[16] = {
-            0.0f, 0.0f, 1.0f, 1.0f,
-            1.0f, 0.0f, 0.0f, 1.0f,
-            1.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 1.0f, 0.0f,            
-        };
-
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            quad_edge_factor_source,
-            polygons_fragment_clipping,            
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info_immediate_index_mode(
-            GLUP_QUADS, GL_TRIANGLES, program,
-            6, element_indices, tex_coords
-        );        
     }
-
-/*****************************************************************************/
-
-    static const char* tet_edge_factor_source =
-        " float edge_factor(in vec4 bary) {                             \n"
-        "   float e1 = cell_edge_factor(bary.xy);                       \n"
-        "   float e2 = cell_edge_factor(bary.xz);                       \n"
-        "   float e3 = cell_edge_factor(bary.xw);                       \n"
-        "   float e4 = cell_edge_factor(bary.yz);                       \n"
-        "   float e5 = cell_edge_factor(bary.yw);                       \n"
-        "   float e6 = cell_edge_factor(bary.zw);                       \n"
-        "   return min3(min(e1,e2),min(e3,e4),min(e5,e6));              \n"
-        " }                                                             \n"
-        ;
 
     void Context_ES2::setup_GLUP_TETRAHEDRA() {
         static index_t element_indices[12] = {
@@ -1233,81 +656,13 @@ namespace GLUP {
             3,1,0,
             0,1,2
         };
-        
-        static GLUPfloat tex_coords[16] = {
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f            
-        };
-
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            tet_edge_factor_source,
-            polyhedra_fragment_clipping,                        
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info_immediate_index_mode(
-            GLUP_TETRAHEDRA, GL_TRIANGLES, program,
-            12, element_indices, tex_coords
-        );        
     }
 
-/*****************************************************************************/
-
-    static const char* hex_edge_factor_source =
-        " float edge_factor(in vec4 bary) {               \n"
-        "     vec3 u = bary.xyz;                          \n"
-        "     vec3 U = vec3(1.0, 1.0, 1.0) - u;           \n"
-        "     float e1 = cell_edge_factor(vec2(u.x,u.y)); \n"
-        "     float e2 = cell_edge_factor(vec2(u.x,u.z)); \n"
-        "     float e3 = cell_edge_factor(vec2(u.x,U.y)); \n"
-        "     float e4 = cell_edge_factor(vec2(u.x,U.z)); \n"
-
-        "     float e5 = cell_edge_factor(vec2(U.x,u.y)); \n"
-        "     float e6 = cell_edge_factor(vec2(U.x,u.z)); \n"
-        "     float e7 = cell_edge_factor(vec2(U.x,U.y)); \n"
-        "     float e8 = cell_edge_factor(vec2(U.x,U.z)); \n"
-
-        "     float e9  = cell_edge_factor(vec2(u.y,u.z)); \n"
-        "     float e10 = cell_edge_factor(vec2(u.y,U.z)); \n"
-        "     float e11 = cell_edge_factor(vec2(U.y,u.z)); \n"
-        "     float e12 = cell_edge_factor(vec2(U.y,U.z)); \n"
-        
-        "     float r1 = min4(e1,e2,e3,e4);                \n"
-        "     float r2 = min4(e5,e6,e7,e8);                \n"
-        "     float r3 = min4(e9,e10,e11,e12);             \n"
-        
-        "     return min3(r1,r2,r3);                       \n"
-        " }                                                \n"
-        ;
-    
     void Context_ES2::setup_GLUP_HEXAHEDRA() {
-
         static index_t element_indices[36] = {
             0,2,6, 0,6,4,
             3,1,5, 3,5,7,
@@ -1316,74 +671,12 @@ namespace GLUP {
             1,3,2, 1,2,0,
             4,6,7, 4,7,5
         };
-
-        static GLUPfloat tex_coords[32] = {
-            0.0f, 0.0f, 0.0f, 0.0f,            
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 1.0f, 0.0f,
-            1.0f, 0.0f, 0.0f, 0.0f,            
-            1.0f, 0.0f, 1.0f, 0.0f,
-            1.0f, 1.0f, 0.0f, 0.0f,
-            1.0f, 1.0f, 1.0f, 0.0f,
-        };
-
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            hex_edge_factor_source,
-            polyhedra_fragment_clipping,                        
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info_immediate_index_mode(
-            GLUP_HEXAHEDRA, GL_TRIANGLES, program,
-            36, element_indices, tex_coords
-        );        
     }
 
-/*****************************************************************************/
-
-    static const char* prism_edge_factor_source =
-        " float edge_factor(in vec4 bary) {                             \n"
-        "   vec4 bary2 = vec4(bary.x, bary.y, bary.z, 1.0 - bary.w);    \n"
-        "   float e1 = cell_edge_factor(bary.xw);                       \n"
-        "   float e2 = cell_edge_factor(bary.yw);                       \n"
-        "   float e3 = cell_edge_factor(bary.zw);                       \n"
-        "   float e4 = cell_edge_factor(bary2.xw);                      \n"
-        "   float e5 = cell_edge_factor(bary2.yw);                      \n"
-        "   float e6 = cell_edge_factor(bary2.zw);                      \n"
-        "   float e7 = cell_edge_factor(bary.xy);                       \n"
-        "   float e8 = cell_edge_factor(bary.yz);                       \n"
-        "   float e9 = cell_edge_factor(bary.zx);                       \n"
-        "   return min(min3(e7,e8,e9),                                  \n"
-        "              min3(min(e1,e2),min(e3,e4),min(e5,e6))           \n"
-        "          );                                                   \n"
-        " }                                                             \n"
-        ;
-    
     void Context_ES2::setup_GLUP_PRISMS() {
         static index_t element_indices[24] = {
             0,1,2,
@@ -1392,63 +685,11 @@ namespace GLUP {
             0,2,5, 0,5,3,
             1,4,5, 1,5,2
         };
-
-        static GLUPfloat tex_coords[32] = {
-            1.0f, 0.0f, 0.0f, 0.0f,            
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            1.0f, 0.0f, 0.0f, 1.0f,            
-            0.0f, 1.0f, 0.0f, 1.0f,
-            0.0f, 0.0f, 1.0f, 1.0f
-        };
-        
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            prism_edge_factor_source,
-            polyhedra_fragment_clipping,                                    
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info_immediate_index_mode(
-            GLUP_PRISMS, GL_TRIANGLES, program,
-            24, element_indices, tex_coords
-        );        
     }
-
-    /************************************************************************/
-
-    // Draw mesh not implemented for pyramids because
-    // I did not find yet a nice way of defining barycentric
-    // coordinates that I could interpret in the shader.
-    
-    static const char* no_edge_factor_source =
-        " float edge_factor(in vec4 bary) {    \n"
-        "    return 1.0;                       \n"
-        " }                                    \n"
-        ;
 
     void Context_ES2::setup_GLUP_PYRAMIDS() {
         static index_t element_indices[18] = {
@@ -1458,41 +699,10 @@ namespace GLUP {
             2,4,3,
             2,1,4
         };
-
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            no_edge_factor_source,
-            polyhedra_fragment_clipping,                                    
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info_immediate_index_mode(
-            GLUP_PYRAMIDS, GL_TRIANGLES, program,
-            18, element_indices
-        );        
     }
 
     void Context_ES2::setup_GLUP_CONNECTORS() {
@@ -1501,41 +711,10 @@ namespace GLUP {
             2,1,0,
             3,2,0
         };
-
-        GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER,
-            vshader_header(),            
-            uniform_state_vs_ES2,
-            glup_constants,
-            potential_toggles_declaration(),            
-            polygons_vshader_source,
-            0
+        setup_primitive_generic(
+            sizeof(element_indices)/sizeof(index_t),
+            element_indices
         );
-
-        GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER,
-            fshader_header(),
-            uniform_state_fs_ES2,
-            glup_constants,
-            toggles_declaration(),
-            fshader_utils,
-            no_edge_factor_source,
-            polyhedra_fragment_clipping,                                    
-            polygons_fshader_source,
-            0
-        );
-
-        GLuint program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0 
-        );
-
-        glDeleteShader(vshader);
-        glDeleteShader(fshader);
-        
-        set_primitive_info_immediate_index_mode(
-            GLUP_CONNECTORS, GL_TRIANGLES, program,
-            12, element_indices
-        );        
     }
 
     bool Context_ES2::cell_by_cell_clipping() const {
@@ -1625,30 +804,30 @@ namespace GLUP {
             }
         }
 
-        // If mesh should be drawn, then bind the VBO that has the
-        // texture coordinates used by mesh drawing.
+
+        // TODO: do that once only..
         if(
-            uniform_state_.toggle[GLUP_DRAW_MESH].get() &&
-            primitive_info_[immediate_state_.primitive()].tex_coords_VBO
-            != 0
+            vertex_id_VBO_ != 0 && ((
+                immediate_state_.primitive() >= GLUP_TRIANGLES &&
+                uniform_state_.toggle[GLUP_DRAW_MESH].get()
+            ) || uniform_state_.toggle[GLUP_PICKING].get())
         ) {
             glEnableVertexAttribArray(3);
             glBindBuffer(
-                GL_ARRAY_BUFFER,
-                primitive_info_[immediate_state_.primitive()].tex_coords_VBO
+                GL_ARRAY_BUFFER, vertex_id_VBO_
             );
             glVertexAttribPointer(
-                immediate_state_.buffer.size(), 
-                4,
-                GL_FLOAT,
-                GL_FALSE,
-                0,  // stride
-                0   // pointer (relative to bound VBO beginning)
+                3,                 // Attribute number 3
+                1,                 // 1 component per attribute
+                GL_UNSIGNED_SHORT, // components are 16 bits integers
+                GL_FALSE,          // do not normalize
+                0,                 // stride
+                0                  // pointer (relative to bound VBO beginning)
             );
         } else {
-            glDisableVertexAttribArray(3);                
+            glDisableVertexAttribArray(3);
         }
-
+        
         // Stream the indices into the elements VBO.
         stream_buffer_object(
             clip_cells_elements_VBO_,
@@ -1768,6 +947,183 @@ namespace GLUP {
         } else {
             Context::flush_immediate_buffers();            
         }
+    }
+
+
+    void Context_ES2::get_primitive_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        Context::get_primitive_pseudo_file(sources);
+        
+        static GLUPfloat tri_tex_coords[12] = {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f            
+        };
+
+        static GLUPfloat quad_tex_coords[16] = {
+            0.0f, 0.0f, 1.0f, 1.0f,
+            1.0f, 0.0f, 0.0f, 1.0f,
+            1.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 1.0f, 0.0f,            
+        };
+        
+        static GLUPfloat tet_tex_coords[16] = {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f            
+        };
+
+        static GLUPfloat hex_tex_coords[32] = {
+            0.0f, 0.0f, 0.0f, 0.0f,            
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 1.0f, 0.0f,
+            1.0f, 0.0f, 0.0f, 0.0f,            
+            1.0f, 0.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f, 1.0f, 0.0f,
+        };
+
+        static GLUPfloat prism_tex_coords[24] = {
+            1.0f, 0.0f, 0.0f, 0.0f,            
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            1.0f, 0.0f, 0.0f, 1.0f,            
+            0.0f, 1.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 1.0f, 1.0f
+        };
+
+        
+        switch(primitive_source_) {
+        case GLUP_TRIANGLES:
+            sources.push_back(mesh_tex_coord_lookup(tri_tex_coords));
+            break;
+        case GLUP_QUADS:
+            sources.push_back(mesh_tex_coord_lookup(quad_tex_coords));
+            break;
+        case GLUP_TETRAHEDRA:
+            sources.push_back(mesh_tex_coord_lookup(tet_tex_coords));
+            break;
+        case GLUP_HEXAHEDRA:
+            sources.push_back(mesh_tex_coord_lookup(hex_tex_coords));    
+            break;
+        case GLUP_PRISMS:
+            sources.push_back(mesh_tex_coord_lookup(prism_tex_coords));
+            break;
+            
+        case GLUP_POINTS:
+        case GLUP_LINES:
+        case GLUP_PYRAMIDS:
+        case GLUP_CONNECTORS:
+            sources.push_back(
+                "#define GLUP_NO_MESH_TEX_COORDS\n"
+                "vec4 get_mesh_tex_coord(in int vertex_id) {\n"
+                "   return vec4(0.0, 0.0, 0.0, 0.0);\n"
+                "}\n"
+            );
+            break;
+
+        case GLUP_NB_PRIMITIVES:
+            geo_assert_not_reached;
+        }
+    }
+
+    void Context_ES2::get_vertex_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        if(use_ES_profile_) {
+            sources.push_back(
+                "#version 100               \n"
+                "#define GLUP_VERTEX_SHADER \n"
+            );
+        } else {
+            sources.push_back(
+                "#version 150 core          \n"
+                "#define GLUP_VERTEX_SHADER \n"
+            );
+        }
+    }
+    
+
+    void Context_ES2::get_fragment_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        if(use_ES_profile_) {
+            sources.push_back(
+                "#version 100                                    \n"
+                "#define GLUP_FRAGMENT_SHADER                    \n"
+                "#extension GL_OES_standard_derivatives : enable \n"
+                "#ifdef GL_EXT_frag_depth                        \n"
+                "   #extension GL_EXT_frag_depth : enable        \n"
+                "#endif                                          \n"
+                "precision mediump float;                        \n"
+                "#ifdef GL_FRAGMENT_PRECISION_HIGH               \n"
+                "   precision highp int;                         \n"
+                "#endif                                          \n"
+            );
+        } else {
+            sources.push_back(
+                "#version 150 core                               \n"
+                "#define GLUP_FRAGMENT_SHADER                    \n"
+                "#ifdef GL_EXT_frag_depth                        \n"
+                "   #extension GL_EXT_frag_depth : enable        \n"
+                "#endif                                          \n"
+            );
+        }
+        sources.push_back("#define GLUP_NO_TEXTURE_3D\n");
+    }
+
+    void Context_ES2::get_toggles_pseudo_file(
+        std::vector<GLSL::Source>& sources        
+    ) {
+        
+        //   In GLUPES2, the state is splitted into vertex shader
+        // and fragment shader state. The toggles are in the fragment
+        // shader state, therefore the vertex shader can only know the
+        // statically defined toggles. For the other ones, we
+        // "conservatively" assume that they are on (on the worst case,
+        // this means the vertex shader will copy more attributes than
+        // needed).
+        
+        std::string toggle_maybe_enabled_source = 
+            "bool glupIsEnabled(in int toggle) {\n";
+
+        for(index_t i=0; i<uniform_state_.toggle.size(); ++i) {
+            std::string toggle_var_name = uniform_state_.toggle[i].name();
+            std::string toggle_name = toggle_var_name;
+            size_t pos = toggle_name.find("_enabled");
+            geo_assert(pos != std::string::npos);
+            toggle_name = "GLUP_" +
+                String::to_uppercase(toggle_name.substr(0,pos));
+            
+            std::string test =
+                "   if(toggle=="+toggle_name + ") {\n";
+
+            toggle_maybe_enabled_source += test;
+
+            if(toggles_source_undetermined_ & (1 << i)) {
+                toggle_maybe_enabled_source += "      return true;\n";
+            } else {
+                if(toggles_source_state_ & (1 << i)) {
+                    toggle_maybe_enabled_source +=
+                        "      return true;\n";                        
+                } else {
+                    toggle_maybe_enabled_source +=
+                        "      return false;\n";                        
+                }
+            }
+            toggle_maybe_enabled_source += "   }\n";            
+        }
+
+        toggle_maybe_enabled_source += "   return false; \n}\n";
+
+        sources.push_back("#ifdef GLUP_VERTEX_SHADER\n");
+        sources.push_back(toggle_maybe_enabled_source);
+        sources.push_back("#else\n");
+        Context::get_toggles_pseudo_file(sources);
+        sources.push_back("#endif\n");
     }
 }
 

@@ -149,12 +149,12 @@ namespace {
             switch(degree_) {
                 case 1:
                 {
-                    Matrix<double, 4> M = AtA_4_.inverse();
+                    Matrix<4,double> M = AtA_4_.inverse();
                     mult(M, Atb_, eqn_);
                 } break;
                 case 2:
                 {
-                    Matrix<double, 10> M = AtA_10_.inverse();
+                    Matrix<10,double> M = AtA_10_.inverse();
                     mult(M, Atb_, eqn_);
                 } break;
                 default:
@@ -251,8 +251,8 @@ namespace {
     private:
         index_t degree_;
         index_t dim_;
-        Matrix<double, 4> AtA_4_;
-        Matrix<double, 10> AtA_10_;
+        Matrix<4,double> AtA_4_;
+        Matrix<10,double> AtA_10_;
         double Atb_[MAX_DIM];
         double eqn_[MAX_DIM];
     };

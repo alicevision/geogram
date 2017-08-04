@@ -106,16 +106,59 @@ namespace {
             GLchar linker_message[4096];
             glGetProgramInfoLog(
                 program, sizeof(linker_message), 0, linker_message
-                );
+            );
             Logger::err("GLSL") << "linker status :"
                                 << link_status << std::endl;
             Logger::err("GLSL") << "linker message:"
                                 << linker_message << std::endl;
-            glDeleteProgram(program);
-            program = 0;
+            if(!CmdLine::get_arg_bool("dbg:gfx")) {            
+                glDeleteProgram(program);
+                program = 0;
+            }
         }
         if(CmdLine::get_arg_bool("dbg:gfx")) {
             GLSL::introspect_program(program);
+        }
+    }
+
+    /**
+     * \brief Dumps a shader source assembled from multiple strings
+     *   and displays line numbers.
+     * \details This function can be used to debug shaders that do
+     *   not compile, it makes error tracking easier.
+     * \param[in] sources a pointer to an array of strings
+     * \param[in] nb_sources the number of strings 
+     */
+    void dump_program_source_with_line_numbers(
+        const char** sources, index_t nb_sources
+    ) {
+        std::string all_sources;
+        for(index_t i=0; i<nb_sources; ++i) {
+            all_sources += sources[i];
+        }
+        std::vector<std::string> lines;
+        String::split_string(all_sources, '\n', lines);
+        bool prev_is_include = false;
+        for(index_t i=0; i<lines.size(); ++i) {
+            std::string line = lines[i];
+            if(line.find("//import") != std::string::npos) {
+                if(prev_is_include) {
+                    line = "";
+                } else {
+                    line = "//   [...skipped //import directives...]";
+                }
+                prev_is_include = true;
+            } else {
+                prev_is_include = false;
+            }
+            if(line.length() > 0 && line[line.length()-1] == '\n') {
+                line[line.length()-1] = ' ';
+            }
+            std::string line_number = String::to_string(i+1);
+            while(line_number.length() < 4) {
+                line_number += ' ';
+            }
+            Logger::out("GLSL") << line_number << "  " << line << std::endl;
         }
     }
 }
@@ -296,6 +339,9 @@ namespace GEO {
         }
             
 
+        PseudoFileProvider::~PseudoFileProvider() {
+        }
+        
         
         GLuint compile_shader(
             GLenum target, const char** sources, index_t nb_sources
@@ -360,10 +406,8 @@ namespace GEO {
 
                 Logger::out("GLSL") << "Erroneous program source:"
                                     << std::endl;
-                for(index_t i=0; i<nb_sources; ++i) {
-                    Logger::out("GLSL") << sources[i] << std::endl;
-                }
 
+                dump_program_source_with_line_numbers(sources, nb_sources);
                 
                 glDeleteShader(s_handle);
                 s_handle = 0;
@@ -467,10 +511,10 @@ namespace GEO {
                 
                 Logger::out("GLSL") << "===== Shader source ===="
                                     << std::endl;
-                
-                for(index_t i=0; i<sources.size(); ++i) {
-                    Logger::out("GLSL") << sources[i];
-                }
+
+                dump_program_source_with_line_numbers(
+                    &sources[0], sources.size()
+                );
             }
             
             return compile_shader(target, &sources[0], sources.size());
@@ -770,8 +814,320 @@ namespace GEO {
 #endif
             
         }
+    }
+}
+
+   /***************** GLSL pseudo file system ****************************/
+
+namespace GEO {
+    namespace GLSL {
+        namespace {
+
+            /**
+             * \brief Gets all pseudo file names included by a GLSL source.
+             * \param[in] source the GLSL source
+             * \param[out] includes a vector of string with all included pseudo
+             *  file names.
+             */
+            void get_includes(
+                const char* source, std::vector<std::string>& includes
+            ) {
+                includes.clear();
+                const char* cur = source;
+                while(cur != nil) {
+                    cur = strstr(cur, "//import");
+                    if(cur == nil) {
+                        return;
+                    }
+                    cur += 8;
+                    while(*cur == ' ') {
+                        ++cur;
+                        if(*cur == '\0') {
+                            return;
+                        }
+                    }
+                    if(*cur != '<') {
+                        continue;
+                    }
+                    const char* next = strchr(cur, '>');
+                    if(next != nil) {
+                        includes.push_back(
+                            std::string(cur+1, size_t(next-cur-1))
+                        );
+                    }
+                    cur = next;
+                }
+            }
+
+            /**
+             * \brief A representation of a GLSL file in the pseudo file
+             *  system.
+             */
+            struct File {
+
+                /**
+                 * \brief File default constructor.
+                 */
+                File() {
+                    text = nil;
+                    pseudo_file = nil;
+                }
+                
+                /** 
+                 * \brief The name of the file in the pseudo file system. 
+                 */
+                std::string name;
+
+                /** 
+                 * \brief The content of the file, or nil if it is a pseudo
+                 *  file.
+                 */
+                const char* text;
+
+                /**
+                 * \brief A pointer to the function that generates the file
+                 *  contents if it is a pseudo file, or nil if it is a 
+                 *  regular file.
+                 */
+                PseudoFile  pseudo_file;
+
+                /**
+                 * \brief All the included files (directly or indirectly)
+                 *  in the order they should be grouped to form the source.
+                 */
+                std::vector<File*> depends;
+            };
+
+            typedef std::map<std::string, File> FileSystem;
+
+            FileSystem file_system_;
+
+
+
+            /**
+             * \brief Gets the dependencies of a given file.
+             */
+            void get_depends(File& F) {
+                // Does nothing for pseudo files.
+                if(F.text == nil) {
+                    return;
+                }
+
+                std::vector<std::string> include_names;
+                get_includes(F.text, include_names);
+                std::vector<File*> includes(include_names.size());
+            
+                for(size_t i=0; i<include_names.size(); ++i) {
+                    FileSystem::iterator it = file_system_.find(
+                        include_names[i]
+                    );
+                    if(it == file_system_.end()) {
+                        Logger::err("GLSL")
+                            << F.name << " : include file "
+                            << include_names[i]
+                            << " not found in GLSL pseudo file system"
+                            << std::endl;
+                        geo_assert_not_reached;
+                    }
+                    includes[i] = &(it->second);
+                }
+                std::set<File*> included;
+                for(size_t inc=0; inc<includes.size(); ++inc) {
+                    File* include = includes[inc];
+                    for(size_t dep=0; dep<include->depends.size(); ++dep) {
+                        File* depend = include->depends[dep];
+                        if(included.find(depend) == included.end()) {
+                            included.insert(depend);
+                            F.depends.push_back(depend);
+                        }
+                    }
+                    if(included.find(include) != included.end()) {
+                        Logger::err("GLSL")
+                            << F.name << " : include file "
+                            << include_names[inc]
+                            << " circularly included"
+                            << std::endl;
+                        geo_assert_not_reached;                    
+                    }
+                    included.insert(include);
+                    F.depends.push_back(include);
+                }
+            }
+        }
+    }
+}
+
+namespace GEO {
+    namespace GLSL {
+
+        void register_GLSL_include_file(
+            const std::string& name, const char* source
+        ) {
+            geo_assert(file_system_.find(name) == file_system_.end());
+            File& F = file_system_[name];
+            F.name = name;
+            F.text = source;
+            F.pseudo_file = nil;
+            get_depends(F);
+        }
+
+        void register_GLSL_include_file(
+            const std::string& name, PseudoFile file
+        ) {
+            geo_assert(file_system_.find(name) == file_system_.end());
+            File& F = file_system_[name];
+            F.name = name;
+            F.text = nil;
+            F.pseudo_file = file;
+        }
+
+        
+        const char* get_GLSL_include_file(
+            const std::string& name
+        ) {
+            FileSystem::iterator it = file_system_.find(name);
+            if(it == file_system_.end()) {
+
+                for(FileSystem::iterator jt = file_system_.begin();
+                    jt != file_system_.end(); ++jt) {
+                    Logger::err("GLSL") << "FileSystem has: " << jt->first
+                                        << std::endl;
+                }
+
+                
+                Logger::err("GLSL")
+                    << name 
+                    << " : not found in GLSL pseudo file system"
+                    << std::endl;
+                geo_assert_not_reached;
+            }
+            if(it->second.text == nil) {
+                Logger::err("GLSL")
+                    << name
+                    << " : is a pseudo-file"
+                    << std::endl;
+                geo_assert_not_reached;
+            }
+            return it->second.text;
+        }
+        
+        
+        GLuint compile_shader_with_includes(
+            GLenum target, const char* source, PseudoFileProvider* provider
+        ) {
+            File F;
+            F.text = source;
+            get_depends(F);
+
+            std::vector<Source> sources;
+            std::vector<const char*> sources_texts;
+            
+            for(size_t dep=0; dep<F.depends.size(); ++dep) {
+                if(F.depends[dep]->pseudo_file != nil) {
+                    (provider->*F.depends[dep]->pseudo_file)(sources);
+                } else {
+                    sources.push_back(F.depends[dep]->text);
+                }
+            }
+            sources.push_back(source);
+
+            sources_texts.resize(sources.size());
+            for(size_t i=0; i<sources.size(); ++i) {
+                sources_texts[i] = sources[i].text();
+            }
+
+            return compile_shader(
+                target, &sources_texts[0], index_t(sources_texts.size())
+            );
+        }
+
+        GLuint compile_program_with_includes_no_link(
+            PseudoFileProvider* provider,            
+            const char* shader1, const char* shader2, const char* shader3,
+            const char* shader4, const char* shader5, const char* shader6
+        ) {
+            std::vector<const char*> sources;
+
+            GLuint program = glCreateProgram();            
+            
+            if(shader1 != nil) {
+                sources.push_back(shader1);
+            }
+            
+            if(shader2 != nil) {
+                sources.push_back(shader2);
+            }
+            
+            if(shader3 != nil) {
+                sources.push_back(shader3);
+            }
+            
+            if(shader4 != nil) {
+                sources.push_back(shader4);
+            }
+            
+            if(shader5 != nil) {
+                sources.push_back(shader5);
+            }
+            
+            if(shader6 != nil) {
+                sources.push_back(shader6);
+            }
+
+            for(size_t i=0; i<sources.size(); ++i) {
+                const char* p1 = strstr(sources[i], "//stage ");
+                if(p1 == nil) {
+                    Logger::err("GLSL")
+                        << "Missing //stage GL_xxxxx declaration"
+                        << std::endl;
+                    throw GLSL::GLSLCompileError();
+                }
+                p1 += 8;
+                const char* p2 = strchr(p1, '\n');
+                if(p2 == nil) {
+                    Logger::err("GLSL")
+                        << "Missing CR in //stage GL_xxxxx declaration"
+                        << std::endl;
+                    throw GLSL::GLSLCompileError();
+                }
+                std::string stage_str(p1, size_t(p2-p1));
+                GLenum stage = 0;
+                if(stage_str == "GL_VERTEX_SHADER") {
+                    stage = GL_VERTEX_SHADER;
+                } else if(stage_str == "GL_FRAGMENT_SHADER") {
+                    stage = GL_FRAGMENT_SHADER;
+                }
+
+#ifndef GEO_OS_EMSCRIPTEN
+                else if(stage_str == "GL_GEOMETRY_SHADER") {
+                    stage = GL_GEOMETRY_SHADER;
+                } else if(stage_str == "GL_TESS_CONTROL_SHADER") {
+                    stage = GL_TESS_CONTROL_SHADER;
+                } else if(stage_str == "GL_TESS_EVALUATION_SHADER") {
+                    stage = GL_TESS_EVALUATION_SHADER;
+                }
+#endif
+                else {
+                    Logger::err("GLSL") << stage_str << ": unknown stage"
+                                        << std::endl;
+                    throw GLSL::GLSLCompileError();                    
+                }
+
+                GLuint shader =
+                    compile_shader_with_includes(stage, sources[i], provider);
+                
+                glAttachShader(program, shader);
+
+                // It is reference-counted by OpenGL
+                //   (and it is attached to the program)
+                glDeleteShader(shader);
+                
+            }
+            return program;
+        }
+        
         
     }
-
 }
+    
 

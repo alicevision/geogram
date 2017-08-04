@@ -1404,6 +1404,11 @@ namespace GEO {
             GEO::Logger::warn("Mesh")
                 << "Found only one triangular facet adjacent to a quad facet"
                 << std::endl;
+            Attribute<bool> weird(attributes(),"weird");
+            weird[c1] = true;
+            for(index_t i=0; i<matches.size(); ++i) {
+                weird[matches[i].first] = true;
+            }
             return false;
         }
 
@@ -1441,10 +1446,10 @@ namespace GEO {
 
         // Sanity check: make sure that we only found a single pair
         // of triangular facets with a common edge that matches the quad.
-        if(nb_found > 1) {
+        if(nb_found > 2) {
             GEO::Logger::warn("Mesh")
                 << "Found more than two triangular facets adjacent to a quad"
-                << " (" << nb_found << ")"
+                << " ( got " << nb_found << ")"
                 << std::endl;
             Attribute<bool> weird(attributes(),"weird");
             weird[c1] = true;
@@ -1501,7 +1506,7 @@ namespace GEO {
         return true;
     }
     
-    void MeshCells::connect() {
+    void MeshCells::connect(bool remove_trivial_slivers) {
         // "Fast track" for simplicial mesh
         if(is_simplicial_) {
             connect_tets();
@@ -1577,7 +1582,12 @@ namespace GEO {
         // triangular faces to be connected with it (a vector of
         // (cell index, facet index) pairs).
         std::vector< std::pair<index_t, index_t> > matches;
-                
+
+        // If remove_trivial_slivers is set, we also detect the trivial
+        // slivers, i.e. the slivers that are glued on a quadrilateral facet.
+        
+        std::vector<index_t> trivial_slivers;
+        
         // (c1,f1) traverse all quadrangular cell facets on the border
         for(index_t c1=0; c1 < nb_cells0; ++c1) {
             if(type(c1) == MESH_TET) {
@@ -1635,6 +1645,19 @@ namespace GEO {
                 ) {
                     ++weird;
                 }
+
+                if(remove_trivial_slivers) {
+                    for(index_t i=0; i<matches.size(); ++i) {
+                        if(type(matches[i].first) != MESH_TET) {
+                            continue;
+                        }
+                        for(index_t j=i+1; j<matches.size(); ++j) {
+                            if(matches[j].first == matches[i].first) {
+                                trivial_slivers.push_back(matches[i].first);
+                            }
+                        }
+                    }
+                }
             }
         }
         if(weird != 0) {
@@ -1642,6 +1665,23 @@ namespace GEO {
                                       << weird
                                       << " invalid connector configurations"
                                       << std::endl;
+        }
+        if(remove_trivial_slivers && trivial_slivers.size() != 0) {
+            GEO::Logger::warn("Mesh") << "Removing "
+                                      << trivial_slivers.size()
+                                      << " trivial sliver(s)" << std::endl;
+
+            next_cell_around_vertex.clear();
+            v2cell.clear();
+            
+            vector<index_t> delete_c(nb(),0);
+            for(index_t i=0; i<trivial_slivers.size(); ++i) {
+                delete_c[trivial_slivers[i]] = 1;
+            }
+            delete_elements(delete_c);
+
+            GEO::Logger::warn("Mesh") << "Re-trying to connect cells" << std::endl;
+            connect(false);
         }
     }
 
@@ -2058,6 +2098,7 @@ namespace {
         std::string result;
         vector<std::string> attribute_names;
         attributes.list_attribute_names(attribute_names);
+
         for(index_t i=0; i<attribute_names.size(); ++i) {
             const AttributeStore* store = attributes.
                 find_attribute_store(attribute_names[i]);

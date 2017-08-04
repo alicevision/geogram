@@ -57,7 +57,7 @@
 #include <fstream>
 
 extern "C" {
-#include <geogram/third_party/LM6/libmesh6.h>
+#include <geogram/third_party/LM7/libmeshb7.h>
 }
 
 #include <geogram/third_party/rply/rply.h>
@@ -402,8 +402,8 @@ namespace GEO {
         ) {
 
             int ver, dim;
-            int mesh_file_handle = GmfOpenMesh(
-                filename.c_str(), GmfRead, &ver, &dim
+            int64_t mesh_file_handle = GmfOpenMesh(
+                const_cast<char*>(filename.c_str()), GmfRead, &ver, &dim
             );
             if(!mesh_file_handle) {
                 Logger::err("I/O") << "Could not open file: "
@@ -693,8 +693,8 @@ namespace GEO {
             const MeshIOFlags& ioflags
         ) {
             bool use_doubles = CmdLine::get_arg_bool("sys:use_doubles");
-            int mesh_file_handle = GmfOpenMesh(
-                filename.c_str(), GmfWrite,
+            int64_t mesh_file_handle = GmfOpenMesh(
+                const_cast<char*>(filename.c_str()), GmfWrite,
                 (use_doubles ? GmfDouble : GmfFloat), 3
             );
 
@@ -928,7 +928,7 @@ namespace GEO {
         }
 
     protected:
-        bool goto_elements(int mesh_file_handle, int keyword) {
+        bool goto_elements(int64_t mesh_file_handle, int keyword) {
             if(!GmfGotoKwd(mesh_file_handle, keyword)) {
                 Logger::err("I/O") << "Failed to access "
                                    << keyword2name_[keyword]
@@ -942,7 +942,7 @@ namespace GEO {
         }
         
         bool read_element(
-            int mesh_file_handle, 
+            int64_t mesh_file_handle, 
             int keyword, int *v, int& ref,
             Mesh& M, index_t element_id
         ) {
@@ -2229,7 +2229,10 @@ namespace GEO {
                         << normal[3*v+1] << ' '
                         << normal[3*v+2] << ' '
                         << std::endl;
-                } else if(M.vertices.dimension() >= 6 && M.vertices.double_precision()) {
+                } else if(
+                    M.vertices.dimension() >= 6 &&
+                    M.vertices.double_precision()
+                ) {
                     const double* p = M.vertices.point_ptr(v);
                     out << p[0] << ' '
                         << p[1] << ' '
@@ -2708,13 +2711,10 @@ namespace GEO {
                         }
                     } 
                 }
-
+                
                 if(chunk_class == "SPTR") {
-                    Logger::warn("I/O")
+                    Logger::out("GeoFile")
                         << "File may contain several objects"
-                        << std::endl;
-                    Logger::warn("I/O")
-                        << "(reading the first one)"
                         << std::endl;
                 }
                 
@@ -2737,7 +2737,7 @@ namespace GEO {
             if(!M.cells.are_simplices()) {
                 M.cells.cell_ptr_[M.cells.nb()] = M.cell_corners.nb();
             }
-            
+
             return true;
         }
 
@@ -3275,8 +3275,9 @@ namespace GEO {
             geo_argused(M);
             geo_argused(filename);
             geo_argused(ioflags);
-            Logger::err("I/O") << "graphite file format not supported for writing"
-                               << std::endl;
+            Logger::err("I/O")
+                << "graphite file format not supported for writing"
+                << std::endl;
             return false;
         }
     };
@@ -3460,6 +3461,7 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(TETIOHandler,  "tet");
         geo_register_MeshIOHandler_creator(TET6IOHandler, "tet6");
         geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram");
+        geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram_ascii");
         geo_register_MeshIOHandler_creator(GraphiteIOHandler, "graphite");
     }
 

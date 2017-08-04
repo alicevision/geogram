@@ -49,10 +49,11 @@
 #include <geogram_gfx/basic/common.h>
 #include <geogram_gfx/GLUP/GLUP.h>
 #include <geogram_gfx/GLUP/GLUP_marching_cells.h>
+#include <geogram_gfx/basic/GLSL.h>
 
 // Uncomment to activate OpenGL error reporting for
 // each call to GLUP functions.
-// #define GLUP_DEBUG
+//#define GLUP_DEBUG
 
 #ifdef GLUP_DEBUG
 #define GEO_CHECK_GLUP() ::GEO::check_gl(__FILE__,__LINE__)
@@ -894,8 +895,6 @@ namespace GLUP {
 
     /**
      * \brief The set of state variables that represent GLUP uniform state.
-     * \details This reflects the GLSL GLUP uniform state declaration.
-     * \see Context::GLSL_uniform_state_declaration()
      */
     struct UniformState {
         vector< StateVariable<GLboolean> > toggle;
@@ -915,6 +914,7 @@ namespace GLUP {
         VectorStateVariable                world_clip_plane;
         FloatsArrayStateVariable           modelview_matrix;
         FloatsArrayStateVariable           modelviewprojection_matrix;
+        FloatsArrayStateVariable           projection_matrix;        
         FloatsArrayStateVariable           normal_matrix;
         FloatsArrayStateVariable           texture_matrix;
     };
@@ -936,7 +936,6 @@ namespace GLUP {
             GL_primitive(0),
             VAO(0),
             elements_VBO(0),
-            tex_coords_VBO(0),
             nb_elements_per_primitive(0),
             primitive_elements(nil),
             vertex_gather_mode(false),
@@ -957,7 +956,6 @@ namespace GLUP {
             GL_primitive = rhs.GL_primitive;
             VAO = rhs.VAO;
             elements_VBO = rhs.elements_VBO;
-            tex_coords_VBO = rhs.tex_coords_VBO;
             nb_elements_per_primitive = rhs.nb_elements_per_primitive;
             primitive_elements = rhs.primitive_elements;
             vertex_gather_mode = rhs.vertex_gather_mode;
@@ -984,9 +982,6 @@ namespace GLUP {
             if(elements_VBO != 0) {
                 glDeleteBuffers(1, &elements_VBO);
             }
-            if(tex_coords_VBO != 0) {
-                glDeleteBuffers(1, &tex_coords_VBO);
-            }
             if(VAO != 0) {
                 glupDeleteVertexArrays(1,&VAO);
                 VAO = 0;
@@ -998,7 +993,6 @@ namespace GLUP {
         bool program_initialized[nb_toggles_configs];
         GLuint VAO;
         GLuint elements_VBO;
-        GLuint tex_coords_VBO; // Used to draw mesh
         index_t nb_elements_per_primitive;
         index_t* primitive_elements;
         bool vertex_gather_mode;
@@ -1012,17 +1006,18 @@ namespace GLUP {
      *  variables similar to OpenGL's fixed functionality pipeline, and
      *  a set of Vertex Buffer Objects to emulate OpenGL's immediate mode.
      */
-    class Context {
+    class Context : public GLSL::PseudoFileProvider {
     public:
         /**
          * \brief Gets the GLSL declaration of GLUP uniform state.
          * \return a pointer to GLSL source code that declares 
          *  GLUP uniform state.
          * \details Can be used by client-code shaders that need to
-         *  have access to the GLUP uniform state.
+         *  have access to the GLUP uniform state. This corresponds
+         *  to the contents of GLUPGLSL/state.h
          */
         static const char* uniform_state_declaration();
-        
+
         /**
          * \brief Context constructor.
          */
@@ -1317,8 +1312,105 @@ namespace GLUP {
             return matrix_stack_[matrix].top();
         }
 
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/vertex_shader_preamble.h.
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_vertex_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/fragment_shader_preamble.h
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_fragment_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/geometry_shader_preamble.h
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_geometry_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/tess_control_shader_preamble.h
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_tess_control_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/tess_evaluation_shader_preamble.h
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_tess_evaluation_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+        
+        
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/toggles.h
+         * \details The toggles are generated in function of the parameters
+         *   of the previous call to setup_shaders_source_for_toggles()
+         *  current configuration defined by prepare_sources_for_toggles()
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_toggles_pseudo_file(
+            std::vector<GLSL::Source>& sources            
+        );
+
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/primitive.h
+         * \details The current primitive is defined by the argument of 
+         *  the previous call of setup_shaders_source_for_primitive().
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_primitive_pseudo_file(
+            std::vector<GLSL::Source>& sources            
+        );
+
+        /**
+         * \brief Gets the content of the virtual file
+         *  GLUP/current_profile/marching_cells.h
+         * \details The current primitive is defined by the argument of 
+         *  the previous call of setup_shaders_source_for_primitive().
+         * \param[in,out] sources where the content of the 
+         *  virtual file should be appended
+         */
+        virtual void get_marching_cells_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+        
     protected:
 
+        /**
+         * \brief Gets the MarchingCell that corresponds to the
+         *  current primitive.
+         * \details The current primitive is defined by the argument of 
+         *  the previous call of setup_shaders_source_for_primitive().
+         * \return A const reference to the current MarchingCell.
+         */
+        const MarchingCell& get_marching_cell() const;
+        
         /**
          * \brief Tests whether an OpenGL extension is supported.
          * \param[in] extension the name fo the extension to be tested.
@@ -1337,14 +1429,6 @@ namespace GLUP {
          */
         const char* glup_primitive_name(GLUPprimitive prim);
         
-        /**
-         * \brief Gets some GLSL declarations that depend on the current
-         *  profile.
-         * \return a const pointer to a string with the GLSL sources of
-         *  the profile-dependent declarations.
-         */
-        const char* profile_dependent_declarations();
-
         /**
          * \brief This function is called before starting to
          *  render primitives. It is called by begin(), draw_arrays()
@@ -1441,8 +1525,8 @@ namespace GLUP {
          * \param[in] glup_primitive the GLUP primitive.
          * \param[in] gl_primitive the GL primitive used by the implementation
          * \param[in] program the GLSL program used by the implementation
-         * \param[in] bind_attrib_loc_and_link if true, binds attribute location
-         *  and links the shader
+         * \param[in] bind_attrib_loc_and_link if true, binds attribute 
+         *  location and links the shader
          */
         virtual void set_primitive_info(
             GLUPprimitive glup_primitive, GLenum gl_primitive, GLuint program,
@@ -1485,17 +1569,12 @@ namespace GLUP {
          * \param[in] element_indices a pointer to an array of 
          *  nb_elements_per_glup_primitive integers that encode the
          *  indexing of one element. This array is replicated and shifted
-         *  to generate the element index buffer.
-         * \param[in] tex_coords an optional array of 
-         *   4*nb_vertices_per_primitive(glup_primitive) floats. This array
-         *   will be replicated to specify the texture coordinates used to
-         *   display the mesh superimposed when mesh is active.
+         *  to generate the element index buffer. 
          */
         virtual void set_primitive_info_immediate_index_mode(
             GLUPprimitive glup_primitive, GLenum gl_primitive, GLuint program,
             index_t nb_elements_per_glup_primitive,
-            index_t* element_indices,
-            GLUPfloat* tex_coords=0
+            index_t* element_indices
         );
         
         /**
@@ -1540,35 +1619,7 @@ namespace GLUP {
         virtual void update_base_picking_id(GLint new_value);
 
         /**
-         * \brief Gets the GLSL declaration of the functions that
-         *   query the toggles from the state.
-         * \details It can handle pre-determined fixed configurations
-         *   of toggles depending on the arguments of 
-         *   setup_shader_source_for_toggles(). In the initial configuration,
-         *   all the toggles are read from the state.
-         * \see setup_shaders_source_for_toggles()
-         * \return a const char pointer to the GLSL declaration.
-         */
-        const char* toggles_declaration() const {
-            return toggles_shader_source_.c_str();
-        }
-
-        /**
-         * \brief Gets the GLSL declaration of the functions that
-         *   query the known state of the toggles.
-         * \details The generated functions do not query the state,
-         *   and return true if the corresponding toggle is maybe
-         *   enabled (i.e., not known to be disabled).
-         * \see setup_shaders_source_for_toggles()
-         * \return a const char pointer to the GLSL declaration.
-         */
-        const char* potential_toggles_declaration() const {
-            return potential_toggles_shader_source_.c_str();
-        }
-
-        
-        /**
-         * \brief Gets the GLSL declaration  of the constant that
+         * \brief Gets the GLSL declaration of the constant that
          *  indicates the current primitive.
          * \return a string with the GLSL declaration.
          */
@@ -1588,6 +1639,17 @@ namespace GLUP {
             GLUPbitfield toggles_undetermined=0
         );
 
+        /**
+         * \brief Sets the configurable GLSL sources for a given 
+         *  primitive type.
+         * \details This function needs to be called before compiling
+         *  the GLSL program.
+         * \param[in] primitive the GLUP primitive
+         */
+        virtual void setup_shaders_source_for_primitive(
+            GLUPprimitive primitive
+        );
+        
         /**
          * \brief Sets the string that describes the settings of
          *  the toggles for a given configuration.
@@ -1643,7 +1705,6 @@ namespace GLUP {
          * \details This function is uses by VanillaGL and ES2.
          */
         void create_CPU_side_uniform_buffer();
-
 
         /**
          * \brief Binds the VBOs associated with the immediate
@@ -1769,6 +1830,16 @@ namespace GLUP {
                 glUseProgram(program);
             }
         }
+
+        /**
+         * \brief Creates a vertex buffer object with 16 bits integers
+         *  between 0 and 65535.
+         * \details It is used to emulate gl_VertexID if GLSL does not
+         *  support it.
+         */
+        void create_vertex_id_VBO();
+
+        static void initialize();
         
     protected:
         
@@ -1809,8 +1880,10 @@ namespace GLUP {
         GLuint user_program_;
         
         index_t toggles_config_;
-        std::string toggles_shader_source_;
-        std::string potential_toggles_shader_source_;
+        
+        GLUPprimitive primitive_source_;
+        GLUPbitfield toggles_source_state_;
+        GLUPbitfield toggles_source_undetermined_;
         
         bool precompile_shaders_;
 
@@ -1853,11 +1926,10 @@ namespace GLUP {
         GLuint latest_program_;
 
         /**
-         * \brief Indicates whether this context uses a buffer
-         *  to store texture coordinates for drawing the mesh.
-         * \details It is used by GLUP_context_ES2
+         * \brief A vertex buffer object with 65536 16 bits integers.
+         * \details It is used to emulate gl_VertexID in shaders.
          */
-        bool uses_mesh_tex_coord_;
+        GLuint vertex_id_VBO_;
     };
 
     /*********************************************************************/

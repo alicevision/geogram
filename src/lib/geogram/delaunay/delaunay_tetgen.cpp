@@ -106,9 +106,10 @@ namespace GEO {
                 &tetgen_args_, &tetgen_in_, &tetgen_out_
             );
         }
-        catch(...) {
+        catch(int error_code) {
             Logger::err("DelaunayTetgen")
                 << "Encountered a problem..." << std::endl;
+            throw Delaunay::InvalidInput(error_code);
         }
         set_arrays(
             index_t(tetgen_out_.numberoftetrahedra),
@@ -149,22 +150,22 @@ namespace GEO {
         // other ones).
         // AA: generate region tags for each shell.
 
+        std::string cmdline;
         if(refine_) {
-            char cmdline[500];
             if(CmdLine::get_arg_bool("dbg:tetgen")) {
-                sprintf(cmdline, "Vpnq%fYYAA", quality_);                
+                cmdline = "Vpnq" + String::to_string(quality_) + "YYAA";
             } else {
-                sprintf(cmdline, "Qpnq%fYYAA", quality_);
+                cmdline = "Qpnq" + String::to_string(quality_) + "YYAA";
             }
-            tetgen_args_.parse_commandline(cmdline);            
         } else {
-            if(CmdLine::get_arg_bool("dbg:tetgen")) {            
-                tetgen_args_.parse_commandline((char*)"VpnO0YYAA");
+            if(CmdLine::get_arg_bool("dbg:tetgen")) {
+                cmdline = "VpnO0YYAA";
             } else {
-                tetgen_args_.parse_commandline((char*)"QpnO0YYAA");   
+                cmdline = "QpnO0YYAA";
             }
         }
-
+        tetgen_args_.parse_commandline((char*)(cmdline.c_str()));
+        
         tetgen_in_.deinitialize();
         tetgen_in_.initialize();
         tetgen_in_.firstnumber = 0 ;
@@ -230,15 +231,27 @@ namespace GEO {
             F.holelist = nil ;
         }
 
+        bool there_was_an_error = false;
+        int error_code = 0;
+        
         try {
             GEO_3rdParty::tetrahedralize(
                 &tetgen_args_, &tetgen_in_, &tetgen_out_
             );
-        } catch(std::exception& e) {
+        } catch(...) {
+            there_was_an_error = true;
             Logger::err("DelaunayTetgen")
-                << "Encountered a problem..." << e.what() << std::endl;
+                << "Encountered a problem, relaunching in diagnose mode..."
+                << std::endl;
+            cmdline += "d";
+            tetgen_args_.parse_commandline((char*)(cmdline.c_str()));
+            try {
+                GEO_3rdParty::tetrahedralize(
+                    &tetgen_args_, &tetgen_in_, &tetgen_out_
+                );
+            } catch(...) {
+            }
         }
-
 
         // Deallocate the datastructures used by tetgen,
         // and disconnect them from tetgen,
@@ -262,6 +275,23 @@ namespace GEO {
         tetgen_in_.numberoffacets = 0;
         delete[] polygons;
 
+        if(there_was_an_error) {
+            InvalidInput error_report(error_code);
+            for(
+                std::set<int>::iterator it =
+                    tetgen_in_.isectfaces.begin();
+                it != tetgen_in_.isectfaces.end(); ++it) {
+                // Note: tetgen reports facets with
+                //  1-based indexing ([1...nf]) !!
+                error_report.invalid_facets.push_back(index_t(*it)-1);
+            }
+            Logger::err("DelaunayTetgen")
+                << "Found "
+                << error_report.invalid_facets.size()
+                << " facets with intersections." << std::endl;
+            throw(error_report);
+        }
+        
         // Determine which regions are incident to
         // the 'exterior' (neighbor = -1 or tet is adjacent to
         // a tet in region 0).

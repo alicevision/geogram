@@ -373,7 +373,7 @@ GLUPtextureType glupGetTextureType() {
 }
 
 void GLUP_API glupTextureMode(GLUPtextureMode mode) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GLUP();
     GLUP::current_context_->uniform_state().texture_mode.set(mode);    
 }
 
@@ -1336,7 +1336,9 @@ void glupUseProgram(GLUPuint program) {
 //
 // Note: I filed a bug report with the fix, was taken into
 // account by Emscripten devs, normally this workaround is
-// no longer needed with the latest version (to be checked).
+// no longer needed with the latest version.
+//   Fri Sep 23 13:33:53 CEST 2016: bug seems to be still there
+// in emscripten -> I keep this code for now.
 
 static void my_glGetVertexAttribiv(GLuint index, GLenum pname, GLint* params) {
     *params = EM_ASM_INT( {
@@ -1371,7 +1373,7 @@ namespace GLUP {
      *  Context_GLES.cpp)
      */
     bool vertex_array_emulate = false;
-
+    
     /**
      * \brief Stores the state of a vertex attribute
      *  binding.
@@ -1413,6 +1415,13 @@ namespace GLUP {
                 index, GL_VERTEX_ATTRIB_ARRAY_ENABLED, buff
             );
             enabled = buff[0];
+
+            //   With some webbrowsers, querying a vertex attrib array
+            // that is not enabled returns the default values instead
+            // of the actual values.
+            if(!enabled) {
+                glEnableVertexAttribArray(index);
+            }
             
             glGetVertexAttribiv(
                 index, GL_VERTEX_ATTRIB_ARRAY_SIZE, buff
@@ -1442,6 +1451,10 @@ namespace GLUP {
                 index, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, buff
             );
             buffer_binding = buff[0];
+
+            if(!enabled) {
+                glDisableVertexAttribArray(index);
+            }
         }
 
         /**
@@ -1670,14 +1683,6 @@ namespace GLUP {
 
 // TODO1: ArraysOES()/Arrays() switch based on OpenGL profile
 // (runtime) rather than GEO_OS_EMSCRIPTEN macro (compile-time)
-//
-// TODO2: glupVertexAttribPointer that stores the binding in
-// the currently bound emulated VAO (because query functions
-// do not work in certain browsers).
-//
-// NOTE: glup.h could '#define' glVertexAttribPointer as
-//  glupVertexAttribPointer (if GLUP_INTERNAL is not
-//  defined of course !)
 
 void glupGenVertexArrays(GLUPsizei n, GLUPuint* arrays) {
     if(GLUP::vertex_array_emulate) {
@@ -1736,6 +1741,5 @@ void glupBindVertexArray(GLUPuint array) {
 GLUPuint glupGetVertexArrayBinding() {
     return GLUP::vertex_array_binding;
 }
-
 
 /****************************************************************************/

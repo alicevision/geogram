@@ -106,6 +106,27 @@ namespace GEO {
         return std::logic_error::what();
     }
 
+
+    Delaunay::InvalidInput::InvalidInput(int code) :
+        logic_error("Invalid input for Delaunay"),
+        error_code(code) {
+    }
+
+    Delaunay::InvalidInput::InvalidInput(
+        const InvalidInput& rhs
+    ) :
+        std::logic_error(rhs),
+        error_code(rhs.error_code),
+        invalid_facets(rhs.invalid_facets) {
+    }
+    
+    Delaunay::InvalidInput::~InvalidInput() GEO_NOEXCEPT {
+    }
+    
+    const char* Delaunay::InvalidInput::what() const GEO_NOEXCEPT {
+        return std::logic_error::what();
+    }
+    
     /************************************************************************/
 
     void Delaunay::initialize() {

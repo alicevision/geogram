@@ -158,13 +158,6 @@ int main(int argc, char** argv) {
                     match = false;
                 }
             }
-
-/*
-            for(index_t j = 0; j < nb_neigh; ++j) {
-                std::cerr << neigh1[j] << '/' << neigh2[j] << " " ;
-            }
-            std::cerr << std::endl;
-*/
         }
         if(match) {
             Logger::out("NN Search")

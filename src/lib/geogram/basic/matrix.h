@@ -47,9 +47,7 @@
 #define GEOGRAM_BASIC_MATRIX
 
 #include <geogram/basic/common.h>
-#include <geogram/basic/assert.h>
-
-#include <iostream>
+#include <geogram/basic/vecg.h>
 
 /**
  * \file geogram/basic/matrix.h
@@ -118,11 +116,11 @@ namespace GEO {
      * \tparam FT type of the matrix elements
      * \tparam DIM dimension of the matrix
      */
-    template <class FT, index_t DIM>
+    template <index_t DIM, class FT>
     class Matrix {
     public:
         /** This matrix type */
-        typedef Matrix<FT, DIM> matrix_type;
+        typedef Matrix<DIM, FT> matrix_type;
 
         /** The type of the values */
         typedef FT value_type;
@@ -139,6 +137,21 @@ namespace GEO {
             load_identity();
         }
 
+        /**
+         * \brief Constructs a matrix from an array of values.
+         * \param[in] vals a const pointer to the DIM*DIM values,
+         *  coefficients of the same rows are consecutive in memory,
+         *  i is the slowly varying index and j the quickly varying one.
+         */
+        explicit Matrix(const FT* vals) {
+            for(index_t i = 0; i < DIM; i++) {
+                for(index_t j = 0; j < DIM; j++) {
+                    coeff_[i][j] = *vals;
+                    ++vals;
+                }
+            }
+        }
+        
         /**
          * \brief Gets the matrix dimension
          * \return the value of \p DIM
@@ -484,9 +497,9 @@ namespace GEO {
      * \return a reference to the output stream \p output
      * \relates Matrix
      */
-    template <class FT, index_t DIM>
+    template <index_t DIM, class FT>
     inline std::ostream& operator<< (
-        std::ostream& output, const Matrix<FT, DIM>& m
+        std::ostream& output, const Matrix<DIM, FT>& m
     ) {
         const char* sep = "";
         for(index_t i = 0; i < DIM; i++) {
@@ -507,9 +520,9 @@ namespace GEO {
      * \return a reference to the input stream \p input
      * \relates Matrix
      */
-    template <class FT, index_t DIM>
+    template <index_t DIM, class FT>
     inline std::istream& operator>> (
-        std::istream& input, Matrix<FT, DIM>& m
+        std::istream& input, Matrix<DIM, FT>& m
     ) {
         for(index_t i = 0; i < DIM; i++) {
             for(index_t j = 0; j < DIM; j++) {
@@ -534,9 +547,8 @@ namespace GEO {
      * \tparam DIM the dimension of the matrix
      * \relates Matrix
      */
-    template <class FT, index_t DIM>
-    inline
-    void mult(const Matrix<FT, DIM>& M, const FT* x, FT* y) {
+    template <index_t DIM, class FT> inline
+    void mult(const Matrix<DIM, FT>& M, const FT* x, FT* y) {
         for(index_t i = 0; i < DIM; i++) {
             y[i] = 0;
             for(index_t j = 0; j < DIM; j++) {
@@ -546,6 +558,31 @@ namespace GEO {
     }
 
     /************************************************************************/
+
+    /**
+     * \brief Computes a matrix vector product.
+     * \param[in] M the matrix
+     * \param[in] x the vector
+     * \return \p M times \p x
+     * \note This function copies the resulting vector, thus it is not
+     *  very efficient and should be only used when prototyping.
+     */
+    template <index_t DIM, class FT> inline
+    vecng<DIM,FT> operator*(
+        const Matrix<DIM, FT>& M, const vecng<DIM,FT>& x
+    ) {
+        vecng<DIM,FT> y;
+        for(index_t i = 0; i < DIM; i++) {
+            y[i] = 0;
+            for(index_t j = 0; j < DIM; j++) {
+                y[i] += M(i, j) * x[j];
+            }
+        }
+        return y;
+    }
+
+    /************************************************************************/
+    
 }
 
 #endif

@@ -11,13 +11,14 @@ configure_file(geogram_gfx.pc.in ${PROJECT_BINARY_DIR}/geogram_gfx${VORPALINE_VE
 
 add_subdirectory(third_party)
 
-aux_source_directories(SOURCES "Source Files"              .)
-aux_source_directories(SOURCES "Source Files\\glut_viewer" glut_viewer)
-aux_source_directories(SOURCES "Source Files\\glup_viewer" glup_viewer)
-aux_source_directories(SOURCES "Source Files\\api"         api)
-aux_source_directories(SOURCES "Source Files\\basic"       basic)
-aux_source_directories(SOURCES "Source Files\\mesh"        mesh)
-aux_source_directories(SOURCES "Source Files\\GLUP"        GLUP)
+aux_source_directories(SOURCES "Source Files"                .)
+aux_source_directories(SOURCES "Source Files\\glut_viewer"   glut_viewer)
+aux_source_directories(SOURCES "Source Files\\glup_viewer"   glup_viewer)
+aux_source_directories(SOURCES "Source Files\\api"           api)
+aux_source_directories(SOURCES "Source Files\\basic"         basic)
+aux_source_directories(SOURCES "Source Files\\mesh"          mesh)
+aux_source_directories(SOURCES "Source Files\\GLUP"          GLUP)
+aux_source_directories(SOURCES "Source Files\\GLUP\\shaders" GLUP/shaders/)
 
 add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)
 

@@ -2127,7 +2127,15 @@ namespace GEO {
             return result;
         }
 
-        void connect();
+        /**
+         * \brief Connects the cells.
+         * \details This creates as needed the connectors that represent 
+         *  non-conformal connections between a quadrilateral facet and 
+         *  two triangular facets.
+         * \param[in] remove_trivial_slivers if set, this removes the 
+         *  slivers that are adjacent to a quadrilateral facet.
+         */
+        void connect(bool remove_trivial_slivers = true);
 
         /**
          * \brief Replaces the surfacic part of this mesh

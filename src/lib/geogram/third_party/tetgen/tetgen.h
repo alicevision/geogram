@@ -352,8 +352,9 @@ public:
   int numberofvfacets;
   int numberofvcells;
 
-  // [Bruno] In diagnose mode, put the vertices of facets that intersect here
-  std::set<int> isectvertices;
+  // [Bruno] In diagnose mode, the indices of the facets that intersect are
+  // reported here.
+  std::set<int> isectfaces;
    
   // Variable (and callback functions) for meshing PSCs.
   void *geomhandle;
@@ -480,7 +481,7 @@ public:
     getedgesteinerparamonface = NULL;
     getsteineronface = NULL;
      
-    isectvertices.clear() ; // [Bruno]     
+    isectfaces.clear() ; // [Bruno]     
   }
 
   // Free the memory allocated in 'tetgenio'.  Note that it assumes that the 
@@ -594,7 +595,7 @@ public:
       }
       delete [] vcelllist;
     }
-    isectvertices.clear() ; // [Bruno]     
+    isectfaces.clear() ; // [Bruno]     
   }
 
   // Constructor & destructor.

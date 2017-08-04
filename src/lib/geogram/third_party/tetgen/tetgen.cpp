@@ -13704,6 +13704,10 @@ void tetgenmesh::unifysubfaces(face *f1, face *f2)
                pointmark(pa), pointmark(pb), pointmark(pc), shellmark(*f1));
     printf("  2nd: [%d, %d, %d] #%d\n",
                pointmark(pa), pointmark(pb), pointmark(pd), shellmark(*f2));
+    // [Bruno]
+    // Keep track of the facets that intersect.
+    in->isectfaces.insert(shellmark(*f1));
+    in->isectfaces.insert(shellmark(*f2));
     terminatetetgen(3);
   } else {
     printf("Found two duplicated facets.\n");
@@ -13711,6 +13715,10 @@ void tetgenmesh::unifysubfaces(face *f1, face *f2)
                pointmark(pa), pointmark(pb), pointmark(pc), shellmark(*f1));
     printf("  2nd: [%d, %d, %d] #%d\n",
                pointmark(pa), pointmark(pb), pointmark(pd), shellmark(*f2));
+    // [Bruno]
+    // Keep track of the facets that intersect.
+    in->isectfaces.insert(shellmark(*f1));
+    in->isectfaces.insert(shellmark(*f2));
     terminatetetgen(3);
   }
 
@@ -14583,6 +14591,10 @@ void tetgenmesh::interecursive(shellface** subfacearray, int arraysize,
         p6 = (point) sface2.sh[5];
         intersect = (enum interresult) tri_tri_inter(p1, p2, p3, p4, p5, p6);
         if (intersect == INTERSECT || intersect == SHAREFACE) {
+            // [Bruno]
+            // Keep track of the facets that intersect.
+            in->isectfaces.insert(shellmark(sface1));
+            in->isectfaces.insert(shellmark(sface2));
           if (!b->quiet) {
             if (intersect == INTERSECT) {
               printf("  Facet #%d intersects facet #%d at triangles:\n",
@@ -14590,13 +14602,6 @@ void tetgenmesh::interecursive(shellface** subfacearray, int arraysize,
               printf("    (%4d, %4d, %4d) and (%4d, %4d, %4d)\n",
                      pointmark(p1), pointmark(p2), pointmark(p3),
                      pointmark(p4), pointmark(p5), pointmark(p6));
-              // [Bruno]
-              // Keep track of the vertices of the triangles that intersect
-              in->isectvertices.insert(pointmark(p1)) ;
-              in->isectvertices.insert(pointmark(p2)) ;
-              in->isectvertices.insert(pointmark(p3)) ;
-              in->isectvertices.insert(pointmark(p4)) ;
-              in->isectvertices.insert(pointmark(p5)) ;
             } else {
               printf("  Facet #%d duplicates facet #%d at triangle:\n",
                      shellmark(sface1), shellmark(sface2));
@@ -19715,18 +19720,20 @@ int tetgenmesh::recoverfacebyflips(point pa, point pb, point pc,
                   // Check if [e,d] is a segment.
                   if (issubseg(flipedge)) {
                     if (!b->quiet) {
-                      face checkseg;
-                      tsspivot1(flipedge, checkseg);
-                      printf("Found a segment and a subface intersect.\n");
-                      pd = farsorg(checkseg);
-                      pe = farsdest(checkseg);
-                      printf("  1st: [%d, %d] %d.\n",  pointmark(pd), 
-                             pointmark(pe), shellmark(checkseg)); 
-                      printf("  2nd: [%d,%d,%d] %d\n", pointmark(pa), 
-                        pointmark(pb), pointmark(pc), shellmark(*searchsh));
-                        }
+                        face checkseg;
+                        tsspivot1(flipedge, checkseg);
+                        printf("Found a segment and a subface intersect.\n");
+                        pd = farsorg(checkseg);
+                        pe = farsdest(checkseg);
+                        printf("  1st: [%d, %d] %d.\n",  pointmark(pd), 
+                               pointmark(pe), shellmark(checkseg)); 
+                        printf("  2nd: [%d,%d,%d] %d\n", pointmark(pa), 
+                               pointmark(pb), pointmark(pc), shellmark(*searchsh));
+                    }
+                    // [Bruno] Keep track of intersecting facets.
+                    in->isectfaces.insert(shellmark(*searchsh));
                     terminatetetgen(3);
-                          }
+                  }
                 }
                 // Try to flip the edge [d,e].
                 success1 = (removeedgebyflips(&flipedge, &fc) == 2);
@@ -21688,6 +21695,18 @@ void tetgenmesh::recoverboundary(clock_t& tv)
   misseglist = new arraypool(sizeof(face), 8);
   bdrysteinerptlist = new arraypool(sizeof(point), 8);
 
+  // [Bruno] protected all the body of the function in
+  // a big try/catch block, to make sure that dynamically
+  // allocated variables are free-ed before leaving the
+  // function when an exception is triggered (e.g. intersecting
+  // constrained facets).
+  // Note: misseglist, misshlist and bdrysteinerptlist can probably
+  // be declared as local variables (instead of allocated on the heap),
+  // this will make everything easier (but I do not know enough the
+  // rest of the code to do that...)
+  
+  try {
+  
   // In random order.
   subsegs->traversalinit();
   for (i = 0; i < subsegs->items; i++) {
@@ -21972,6 +21991,15 @@ void tetgenmesh::recoverboundary(clock_t& tv)
   totalworkmemory += (misseglist->totalmemory + misshlist->totalmemory +
                       bdrysteinerptlist->totalmemory);
 
+  // [Bruno] added this catch block to delete dynamically allocated
+  // variables before "re-throwing" the exception.
+  } catch(...) {
+      delete bdrysteinerptlist;
+      delete misseglist;
+      delete misshlist;
+      throw;
+  }
+  
   delete bdrysteinerptlist;
   delete misseglist;
   delete misshlist;

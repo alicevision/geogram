@@ -46,6 +46,56 @@
 #include <geogram/basic/geofile.h>
 #include <geogram/basic/string.h>
 #include <geogram/basic/logger.h>
+#include <geogram/third_party/pstdint.h>
+
+
+/* Using portable printf modifier for 64 bit ints from pstdint.h */
+#include <geogram/third_party/pstdint.h> 
+#define INT64_T_FMT "%" PRINTF_INT64_MODIFIER "d"
+
+namespace {
+    
+    void skip_comments(FILE* f) {
+        while(char(fgetc(f)) != '\n');
+    }
+
+
+    std::string encode(const std::string& s) {
+        std::string result;
+        for(size_t i=0; i<s.size(); ++i) {
+            switch(s[i]) {
+            case '\\':
+                result.push_back('\\');
+                result.push_back('\\');                
+                break;
+            case '\"':
+                result.push_back('\\');
+                result.push_back('\"');
+                break;
+            default:
+                result.push_back(s[i]);
+            }
+        }
+        return result;
+    }
+
+    std::string decode(const std::string& s) {
+        std::string result;
+        size_t i=0;
+        while(i < s.size()) {
+            if(s[i] == '\\') {
+                ++i;
+                if(i >= s.size()) {
+                    break;
+                }
+            }
+            result.push_back(s[i]);                
+            ++i;
+        }
+        return result;
+    }
+    
+}
 
 namespace GEO {
     
@@ -56,21 +106,58 @@ namespace GEO {
     
     /**************************************************************/
 
+    std::map<std::string, GeoFile::AsciiAttributeSerializer>
+       GeoFile::ascii_attribute_read_;
+
+    std::map<std::string, GeoFile::AsciiAttributeSerializer>
+       GeoFile::ascii_attribute_write_;
+
+    void GeoFile::register_ascii_attribute_serializer(
+        const std::string& type_name,
+        AsciiAttributeSerializer read,
+        AsciiAttributeSerializer write
+    ) {
+        geo_assert(
+            ascii_attribute_read_.find(type_name) ==
+            ascii_attribute_read_.end()
+        );
+        ascii_attribute_read_[type_name] = read;
+        geo_assert(
+            ascii_attribute_write_.find(type_name) ==
+            ascii_attribute_write_.end()
+        );
+        ascii_attribute_write_[type_name] = write;
+    }
+
+    
+    
+    
+    /**************************************************************/
+    
     GeoFile::GeoFile(const std::string& filename) :
         filename_(filename),
         file_(nil),
+        ascii_(false),
+        ascii_file_(nil),
         current_chunk_class_("0000"),
         current_chunk_size_(0),
         current_chunk_file_pos_(0) {
+        ascii_ = String::string_ends_with(filename, "_ascii");
     }
     
     GeoFile::~GeoFile() {
         if(file_ != nil) {
             gzclose(file_);
         }
+        if(ascii_file_ != nil) {
+            fclose(ascii_file_);
+        }
     }
 
     void GeoFile::check_chunk_size() {
+        if(ascii_) {
+            return;
+        }
         long chunk_size = gztell(file_) - current_chunk_file_pos_;
         if(current_chunk_size_ != chunk_size) {
             throw GeoFileException(
@@ -90,32 +177,51 @@ namespace GEO {
                                     << std::endl;
         }
     }
-    
+
     void GeoFile::read_chunk_header() {
         current_chunk_class_ = read_chunk_class();
-        if(gzeof(file_)) {
-            gzclose(file_);
-            file_ = nil;
-            current_chunk_size_ = 0;
-            current_chunk_class_ = "EOFL";
-            return;
+        if(ascii_) {
+            if(feof(ascii_file_)) {
+                fclose(ascii_file_);
+                ascii_file_ = nil;
+                current_chunk_size_ = 0;
+                current_chunk_class_ = "EOFL";
+                return;
+            }
+        } else {
+            if(gzeof(file_)) {
+                gzclose(file_);
+                file_ = nil;
+                current_chunk_size_ = 0;
+                current_chunk_class_ = "EOFL";
+                return;
+            }
+            current_chunk_size_ = ascii_ ? 0 : long(read_size());
+            current_chunk_file_pos_ = ascii_ ? 0 : gztell(file_);
         }
-        current_chunk_size_ = long(read_size());
-        current_chunk_file_pos_ = gztell(file_);
     }
 
     void GeoFile::write_chunk_header(
         const std::string& chunk_class, size_t size
     ) {
         write_chunk_class(chunk_class);
-        write_size(size);
-        current_chunk_file_pos_ = gztell(file_);
+        if(!ascii_) {
+            write_size(size);
+        }
+        current_chunk_file_pos_ = ascii_ ? 0 : gztell(file_);
         current_chunk_class_ = chunk_class;
         current_chunk_size_ = long(size);
     }
     
     index_t GeoFile::read_int() {
         Numeric::uint32 result=0;
+        if(ascii_) {
+            if(fscanf(ascii_file_, "%u", &result) == 0) {
+                throw GeoFileException("Could not read integer from file");
+            }
+            skip_comments(ascii_file_);
+            return result;
+        }
         int check = gzread(file_, &result, sizeof(Numeric::uint32));
         if(check == 0 && gzeof(file_)) {
             result = Numeric::uint32(-1);
@@ -127,8 +233,20 @@ namespace GEO {
         return result;
     }
     
-    void GeoFile::write_int(index_t x_in) {
+    void GeoFile::write_int(index_t x_in, const char* comment) {
         Numeric::uint32 x = Numeric::uint32(x_in);
+        if(ascii_) {
+            if(comment == nil) {
+                if(fprintf(ascii_file_,"%u\n",x) ==0) {
+                    throw GeoFileException("Could not write integer to file");
+                }
+            } else {
+                if(fprintf(ascii_file_,"%u # this is %s\n",x,comment) ==0) {
+                    throw GeoFileException("Could not write integer to file");
+                }
+            }
+            return;
+        }
         int check = gzwrite(file_, &x, sizeof(Numeric::uint32));
         if(size_t(check) != sizeof(Numeric::uint32)) {
             throw GeoFileException("Could not write integer to file");
@@ -136,7 +254,29 @@ namespace GEO {
     }
 
     std::string GeoFile::read_string() {
-        std::string result;
+        std::string result;        
+        if(ascii_) {
+            int cur;
+            while(char(cur = fgetc(ascii_file_)) != '\"') {
+                if(cur == EOF) {
+                    throw GeoFileException(
+                        "Could not read string data from file"
+                    );
+                }
+            }
+            while(char(cur = fgetc(ascii_file_)) != '\"') {
+                if(cur == EOF) {
+                    throw GeoFileException(
+                        "Could not read string data from file"
+                    );
+                }
+                result.push_back(char(cur));
+            }
+            skip_comments(ascii_file_);
+            result = decode(result);
+            return result;
+        }
+
         index_t len=read_int();
         result.resize(len);
         if(len != 0) {
@@ -148,7 +288,19 @@ namespace GEO {
         return result;
     }
     
-    void GeoFile::write_string(const std::string& str) {
+    void GeoFile::write_string(const std::string& str, const char* comment) {
+        if(ascii_) {
+            if(comment == nil) {
+                if(fprintf(ascii_file_, "\"%s\"\n", encode(str).c_str()) == 0) {
+                    throw GeoFileException("Could not write string data to file");
+                }
+            } else {
+                if(fprintf(ascii_file_, "\"%s\" # this is %s\n", encode(str).c_str(), comment) == 0) {
+                    throw GeoFileException("Could not write string data to file");
+                }
+            }
+            return;
+        }
         index_t len = index_t(str.length());
         write_int(len);
         if(len != 0) {
@@ -160,6 +312,13 @@ namespace GEO {
     }
 
     size_t GeoFile::read_size() {
+        if(ascii_) {
+            int64_t x = 0;
+            if(fscanf(ascii_file_, INT64_T_FMT "\n", &x) == 0) {
+                throw GeoFileException("Could not write size to file");                
+            }
+            return size_t(x);
+        }
         Numeric::uint64 result=0;
         int check = gzread(file_, &result, sizeof(Numeric::uint64));
         if(check == 0 && gzeof(file_)) {
@@ -174,6 +333,12 @@ namespace GEO {
     
     void GeoFile::write_size(size_t x_in) {
         Numeric::uint64 x = Numeric::uint64(x_in);
+        if(ascii_) {
+            if(fprintf(ascii_file_, INT64_T_FMT "\n", int64_t(x_in)) == 0) {
+                throw GeoFileException("Could not write size to file");                
+            }
+            return;
+        }
         int check = gzwrite(file_, &x, sizeof(Numeric::uint64));
         if(size_t(check) != sizeof(Numeric::uint64)) {
             throw GeoFileException("Could not write size to file");
@@ -182,6 +347,31 @@ namespace GEO {
 
     std::string GeoFile::read_chunk_class() {
         std::string result;
+        if(ascii_) {
+            int cur;
+            while(char(cur = fgetc(ascii_file_)) != '[') {
+                if(cur == EOF) {
+                    result = "EOFL";
+                    return result;
+                }
+            }
+            for(index_t i=0; i<4; ++i) {
+                cur = fgetc(ascii_file_);
+                if(cur == EOF) {
+                    throw GeoFileException(
+                        "Could not read chunk class from file"
+                    );                        
+                }
+                result.push_back(char(cur));
+            }
+            cur = fgetc(ascii_file_);
+            if(char(cur) != ']') {
+                throw GeoFileException(
+                    "Could not read chunk class from file"
+                );                        
+            }
+            return result;
+        }
         result.resize(4,'\0');
         int check = gzread(file_, &result[0], 4);
         if(check == 0 && gzeof(file_)) {
@@ -196,6 +386,12 @@ namespace GEO {
 
     void GeoFile::write_chunk_class(const std::string& chunk_class) {
         geo_assert(chunk_class.length() == 4);
+        if(ascii_) {
+            if(fprintf(ascii_file_, "[%s]\n", chunk_class.c_str()) == 0) {
+                throw GeoFileException("Could not write chunk class to file");
+            }
+            return;
+        }
         int check = gzwrite(file_, &chunk_class[0], 4);
         if(check != 4) {
             throw GeoFileException("Could not write chunk class to file");
@@ -203,7 +399,7 @@ namespace GEO {
     }
 
     void GeoFile::write_string_array(const std::vector<std::string>& strings) {
-        write_int(index_t(strings.size()));
+        write_int(index_t(strings.size()),"the number of strings");
         for(index_t i=0; i<strings.size(); ++i) {
             write_string(strings[i]);
         }
@@ -239,10 +435,17 @@ namespace GEO {
         current_attribute_set_(nil),
         current_attribute_(nil)
     {
-        check_zlib_version();
-        file_ = gzopen(filename.c_str(), "rb");
-        if(file_ == nil) {
-            throw GeoFileException("Could not open file: " + filename);
+        if(ascii_) {
+            ascii_file_ = fopen(filename.c_str(), "rb");
+            if(ascii_file_ == nil) {
+                throw GeoFileException("Could not open file: " + filename);
+            }
+        } else {
+            check_zlib_version();
+            file_ = gzopen(filename.c_str(), "rb");
+            if(file_ == nil) {
+                throw GeoFileException("Could not open file: " + filename);
+            }
         }
 
         read_chunk_header();
@@ -270,8 +473,12 @@ namespace GEO {
         // means that the client code does not want to
         // read the current chunk, then it needs to be
         // skipped.
-        if(gztell(file_) != current_chunk_file_pos_ + current_chunk_size_) {
-            skip_chunk();
+        if(ascii_) {
+            // TODO: skip chunk mechanism for ASCII
+        } else {
+            if(gztell(file_) != current_chunk_file_pos_ + current_chunk_size_) {
+                skip_chunk();
+            }
         }
 
         read_chunk_header();
@@ -335,6 +542,31 @@ namespace GEO {
 
     void InputGeoFile::read_attribute(void* addr) {
         geo_assert(current_chunk_class_ == "ATTR");
+        if(ascii_) {
+            AsciiAttributeSerializer read_attribute_func =
+                ascii_attribute_read_[current_attribute_->element_type];
+            if(read_attribute_func == nil) {
+                throw GeoFileException(
+                    "No ASCII serializer for type:" +
+                    current_attribute_->element_type
+                );                
+            }
+            bool result = (*read_attribute_func)(
+                ascii_file_,
+                Memory::pointer(addr),
+                index_t(
+                    current_attribute_set_->nb_items*
+                    current_attribute_->dimension
+                )
+            );
+            if(!result) {
+                throw GeoFileException(
+                    "Could not read attribute " + current_attribute_->name +
+                    " in set " + current_attribute_set_->name
+                );
+            }
+            return;
+        }
         size_t size =
             size_t(current_attribute_->element_size) *
             size_t(current_attribute_->dimension) *
@@ -352,6 +584,10 @@ namespace GEO {
     }
 
     void InputGeoFile::skip_chunk() {
+        if(ascii_) {
+            // TODO
+            return;
+        }
         gzseek(
             file_,
             current_chunk_size_ + current_chunk_file_pos_,
@@ -377,18 +613,27 @@ namespace GEO {
     OutputGeoFile::OutputGeoFile(
         const std::string& filename, index_t compression_level
     ) : GeoFile(filename) {
-        check_zlib_version();        
-        if(compression_level == 0) {
-            file_ = gzopen(filename.c_str(), "wb");
+
+        if(ascii_) {
+            ascii_file_ = fopen(filename.c_str(), "wb");
+            if(ascii_file_ == nil) {
+                throw GeoFileException("Could not create file: " + filename);
+            }
         } else {
-            file_ = gzopen(
-                filename.c_str(),
-                ("wb" + String::to_string(compression_level)).c_str()
-            );
+            check_zlib_version();        
+            if(compression_level == 0) {
+                file_ = gzopen(filename.c_str(), "wb");
+            } else {
+                file_ = gzopen(
+                    filename.c_str(),
+                    ("wb" + String::to_string(compression_level)).c_str()
+                );
+            }
+            if(file_ == nil) {
+                throw GeoFileException("Could not create file: " + filename);
+            }
         }
-        if(file_ == nil) {
-            throw GeoFileException("Could not create file: " + filename);
-        }
+        
         std::string magic = "GEOGRAM";
         std::string version = "1.0";
         write_chunk_header("HEAD", string_size(magic) + string_size(version));
@@ -422,8 +667,8 @@ namespace GEO {
             sizeof(index_t)
         );
         
-        write_string(attribute_set_name);
-        write_int(nb_items);
+        write_string(attribute_set_name, "the name of this attribute set");
+        write_int(nb_items, "the number of items in this attribute set");
 
         check_chunk_size();
     }
@@ -456,15 +701,32 @@ namespace GEO {
             data_size
         );
         
-        write_string(attribute_set_name);
-        write_string(attribute_name);
-        write_string(element_type);
-        write_int(index_t(element_size));
-        write_int(dimension);
+        write_string(
+            attribute_set_name,
+            "the name of the attribute set this attribute belongs to"
+        );
+        write_string(attribute_name, "the name of this attribute");
+        write_string(element_type, "the type of the elements in this attribute");
+        write_int(index_t(element_size), "the size of an element (in bytes)");
+        write_int(dimension, "the number of elements per item");
 
-        int check = gzwrite(file_, data, index_t(data_size));
-        if(size_t(check) != data_size) {
-            throw GeoFileException("Could not write attribute data");
+        if(ascii_) {
+            AsciiAttributeSerializer write_attribute_func =
+                ascii_attribute_write_[element_type];
+            if(write_attribute_func == nil) {
+                throw GeoFileException("No ASCII serializer for type:"+element_type);                
+            }
+            bool result = (*write_attribute_func)(
+                ascii_file_, Memory::pointer(data), index_t(data_size/element_size)
+            );
+            if(!result) {
+                throw GeoFileException("Could not write attribute data");                
+            }
+        } else {
+            int check = gzwrite(file_, data, index_t(data_size));
+            if(size_t(check) != data_size) {
+                throw GeoFileException("Could not write attribute data");
+            }
         }
 
         check_chunk_size();

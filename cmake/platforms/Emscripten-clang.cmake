@@ -51,7 +51,8 @@ endif()
 #https://kripken.github.io/emscripten-site/docs/optimizing/Optimizing-Code.html
 # Note: they are added to CMAKE CXX and C flags later on, because the
 # way add_flags() works may remove the second "-s" argument.
-set(EM_FLAGS -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=256000000 )
+set(EM_FLAGS_RELEASE -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=256000000 )
+set(EM_FLAGS_DEBUG -O2 -g -s USE_GLFW=3 -s TOTAL_MEMORY=256000000 )
 
 
 # Profiler compilation flags
@@ -99,11 +100,11 @@ endif()
 # Thus we do that here, making sure that there is no
 # call to add_flags() after.
 
-add_flags_no_remove_duplicates(CMAKE_CXX_FLAGS_RELEASE ${EM_FLAGS})
-add_flags_no_remove_duplicates(CMAKE_C_FLAGS_RELEASE ${EM_FLAGS})
+add_flags_no_remove_duplicates(CMAKE_CXX_FLAGS_RELEASE ${EM_FLAGS_RELEASE})
+add_flags_no_remove_duplicates(CMAKE_C_FLAGS_RELEASE ${EM_FLAGS_RELEASE})
 
-add_flags_no_remove_duplicates(CMAKE_CXX_FLAGS_DEBUG ${EM_FLAGS})
-add_flags_no_remove_duplicates(CMAKE_C_FLAGS_DEBUG ${EM_FLAGS})
+add_flags_no_remove_duplicates(CMAKE_CXX_FLAGS_DEBUG ${EM_FLAGS_DEBUG})
+add_flags_no_remove_duplicates(CMAKE_C_FLAGS_DEBUG ${EM_FLAGS_DEBUG})
 
 # Reset the warning level for third parties
 function(vor_reset_warning_level)

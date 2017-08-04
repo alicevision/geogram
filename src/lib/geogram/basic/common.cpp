@@ -57,6 +57,10 @@
 #include <sstream>
 #include <iomanip>
 
+#ifdef GEO_OS_EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 namespace GEO {
 
     void initialize() {
@@ -99,7 +103,25 @@ namespace GEO {
         geo_register_attribute_type<double>("double");
 
         geo_register_attribute_type<vec2>("vec2");
-        geo_register_attribute_type<vec3>("vec3");                
+        geo_register_attribute_type<vec3>("vec3");
+
+#ifdef GEO_OS_EMSCRIPTEN
+        
+        // This mounts the local file system when an emscripten-compiled
+        // program runs in node.js.
+        // Current working directory is mounted in /working,
+        // and root directory is mounted in /root
+        
+        EM_ASM(
+            if(typeof module !== 'undefined' && this.module !== module) {
+                FS.mkdir('/working');
+                FS.mkdir('/root');            
+                FS.mount(NODEFS, { root: '.' }, '/working');
+                FS.mount(NODEFS, { root: '/' }, '/root');
+            }
+        );
+#endif        
+        
     }
 
     void terminate() {

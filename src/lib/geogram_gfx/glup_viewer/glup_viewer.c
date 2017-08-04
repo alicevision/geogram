@@ -1416,6 +1416,7 @@ void glup_viewer_main_loop(int argc, char** argv) {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     }
 
+    
     if(glup_viewer_get_arg_bool("gfx:GL_debug")) {
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);            
     }

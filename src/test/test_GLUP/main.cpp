@@ -758,7 +758,6 @@ namespace {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glupTextureType(GLUP_TEXTURE_2D);
-            glupTextureMode(GLUP_TEXTURE_REPLACE);
         }
         
         glupMatrixMode(GLUP_TEXTURE_MATRIX);

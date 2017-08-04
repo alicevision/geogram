@@ -45,6 +45,7 @@
 
 #include <geogram_gfx/basic/common.h>
 #include <geogram_gfx/basic/GLSL.h>
+#include <geogram_gfx/GLUP/GLUP_context.h>
 #include <geogram/basic/logger.h>
 #include <cstdlib>
 
@@ -62,7 +63,8 @@ namespace GEO {
 #endif            
             GL::initialize();
             GLSL::initialize();
-            atexit(GEO::Graphics::terminate);            
+            
+            atexit(GEO::Graphics::terminate);   
         }
 
         void terminate() {

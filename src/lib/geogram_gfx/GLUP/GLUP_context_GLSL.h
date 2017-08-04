@@ -129,10 +129,41 @@ namespace GLUP {
         virtual void setup_GLUP_CONNECTORS();
 
         /**
-         * \brief Indicates whether the so-named extension is
-         *  supported.
+         * \copydoc Context::get_vertex_shader_preamble_pseudo_file()
          */
-        bool GL_ARB_conservative_depth_;
+        virtual void get_vertex_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \copydoc Context::get_fragment_shader_preamble_pseudo_file()
+         */
+        virtual void get_fragment_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \copydoc Context::get_geometry_shader_preamble_pseudo_file()
+         */
+        virtual void get_geometry_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \copydoc Context::get_primitive_pseudo_file()
+         */
+        virtual void get_primitive_pseudo_file(
+            std::vector<GLSL::Source>& sources            
+        );
+
+        /**
+         * \brief Deduces from the current primitive_source_ the
+         *  input and output layout that should be used by the
+         *  geometry shader.
+         */
+        virtual void get_geometry_shader_layout(
+            std::vector<GLSL::Source>& sources                        
+        );
     };
 
     /*********************************************************************/
@@ -147,6 +178,12 @@ namespace GLUP {
      */
     class Context_GLSL440 : public Context_GLSL150 {
     public:
+
+        /**
+         * \brief Context_GLSL440 constructor.
+         */
+        Context_GLSL440();
+        
         /**
          * \copydoc Context::profile_name()
          */
@@ -162,6 +199,50 @@ namespace GLUP {
          * \copydoc Context::setup_GLUP_PYRAMIDS()
          */
         virtual void setup_GLUP_PYRAMIDS();
+
+        /**
+         * \copydoc Context::get_vertex_shader_preamble_pseudo_file()
+         */
+        virtual void get_vertex_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \copydoc Context::get_fragment_shader_preamble_pseudo_file()
+         */
+        virtual void get_fragment_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \copydoc Context::get_geometry_shader_preamble_pseudo_file()
+         */
+        virtual void get_geometry_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+
+        /**
+         * \copydoc Context::get_tess_evaluation_shader_preamble_pseudo_file()
+         */
+        virtual void get_tess_evaluation_shader_preamble_pseudo_file(
+            std::vector<GLSL::Source>& sources
+        );
+        
+        /**
+         * \copydoc Context::get_primitive_pseudo_file()
+         */
+        virtual void get_primitive_pseudo_file(
+            std::vector<GLSL::Source>& sources            
+        );
+
+        /**
+         * \copydoc Context_GLSL150::get_geometry_shader_layout()
+         */
+        virtual void get_geometry_shader_layout(
+            std::vector<GLSL::Source>& sources                        
+        );
+        
+        bool use_tessellation_;
     };
 
     /*********************************************************************/

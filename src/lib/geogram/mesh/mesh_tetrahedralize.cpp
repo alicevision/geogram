@@ -98,7 +98,26 @@ namespace GEO {
         delaunay->set_refine(refine);
         delaunay->set_quality(quality);
         delaunay->set_constraints(&M);
-        delaunay->set_vertices(0,nil); // No additional vertex
+
+        try {
+            delaunay->set_vertices(0,nil); // No additional vertex
+        } catch(const Delaunay::InvalidInput& error_report) {
+            if(CmdLine::get_arg_bool("dbg:tetgen")) {
+                Logger::err("Tetgen") << "Reporting intersections in tetgen_intersections.obj"
+                                      << std::endl;
+                std::ofstream out("tetgen_intersections.obj");
+                index_t cur = 1;
+                for(index_t i=0; i<error_report.invalid_facets.size(); ++i) {
+                    index_t f = error_report.invalid_facets[i];
+                    for(index_t lv=0; lv<3; ++lv) {
+                        index_t v = M.facets.vertex(f,lv);
+                        out << "v " << vec3(M.vertices.point_ptr(v)) << std::endl;
+                    }
+                    out << "f " << cur << " " << cur+1 << " " << cur+2 << std::endl;
+                    cur += 3;
+                }
+            }
+        }
 
         vector<double> pts(delaunay->nb_vertices() * 3);
         vector<index_t> tet2v(delaunay->nb_cells() * 4);
@@ -117,6 +136,7 @@ namespace GEO {
         M.cells.assign_tet_mesh(3, pts, tet2v, true);
         M.cells.connect();
         M.show_stats("TetMeshing");
+
         return true;
     }
     

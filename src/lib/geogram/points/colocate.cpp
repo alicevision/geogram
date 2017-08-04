@@ -225,6 +225,10 @@ namespace GEO {
             index_t stride,
             const std::string& nn_algo
         ) {
+            if(nb_points == 0) {
+                return 0;
+            }
+            
             if(stride == 0) {
                 stride = dim;
             }
@@ -268,6 +272,10 @@ namespace GEO {
             vector<index_t>& old2new,
             index_t stride
         ) {
+            if(nb_points == 0) {
+                return 0;
+            }
+            
             ComparePoints compare_points(points, dim, stride);
             vector<index_t> sorted_indices(nb_points);
             for(index_t i = 0; i < nb_points; i++) {

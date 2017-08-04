@@ -47,9 +47,7 @@
 #define GEOGRAM_BASIC_GEOMETRY
 
 #include <geogram/basic/common.h>
-#include <geogram/basic/vecg.h>
 #include <geogram/basic/matrix.h>
-#include <geogram/basic/numeric.h>
 
 /**
  * \file geogram/basic/geometry.h
@@ -105,19 +103,19 @@ namespace GEO {
      * \brief Represents a 2x2 matrix.
      * \details Syntax is (mostly) compatible with GLSL.
      */
-    typedef Matrix<Numeric::float64, 2> mat2;
+    typedef Matrix<2, Numeric::float64> mat2;
 
     /**
      * \brief Represents a 3x3 matrix.
      * \details Syntax is (mostly) compatible with GLSL.
      */
-    typedef Matrix<Numeric::float64, 3> mat3;
+    typedef Matrix<3, Numeric::float64> mat3;
 
     /**
      * \brief Represents a 4x4 matrix.
      * \details Syntax is (mostly) compatible with GLSL.
      */
-    typedef Matrix<Numeric::float64, 4> mat4;
+    typedef Matrix<4, Numeric::float64> mat4;
 
     /************************************************************************/
 

@@ -28,6 +28,8 @@ icosa.obj.off
 icosa.obj.geogram
     Run Test
 
+icosa.obj.geogram_ascii
+    Run Test
 
 # Note:
 # STL format does not save the connections between facets

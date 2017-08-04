@@ -44,7 +44,9 @@
  */
 
 #include <geogram_gfx/GLUP/GLUP_context.h>
+#include <geogram_gfx/GLUP/shaders/embedded_shaders.h>
 #include <geogram_gfx/basic/GLSL.h>
+
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/progress.h>
 #include <geogram/basic/logger.h>
@@ -59,8 +61,6 @@
 //  layout(early_fragment_tests) in;
 //  layout(depth_greater) out float gl_FragDepth;
 
-// TODO: implanter GLUP_POLYGON? (ou pas..., peut-etre plutot GLUP_TRIANGLE_FAN)
-
 // TODO: j'ai beaucoup de doutes sur matrice / transpose(matrice), dans le
 //  code de GLUP.cpp j'ai plein de corrections "a posteriori", en particulier
 //  - dans toutes les fonctions qui creent des matrice (transposees apres)
@@ -68,12 +68,9 @@
 //  experimentalement c'est bon (fait la meme chose qu'OpenGL), mais faudrait
 //  mieux piger tout ca...
 
-// TODO: clarifier dans les shaders quels sont les sommets en
-//  "world coordinates" et ceux qui sont transform\'es. 
-
-// TODO: unifier les "mots clefs reserves" de GLUP dans les shaders GLSL
-//  (pour le moment c'est vraiment pas coherent, ca va etre dur de s'y
-//   retrouver...)
+// TODO: a-t-on encore besoin de normal_matrix ? Non (mais je le laisse quand
+// meme pour le moment...). A enlever quand meme dans GLUPES qui tourne
+// potentiellement sur telephone...
 
 namespace GLUP {
     using namespace GEO;
@@ -202,86 +199,6 @@ namespace GLUP {
         3, // GLUP_PYRAMIDS   =7,
         3  // GLUP_CONNECTORS =8        
     };
-    
-    static const char* GLUP_uniform_state_source = 
-        "  layout(shared)                              \n"
-        "  uniform GLUPStateBlock {                    \n"
-        "                                              \n"        
-        "     bool vertex_colors_enabled;              \n"        
-        "                                              \n"        
-        "     vec4  front_color;                       \n"
-        "     vec4  back_color;                        \n"
-        "                                              \n"        
-        "     bool draw_mesh_enabled;                  \n"
-        "     vec4  mesh_color;                        \n"
-        "     float mesh_width;                        \n"
-        "                                              \n"        
-        "     bool lighting_enabled;                   \n"
-        "     vec3 light_vector;                       \n"
-        "     vec3 light_half_vector;                  \n"
-        "                                              \n"        
-        "     bool texturing_enabled;                  \n"
-        "     bool indirect_texturing_enabled;         \n"             
-        "     int  texture_mode;                       \n"
-        "     int  texture_type;                       \n"        
-        "                                              \n"        
-        "     float cells_shrink;                      \n"
-        "                                              \n"        
-        "     bool picking_enabled;                    \n"         
-        "     int   picking_mode;                      \n"
-        "     int   picking_id;                        \n" 
-        "     int   base_picking_id;                   \n" 
-        "                                              \n"
-        "     bool clipping_enabled;                   \n"
-        "     int   clipping_mode;                     \n"
-        "     vec4  clip_plane;                        \n"
-        "     vec4  world_clip_plane;                  \n"
-                                         
-        "                                              \n"        
-        "     mat4 modelviewprojection_matrix;         \n"
-        "     mat4 modelview_matrix;                   \n"
-        "     mat3 normal_matrix;                      \n"
-        "     mat4 texture_matrix;                     \n"
-
-        "     float point_size;                        \n"
-                     
-        "  } GLUP;                                     \n"
-        "                                              \n"
-        "  const int GLUP_CLIP_STANDARD         = 0;   \n"
-        "  const int GLUP_CLIP_WHOLE_CELLS      = 1;   \n"
-        "  const int GLUP_CLIP_STRADDLING_CELLS = 2;   \n"
-        "  const int GLUP_CLIP_SLICE_CELLS      = 3;   \n"
-        "                                              \n"
-        "  const int GLUP_TEXTURE_1D = 1;              \n"
-        "  const int GLUP_TEXTURE_2D = 2;              \n"
-        "  const int GLUP_TEXTURE_3D = 3;              \n"
-        "                                              \n"
-        "  const int GLUP_TEXTURE_REPLACE  = 0;        \n"
-        "  const int GLUP_TEXTURE_MODULATE = 1;        \n"
-        "  const int GLUP_TEXTURE_ADD      = 2;        \n"
-        "                                              \n"
-        "  const int GLUP_PICK_PRIMITIVE   = 1;        \n"
-        "  const int GLUP_PICK_CONSTANT    = 2;        \n"
-
-        "  const int GLUP_POINTS     =0;               \n"
-        "  const int GLUP_LINES      =1;               \n"
-        "  const int GLUP_TRIANGLES  =2;               \n"
-        "  const int GLUP_QUADS      =3;               \n"
-        "  const int GLUP_TETRAHEDRA =4;               \n"
-        "  const int GLUP_HEXAHEDRA  =5;               \n"
-        "  const int GLUP_PRISMS     =6;               \n"
-        "  const int GLUP_PYRAMIDS   =7;               \n"
-        "  const int GLUP_CONNECTORS =8;               \n"                     
-        "  const int GLUP_NB_PRIMITIVES = 9;           \n"
-
-// Note: the 1D colormap is stored in a 2D texture, because
-// 1D textures are not supported by all OpenGL implementations
-        "  uniform sampler2D texture1Dsampler;         \n"
-        "  uniform sampler2D texture2Dsampler;         \n"
-        "  uniform sampler3D texture3Dsampler;         \n"
-                     
-        ;
-    
     
     /*
     ** Invert 4x4 matrix.
@@ -508,8 +425,9 @@ namespace GLUP {
     /***********************************************************/
 
     const char* Context::uniform_state_declaration() {
-        return GLUP_uniform_state_source;
+        return GLSL::get_GLSL_include_file("GLUPGLSL/state.h");
     }
+
     
     Context::Context() :
         marching_tet_(GLUP_TETRAHEDRA),
@@ -542,7 +460,12 @@ namespace GLUP {
         latest_program_ = 0;
         toggles_config_ = 0;
 
-        uses_mesh_tex_coord_ = false;
+        vertex_id_VBO_ = 0;
+
+        toggles_source_state_ = 0;
+        toggles_source_undetermined_ = 0;
+
+        initialize();
     }
     
     Context::~Context() {
@@ -550,21 +473,11 @@ namespace GLUP {
             glDeleteProgram(default_program_);
         }
         glDeleteBuffers(1, &uniform_buffer_);
-        delete[] uniform_buffer_data_;                
-    }
-
-    const char* Context::profile_dependent_declarations() {
-        static const char* nothing_to_declare =
-            "const bool ES_profile = false; \n";
-        
-        static const char* ES_declarations =
-            "#extension GL_OES_texture_3D : enable \n"
-            "#extension GL_OES_standard_derivatives : enable \n"
-            "#extension GL_OES_geometry_shader : enable \n"
-            "#extension GL_OES_tessellation_shader : enable \n"            
-            "const bool ES_profile = true; \n";
-        
-        return use_ES_profile_ ? ES_declarations : nothing_to_declare;
+        delete[] uniform_buffer_data_;
+        if(vertex_id_VBO_ != 0) {
+            glDeleteBuffers(1, &vertex_id_VBO_);
+            vertex_id_VBO_ = 0;
+        }
     }
 
     bool Context::primitive_supports_array_mode(GLUPprimitive prim) const {
@@ -592,7 +505,7 @@ namespace GLUP {
         
         // Parse uniform state declaration in order to use all variables.
         
-        std::istringstream input(GLUP_uniform_state_source);
+        std::istringstream input(Context::uniform_state_declaration());
         std::string line;
         while(std::getline(input,line)) {
             std::vector<std::string> words;
@@ -661,8 +574,7 @@ namespace GLUP {
         GLuint GLUP_vertex_shader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
             shader_source_header_,
-            profile_dependent_declarations(),
-            GLUP_uniform_state_source,
+            Context::uniform_state_declaration(),
             create_vertex_program_that_uses_all_UBO_variables().c_str(),
             0
         );
@@ -670,7 +582,6 @@ namespace GLUP {
         GLuint GLUP_fragment_shader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
             shader_source_header_,
-            profile_dependent_declarations(),            
             fragment_shader_source_,
             0
         );
@@ -794,8 +705,10 @@ namespace GLUP {
         uniform_state_.modelviewprojection_matrix.initialize(
             this, "modelviewprojection_matrix"
         );
+        uniform_state_.projection_matrix.initialize(this, "projection_matrix");
         uniform_state_.normal_matrix.initialize(this, "normal_matrix");
         uniform_state_.texture_matrix.initialize(this, "texture_matrix");
+
 
         uniform_state_.point_size.initialize(this, "point_size", 1.0f);
         
@@ -1074,8 +987,9 @@ namespace GLUP {
                 if(immediate_state_.buffer[i].is_enabled()) {
                     glEnableVertexAttribArray(i);
                     
-                    //   If not using VBO, specify vertex attrib pointer
-                    // using old style API.
+                    // If not using VBO, specify vertex attrib pointer
+                    // using old style API. 
+                    
                     if(immediate_state_.buffer[i].VBO() == 0) {                
                         glVertexAttribPointer(
                             i,
@@ -1126,6 +1040,7 @@ namespace GLUP {
             for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
                 GEO_CHECK_GLUP();                
                 glDisableVertexAttribArray(i);
+                GEO_CHECK_GLUP();                                
             }
         }
 
@@ -1133,7 +1048,9 @@ namespace GLUP {
             uniform_state_.toggle[GLUP_PICKING].get() &&
             uniform_state_.picking_mode.get() == GLUP_PICK_PRIMITIVE
         ) {
+            GEO_CHECK_GLUP();                            
             update_base_picking_id(0);
+            GEO_CHECK_GLUP();                                        
         }
 
         if(
@@ -1146,7 +1063,7 @@ namespace GLUP {
         }
         GEO_CHECK_GLUP();         
         done_draw(immediate_state_.primitive());
-        GEO_CHECK_GLUP();                 
+        GEO_CHECK_GLUP();
     }
 
     void Context::draw_arrays(
@@ -1243,13 +1160,12 @@ namespace GLUP {
                 GL_PATCH_VERTICES, GLint(nb_vertices_per_primitive[primitive])
             );
         }
-#endif        
+#endif
     }
 
     void Context::done_draw(GLUPprimitive primitive) {
         geo_argused(primitive);
     }
-
     
     void Context::update_matrices() {
         
@@ -1295,6 +1211,12 @@ namespace GLUP {
             16
         );
 
+        copy_vector(
+            uniform_state_.projection_matrix.get_pointer(),
+            matrix_stack_[GLUP_PROJECTION_MATRIX].top(),
+            16
+        );
+        
         mult_matrix_vector(
             uniform_state_.world_clip_plane.get_pointer(),
             uniform_state_.modelview_matrix.get_pointer(),
@@ -1379,18 +1301,27 @@ namespace GLUP {
     }
 
     void Context::flush_immediate_buffers() {
+
+        
         if(immediate_state_.nb_vertices() == 0) {
             return;
         }
 
         // Sends the data from the buffers to OpenGL if VBO are used.
         stream_immediate_buffers();
-        
-        if(
-            uniform_state_.toggle[GLUP_DRAW_MESH].get() &&
-            primitive_info_[immediate_state_.primitive()].tex_coords_VBO != 0
-        ) {
-            glEnableVertexAttribArray(3);
+
+        bool attrib3_enabled = false;
+
+        if(vertex_id_VBO_ != 0) {
+            if(
+                uniform_state_.toggle[GLUP_PICKING].get() || (               
+                    primitive_dimension[immediate_state_.primitive()] >= 2 && 
+                    uniform_state_.toggle[GLUP_DRAW_MESH].get()
+                )
+            ) {
+                glEnableVertexAttribArray(3);
+                attrib3_enabled = true;
+            }
         }
         
         GLsizei nb_vertices = GLsizei(immediate_state_.nb_vertices());
@@ -1413,6 +1344,7 @@ namespace GLUP {
             index_t nb_elements = nb_primitives *
                 primitive_info_[immediate_state_.primitive()].
                 nb_elements_per_primitive ;
+
             glDrawElements(
                 primitive_info_[immediate_state_.primitive()].GL_primitive,
                 GLsizei(nb_elements),
@@ -1443,10 +1375,8 @@ namespace GLUP {
             );
         }
         immediate_state_.reset();
-        if(
-            uniform_state_.toggle[GLUP_DRAW_MESH].get() &&
-            primitive_info_[immediate_state_.primitive()].tex_coords_VBO != 0
-        ) {
+
+        if(attrib3_enabled) {
             glDisableVertexAttribArray(3);
         }
     }
@@ -1470,8 +1400,8 @@ namespace GLUP {
         glBindAttribLocation(program, 0, "vertex_in");
         glBindAttribLocation(program, 1, "color_in");
         glBindAttribLocation(program, 2, "tex_coord_in");
-        if(uses_mesh_tex_coord_) {
-            glBindAttribLocation(program, 3, "mesh_tex_coord_in");
+        if(vertex_id_VBO_ != 0) {
+            glBindAttribLocation(program, 3, "vertex_id_in");            
         }
         GLSL::link_program(program);
         bind_uniform_state(program);            
@@ -1562,8 +1492,9 @@ namespace GLUP {
     void Context::set_primitive_info_immediate_index_mode(
         GLUPprimitive glup_primitive, GLenum GL_primitive, GLuint program,
         index_t nb_elements_per_glup_primitive,
-        index_t* element_indices, GLUPfloat* tex_coords
+        index_t* element_indices 
     ) {
+        
         set_primitive_info(glup_primitive, GL_primitive, program);
 
         if(primitive_info_[glup_primitive].elements_VBO == 0) {
@@ -1610,62 +1541,6 @@ namespace GLUP {
             primitive_info_[glup_primitive].primitive_elements =
                 element_indices;
         }
-
-        if(
-            tex_coords != nil &&
-            primitive_info_[glup_primitive].tex_coords_VBO == 0
-        ) {
-            index_t nb_glup_primitives =
-                IMMEDIATE_BUFFER_SIZE /
-                nb_vertices_per_primitive[glup_primitive];
-            
-            index_t nb_tex_vertices =
-                nb_glup_primitives * nb_vertices_per_primitive[glup_primitive];
-
-            GLuint tex_coords_VBO = 0;
-            glGenBuffers(1, &tex_coords_VBO);
-            glBindBuffer(GL_ARRAY_BUFFER, tex_coords_VBO);
-            
-            float* tex_vertices = new float[4*nb_tex_vertices];
-
-            // Note: we could compress the texture vertices into
-            // a single byte per vertex (using 4 bits to indicate
-            // for each component whether its 0.0 or 1.0, with
-            // associated "decompression" code in the vertex
-            // shader. This works fine on OpenGL ES, but this
-            // does not works under WebGL with VAO emulation,
-            // because getVertexAttrib() does not retreive
-            // the correct attribute size and type on some
-            // browsers (so I'm using plain ordinary floats).
-            
-            index_t cur = 0;
-            for(index_t i=0; i<nb_glup_primitives; ++i) {
-                for(
-                    index_t j=0;
-                    j<nb_vertices_per_primitive[glup_primitive]; ++j
-                ) {
-                    GLUPfloat* t = tex_coords + j*4;
-                    tex_vertices[cur] = t[0];
-                    ++cur;
-                    tex_vertices[cur] = t[1];
-                    ++cur;
-                    tex_vertices[cur] = t[2];
-                    ++cur;
-                    tex_vertices[cur] = t[3];
-                    ++cur;
-                }
-            }
-            
-            glBufferData(
-                GL_ARRAY_BUFFER,
-                GLsizeiptr(sizeof(float) * nb_tex_vertices * 4),
-                tex_vertices, GL_STATIC_DRAW
-            );
-            
-            delete[] tex_vertices;
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            primitive_info_[glup_primitive].tex_coords_VBO = tex_coords_VBO;
-        }
         
         if(primitive_info_[glup_primitive].VAO == 0) {
             glupGenVertexArrays(1,&primitive_info_[glup_primitive].VAO);
@@ -1678,20 +1553,15 @@ namespace GLUP {
                 primitive_info_[glup_primitive].elements_VBO
             );
 
-            if(primitive_info_[glup_primitive].tex_coords_VBO != 0) {
-                
-                glBindBuffer(
-                    GL_ARRAY_BUFFER,
-                    primitive_info_[glup_primitive].tex_coords_VBO
-                );
-                
+            if(vertex_id_VBO_ != 0) {
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_id_VBO_);
                 glVertexAttribPointer(
-                    3, // Attribute number 3
-                    4,
-                    GL_FLOAT,
-                    GL_FALSE,
-                    0,  // stride
-                    0   // pointer (relative to bound VBO beginning)
+                    3,                 // Attribute number 3
+                    1,                 // 1 component per attribute
+                    GL_UNSIGNED_SHORT, // components are bytes
+                    GL_FALSE,          // do not normalize
+                    0,                 // stride
+                    0          // pointer (relative to bound VBO beginning)
                 );
             }
             
@@ -1739,55 +1609,29 @@ namespace GLUP {
         GLUPbitfield toggles_state,
         GLUPbitfield toggles_undetermined
     ) {
-        toggles_shader_source_ = "";
-        potential_toggles_shader_source_ = "";
-
-        for(index_t i=0; i<uniform_state_.toggle.size(); ++i) {
-
-            // toggles_shader_source_: if undetermined, read from state
-            // else use constant from state word.
-            toggles_shader_source_ +=
-                ("bool " + uniform_state_.toggle[i].name() + "() {\n");
-            if(toggles_undetermined & (1 << i)) {
-                toggles_shader_source_ +=
-                    "   return GLUP." +
-                    uniform_state_.toggle[i].name() +
-                    ";\n";
-            } else {
-                if(toggles_state & (1 << i)) {
-                    toggles_shader_source_ +=
-                        "   return true; \n";
-                } else {
-                    toggles_shader_source_ +=
-                        "   return false; \n";
-                }
-            }
-            toggles_shader_source_ += "}\n";
-
-            // potential_toggles_shader_source_: if undetermined,
-            // or set in state word, return true, else return false.
-            potential_toggles_shader_source_ +=
-                ("bool maybe_" +
-                 uniform_state_.toggle[i].name() + "() {\n");
-            if(
-                toggles_undetermined & (1 << i) ||
-                toggles_state & (1 << i)
-            ) {
-                potential_toggles_shader_source_ += "   return true; \n";
-            } else {
-                potential_toggles_shader_source_ += "   return false; \n";
-            }
-            potential_toggles_shader_source_ += "}\n";
-        }
+        toggles_source_state_ = toggles_state;
+        toggles_source_undetermined_ = toggles_undetermined;
     }
 
+    void Context::setup_shaders_source_for_primitive(
+        GLUPprimitive primitive
+    ) {
+        primitive_source_ = primitive;
+    }
+
+    
     std::string Context::primitive_declaration(GLUPprimitive prim) const {
         std::string result =
-            std::string("  const int glup_primitive = ") +
+            std::string("const int glup_primitive = ") +
             primitive_name[prim] + ";\n"                 +
-            "  const int glup_primitive_dimension = "   +
+            "const int glup_primitive_dimension = "   +
             String::to_string(primitive_dimension[prim]) +
-            ";\n";
+            ";\n" +
+            "const int glup_primitive_nb_vertices = " +
+            String::to_string(nb_vertices_per_primitive[prim]) +
+            ";\n"
+            ;
+        
         return result;
     }
     
@@ -1805,7 +1649,9 @@ namespace GLUP {
     }
 
     void Context::create_program_if_needed(GLUPprimitive primitive) {
+        primitive_source_ = primitive;
         if(!primitive_info_[primitive].program_initialized[toggles_config_]) {
+            setup_shaders_source_for_primitive(primitive);
             setup_shaders_source_for_toggles_config(toggles_config_);
             switch(primitive) {
             case GLUP_POINTS:
@@ -2023,6 +1869,216 @@ namespace GLUP {
     }
 
     void Context::copy_uniform_state_to_current_program() {
+    }
+
+    void Context::create_vertex_id_VBO() {
+
+        glGenBuffers(1, &vertex_id_VBO_);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_id_VBO_);
+        GLushort* indices = new GLushort[65536];
+        for(index_t i=0; i<65536; ++i) {
+            indices[i] = GLushort(i);
+        }
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            GLsizeiptr(sizeof(GLushort)*65536),
+            indices, GL_STATIC_DRAW
+        );
+        delete[] indices;
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // Bind the index VBO to the common VAO used by the immediate state.
+        if(immediate_state_.VAO() != 0) {
+            glupBindVertexArray(immediate_state_.VAO());
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_id_VBO_);
+            glVertexAttribPointer(
+                3,                 // Attribute number 3
+                1,                 // 1 component per attribute
+                GL_UNSIGNED_SHORT, // components are 16 bits integers
+                GL_FALSE,          // do not normalize
+                0,                 // stride
+                0                  // pointer (relative to bound VBO beginning)
+            );
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glupBindVertexArray(0);
+        }
+        
+    }
+
+    void Context::get_vertex_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        geo_argused(sources);
+    }
+    
+    void Context::get_fragment_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        geo_argused(sources);        
+    }
+
+    void Context::get_geometry_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        geo_argused(sources);        
+    }
+
+    void Context::get_tess_control_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        geo_argused(sources);        
+    }
+
+    void Context::get_tess_evaluation_shader_preamble_pseudo_file(
+        std::vector<GLSL::Source>& sources
+    ) {
+        geo_argused(sources);        
+    }
+    
+    void Context::get_toggles_pseudo_file(
+        std::vector<GLSL::Source>& sources        
+    ) {
+        std::string toggle_enabled_source =
+            "bool glupIsEnabled(in int toggle) {\n";
+        for(index_t i=0; i<uniform_state_.toggle.size(); ++i) {
+            std::string toggle_var_name = uniform_state_.toggle[i].name();
+            std::string toggle_name = toggle_var_name;
+            size_t pos = toggle_name.find("_enabled");
+            geo_assert(pos != std::string::npos);
+            toggle_name = "GLUP_" +
+                String::to_uppercase(toggle_name.substr(0,pos));
+            std::string test =
+                "   if(toggle=="+toggle_name + ") {\n";
+            toggle_enabled_source += test;
+            if(toggles_source_undetermined_ & (1 << i)) {
+                toggle_enabled_source +=
+                    "      return GLUP."+toggle_var_name+";\n";
+            } else {
+                if(toggles_source_state_ & (1 << i)) {
+                    toggle_enabled_source +=
+                        "      return true;\n";
+                } else {
+                    toggle_enabled_source +=
+                        "      return false;\n";
+                }
+            }
+            toggle_enabled_source += "   }\n";
+        }
+        toggle_enabled_source += "   return false; \n}\n";
+        sources.push_back(toggle_enabled_source);
+    }
+
+    void Context::get_primitive_pseudo_file(
+        std::vector<GLSL::Source>& sources        
+    ) {
+        sources.push_back(primitive_declaration(primitive_source_));
+    }
+
+    void Context::get_marching_cells_pseudo_file(
+        std::vector<GLSL::Source>& sources        
+    ) {
+        const MarchingCell& marching_cell = get_marching_cell();
+        sources.push_back(
+            marching_cell.GLSL_uniform_state_declaration()
+        );
+        sources.push_back(
+            marching_cell.GLSL_compute_intersections()
+        );
+    }
+    
+    const MarchingCell& Context::get_marching_cell() const {
+        const MarchingCell* result = nil;
+        switch(primitive_source_) {
+        case GLUP_TETRAHEDRA:
+            result = &marching_tet_;
+            break;
+        case GLUP_HEXAHEDRA:
+            result = &marching_hex_;
+            break;            
+        case GLUP_PRISMS:
+            result = &marching_prism_;
+            break;            
+        case GLUP_PYRAMIDS:
+            result = &marching_pyramid_;
+            break;            
+        case GLUP_CONNECTORS:
+            result = &marching_connector_;
+            break;            
+        case GLUP_POINTS:
+        case GLUP_LINES:
+        case GLUP_TRIANGLES:
+        case GLUP_QUADS:
+        case GLUP_NB_PRIMITIVES:
+            geo_assert_not_reached;
+        }
+        return *result;
+    }
+
+    void Context::initialize() {
+        static bool initialized = false;
+        if(initialized) {
+            return;
+        }
+
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/vertex_shader_preamble.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_vertex_shader_preamble_pseudo_file
+            )
+        );
+            
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/fragment_shader_preamble.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_fragment_shader_preamble_pseudo_file
+            )
+        );
+        
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/geometry_shader_preamble.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_geometry_shader_preamble_pseudo_file
+            )
+        );
+
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/marching_cells.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_marching_cells_pseudo_file
+            )
+        );
+            
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/tess_control_shader_preamble.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_tess_control_shader_preamble_pseudo_file
+            )
+        );
+
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/tess_evaluation_shader_preamble.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_tess_evaluation_shader_preamble_pseudo_file
+            )
+        );
+
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/toggles.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_toggles_pseudo_file
+            )
+        );
+
+        GLSL::register_GLSL_include_file(
+            "GLUP/current_profile/primitive.h",
+            static_cast<GLSL::PseudoFile>(
+                &GLUP::Context::get_primitive_pseudo_file
+            )
+        );
+            
+        GLUP::register_embedded_shaders();
+        
+        initialized = true;
     }
     
 }

@@ -74,7 +74,7 @@ namespace GEO {
      *
      * \code
      * try {
-     *     LineNumber in(filename);
+     *     LineInput in(filename);
      *     while( !in.eof() && in.get_line() ) {
      *         in.get_fields();
      *         double d = in.field_as_double(2);

@@ -22,7 +22,7 @@ endif()
 
 aux_source_directories(SOURCES "Source Files"               .)
 aux_source_directories(SOURCES "Source Files\\HLBFGS"       HLBFGS)
-aux_source_directories(SOURCES "Source Files\\LM6"          LM6)
+aux_source_directories(SOURCES "Source Files\\LM6"          LM7)
 aux_source_directories(SOURCES "Source Files\\rply"         rply)
 aux_source_directories(SOURCES "Source Files\\shewchuk"     shewchuk)
 aux_source_directories(SOURCES "Source Files\\zlib"         zlib)

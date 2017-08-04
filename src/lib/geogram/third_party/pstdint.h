@@ -199,7 +199,7 @@
 
 #if ((defined(__SUNPRO_C) && __SUNPRO_C >= 0x570) || (defined(_MSC_VER) && _MSC_VER >= 1600) || (defined(__STDC__) && __STDC__ && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || (defined (__WATCOMC__) && (defined (_STDINT_H_INCLUDED) || __WATCOMC__ >= 1250)) || (defined(__GNUC__) && (__GNUC__ > 3 || defined(_STDINT_H) || defined(_STDINT_H_) || defined (__UINT_FAST64_TYPE__)) )) && !defined (_PSTDINT_H_INCLUDED)
 #include <stdint.h>
-#define _PSTDINT_H_INCLUDED
+#define PSTDINT_H_INCLUDED
 # if defined(__GNUC__) && (defined(__x86_64__) || defined(__ppc64__)) && !(defined(__APPLE__) && defined(__MACH__))
 #  ifndef PRINTF_INT64_MODIFIER
 #   define PRINTF_INT64_MODIFIER "l"
@@ -346,13 +346,13 @@
  *  considered optional.
  */
 
-#if (defined(__SUNPRO_C) && __SUNPRO_C >= 0x420) && !defined(_PSTDINT_H_INCLUDED)
+#if (defined(__SUNPRO_C) && __SUNPRO_C >= 0x420) && !defined(PSTDINT_H_INCLUDED)
 #include <sys/inttypes.h>
-#define _PSTDINT_H_INCLUDED
+#define PSTDINT_H_INCLUDED
 #endif
 
-#ifndef _PSTDINT_H_INCLUDED
-#define _PSTDINT_H_INCLUDED
+#ifndef PSTDINT_H_INCLUDED
+#define PSTDINT_H_INCLUDED
 
 #ifndef SIZE_MAX
 # define SIZE_MAX (~(size_t)0)

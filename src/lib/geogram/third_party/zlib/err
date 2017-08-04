@@ -1,0 +1,862 @@
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:20:33: The style property GtkMenu:horizontal-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:21:31: The style property GtkMenu:vertical-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:22:30: The style property GtkNotebook:initial-gap is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:41:33: The style property GtkWidget:focus-line-width is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:42:30: The style property GtkWidget:focus-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:43:27: The style property GtkWidget:link-color is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:44:35: The style property GtkWidget:visited-link-color is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:70:13: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:71:13: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:71:25: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:76:13: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:77:21: The '-gtk-image-effect' property has been renamed to '-gtk-icon-effect'
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:81:21: The '-gtk-image-effect' property has been renamed to '-gtk-icon-effect'
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:89:27: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:99:30: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:110:20: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:112:20: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:114:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:116:19: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:182:19: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:183:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:184:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:185:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:186:29: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:187:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:188:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:189:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:190:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:191:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:192:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:193:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:194:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:197:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:198:35: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:199:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:207:14: not a number
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:207:14: Expected a string.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:224:30: The style property GtkWidget:focus-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:225:33: The style property GtkWidget:focus-line-width is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:279:19: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:288:29: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:289:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:299:24: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:301:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:325:30: The style property GtkWidget:focus-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:326:33: The style property GtkWidget:focus-line-width is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:344:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:345:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:406:27: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:415:30: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:436:39: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:437:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:449:26: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:487:30: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:507:62: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:511:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:521:63: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:526:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:557:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1025:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1026:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1027:24: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1097:32: The style property GtkMenuItem:arrow-scaling is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1124:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1125:29: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1133:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1134:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1146:34: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1176:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1228:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1229:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1230:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1499:25: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1528:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1579:25: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1580:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1664:36: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1685:19: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1686:23: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1707:30: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1708:29: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1714:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1717:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1720:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1734:47: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1735:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1736:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1737:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1738:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1739:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1744:37: The style property GtkMenuItem:horizontal-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1745:33: The style property GtkWidget:separator-height is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1753:32: The style property GtkWidget:wide-separators is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1789:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:1866:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2035:10: not a number
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2035:17: Using Pango syntax for the font: style property is deprecated; please use CSS syntax
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2050:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2073:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2209:14: not a number
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2209:14: Expected a string.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2213:17: Expected a string.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2238:20: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2369:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2370:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2371:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2372:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2373:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2374:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2381:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2382:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2383:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2392:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2393:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2394:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2395:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2396:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2397:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2478:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2479:57: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2511:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2512:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2513:57: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2514:59: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2519:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2520:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2521:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2522:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2523:53: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2524:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2525:53: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2526:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2527:80: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2528:79: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2529:80: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2530:79: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2537:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2538:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2541:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2542:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2545:70: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2546:70: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2574:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2578:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2582:57: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2596:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2600:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2604:69: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2619:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2623:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2627:68: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2642:27: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2646:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2650:68: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2675:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2676:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2677:68: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2682:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2683:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2684:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2685:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2686:62: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2687:61: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2688:62: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2689:61: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2690:89: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2691:88: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2692:89: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2693:88: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2700:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2701:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2704:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2705:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2708:79: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2709:79: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2737:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2751:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2766:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2781:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2818:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2819:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2820:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2821:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2822:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2823:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2824:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2825:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2830:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2831:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2832:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2833:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2834:61: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2835:60: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2836:61: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2837:60: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2838:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2839:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2840:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2841:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2842:53: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2843:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2844:53: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2845:52: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2846:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2847:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2848:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2849:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2850:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2851:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2852:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2853:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2854:56: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2855:55: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2856:56: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2857:55: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2858:49: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2859:48: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2860:49: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2861:48: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2868:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2869:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2872:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2873:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2876:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2877:28: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2880:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2881:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2884:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2885:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2888:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2889:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2892:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2893:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2896:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2897:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2941:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2945:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2948:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2952:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2956:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2959:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2963:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2967:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2977:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2981:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2984:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2988:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2992:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2995:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:2999:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3003:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3014:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3018:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3021:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3025:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3029:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3032:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3036:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3040:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3051:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3055:51: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3058:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3062:43: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3066:36: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3069:45: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3073:46: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3077:39: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3107:33: The style property GtkWidget:focus-line-width is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3108:30: The style property GtkWidget:focus-padding is deprecated and shouldn't be used anymore. It will be removed in a future version
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3144:17: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3145:17: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3145:29: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3199:20: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3227:23: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3228:24: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3234:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3235:32: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3236:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3237:33: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3293:32: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3299:42: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3300:41: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3359:30: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3380:30: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3381:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3704:14: not a number
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets.css:3704:14: Expected a string.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:28:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:29:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:30:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:40:25: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:40:53: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:41:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:41:79: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:42:44: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:42:91: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:46:19: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:47:32: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:48:38: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:52:19: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:52:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:53:32: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:53:44: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:54:38: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:54:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:64:18: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:65:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:66:37: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:76:25: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:76:53: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:77:38: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:77:79: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:78:44: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:78:91: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:82:19: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:83:32: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:84:38: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:88:19: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:88:31: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:89:32: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:89:44: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:90:38: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:90:50: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:102:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:102:71: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:106:28: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:107:28: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:111:28: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:112:28: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:116:28: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:116:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:117:28: The :inconsistent pseudo-class is deprecated. Use :indeterminate instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:117:40: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:129:34: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gtk-widgets-assets.css:129:71: The :insensitive pseudo-class is deprecated. Use :disabled instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gnome-applications.css:71:28: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gnome-applications.css:78:35: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: gnome-applications.css:110:47: The :prelight pseudo-class is deprecated. Use :hover instead.
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: unity.css:22:15: The 'icon-shadow' property has been renamed to '-gtk-icon-shadow'
+
+(emacs:11031): Gtk-WARNING **: Theme parsing error: xfce.css:54:21: The '-gtk-image-effect' property has been renamed to '-gtk-icon-effect'
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a580 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a580 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a580 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a580 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce700 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkToolbar 0x278d1c0 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkWindow 0x2786260 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkBox 0x2788190 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkToolbar 0x278d1c0 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: EmacsFixed 0x278a130 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkEventBox 0x278a410 is drawn without a current allocation. This should not happen.
+
+(emacs:11031): Gtk-WARNING **: GtkScrollbar 0x25ce500 is drawn without a current allocation. This should not happen.

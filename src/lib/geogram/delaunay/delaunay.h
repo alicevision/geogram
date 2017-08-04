@@ -101,6 +101,45 @@ namespace GEO {
             virtual const char* what() const GEO_NOEXCEPT;
         };
 
+
+        /**
+         * \brief Invalid input exception
+         * \details This exception is thrown by Delaunay implementations
+         *  in constrained mode, when constraints self-intersect.
+         */
+        struct InvalidInput : std::logic_error {
+
+            /**
+             * \brief InvalidInput constructor.
+             * \param[in] error_code_in an implementation-dependent error code
+             */
+            InvalidInput(int error_code_in);
+
+            /**
+             * \brief InvalidInput copy constructor.
+             * \param[in] rhs a const reference to the InvalidInput to be copied
+             */
+            InvalidInput(const InvalidInput& rhs);
+
+            virtual ~InvalidInput() GEO_NOEXCEPT;
+            
+            /**
+             * \brief Gets the string identifying the exception
+             */
+            virtual const char* what() const GEO_NOEXCEPT;
+
+            /**
+             * \brief An implementation-dependent error code.
+             */
+            int error_code;
+
+            /**
+             * \brief The indices of the constrained facets that
+             *  have an intersection (or that are duplicated).
+             */
+            vector<index_t> invalid_facets;
+        };
+        
         /**
          * \brief Creates a Delaunay triangulation of the
          *  specified dimension.

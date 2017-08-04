@@ -49,6 +49,7 @@
 #include <geogram/basic/common.h>
 #include <geogram/basic/numeric.h>
 #include <geogram/basic/memory.h>
+#include <geogram/basic/string.h>
 #include <geogram/third_party/zlib/zlib.h>
 
 #include <stdexcept>
@@ -93,6 +94,156 @@ namespace GEO {
     };
 
     /**************************************************************/
+
+    /**
+     * \brief Reads an ASCII attribute from a file.
+     * \param[in] file the input file, obtained through fopen()
+     * \param[out] base_addr an array with sufficient space for
+     *  storing nb_elements of type \p T
+     * \param[in] nb_elements the number of elements to be read
+     * \retval true on success
+     * \retval false otherwise
+     * \tparam T the type of the elements to be read
+     */
+    template <class T> inline bool read_ascii_attribute(
+        FILE* file, Memory::pointer base_addr, index_t nb_elements
+    ) {
+        T* attrib = reinterpret_cast<T*>(base_addr);
+        for(index_t i=0; i<nb_elements; ++i) {
+            std::string buff;
+            int res;
+            while(char(res = fgetc(file)) != '\n') {
+                if(res == EOF) {
+                    return false;
+                }
+                buff.push_back(char(res));
+            }
+            if(!String::from_string(buff.c_str(),attrib[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * \brief Writes an ASCII attribute to a file.
+     * \param[in] file the output file, obtained through fopen()
+     * \param[in] base_addr an array with nb_elements of type \p T
+     * \param[in] nb_elements the number of elements to be written
+     * \retval true on success
+     * \retval false otherwise
+     * \tparam T the type of the elements to be written
+     */
+    template <class T> inline bool write_ascii_attribute(
+        FILE* file, Memory::pointer base_addr, index_t nb_elements
+    ) {
+        T* attrib = reinterpret_cast<T*>(base_addr);
+        for(index_t i=0; i<nb_elements; ++i) {
+            if(
+                fprintf(
+                    file, "%s\n", String::to_string(attrib[i]).c_str()
+                ) == 0
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * \brief Reads an ASCII attribute from a file.
+     * \details Template specialization for char, needed because we
+     *  want chars to appear as integers in ASCII files.
+     * \param[in] file the input file, obtained through fopen()
+     * \param[out] base_addr an array with sufficient space for
+     *  storing nb_elements of type char
+     * \param[in] nb_elements the number of elements to be read
+     * \retval true on success
+     * \retval false otherwise
+     */
+    template <> inline bool read_ascii_attribute<char>(
+        FILE* file, Memory::pointer base_addr, index_t nb_elements            
+    ) {
+        char* attrib = reinterpret_cast<char*>(base_addr);            
+        for(index_t i=0; i<nb_elements; ++i) {
+            int val;
+            if(fscanf(file, "%d", &val) == 0) {
+                return false;
+            }
+            attrib[i] = char(val);
+        }
+        return true;
+    }
+
+    /**
+     * \brief Writes an ASCII attribute to a file.
+     * \details Template specialization for char, needed because we
+     *  want chars to appear as integers in ASCII files.
+     * \param[in] file the output file, obtained through fopen()
+     * \param[in] base_addr an array with nb_elements of type char
+     * \param[in] nb_elements the number of elements to be written
+     * \retval true on success
+     * \retval false otherwise
+     */
+    template <> inline bool write_ascii_attribute<char>(
+        FILE* file, Memory::pointer base_addr, index_t nb_elements            
+    ) {
+        char* attrib = reinterpret_cast<char*>(base_addr);            
+        for(index_t i=0; i<nb_elements; ++i) {
+            if(fprintf(file, "%d\n", int(attrib[i])) == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * \brief Reads an ASCII attribute from a file.
+     * \details Template specialization for bool.
+     * \param[in] file the input file, obtained through fopen()
+     * \param[out] base_addr an array with sufficient space for
+     *  storing nb_elements of type bool (1 byte per element)
+     * \param[in] nb_elements the number of elements to be read
+     * \retval true on success
+     * \retval false otherwise
+     */
+    template <> inline bool read_ascii_attribute<bool>(
+        FILE* file, Memory::pointer base_addr, index_t nb_elements            
+    ) {
+        char* attrib = reinterpret_cast<char*>(base_addr);            
+        for(index_t i=0; i<nb_elements; ++i) {
+            int val;
+            if(fscanf(file, "%d", &val) == 0) {
+                return false;
+            }
+            attrib[i] = char(val);
+        }
+        return true;
+    }
+
+    /**
+     * \brief Writes an ASCII attribute to a file.
+     * \details Template specialization for bool.
+     * \param[in] file the output file, obtained through fopen()
+     * \param[in] base_addr an array with nb_elements of type bool 
+     *  (1 byte per element)
+     * \param[in] nb_elements the number of elements to be written
+     * \retval true on success
+     * \retval false otherwise
+     */
+    template <> inline bool write_ascii_attribute<bool>(
+        FILE* file, Memory::pointer base_addr, index_t nb_elements            
+    ) {
+        char* attrib = reinterpret_cast<char*>(base_addr);            
+        for(index_t i=0; i<nb_elements; ++i) {
+            if(fprintf(file, "%d\n", int(attrib[i])) == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**************************************************************/
     
     /**
      * \brief Base class for reading or writing Geogram structured binary
@@ -105,7 +256,8 @@ namespace GEO {
      *  a 4 bytes unsigned integer. This makes it possible to easily skip 
      *  the chunks that are not needed / not understood by the software. 
      *  In addition, structured binary files are (optionally)
-     *  compressed, using ZLib. Natively, GeoFile uses the following chunks:
+     *  compressed, using ZLib. Structured files can also be saved/loaded in
+     *  ASCII, human-readable form. Natively, GeoFile uses the following chunks:
      *   - CMNT (Comment): contains a string
      *   - CMDL (Command Line): contains a vector of string 
      *   - EOFL (End of file): an end of file marker. Can be used to
@@ -122,6 +274,28 @@ namespace GEO {
      */
     class GEOGRAM_API GeoFile {
     public:
+
+        /**
+         * \brief The function pointer type for reading and writing attributes
+         *  in ASCII files.
+         */
+        typedef bool (*AsciiAttributeSerializer)(
+            FILE* file, Memory::pointer base_address, index_t nb_elements
+        );
+
+        /**
+         * \brief Declares a new attribute type that can be read from 
+         *  and written to ascii files.
+         * \param[in] type_name the C++ type name of the attribute
+         * \param[in] read the function pointer for reading an attribute
+         * \param[in] write the function pointer for writing an attribute
+         */
+        static void register_ascii_attribute_serializer(
+            const std::string& type_name,
+            AsciiAttributeSerializer read,
+            AsciiAttributeSerializer write
+        );
+
         /**
          * \brief GeoFile constructor.
          * \param[in] filename a const reference to the file name.
@@ -133,6 +307,16 @@ namespace GEO {
          */
         ~GeoFile();
 
+        /**
+         * \brief Tests whether this GeoFile is ascii.
+         * \details GeoFile can be ascii or binary. If file name
+         *  ends with "_ascii", then GeoFile is ascii.
+         * \retval true if this GeoFile is ascii
+         * \retval false otherwise
+         */
+        bool is_ascii() const {
+            return ascii_;
+        }
 
         /**
          * \brief Gets the current chunk class.
@@ -330,8 +514,10 @@ namespace GEO {
          * \details Checks that I/O was completed and throws a
          *  GeoFileException if the file is truncated.
          * \param[in] x the integer
+         * \param[in] comment an optionnal comment string, written to
+         *  ASCII geofiles
          */
-        void write_int(index_t x);
+        void write_int(index_t x, const char* comment = nil);
 
         /**
          * \brief Reads a string from the file.
@@ -346,8 +532,10 @@ namespace GEO {
          * \details Checks that I/O was completed and throws a
          *  GeoFileException if the file is truncated.
          * \param[in] s a const reference to the string
+         * \param[in] comment an optionnal comment string, written to
+         *  ASCII geofiles
          */
-        void write_string(const std::string& s);
+        void write_string(const std::string& s, const char* comment = nil);
 
         /**
          * \brief Reads an unsigned 64 bits integer from the file.
@@ -461,10 +649,18 @@ namespace GEO {
     protected:
         std::string filename_;
         gzFile file_;
+        bool ascii_;
+        FILE* ascii_file_;
         std::string current_chunk_class_;
         long current_chunk_size_;
         long current_chunk_file_pos_;
-        std::map<std::string, AttributeSetInfo> attribute_sets_;        
+        std::map<std::string, AttributeSetInfo> attribute_sets_;
+
+        static std::map<std::string, AsciiAttributeSerializer>
+            ascii_attribute_read_;
+
+        static std::map<std::string, AsciiAttributeSerializer>
+            ascii_attribute_write_;
     };
 
     /**************************************************************/

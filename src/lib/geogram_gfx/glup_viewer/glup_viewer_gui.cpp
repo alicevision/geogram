@@ -348,7 +348,9 @@ namespace GEO {
         are_you_sure_(false)
     {
         directory_ = FileSystem::get_current_working_directory() + "/";
-        safe_strncpy(current_file_, default_filename.c_str(), sizeof(current_file_));
+        safe_strncpy(
+            current_file_, default_filename.c_str(), sizeof(current_file_)
+        );
     }
 
     void FileDialog::update_files() {
@@ -708,7 +710,9 @@ namespace GEO {
                         std::string file = current_file_;
                         file = FileSystem::base_name(file) + "." +
                             write_extensions_[current_write_extension_index_];
-                        safe_strncpy(current_file_, file.c_str(), sizeof(current_file_));
+                        safe_strncpy(
+                            current_file_, file.c_str(), sizeof(current_file_)
+                        );
                     }
                     ImGui::PopItemWidth();
                 }
@@ -727,7 +731,7 @@ namespace GEO {
         if(
             ImGui::BeginPopupModal(
                 "File exists", NULL, ImGuiWindowFlags_AlwaysAutoResize
-                )
+            )
         ) {
             ImGui::Text(
                 "%s",
