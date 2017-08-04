@@ -90,18 +90,7 @@ static MKLContext* MKL() {
     return &context;
 }
 
-
-/**
- * \brief Tests whether MKL extension is
- *  initialized.
- * \details Tests whether MKL shared object
- *  was successfuly loaded and whether all the
- *  function pointers where found.
- * \retval NL_TRUE if MKL was successfully
- *  loaded and initialized
- * \retval NL_FALSE otherwise
- */
-static NLboolean MKL_is_initialized() {
+NLboolean nlExtensionIsInitialized_MKL() {
     if(
 	MKL()->DLL_iomp5 == NULL ||
 	MKL()->DLL_mkl_core == NULL ||
@@ -113,10 +102,6 @@ static NLboolean MKL_is_initialized() {
         return NL_FALSE;
     }
     return NL_TRUE;
-}
-
-NLboolean nlExtensionIsInitialized_MKL() {
-    return MKL_is_initialized();
 }
 
 /**
@@ -141,7 +126,7 @@ NLboolean nlExtensionIsInitialized_MKL() {
     }
 
 static void nlTerminateExtension_MKL(void) {
-    if(!MKL_is_initialized()) {
+    if(!nlExtensionIsInitialized_MKL()) {
 	return;
     }
     nlCloseDLL(MKL()->DLL_mkl_intel_lp64);
@@ -152,7 +137,7 @@ static void nlTerminateExtension_MKL(void) {
 
 NLMultMatrixVectorFunc NLMultMatrixVector_MKL = NULL;
 
-void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* y) {
+static void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* y) {
     NLCRSMatrix* M = (NLCRSMatrix*)(M_in);
     nl_debug_assert(M_in->type == NL_MATRIX_CRS);
     if(M->symmetric_storage) {
@@ -185,7 +170,7 @@ void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* y) {
 
 NLboolean nlInitExtension_MKL(void) {
     if(MKL()->DLL_mkl_intel_lp64 != NULL) {
-        return MKL_is_initialized();
+        return nlExtensionIsInitialized_MKL();
     }
     
     MKL()->DLL_iomp5 = nlOpenDLL(
@@ -217,7 +202,7 @@ NLboolean nlInitExtension_MKL(void) {
     find_mkl_func(mkl_cspblas_dcsrgemv);
     find_mkl_func(mkl_cspblas_dcsrsymv);
 
-    if(MKL_is_initialized()) {
+    if(nlExtensionIsInitialized_MKL()) {
 	NLMultMatrixVector_MKL = NLMultMatrixVector_MKL_impl;
     }
     

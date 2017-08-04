@@ -537,7 +537,7 @@ namespace {
                 index_t v2 = M.facet_corners.vertex(c+1);
 
                 vec3 e = Geom::mesh_corner_vector(M,c);
-                double alpha = Geom::mesh_dihedral_angle(M,c);
+                double alpha = Geom::mesh_normal_angle(M,c);
                 
                 NC.clear();
                 NC.accumulate_dihedral_angle(e,alpha);
@@ -729,8 +729,8 @@ namespace GEO {
                 index_t f2 = M.facet_corners.adjacent_facet(c1);
                 if(
                     f2 == NO_FACET || (
-                       fabs(Geom::mesh_dihedral_angle(M,c1)) > 
-                          sharp_angle_threshold
+			::fabs(Geom::mesh_normal_angle(M,c1)) > 
+			sharp_angle_threshold
                     )
                 ) {
                     vec2 v = MeshFacetBasis(M,f1).project(
@@ -738,7 +738,7 @@ namespace GEO {
                              );
                     double angle = atan2(v.y,v.x)*symd;
 
-                    locked[f1]=true;
+		    locked[f1]=true;
                     alpha_sincos[2*f1] = cos(angle);
                     alpha_sincos[2*f1+1] = sin(angle);
                     

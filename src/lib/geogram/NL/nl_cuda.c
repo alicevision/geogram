@@ -453,18 +453,7 @@ static CUDAContext* CUDA() {
     return &context;
 }
 
-
-/**
- * \brief Tests whether CUDA extension is
- *  initialized.
- * \details Tests whether CUDA shared object
- *  was successfuly loaded and whether all the
- *  function pointers where found.
- * \retval NL_TRUE if CUDA was successfully
- *  loaded and initialized
- * \retval NL_FALSE otherwise
- */
-static NLboolean CUDA_is_initialized() {
+NLboolean nlExtensionIsInitialized_CUDA() {
     if(
 	CUDA()->DLL_cudart == NULL ||
 	CUDA()->cudaGetDeviceCount == NULL ||
@@ -506,12 +495,8 @@ static NLboolean CUDA_is_initialized() {
     return NL_TRUE;
 }
 
-NLboolean nlExtensionIsInitialized_CUDA() {
-    return CUDA_is_initialized();
-}
-
 static void nlTerminateExtension_CUDA(void) {
-    if(!CUDA_is_initialized()) {
+    if(!nlExtensionIsInitialized_CUDA()) {
 	return;
     }
 
@@ -554,7 +539,7 @@ static int ConvertSMVer2Cores(int major, int minor) {
 	{ 0x50, 128}, /* Maxwell Generation (SM 5.0) GM10x class 
                              (yes, #cores smaller than with 3.x)  */
 	{ 0x52, 128}, /* Maxwell Generation (SM 5.2) GM20x class  */
-	{ 0x60, 64 }, /* Pascal Generation  (SM 6.0) GP100,GP202  
+	{ 0x60, 64 }, /* Pascal Generation  (SM 6.0) GP100,GP102  
               (yes, 64, but GP100 has superfast double precision) */
 	{ 0x61, 128}, /* Pascal Generation  (SM 6.1) GP104 class  
                                (but FP64 runs as 1/32 FP32 speed) */ 	
@@ -666,7 +651,7 @@ NLboolean nlInitExtension_CUDA(void) {
     int cublas_version;
     int cusparse_version;
     
-    if(CUDA_is_initialized()) {
+    if(nlExtensionIsInitialized_CUDA()) {
 	return NL_TRUE;
     }
 
@@ -752,7 +737,7 @@ NLboolean nlInitExtension_CUDA(void) {
     }
     printf("OpenNL CUDA: cusparse version = %d\n", cusparse_version);
     
-    if(!CUDA_is_initialized()) {
+    if(!nlExtensionIsInitialized_CUDA()) {
 	return NL_FALSE;
     }
 
@@ -761,7 +746,7 @@ NLboolean nlInitExtension_CUDA(void) {
     
 }
 
-void nlCUDACheckImpl(int status, int line) {
+static void nlCUDACheckImpl(int status, int line) {
     if(status != 0) {
 	fprintf(stderr,"nl_cuda.c:%d fatal error %d\n",line, status);
 	CUDA()->cudaDeviceReset();    	
@@ -794,7 +779,7 @@ typedef struct {
 /**
  * \brief Deallocates just the CRS part of a CUDA matrix.
  */
-void nlCRSMatrixCUDADestroyCRS(NLCUDASparseMatrix* Mcuda) {
+static void nlCRSMatrixCUDADestroyCRS(NLCUDASparseMatrix* Mcuda) {
     if(Mcuda->colind != NULL) {
 	nlCUDACheck(CUDA()->cudaFree(Mcuda->colind));
 	Mcuda->colind = NULL;
@@ -809,7 +794,7 @@ void nlCRSMatrixCUDADestroyCRS(NLCUDASparseMatrix* Mcuda) {
     }
 }
 
-void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
+static void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
     if(Mcuda->hyb != NULL) {
 	nlCUDACheck(CUDA()->cusparseDestroyHybMat(Mcuda->hyb));
     }
@@ -818,7 +803,7 @@ void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
     memset(Mcuda, 0, sizeof(*Mcuda));
 }
 
-void nlCRSMatrixCUDAMult(
+static void nlCRSMatrixCUDAMult(
     NLCUDASparseMatrix* Mcuda, const double* x, double* y
 ) {
     const double one = 1;
@@ -934,12 +919,12 @@ typedef struct {
     double* val;
 } NLDiagonalMatrixCUDA;
 
-void nlDiagonalMatrixCUDADestroy(NLDiagonalMatrixCUDA* Mcuda) {
+static void nlDiagonalMatrixCUDADestroy(NLDiagonalMatrixCUDA* Mcuda) {
     nlCUDACheck(CUDA()->cudaFree(Mcuda->val));
     memset(Mcuda, 0, sizeof(*Mcuda));
 }
 
-void nlDiagonalMatrixCUDAMult(
+static void nlDiagonalMatrixCUDAMult(
     NLDiagonalMatrixCUDA* Mcuda, const double* x, double* y
 ) {
     int N = (int)Mcuda->n;
@@ -957,7 +942,7 @@ void nlDiagonalMatrixCUDAMult(
     nlCUDABlas()->flops += (NLulong)N;
 }
 
-NLMatrix nlDiagonalMatrixCUDANew(const double* diag, NLuint n) {
+static NLMatrix nlDiagonalMatrixCUDANew(const double* diag, NLuint n) {
     NLDiagonalMatrixCUDA* Mcuda = NL_NEW(NLDiagonalMatrixCUDA);
     Mcuda->m = n;
     Mcuda->n = n;
@@ -1090,11 +1075,12 @@ static void cuda_blas_dscal(
 }
 
 
+/* Not implemented yet */
 static void cuda_blas_dgemv(
     NLBlas_t blas, MatrixTranspose trans, int m, int n, double alpha,
     const double *A, int ldA, const double *x, int incx,
     double beta, double *y, int incy 
-) {
+) { 
     nl_arg_used(blas);
     nl_arg_used(trans);
     nl_arg_used(m);
@@ -1110,6 +1096,7 @@ static void cuda_blas_dgemv(
     nl_assert_not_reached;
 }
 
+/* Not implemented yet */
 static void cuda_blas_dtpsv(
     NLBlas_t blas, MatrixTriangle uplo, MatrixTranspose trans,
     MatrixUnitTriangular diag, int n, const double *AP,
@@ -1133,16 +1120,16 @@ NLBlas_t nlCUDABlas() {
     if(!initialized) {
 	memset(&blas, 0, sizeof(blas));
 	blas.has_unified_memory = NL_FALSE;
-	blas.malloc = cuda_blas_malloc;
-	blas.free = cuda_blas_free;
-	blas.memcpy = cuda_blas_memcpy;
-	blas.dcopy = cuda_blas_dcopy;
-	blas.ddot = cuda_blas_ddot;
-	blas.dnrm2 = cuda_blas_dnrm2;
-	blas.daxpy = cuda_blas_daxpy;
-	blas.dscal = cuda_blas_dscal;
-	blas.dgemv = cuda_blas_dgemv;
-	blas.dtpsv = cuda_blas_dtpsv;
+	blas.Malloc = cuda_blas_malloc;
+	blas.Free = cuda_blas_free;
+	blas.Memcpy = cuda_blas_memcpy;
+	blas.Dcopy = cuda_blas_dcopy;
+	blas.Ddot = cuda_blas_ddot;
+	blas.Dnrm2 = cuda_blas_dnrm2;
+	blas.Daxpy = cuda_blas_daxpy;
+	blas.Dscal = cuda_blas_dscal;
+	blas.Dgemv = cuda_blas_dgemv;
+	blas.Dtpsv = cuda_blas_dtpsv;
 	nlBlasResetStats(&blas);
 	initialized = NL_TRUE;
     }

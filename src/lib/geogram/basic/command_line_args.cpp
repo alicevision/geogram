@@ -769,7 +769,9 @@ namespace GEO {
                 import_arg_group_log();
             } else if(name == "global") {
                 import_arg_group_global();
-            } else if(name == "sys") {
+            } else if(name == "nl") {
+	        import_arg_group_nl();
+	    } else if(name == "sys") {
                 import_arg_group_sys();
             } else if(name == "log") {
                 import_arg_group_log();

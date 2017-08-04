@@ -69,7 +69,7 @@ namespace {
 	 *  GLUP_TEXTURE_MATRIX
 	 * \return one of "modelview", "projection", "texture"
 	 */
-	const char* luaglup_matrixname(
+	static const char* luaglup_matrixname(
 	    lua_State* L, GLUPmatrix m
 	) {
 	    geo_argused(L);
@@ -97,7 +97,7 @@ namespace {
 	 * \retval true if glupPushMatrix() could be successfully called.
 	 * \retval false otherwise
 	 */
-	bool luaglup_trypushmatrix(lua_State* L) {
+	static bool luaglup_trypushmatrix(lua_State* L) {
 	    const index_t luaglup_max_matrix_depth = 13;
 	    GLUPmatrix m = glupGetMatrixMode();	    
 	    const char* matrix_name = luaglup_matrixname(L,m);
@@ -125,7 +125,7 @@ namespace {
 	 * \retval true if glupPopMatrix() could be successfully called.
 	 * \retval false otherwise
 	 */
-	bool luaglup_trypopmatrix(lua_State* L) {
+	static bool luaglup_trypopmatrix(lua_State* L) {
 	    GLUPmatrix m = glupGetMatrixMode();	    	    
 	    const char* matrix_name = luaglup_matrixname(L,m);
 	    lua_getfield(L,LUA_REGISTRYINDEX,"GLUP");
@@ -152,7 +152,7 @@ namespace {
 	 * \param[in] m one of GLUP_MODELVIEW_MATRIX, GLUP_PROJECTION_MATRIX,
 	 *  GLUP_TEXTURE_MATRIX
 	 */
-	void luaglup_adjustmatrixstack(lua_State* L, GLUPmatrix m) {
+	static void luaglup_adjustmatrixstack(lua_State* L, GLUPmatrix m) {
 	    const char* matrix_name = luaglup_matrixname(L,m);
 	    lua_getfield(L,LUA_REGISTRYINDEX,"GLUP");
 	    lua_getfield(L, -1, matrix_name);
@@ -182,7 +182,7 @@ namespace {
 	 *  was not called yet).
 	 * \retval false otherwise.
 	 */
-	bool luaglup_primitiveactive(lua_State* L) {
+	static bool luaglup_primitiveactive(lua_State* L) {
 	    lua_getfield(L,LUA_REGISTRYINDEX,"GLUP");
 	    lua_getfield(L, -1, "primitive_active");
 	    bool result = (lua_toboolean(L,-1) != 0);
@@ -200,7 +200,7 @@ namespace {
 	 *  flag), false if glupEnd() was called (reset the primitive_active
 	 *  flag).
 	 */
-	void luaglup_setprimitiveactive(lua_State* L, bool x) {
+	static void luaglup_setprimitiveactive(lua_State* L, bool x) {
 	    lua_getfield(L,LUA_REGISTRYINDEX,"GLUP");
 	    lua_pushboolean(L, x ? 1 : 0);
 	    lua_setfield(L, -2, "primitive_active");
@@ -273,7 +273,7 @@ namespace {
 	    return true;
 	}
 
-	int SetColor(lua_State* L) {
+	static int SetColor(lua_State* L) {
 	    if(lua_gettop(L) < 2) {
 		return luaL_error(
 		    L, "'GLUP.SetColor()' invalid number of arguments"
@@ -295,7 +295,7 @@ namespace {
 	    return 0;
 	}
 
-	int GetColor(lua_State* L) {
+	static int GetColor(lua_State* L) {
 	    if(lua_gettop(L) != 1) {
 		return luaL_error(
 		    L, "'GLUP.GetColor()' invalid number of arguments"
@@ -316,7 +316,7 @@ namespace {
 	    return 4;
 	}
 
-	int ClipPlane(lua_State* L) {
+	static int ClipPlane(lua_State* L) {
 	    if(lua_gettop(L) != 4) {
 		return luaL_error(
 		    L, "'GLUP.ClipPlane()' invalid number of arguments"
@@ -341,7 +341,7 @@ namespace {
 	    return 0;
 	}
 
-	int GetClipPlane(lua_State* L) {
+	static int GetClipPlane(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.GetClipPlane()' invalid number of arguments"
@@ -356,7 +356,7 @@ namespace {
 	    return 4;
 	}
 
-	int PushMatrix(lua_State* L) {
+	static int PushMatrix(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.PushMatrix()' invalid number of arguments"
@@ -373,7 +373,7 @@ namespace {
 	    return 0;
 	}
 
-	int PopMatrix(lua_State* L) {
+	static int PopMatrix(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.PopMatrix()' invalid number of arguments"
@@ -390,7 +390,7 @@ namespace {
 	    return 0;
 	}
 
-	int GetMatrix(lua_State* L) {
+	static int GetMatrix(lua_State* L) {
 	    if(lua_gettop(L) != 1) {
 		return luaL_error(
 		    L, "'GLUP.GetMatrix()' invalid number of arguments"
@@ -410,7 +410,7 @@ namespace {
 	}
 
 	
-	int LoadMatrix(lua_State* L) {
+	static int LoadMatrix(lua_State* L) {
 	    if(lua_gettop(L) != 16) {
 		return luaL_error(
 		    L, "'GLUP.LoadMatrix()' invalid number of arguments"
@@ -429,7 +429,7 @@ namespace {
 	    return 0;
 	}
 
-	int MultMatrix(lua_State* L) {
+	static int MultMatrix(lua_State* L) {
 	    if(lua_gettop(L) != 16) {
 		return luaL_error(
 		    L, "'GLUP.MultMatrix()' invalid number of arguments"
@@ -448,7 +448,7 @@ namespace {
 	    return 0;
 	}
 
-	int Begin(lua_State* L) {
+	static int Begin(lua_State* L) {
 	    if(lua_gettop(L) != 1) {
 		return luaL_error(
 		    L, "'GLUP.Begin()' invalid number of arguments"
@@ -470,7 +470,7 @@ namespace {
 	    return 0;
 	}
 	
-	int End(lua_State* L) {
+	static int End(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.End()' invalid number of arguments"
@@ -486,7 +486,7 @@ namespace {
 	    return 0;
 	}
 
-	int Vertex(lua_State* L) {
+	static int Vertex(lua_State* L) {
 	    double xyzw[4];
 	    if(!get_vec4(L,xyzw)) {
 		return luaL_error(
@@ -497,7 +497,7 @@ namespace {
 	    return 0;
 	}
 
-	int Color(lua_State* L) {
+	static int Color(lua_State* L) {
 	    double rgba[4];
 	    if(!get_vec4(L,rgba)) {
 		return luaL_error(
@@ -508,7 +508,7 @@ namespace {
 	    return 0;
 	}
 
-	int TexCoord(lua_State* L) {
+	static int TexCoord(lua_State* L) {
 	    double xyzw[4];
 	    if(!get_vec4(L,xyzw)) {
 		return luaL_error(
@@ -519,7 +519,7 @@ namespace {
 	    return 0;
 	}
 
-	int Normal(lua_State* L) {
+	static int Normal(lua_State* L) {
 	    double xyzw[4];
 	    if(!get_vec4(L,xyzw)) {
 		return luaL_error(

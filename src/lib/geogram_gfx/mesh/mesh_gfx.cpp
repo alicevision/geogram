@@ -179,7 +179,7 @@ namespace GEO {
         }
         if(
             attribute_subelements_ != MESH_NONE &&
-            attribute_subelements_ != MESH_VERTICES
+            attribute_subelements_ != MESH_VERTICES 
         ) {
             return false;
         }

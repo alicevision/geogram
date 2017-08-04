@@ -57,6 +57,14 @@ extern "C" {
 #include <geogram/third_party/lua/lualib.h>
 }
 
+// We cast function pointers to void* and conversely,
+// (I know this is bad), we ignore the warnings.
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+#endif
+
 /**
  * \file geogram/lua/lua_wrap.h
  * \brief Utilities to write lua bindings.
@@ -259,6 +267,8 @@ namespace GEO {
 	 * \retval false otherwise.
 	 */
 	static bool can_convert(lua_State* L, int idx) {
+	    geo_argused(L);
+	    geo_argused(idx);
 	    geo_assert_not_reached;
 	    return false;
 	}
@@ -975,5 +985,10 @@ namespace GEO {
     /*************************************************************************/
     
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 
 #endif

@@ -102,7 +102,7 @@ NLMatrix nlCUDAJacobiPreconditionerNewFromCRSMatrix(NLMatrix M);
  *  BLAS operation on the GPU using CUDA.
  * \return a pointer to the BLAS abstraction layer.
  */
-NLBlas_t nlCUDABlas();
+NLBlas_t nlCUDABlas(void);
 
 /****************************************************************************/
 

@@ -266,7 +266,7 @@ static void nlSSORPreconditionerMult(
     nlSparseMatrixMultUpperInverse(
         P->M, P->work, y, P->omega
     );
-    nlHostBlas()->dscal(nlHostBlas(),(NLint)P->n, 2.0 - P->omega, y, 1);
+    nlHostBlas()->Dscal(nlHostBlas(),(NLint)P->n, 2.0 - P->omega, y, 1);
 }
 
 NLMatrix nlNewSSORPreconditioner(NLMatrix M_in, double omega) {

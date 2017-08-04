@@ -230,15 +230,15 @@ namespace GEO {
         }
 
         /**
-         * \brief Computes the dihedral angle between two
-         *  mesh facets sharing an edge.
+         * \brief Computes the angle between the normal vectors
+	 *  of two mesh facets sharing an edge.
          * \param[in] M a const reference to the mesh
          * \param[in] c a corner index in \p M
          * \return the angle between the facet that contains c and
          *  the facet adjacent to c
          * \pre M.facets.are_simplices() && M.corner_adjacent_facet(c) != -1
          */
-        double GEOGRAM_API mesh_dihedral_angle(const Mesh& M, index_t c);
+        double GEOGRAM_API mesh_normal_angle(const Mesh& M, index_t c);
 
 
         /**

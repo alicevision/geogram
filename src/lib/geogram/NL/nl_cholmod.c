@@ -245,18 +245,7 @@ static CHOLMODContext* CHOLMOD() {
     return &context;
 }
 
-
-/**
- * \brief Tests whether CHOLMOD extension is
- *  initialized.
- * \details Tests whether CHOLMOD shared object
- *  was successfuly loaded and whether all the
- *  function pointers where found.
- * \retval NL_TRUE if CHOLMOD was successfully
- *  loaded and initialized
- * \retval NL_FALSE otherwise
- */
-static NLboolean CHOLMOD_is_initialized() {
+NLboolean nlExtensionIsInitialized_CHOLMOD() {
     return
         CHOLMOD()->DLL_handle != NULL &&
         CHOLMOD()->cholmod_start != NULL &&
@@ -269,11 +258,6 @@ static NLboolean CHOLMOD_is_initialized() {
         CHOLMOD()->cholmod_free_sparse != NULL &&
         CHOLMOD()->cholmod_free_dense != NULL &&
         CHOLMOD()->cholmod_finish != NULL ;
-}
-
-
-NLboolean nlExtensionIsInitialized_CHOLMOD() {
-    return CHOLMOD_is_initialized();
 }
 
 /**
@@ -306,7 +290,7 @@ static void nlTerminateExtension_CHOLMOD(void) {
 
 NLboolean nlInitExtension_CHOLMOD(void) {
     if(CHOLMOD()->DLL_handle != NULL) {
-        return CHOLMOD_is_initialized();
+        return nlExtensionIsInitialized_CHOLMOD();
     }
 
     /*

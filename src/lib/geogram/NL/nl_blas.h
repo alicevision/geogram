@@ -297,17 +297,17 @@ typedef void (*FUNPTR_dtpsv)(
 );
 
 struct NLBlas {
-    FUNPTR_malloc malloc;
-    FUNPTR_free free;
-    FUNPTR_memcpy memcpy;
+    FUNPTR_malloc Malloc;
+    FUNPTR_free Free;
+    FUNPTR_memcpy Memcpy;
 
-    FUNPTR_dcopy dcopy;
-    FUNPTR_dscal dscal;
-    FUNPTR_ddot ddot;
-    FUNPTR_dnrm2 dnrm2;
-    FUNPTR_daxpy daxpy;
-    FUNPTR_dgemv dgemv;
-    FUNPTR_dtpsv dtpsv;
+    FUNPTR_dcopy Dcopy;
+    FUNPTR_dscal Dscal;
+    FUNPTR_ddot  Ddot;
+    FUNPTR_dnrm2 Dnrm2;
+    FUNPTR_daxpy Daxpy;
+    FUNPTR_dgemv Dgemv;
+    FUNPTR_dtpsv Dtpsv;
 
     NLboolean has_unified_memory;
     double start_time;
@@ -371,7 +371,7 @@ NLulong nlBlasMaxUsedRam(NLBlas_t blas, NLmemoryType type);
  *  BLAS operation on the host CPU.
  * \return a pointer to the BLAS abstraction layer.
  */
-NLBlas_t nlHostBlas();
+NLBlas_t nlHostBlas(void);
 
 /**
  * \brief Allocates a vector of doubles;
@@ -380,7 +380,7 @@ NLBlas_t nlHostBlas();
  * \param[in] dim number of components in the vector.
  */
 #define NL_NEW_VECTOR(blas, memtype, dim) \
-    (double*)blas->malloc(blas,memtype,(size_t)(dim)*sizeof(double))
+    (double*)blas->Malloc(blas,memtype,(size_t)(dim)*sizeof(double))
 
 /**
  * \brief Deletes a vector of doubles;
@@ -390,7 +390,7 @@ NLBlas_t nlHostBlas();
  * \param[in] ptr a pointer to the vector to be deleted.
  */
 #define NL_DELETE_VECTOR(blas, memtype, dim, ptr) \
-    blas->free(blas,memtype,(size_t)(dim)*sizeof(double),ptr)
+    blas->Free(blas,memtype,(size_t)(dim)*sizeof(double),ptr)
 
 /******************************************************************************/
 

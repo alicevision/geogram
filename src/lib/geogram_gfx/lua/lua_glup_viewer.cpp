@@ -55,7 +55,7 @@ namespace {
     namespace LUAGLUPVIEWERImpl {
 	static double t0 = 0.0;
 	
-	int ElapsedTime(lua_State* L) {
+	static int ElapsedTime(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.ElapsedTime()' invalid number of arguments"
@@ -67,7 +67,7 @@ namespace {
 	    return 1;
 	}
 
-	int ResetViewer(lua_State* L) {
+	static int ResetViewer(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.ResetViewer()' invalid number of arguments"
@@ -85,7 +85,7 @@ namespace {
 	    return 0;
 	}
 
-	int ArcadeStyle(lua_State* L) {
+	static int ArcadeStyle(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.ArcadeStyle()' invalid number of arguments"
@@ -102,7 +102,7 @@ namespace {
 	    return 0;    
 	}
 
-	int SetRegionOfInterest(lua_State* L) {
+	static int SetRegionOfInterest(lua_State* L) {
 	    if(lua_gettop(L) != 6) {
 		return luaL_error(
 		    L, "'GLUP.SetRegionOfInterest()' invalid number of arguments"
@@ -131,7 +131,7 @@ namespace {
 	    return 0;
 	}
 
-	int GetRegionOfInterest(lua_State* L) {
+	static int GetRegionOfInterest(lua_State* L) {
 	    if(lua_gettop(L) != 0) {
 		return luaL_error(
 		    L, "'GLUP.GetRegionOfInterest()' invalid number of arguments"

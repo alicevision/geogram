@@ -204,8 +204,9 @@ namespace {
 	// mechanism (lua_wrap.h) understands it and sends it back to LUA.
 	// Note: recursive mode not implemented yet (it is bugged in
 	// FileSystem, to be fixed...)
+
 	
-	std::vector<std::string> get_directory_entries(
+	static std::vector<std::string> get_directory_entries(
 	    const std::string& path
 	) {
 	    std::vector<std::string> result;
@@ -213,13 +214,13 @@ namespace {
 	    return result;
 	}
 
-	std::vector<std::string> get_files(const std::string& path) {
+	static std::vector<std::string> get_files(const std::string& path) {
 	    std::vector<std::string> result;
 	    FileSystem::get_files(path,result);
 	    return result;
 	}
 
-	std::vector<std::string> get_subdirectories(const std::string& path) {
+	static std::vector<std::string> get_subdirectories(const std::string& path) {
 	    std::vector<std::string> result;
 	    FileSystem::get_subdirectories(path,result);
 	    return result;

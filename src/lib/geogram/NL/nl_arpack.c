@@ -138,27 +138,13 @@ static ARPACKContext* ARPACK() {
     return &context;
 }
 
-/**
- * \brief Tests whether ARPACK extension is
- *  initialized.
- * \details Tests whether ARPACK shared object
- *  was successfuly loaded and whether all the
- *  function pointers where found.
- * \retval NL_TRUE if ARPACK was successfully
- *  loaded and initialized
- * \retval NL_FALSE otherwise
- */
-static NLboolean ARPACK_is_initialized() {
+NLboolean nlExtensionIsInitialized_ARPACK() {
     return
         ARPACK()->DLL_handle != NULL &&
         ARPACK()->dsaupd != NULL &&
         ARPACK()->dseupd != NULL &&   
         ARPACK()->dnaupd != NULL &&
         ARPACK()->dneupd != NULL;
-}
-
-NLboolean nlExtensionIsInitialized_ARPACK() {
-    return ARPACK_is_initialized();
 }
 
 static void nlTerminateExtension_ARPACK(void) {
@@ -203,7 +189,7 @@ static char* u(const char* str) {
 
 NLboolean nlInitExtension_ARPACK(void) {
     if(ARPACK()->DLL_handle != NULL) {
-        return ARPACK_is_initialized();
+        return nlExtensionIsInitialized_ARPACK();
     }
 
     ARPACK()->DLL_handle = nlOpenDLL(

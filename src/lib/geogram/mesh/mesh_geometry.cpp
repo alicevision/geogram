@@ -96,7 +96,7 @@ namespace GEO {
 	    return result;
 	}
 	
-        double mesh_dihedral_angle(const Mesh& M, index_t c) {
+        double mesh_normal_angle(const Mesh& M, index_t c) {
             geo_debug_assert(M.facets.are_simplices());
             index_t f1 = c/3;
             index_t f2 = M.facet_corners.adjacent_facet(c);
@@ -108,7 +108,7 @@ namespace GEO {
             if(dot(cross(n1,n2),mesh_corner_vector(M,c)) > 0.0) {
                 sign = -1.0;
             }
-            double cos_angle = (l > 1e-20) ? dot(n1, n2) : 1.0;
+            double cos_angle = (l > 1e-30) ? dot(n1, n2)/l : 1.0;
             // Numerical precision problem may occur, and generate
             // normalized dot products that are outside the valid
             // range of acos.
