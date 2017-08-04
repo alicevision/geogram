@@ -195,7 +195,8 @@ extern "C" {
         GLUP_CLIPPING           =4,
         GLUP_INDIRECT_TEXTURING =5,
 	GLUP_VERTEX_NORMALS     =6,	
-        GLUP_PICKING            =7
+        GLUP_PICKING            =7,
+	GLUP_ALPHA_DISCARD      =8
     } GLUPtoggle;
 
     void GLUP_API glupEnable(GLUPtoggle toggle);
@@ -311,6 +312,9 @@ extern "C" {
 
     void GLUP_API glupSetCellsShrink(GLUPfloat x);
     GLUPfloat GLUP_API glupGetCellsShrink();
+
+    void GLUP_API glupSetAlphaThreshold(GLUPfloat x);
+    GLUPfloat GLUP_API glupGetAlphaThreshold();
     
     /**
      * @}

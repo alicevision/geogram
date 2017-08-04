@@ -2,6 +2,7 @@
 #define H_CAVITY_H
 
 #include <geogram/mesh/mesh.h>
+
 namespace GEO {
 
 

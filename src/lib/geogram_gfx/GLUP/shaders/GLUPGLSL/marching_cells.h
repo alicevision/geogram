@@ -35,16 +35,20 @@ void isect_triangle(
 ) {           
     emit_isect_vertex(i,mtexi);                             
     emit_isect_vertex(j,mtexj);                             
-    emit_isect_vertex(k,mtexk);                             
+    emit_isect_vertex(k,mtexk);
 }                                                    
 
 void draw_marching_cell() {                          
-    int config = compute_config();                    
+    int config = compute_config();
+
+
     if(config_size(config) == 0) {
         return;
-    }          
+    } 
+    
     compute_intersections();                          
-    int size = config_size(config);                   
+    int size = config_size(config);
+
     if(glupIsEnabled(GLUP_DRAW_MESH)) {
         // Single triangle: mesh tex coords are standard tri mesh tex coord.
         if(size == 3) {                                
@@ -86,7 +90,7 @@ void draw_marching_cell() {
                 config_edge(config,i+1), vec4(0.0, 0.0, 0.0, 0.0)
             );                                           
         }                                              
-    }                                                  
+    } 
 }
 
 bool compute_clip_coords() {

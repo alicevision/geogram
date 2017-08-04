@@ -51,6 +51,9 @@
 #include <exploragram/hexdom/PGP_export.h>
 #include <exploragram/hexdom/time_log.h>
 
+#include <geogram/points/colocate.h>
+
+
 namespace GEO {
 
 	namespace HexdomPipeline {
@@ -171,15 +174,25 @@ namespace GEO {
 			return true;
 		}
 
-		void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid) {
-			Mesh tets;
-			tets.copy(*cavity);
-			STEP(fill_cavity_with_tetgen,(cavity, &tets, true, with_pyramid));
-			result->copy(tets);
-			result->facets.clear();
-			STEP(add_hexes_to_tetmesh,(hexahedrons, result));
-			result->cells.connect();
-			result->cells.compute_borders();
+		void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid,bool baudoin_carrier) {
+
+			{
+			    #ifndef HAS_TET2HEX
+			    if(baudoin_carrier) {
+				Logger::warn("hexdom") << "This version does not have Vorpaline" << std::endl;
+				Logger::warn("hexdom") << "Ignored flag: Carrier-Baudouin algo." << std::endl;				
+				Logger::warn("hexdom") << "(filling cavity with tets, no recombination)" << std::endl;				
+			    }
+			    #endif
+				Mesh tets;
+				tets.copy(*cavity);
+				STEP(fill_cavity_with_tetgen,(cavity, &tets, true, with_pyramid));
+				result->copy(tets);
+				result->facets.clear();
+				STEP(add_hexes_to_tetmesh,(hexahedrons, result));
+				result->cells.connect();
+				result->cells.compute_borders();
+			}
 		}
 	}
 

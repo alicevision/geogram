@@ -159,19 +159,34 @@ vec4 glup_lighting(in vec4 color, in vec3 normal) {
     spec = pow(spec,30.0);
     if(diff > 0.0) {                                            
         vec3 vspec = spec*vec3(1.0,1.0,1.0);                        
-        result = (diff*result) + vec4(vspec,1.0);         
-        result.rgb += vec3(0.2, 0.2, 0.2);                  
+        result.rgb = diff*result.rgb + vspec +         
+	                vec3(0.2, 0.2, 0.2);                  
     } else {                                                        
-        result = vec4(0.2, 0.2, 0.2, 1.0);                  
+        result.rgb = vec3(0.2, 0.2, 0.2);
     }
+    result.w = color.w;
     return result;
 }
 
 #ifdef GL_ES        
 #define glup_FragColor gl_FragColor
+
+#ifdef GL_EXT_frag_depth
 #define glup_FragDepth gl_FragDepthEXT
+#else
+float glup_FragDepth; // depth updates will be ignored
+#endif
+
 #else
 out vec4 glup_FragColor;
 #define glup_FragDepth gl_FragDepth 
 #endif
+
+void glup_alpha_discard() {
+    if(glupIsEnabled(GLUP_ALPHA_DISCARD)) {
+	if(glup_FragColor.a < GLUP.alpha_threshold) {
+	    discard;
+	}
+    }
+}
 

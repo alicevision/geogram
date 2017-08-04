@@ -1,3 +1,4 @@
+#include <exploragram/hexdom/cavity.h>
 #include <exploragram/hexdom/hex.h>
 #include <exploragram/hexdom/PGP.h>
 #include <exploragram/hexdom/basic.h>
@@ -24,7 +25,7 @@ namespace GEO {
 
 
 
-	void merge_hex_boundary_and_quadtri(Mesh* hex, Mesh* quad) {
+    void merge_hex_boundary_and_quadtri(Mesh* hex, Mesh* quad) {
 		if (hex->cells.nb() == 0) return;
 		double eps = 1e-3*get_cell_average_edge_size(hex);
 

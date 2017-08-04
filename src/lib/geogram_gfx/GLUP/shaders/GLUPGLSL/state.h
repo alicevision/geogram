@@ -31,7 +31,10 @@ uniform GLUPStateBlock {
     int   clipping_mode;                     
     vec4  clip_plane; 
     vec4  world_clip_plane; 
-    vec4  clip_clip_plane; 
+    vec4  clip_clip_plane;
+
+    bool alpha_discard_enabled;
+    float alpha_threshold;
                                          
     mat4 modelviewprojection_matrix;         
     mat4 modelview_matrix;

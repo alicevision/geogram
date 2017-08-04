@@ -499,6 +499,17 @@ GLUPfloat glupGetCellsShrink() {
     return GLUP::current_context_->uniform_state().cells_shrink.get();    
 }
 
+void glupSetAlphaThreshold(GLUPfloat x) {
+    GEO_CHECK_GLUP();
+    GLUP::current_context_->uniform_state().alpha_threshold.set(x);    
+}
+
+GLUPfloat glupGetAlphaThreshold() {
+    GEO_CHECK_GLUP();
+    return GLUP::current_context_->uniform_state().alpha_threshold.get();        
+}
+
+
 /****************** Picking ******************************/
 
 void glupPickingMode(GLUPpickingMode mode) {

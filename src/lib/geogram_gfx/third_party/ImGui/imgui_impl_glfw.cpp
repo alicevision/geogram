@@ -148,6 +148,12 @@ void ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow*, int button, int action, int
 
 void ImGui_ImplGlfw_ScrollCallback(GLFWwindow*, double /*xoffset*/, double yoffset)
 {
+    // [Bruno Levy] 01/06/2017 
+    // Under emscripten and apple, mouse wheel is inversed 
+    // as compared to the other platforms. 
+#if defined(__EMSCRIPTEN__) || defined(__APPLE__)
+    yoffset *= -1.0;
+#endif    
     g_MouseWheel += (float)yoffset; // Use fractional mouse wheel, 1.0 unit 5 lines.
 }
 

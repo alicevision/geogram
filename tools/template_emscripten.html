@@ -224,6 +224,10 @@
 <script>
       function saveFileToMemoryFS(e) {
           var data=e.target.result;
+	  try {
+	     FS.unlink(e.target.current_file_name);
+	  } catch(e) {
+	  }
           FS.createDataFile(
              '/', e.target.current_file_name, data, true, true, true
           );
@@ -257,6 +261,14 @@
      }
      saveAs(blob, name);
   }
+</script>
+
+<script>
+document.onkeydown = function (e) {
+    if (e.keyCode === 116) {
+        return false;
+    }
+};
 </script>
 
 <!-- DATAFILE -->

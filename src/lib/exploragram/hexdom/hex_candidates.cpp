@@ -6,7 +6,7 @@
 namespace GEO {
 
 
-	vec3 change_tet_basis(vec3 in, vec3  P[4], vec3 P_img[4]) { // TODO sortir ça + trglgrad dans un fichier apart
+	static vec3 change_tet_basis(vec3 in, vec3  P[4], vec3 P_img[4]) { // TODO sortir ça + trglgrad dans un fichier apart
 		Matrix<12, double> M;
 		M.load_zero();
 		double RHS[12];
@@ -36,7 +36,7 @@ namespace GEO {
 		return res;
 	}
 
-	bool in_tet(vec3 test, vec3 P[4], double eps) {
+	static bool in_tet(vec3 test, vec3 P[4], double eps) {
 		int find[4][3] = { { 1, 3, 2 },{ 3, 0, 2 },{ 0, 3, 1 },{ 0, 1, 2 } };
 		if (std::abs(dot(P[3] - P[0], cross(P[2] - P[0], P[1] - P[0]))) < 1e-15) return false;// check for flat tet
 		FOR(f, 4) {
@@ -50,7 +50,7 @@ namespace GEO {
 		return true;
 	}
 
-	void get_grid_vertices(Mesh* m, Attribute<vec3>& UC, index_t t, std::vector<vec3>& psetX, std::vector<vec3>& psetU, bool dual) {
+	static void get_grid_vertices(Mesh* m, Attribute<vec3>& UC, index_t t, std::vector<vec3>& psetX, std::vector<vec3>& psetU, bool dual) {
 		// compute a bbox in the parametric domain
 		int bbox[2][3] = { { 1000000, 1000000, 1000000 },{ -1000000, -1000000, -1000000 } };
 		FOR(i, 4) FOR(dim, 3) {
@@ -129,19 +129,20 @@ namespace GEO {
 			for (int lv = 0; lv < 4; lv++) cube_face_bary[lf] += .5 * cubeU[hexdescr.facet_vertex[lf][lv]];
 		}
 	}
-	bool cell_has_param(Mesh* m, Attribute<bool>& has_param, index_t c) {
+    
+        static bool cell_has_param(Mesh* m, Attribute<bool>& has_param, index_t c) {
 		FOR(f, 4) if (!has_param[m->cells.facet(c, f)]) return false;
 		return true;
 	}
 
-	bool param_is_degenerated(Mesh* m, Attribute<vec3>& UC, index_t tet) {
+	static bool param_is_degenerated(Mesh* m, Attribute<vec3>& UC, index_t tet) {
 		vec3 P[4];
 		FOR(i, 4)  P[i] = UC[m->cells.corner(tet, i)];
 		return (dot(P[3] - P[0], cross(P[2] - P[0], P[1] - P[0])) == 0);
 	}
 
 
-	void make_neig_tet_compatible(Mesh* m, Attribute<vec3>& UC, index_t ref_tet, index_t cf) {
+	static void make_neig_tet_compatible(Mesh* m, Attribute<vec3>& UC, index_t ref_tet, index_t cf) {
 		{// preconditions
 			Attribute<bool> has_param(m->cell_facets.attributes(), "has_param");
 			geo_assert(cell_has_param(m, has_param, ref_tet));

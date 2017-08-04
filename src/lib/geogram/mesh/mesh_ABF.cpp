@@ -157,7 +157,8 @@ namespace {
 	    if(!solve_angles()) {
 		Logger::err("ABF++") << "Did not converge." << std::endl ; 
 		Logger::err("ABF++") << "Switching to LSCM" << std::endl ; 
-		// Note: AnglesToUV with angles measured on the mesh (i.e. beta's) = LSCM !!!
+		// Note: AnglesToUV with angles measured on the mesh
+		//  (i.e. beta's) = LSCM !!!
 		for(index_t c=0; c<mesh_.facet_corners.nb(); ++c) {
 		    angle_[c] = beta_[c];
 		}
@@ -278,11 +279,15 @@ namespace {
 	double corner_angle(index_t c) {
 	    index_t f = c_to_f(c);
 	    index_t c_prev = mesh_.facets.prev_corner_around_facet(f,c);
-	    index_t c_next = mesh_.facets.next_corner_around_facet(f,c);	    
+	    index_t c_next = mesh_.facets.next_corner_around_facet(f,c);
 
-	    const vec3& p1 = Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c));
-	    const vec3& p2 = Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c_next));
-	    const vec3& p3 = Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c_prev));	    	    
+	    const vec3& p1 =
+		Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c));
+	    const vec3& p2 =
+		Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c_next));
+	    const vec3& p3 =
+		Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c_prev));
+	    
 	    double result = Geom::angle(p2-p1,p3-p1);
 	    result = geo_max(result, 2.0 * M_PI / 360.0) ;
 	    return result ;
@@ -292,8 +297,9 @@ namespace {
 	bool solve_angles() {
 
 	    if(!nlInitExtension("SUPERLU")) {
-		Logger::warn("ABF++") << "Could not initialize SuperLU extension"
-				      << std::endl;
+		Logger::warn("ABF++")
+		    << "Could not initialize SuperLU extension"
+		    << std::endl;
 		return false;
 	    }
 	    
@@ -397,7 +403,9 @@ namespace {
 		const NLRowColumn& Cj = J2_.column[j];
 		for(NLuint ii=0; ii<Cj.size; ++ii) {
 		    const NLCoeff& c = Cj.coeff[ii] ;
-		    nlSparseMatrixAdd(&J_star_,c.index, c_to_f(j), c.value * Delta_inv_[j]);
+		    nlSparseMatrixAdd(
+			&J_star_,c.index, c_to_f(j), c.value * Delta_inv_[j]
+		    );
 		}
 	    }
 	    // Note: J** does not need to be built, it is directly added to M.
@@ -441,7 +449,8 @@ namespace {
 	    }
 
 	    Logger::out("ABF++") << "Solving linear system..." << std::endl;
-	    NLMatrix Minv = nlMatrixFactorize((NLMatrix)&M_, NL_PERM_SUPERLU_EXT);
+	    NLMatrix Minv =
+		nlMatrixFactorize((NLMatrix)&M_, NL_PERM_SUPERLU_EXT);
 	    nlMultMatrixVector(Minv, r_.data(), dlambda2_.data());
 	    nlDeleteMatrix(Minv);
 	    Logger::out("ABF++") << "Solved" << std::endl;
@@ -451,7 +460,8 @@ namespace {
 	    // 4.1) dlambda1 = Delta*^-1 ( b1* - J*^t dlambda2 )
 	    mult_transpose(J_star_, dlambda2_, dlambda1_) ;
 	    for(index_t f=0; f<nf_; ++f) {
-		dlambda1_[f] = Delta_star_inv_[f] * (b1_star_[f] - dlambda1_[f]) ;
+		dlambda1_[f] =
+		    Delta_star_inv_[f] * (b1_star_[f] - dlambda1_[f]) ;
 	    }
 	    
 	    // 4.2) Compute dalpha in function of dlambda:
@@ -528,9 +538,15 @@ namespace {
                 do {
 		    index_t f = c_to_f(c);
 		    index_t next_c = mesh_.facets.next_corner_around_facet(f,c);
-		    nlSparseMatrixAdd(&J2_, i, next_c, prod_next_sin * cos(alpha_[next_c]) / sin(alpha_[next_c]));
+		    nlSparseMatrixAdd(
+			&J2_, i, next_c,
+			prod_next_sin * cos(alpha_[next_c])/sin(alpha_[next_c])
+		    );
 		    index_t prev_c = mesh_.facets.prev_corner_around_facet(f,c);
-		    nlSparseMatrixAdd(&J2_, i, prev_c, -prod_prev_sin * cos(alpha_[prev_c]) / sin(alpha_[prev_c]));
+		    nlSparseMatrixAdd(
+			&J2_, i, prev_c,
+		       -prod_prev_sin * cos(alpha_[prev_c])/sin(alpha_[prev_c])
+		    );
 		    c = next_c_around_v_[c];
                 } while(c != NO_CORNER);
                 i++ ;
@@ -599,11 +615,13 @@ namespace {
 		    index_t f = c_to_f(c);
 		    index_t next_c = mesh_.facets.next_corner_around_facet(f,c);
                     b1_[next_c] -= 
-                        lambda_[i] * prod_next_sin * cos(alpha_[next_c]) / sin(alpha_[next_c]) ;
+                        lambda_[i] * prod_next_sin *
+			cos(alpha_[next_c]) / sin(alpha_[next_c]) ;
                     
 		    index_t prev_c = mesh_.facets.prev_corner_around_facet(f,c);
                     b1_[prev_c] += 
-                        lambda_[i] * prod_prev_sin * cos(alpha_[prev_c]) / sin(alpha_[prev_c]) ;
+                        lambda_[i] * prod_prev_sin *
+			cos(alpha_[prev_c]) / sin(alpha_[prev_c]) ;
                     
 		    c = next_c_around_v_[c];
                 } while(c != NO_CORNER);
@@ -825,8 +843,11 @@ namespace GEO {
 	Mesh& M, const std::string& attribute_name
     ) {
 	// Normally, the ABFPlusPlus class can handle non-triangulated
-	// surfaces, but the angle-to-uv algorithm in LSCM needs to be
-	// adapted.
+	// surfaces, but:
+	// 1) it does not seem to converge (to be checked, I may have a bug)
+	// 2) the angle-to-uv algorithm in LSCM needs to be
+	//    adapted.
+	// (for now, we still require triangulated surfaces)
 	geo_assert(M.facets.are_simplices());
 	
 	ABFPlusPlus ABF(M);

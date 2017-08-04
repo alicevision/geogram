@@ -2,6 +2,7 @@
 add_subdirectory(vorpastat)
 add_subdirectory(vorpacomp)
 add_subdirectory(geodump)
+add_subdirectory(geocod)
 
 if(GEOGRAM_WITH_GRAPHICS)
   add_subdirectory(vorpaview)

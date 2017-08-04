@@ -60,4 +60,5 @@ void main() {
     glup_FragColor = glup_shading(
         color, tex_coord, N, int(primitive_id), mesh_tex_coord
     );
+    glup_alpha_discard();
 }                                                             

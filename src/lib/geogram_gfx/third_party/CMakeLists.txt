@@ -14,6 +14,7 @@ aux_source_directories(SOURCES "Source Files"            .)
 aux_source_directories(SOURCES "Source Files\\glad"      glad)
 aux_source_directories(SOURCES "Source Files\\quicktext" quicktext)
 aux_source_directories(SOURCES "Source Files\\ImGui"     ImGui)
+aux_source_directories(SOURCES "Source Files\\imgui_lua_bindings" imgui_lua_bindings)
 
 add_library(geogram_gfx_third_party OBJECT ${SOURCES})
 

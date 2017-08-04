@@ -7643,7 +7643,7 @@ bool ImGui::InputTextEx(const char* label, char* buf, int buf_size, const ImVec2
                 edit_state.TempTextBuffer.resize((ie-ib) * 4 + 1);
                 ImTextStrToUtf8(edit_state.TempTextBuffer.Data, edit_state.TempTextBuffer.Size, edit_state.Text.Data+ib, edit_state.Text.Data+ie);
                 g.IO.SetClipboardTextFn(edit_state.TempTextBuffer.Data);
-            }
+            } 
 
             if (cut)
             {
@@ -7651,7 +7651,7 @@ bool ImGui::InputTextEx(const char* label, char* buf, int buf_size, const ImVec2
                 stb_textedit_cut(&edit_state, &edit_state.StbState);
             }
         }
-        else if (is_shortcutkey_only && IsKeyPressedMap(ImGuiKey_V) && is_editable)
+	else if (is_shortcutkey_only && IsKeyPressedMap(ImGuiKey_V) && is_editable)
         {
             // Paste
             if (g.IO.GetClipboardTextFn)
@@ -7679,9 +7679,9 @@ bool ImGui::InputTextEx(const char* label, char* buf, int buf_size, const ImVec2
                         edit_state.CursorFollow = true;
                     }
                     ImGui::MemFree(clipboard_filtered);
-                }
-            }
-        }
+                } 
+            } 
+        } 
 
         if (cancel_edit)
         {

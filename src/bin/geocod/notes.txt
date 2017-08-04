@@ -1,0 +1,38 @@
+
+DONE * Un "systeme de fichiers virtuels" avec des fichiers par defaut, et une
+  directive import("nom de fichier")
+
+DONE * Quand il y a une erreur en plein milieu des fonctions graphiques, il va falloir
+  arriver \`a avoir un solide syst\`eme de r\'ecup\'eration sur erreur, en particulier:
+      - terminer toute primitive commencee
+      - remettre la pile de matrices dans le meme etat qu'a l'entree
+      Rem: le wrapper GLUP-LUA peut tres bien s'en charger, en memorisant la profondeur de
+      pile des differentes piles de matrices. En plus il pourra capturer un debordement de pile
+      dans les deux sens sans faire planter GLUP.
+
+* Comment ImGUI fait-il pour retrouver la touche d'apres le keycode ? 
+  -> Ben en fait il sait pas !! (par exemple, pour faire <ctrl><Z>, il faut faire
+    en fait <ctrl><W> !!).
+      Rem1: pour le texte, il utilise un autre callback (char-callback plutot que key-callback)
+    qui fait bien la conversion.
+      Rem2: sous Emscripten, ça fonctionne, parceque la version Emscripten de GLFW doit fournir les
+    bonnes touches.
+
+DONE * Faire marcher <ctrl><v> dans navigateur, pourquoi ca marche pas, captur\'e avant ?
+   -> c'est ImGui qui re-route la gestion du clipboard vers GLFW, et l'implantation GLFW
+     du clipboard ne fonctionne pas !! -> si on est sous emscripten, on garde le clipboard
+     ImGUI par defaut.
+
+DONE * Disable F5
+<script>
+document.onkeydown = function (e) {
+    if (e.keyCode === 116) {
+        return false;
+    }
+};
+</script>
+
+* Faudra vraiment arriver \`a afficher les num\'eros de ligne dans l'editeur, et mettre en surbrillance
+  la ligne qui a declench\'e une erreur.
+
+* Une fonction pour afficher des petits chiffres, pour indiquer les numeros de pixels.

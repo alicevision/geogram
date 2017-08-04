@@ -156,6 +156,10 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
+// [Bruno] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
+// ImGUI clipboard instead.
+#ifndef __EMSCRIPTEN__
+
 static const char* ImGui_ImplGlfwGL3_GetClipboardText()
 {
     return glfwGetClipboardString(g_Window);
@@ -166,6 +170,9 @@ static void ImGui_ImplGlfwGL3_SetClipboardText(const char* text)
     glfwSetClipboardString(g_Window, text);
 }
 
+#endif
+
+
 void ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow*, int button, int action, int /*mods*/)
 {
     if (action == GLFW_PRESS && button >= 0 && button < 3)
@@ -174,12 +181,19 @@ void ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow*, int button, int action, 
 
 void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow*, double /*xoffset*/, double yoffset)
 {
+    // [Bruno Levy] 01/06/2017 
+    // Under emscripten and apple, mouse wheel is inversed 
+    // as compared to the other platforms. 
+#if defined(__EMSCRIPTEN__) || defined(__APPLE__)
+    yoffset *= -1.0;
+#endif    
     g_MouseWheel += (float)yoffset; // Use fractional mouse wheel, 1.0 unit 5 lines.
 }
 
 void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action, int mods)
 {
     ImGuiIO& io = ImGui::GetIO();
+
     if (action == GLFW_PRESS)
         io.KeysDown[key] = true;
     if (action == GLFW_RELEASE)
@@ -394,8 +408,14 @@ bool    ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks)
     io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
     io.RenderDrawListsFn = ImGui_ImplGlfwGL3_RenderDrawLists;       // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
+
+// [Bruno] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
+// ImGUI clipboard instead.
+#ifndef __EMSCRIPTEN__    
     io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
     io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
+#endif
+    
 #ifdef _WIN32
     io.ImeWindowHandle = glfwGetWin32Window(g_Window);
 #endif

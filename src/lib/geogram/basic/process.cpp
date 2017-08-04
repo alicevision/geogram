@@ -343,7 +343,9 @@ namespace GEO {
 #endif
             }
 
-            os_install_signal_handlers();
+	    if(::getenv("GEO_NO_SIGNAL_HANDLER") == NULL) {
+		os_install_signal_handlers();
+	    }
 
             // Initialize Process default values
 

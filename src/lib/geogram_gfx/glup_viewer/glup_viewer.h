@@ -65,17 +65,60 @@ typedef double GLdouble;
 extern "C" {
 #endif
 
-typedef void (* GlupViewerDisplayFunc)();
-typedef int (* GlupViewerKeyboardFunc)(char key);
-typedef void (* GlupViewerKeyFunc)();
-typedef void (* GlupViewerInitFunc)();
-typedef void (* GlupViewerDragDropFunc)(char*);
-
 enum GlupViewerEvent {
     GLUP_VIEWER_DOWN,
     GLUP_VIEWER_MOVE,
     GLUP_VIEWER_UP
 };
+    
+/**
+ * \brief Callback function to be called to display each frame.
+ * \see glup_viewer_set_display_func()
+ */
+typedef void (* GlupViewerDisplayFunc)();
+
+/**
+ * \brief Callback function to be called when a key is pressed.
+ * \details For high-level input, typically key shortcuts for command.
+ *  Videogames should use glup_viewer_set_keyboard_func_ext. The function
+ *  is supposed to return GL_TRUE if the key was taken into account, GL_FALSE
+ *  otherwise.
+ * \see glup_viewer_set_keyboard_func()
+ */
+typedef GLboolean (* GlupViewerKeyboardFunc)(char key);
+
+/**
+ * \brief Callback function to be called when a key is pressed.
+ * \details For low-level input, typically videogames. The function
+ *  is supposed to return GL_TRUE if the key was taken into account, GL_FALSE
+ *  otherwise. The key argument is either a single-character string with the
+ *  key, or the symbolic name of the key ("left", "right", "alt", "control",
+ *  "tab", "esc"). The ev argument is one of GLUP_VIEWER_DOWN, GLUP_VIEWER_UP.
+ * \see glup_viewer_set_keyboard_func()
+ */
+typedef GLboolean (* GlupViewerKeyboardFuncExt)(
+    const char* key, enum GlupViewerEvent ev
+);
+    
+/**
+ * \brief Callback function associated to an individual key.
+ * \see glup_viewer_set_key_func()
+ */
+typedef void (* GlupViewerKeyFunc)();
+
+/**
+ * \brief Callback function called when the first frame is displayed.
+ * \details Can be used to setup OpenGL objects, create textures etc...
+ * \see glup_viewer_set_init_func()
+ */
+typedef void (* GlupViewerInitFunc)();
+
+/**
+ * \brief Callback function called when a file is dropped in the window.
+ * \see glup_viewer_set_drag_drop_func()
+ */
+typedef void (* GlupViewerDragDropFunc)(char*);
+
 
 typedef GLboolean (* GlupViewerMouseFunc)(
     float x, float y, int button, enum GlupViewerEvent event
@@ -125,6 +168,11 @@ extern GLUP_VIEWER_API void glup_viewer_set_overlay_func(
 extern GLUP_VIEWER_API void glup_viewer_set_keyboard_func(
     GlupViewerKeyboardFunc f
 );
+
+extern GLUP_VIEWER_API void glup_viewer_set_keyboard_func_ext(
+    GlupViewerKeyboardFuncExt f
+);
+
 extern GLUP_VIEWER_API void glup_viewer_set_mouse_func(GlupViewerMouseFunc f);
 extern GLUP_VIEWER_API void glup_viewer_set_init_func(GlupViewerInitFunc f);
 extern GLUP_VIEWER_API void glup_viewer_set_drag_drop_func(
@@ -153,6 +201,9 @@ extern GLUP_VIEWER_API void glup_viewer_unbind_key(char key);
 extern GLUP_VIEWER_API void glup_viewer_set_region_of_interest(
     float xmin, float ymin, float zmin, float xmax, float ymax, float zmax
 );
+extern GLUP_VIEWER_API void glup_viewer_get_region_of_interest(
+    float* xmin, float* ymin, float* zmin, float* xmax, float* ymax, float* zmax
+);
 extern GLUP_VIEWER_API void glup_viewer_set_screen_size(int w, int h);
 extern GLUP_VIEWER_API void glup_viewer_get_screen_size(int* w, int* h);
 
@@ -178,7 +229,9 @@ extern GLUP_VIEWER_API void glup_viewer_set_scene_rotation(
     float xyz[3], float angle
 );
     
-extern GLUP_VIEWER_API void glTexImage2DXPM(char const** xpm_data);
+extern GLUP_VIEWER_API void glTexImage2DXPM(
+    char const** xpm_data, GLboolean alpha_is_index
+);
 extern GLUP_VIEWER_API void glTexImage2Dfile(const char* filename);
 
 extern GLUP_VIEWER_API GLboolean glup_viewer_load_image(

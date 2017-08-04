@@ -247,7 +247,9 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	    /*
 	     * A = A - shift * B
 	     */
-	    nlSparseMatrixAddMatrix(A, -nlCurrentContext->eigen_shift, nlCurrentContext->B);
+	    nlSparseMatrixAddMatrix(
+		A, -nlCurrentContext->eigen_shift, nlCurrentContext->B
+	    );
 	}
 
 	/* 
@@ -257,7 +259,8 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	    fprintf(stderr, "Factorizing matrix...\n");
 	}
 	result = nlMatrixFactorize(
-	    (NLMatrix)A, symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
+	    (NLMatrix)A,
+	    symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
 	);
 	if(nlCurrentContext->verbose) {
 	    fprintf(stderr, "Matrix factorized\n");
@@ -271,7 +274,8 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	    fprintf(stderr, "Factorizing matrix...\n");
 	}
 	result = nlMatrixFactorize(
-	    nlCurrentContext->M, symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
+	    nlCurrentContext->M,
+	    symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
 	    );
 	if(nlCurrentContext->verbose) {
 	    fprintf(stderr, "Matrix factorized\n");
@@ -303,7 +307,8 @@ static int eigencompare(const void* pi, const void* pj) {
 }
 
 void nlEigenSolve_ARPACK(void) {
-    NLboolean symmetric = nlCurrentContext->symmetric && (nlCurrentContext->B == NULL); 
+    NLboolean symmetric =
+	nlCurrentContext->symmetric && (nlCurrentContext->B == NULL); 
     int n = (int)nlCurrentContext->M->n; /* Dimension of the matrix */
     int nev = /* Number of eigenvectors requested */
 	(int)nlCurrentContext->nb_systems;
@@ -404,9 +409,9 @@ void nlEigenSolve_ARPACK(void) {
 	}
 	if(ido == 1) {
 	    nlMultMatrixVector(
-		OP,
-		workd+ipntr[1-1]-1, /*The "-1"'s are for FORTRAN-to-C conversion */
-		workd+ipntr[2-1]-1  /*to keep the same indices as in ARPACK doc */
+             OP,
+	     workd+ipntr[1-1]-1, /*The "-1"'s are for FORTRAN-to-C conversion */
+	     workd+ipntr[2-1]-1  /*to keep the same indices as in ARPACK doc  */
 	    );
 	} else {
 	    converged = NL_TRUE;

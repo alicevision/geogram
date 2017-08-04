@@ -38,10 +38,10 @@
  */
 
 #include <exploragram/hexdom/preprocessing.h>
-
+#include <geogram/mesh/mesh_tetrahedralize.h>
 namespace GEO {
 
-    void compute_input_constraints(Mesh* m) {
+    static void compute_input_constraints(Mesh* m) {
 
         Attribute<mat3> B(m->vertices.attributes(), "B");
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");// how many vectors are locked
@@ -93,7 +93,7 @@ namespace GEO {
 
 
 
-    void reorder_vertices_according_to_constraints(Mesh* m,bool hibert_sort) {
+    static void reorder_vertices_according_to_constraints(Mesh* m,bool hibert_sort) {
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");// how many vectors are locked
 
 
@@ -124,11 +124,13 @@ namespace GEO {
 
 
     void produce_hexdom_input(Mesh* m,std::string& error_msg,bool hilbert_sort ) {
+		m->edges.clear();
+		m->vertices.remove_isolated();
 
-        // some check on the input mesh
-        m->edges.clear();
-        m->vertices.remove_isolated();
-       
+		if (m->cells.nb() == 0) {
+			if (m->facets.nb() == 0) throw ("mesh have no cells and no facets");
+			mesh_tetrahedralize(*m, true, true, .8);
+		}
 
         if (have_negative_tet_volume(m)) {
             throw ("contains tets with negative volume");
@@ -152,7 +154,7 @@ namespace GEO {
 		
 		// compute scale
         double wanted_edge_length = get_cell_average_edge_size(m);
-        
+			
 		
 		Attribute<mat3> B(m->vertices.attributes(), "B");
         FOR(v, m->vertices.nb()) FOR(ij, 9) B[v].data()[ij] *= wanted_edge_length;

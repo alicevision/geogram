@@ -2484,6 +2484,12 @@ namespace {
         vector<double> sq_dist(100);
         Co3NeRestrictedVoronoiDiagram::Polygon P(100);
         Co3NeRestrictedVoronoiDiagram::Polygon Q(100);
+
+	ProgressTask* progress = nil;
+	if(from_ == 0) {
+	    progress = new ProgressTask("Co3Ne",100);
+	}
+	
         for(index_t i = from_; i < to_; i++) {
             RVD.get_RVC(i, P, Q, neigh, sq_dist);
             for(index_t v1 = 0; v1 < P.nb_vertices(); v1++) {
@@ -2498,7 +2504,12 @@ namespace {
                     triangles_.push_back(index_t(k));
                 }
             }
+	    if(progress != nil) {
+		progress->progress(i*100/to_);
+	    }
         }
+
+	delete progress;
     }
 
     void Co3NeThread::run_normals_and_reconstruct() {
@@ -2540,6 +2551,12 @@ namespace {
         vector<double> sq_dist(100);
         Co3NeRestrictedVoronoiDiagram::Polygon P(100);
         Co3NeRestrictedVoronoiDiagram::Polygon Q(100);
+
+	ProgressTask* progress = nil;
+	if(from_ == 0) {
+	    progress = new ProgressTask("Co3Ne",100);
+	}
+	
         for(index_t i = from_; i < to_; i++) {
 
             vec3 N;
@@ -2596,8 +2613,13 @@ namespace {
                     triangles_.push_back(index_t(k));
                 }
             }
+	    if(progress != nil) {
+		progress->progress(i*100/to_);
+	    }
         }
 
+	delete progress;
+	
         if(normal.is_bound()) {
             Process::enter_critical_section();
             normal.unbind();

@@ -46,6 +46,7 @@
 #include <geogram_gfx/glup_viewer/glup_viewer_gui.h>
 #include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/glup_viewer/glup_viewer_lua.h>
 #include <geogram_gfx/glup_viewer/geogram_logo_256.xpm>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 
@@ -77,6 +78,12 @@
 
 extern "C" {
     void glup_viewer_char_callback(void* w, unsigned int c);
+}
+
+
+extern "C" {
+#include <geogram/third_party/lua/lauxlib.h>
+#include <geogram/third_party/lua/lualib.h>
 }
 
 namespace {
@@ -263,9 +270,13 @@ namespace GEO {
             *visible_flag_ = true;
         }
     }
-        
+
     void Console::status(const std::string& value) {
-        this->printf("[status] %s", value.c_str());
+	// Do not display error messages twice.
+	if(String::string_starts_with(value, "Error:")) {
+	    return;
+	}
+	this->printf("[status] %s", value.c_str());
     }
     
     void Console::clear() {
@@ -288,6 +299,26 @@ namespace GEO {
         glup_viewer_gui_update();
     }
 
+    static int TextEditCallbackStub(ImGuiTextEditCallbackData* data) {
+        Console* console = (Console*)data->UserData;
+	return console->TextEditCallback(data);
+    }
+
+
+    int Console::TextEditCallback(ImGuiTextEditCallbackData* data)  {
+        switch (data->EventFlag) {
+        case ImGuiInputTextFlags_CallbackCompletion: {
+	} break;
+        case ImGuiInputTextFlags_CallbackHistory: {
+        } break;
+	}
+        return 0;
+    }
+
+    bool Console::exec_command(const char* command) {
+	return Application::instance()->exec_command(command);
+    }
+    
     void Console::draw(bool* visible) {
         visible_flag_ = visible;
         ImGui::Begin(
@@ -305,7 +336,7 @@ namespace GEO {
         filter_.Draw("Filter", -100.0f);
         ImGui::Separator();
         ImGui::BeginChild(
-            "scrolling", ImVec2(0,0), false,
+            "scrolling", ImVec2(0.0f,-20.0f), false,
             ImGuiWindowFlags_HorizontalScrollbar
         );
         if (copy) {
@@ -334,6 +365,39 @@ namespace GEO {
         }
         scroll_to_bottom_ = false;
         ImGui::EndChild();
+
+	ImGui::Text("Command>>");
+	ImGui::SameLine();
+	ImGui::PushItemWidth(-1);
+        if(ImGui::InputText(
+	       "##CommandInput", input_buf_, 256,
+	       ImGuiInputTextFlags_EnterReturnsTrue |
+	       ImGuiInputTextFlags_CallbackCompletion |
+	       ImGuiInputTextFlags_CallbackHistory,
+	       &TextEditCallbackStub, (void*)this)
+	) {
+            char* input_end = input_buf_+strlen(input_buf_);
+            while (input_end > input_buf_ && input_end[-1] == ' ') {
+		input_end--;
+	    }
+            *input_end = 0;
+            if (input_buf_[0]) {
+                exec_command(input_buf_);
+	    }
+            strcpy(input_buf_, "");
+        }
+	ImGui::PopItemWidth();
+	
+        // Keeping auto focus on the input box
+        if (
+	    ImGui::IsItemHovered() /* || (
+		ImGui::IsRootWindowOrAnyChildFocused() &&
+		!ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)
+	    ) */
+        ) {
+            ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
+	}
+	
         ImGui::End();
     }
     
@@ -352,11 +416,15 @@ namespace GEO {
         are_you_sure_(false)
     {
         directory_ = FileSystem::get_current_working_directory() + "/";
+	set_default_filename(default_filename);
+    }
+
+    void FileDialog::set_default_filename(const std::string& default_filename) {
         safe_strncpy(
             current_file_, default_filename.c_str(), sizeof(current_file_)
         );
     }
-
+    
     void FileDialog::update_files() {
         directories_.clear();
         files_.clear();
@@ -509,7 +577,9 @@ namespace GEO {
                 are_you_sure_ = true;
                 return;
             } else {
-                application_->save(file);
+                if(application_->save(file)) {
+		    Logger::out("I/O") << "Saved " << current_file_ << std::endl;
+		}
             }
         } else {
             application_->load(file);
@@ -1237,6 +1307,86 @@ namespace GEO {
     
     /**********************************************************************/
 
+    static int lua_glup_print(lua_State* L) {
+	Console* console = Application::instance()->console();
+	int nargs = lua_gettop(L);	
+	lua_getglobal(L, "tostring");
+	for(int i=1; i<=nargs; ++i) {
+	    const char *s;
+	    size_t l;
+	    lua_pushvalue(L, -1);  /* function to be called */
+	    lua_pushvalue(L, i);   /* value to print */
+	    lua_call(L, 1, 1);
+	    s = lua_tolstring(L, -1, &l);  /* get result */
+	    if (s == NULL) {
+		return luaL_error(
+		    L, "'tostring' must return a string to 'print'"
+		);
+	    }
+	    if (i>1) {
+		console->printf("\t");
+	    }
+	    console->printf("%s", s);
+	    lua_pop(L, 1);  /* pop result */
+	}
+	console->printf("\n");	
+	return 0;
+    }
+
+    /**********************************************************************/
+
+    TextEditor::TextEditor(bool* visible) : visible_(visible) {
+	text_[0] = '\0';
+    }
+
+    void TextEditor::draw() {
+	ImGui::Begin(
+	    "Text Editor", visible_,
+	    ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse 
+	);
+	ImVec2 sz = ImGui::GetWindowSize();
+	float margin = 40.0f;
+	if(Application::instance()->retina_mode()) {
+	    margin *= 2.0f;
+	}
+	ImGui::InputTextMultiline(
+	    "##source",
+	    text_,
+	    65535,
+	    ImVec2(-1.0f, sz.y - margin),
+	    ImGuiInputTextFlags_AllowTabInput 
+	);
+	ImGui::End();
+    }
+
+    void TextEditor::load(const std::string& filename) {
+	std::ifstream in(filename.c_str());
+	std::string text;
+	std::string line;
+	while(std::getline(in,line)) {
+	    text += line;
+	    text += "\n";
+	}
+	strcpy(text_, text.c_str()); // TODO: test size.
+    }
+
+    void TextEditor::save(const std::string& filename) {
+	std::ofstream out(filename.c_str());
+	out << text_;
+    }
+
+    void TextEditor::clear() {
+	text_[0] = '\0';
+    }
+
+    void TextEditor::load_data(const char* data) {
+	strcpy(text_, data); // TODO: test size.	
+    }
+    
+    /**********************************************************************/
+    
     Application* Application::instance_ = nil;
     
     Application::Application(
@@ -1246,7 +1396,9 @@ namespace GEO {
         argv_(argv),
         usage_(usage),
         load_dialog_(this,false),
-        save_dialog_(this,true, "out.meshb")
+        save_dialog_(this,true),
+	text_editor_visible_(false),
+	text_editor_(&text_editor_visible_)
     {
         name_ = (argc == 0) ? "" : FileSystem::base_name(argv[0]);
         geo_assert(instance_ == nil);
@@ -1263,6 +1415,7 @@ namespace GEO {
         left_pane_visible_ = true;
         right_pane_visible_ = true;
         console_visible_ = false;
+	text_editor_visible_ = false;
 
         console_ = new Console(&console_visible_);
         status_bar_ = new StatusBar;
@@ -1297,6 +1450,12 @@ namespace GEO {
 	GEO::CmdLine::declare_arg(
 	    "gfx:keypress", "", "initial simulated sequence of pressed keys"
 	);
+
+	lua_error_occured_ = false;	
+	lua_state_ = luaL_newstate();
+	luaL_openlibs(lua_state_);
+	lua_register(lua_state_, "print", lua_glup_print);
+	init_lua_glup(lua_state_);
     }
 
     Application::~Application() {
@@ -1308,10 +1467,26 @@ namespace GEO {
                 glDeleteTextures(1, &colormaps_[i].texture);                
             }
         }
+	lua_close(lua_state_);
         geo_assert(instance_ == this);        
         instance_ = nil;
     }
 
+    static GLboolean keyboard_func_ext(const char* q, GlupViewerEvent ev) {
+	GLboolean result = GL_FALSE;
+	switch(ev) {
+	    case GLUP_VIEWER_DOWN:
+		result = GLboolean(Application::instance()->on_key_pressed(q));
+		break;
+	    case GLUP_VIEWER_MOVE:
+		break;
+	    case GLUP_VIEWER_UP:
+		result = GLboolean(Application::instance()->on_key_released(q));
+		break;
+	}
+	return result;
+    }
+    
     void Application::start() {
         std::vector<std::string> filenames;
         if(!GEO::CmdLine::parse(argc_, argv_, filenames, usage_)) {
@@ -1336,7 +1511,8 @@ namespace GEO {
         glup_viewer_set_display_func(draw_scene_callback);
         glup_viewer_set_overlay_func(draw_gui_callback);
         glup_viewer_set_drag_drop_func(dropped_file_callback);
-
+	glup_viewer_set_keyboard_func_ext(keyboard_func_ext);
+	
         if(GEO::CmdLine::get_arg_bool("gfx:full_screen")) {
             glup_viewer_enable(GLUP_VIEWER_FULL_SCREEN);
         }
@@ -1462,7 +1638,7 @@ namespace GEO {
         glBindTexture(GL_TEXTURE_2D, geogram_logo_texture_);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2DXPM(geogram_logo_256_xpm);
+        glTexImage2DXPM(geogram_logo_256_xpm, GL_FALSE);
 	
         if(glup_viewer_is_high_dpi()) {
             retina_mode_ = true;                
@@ -1521,18 +1697,45 @@ namespace GEO {
     void Application::draw_gui() {
         ImGui::GetIO().FontGlobalScale = scaling_;
         draw_menu_bar();
-        if(left_pane_visible_) {
-            draw_left_pane();
-        }
-        if(right_pane_visible_) {
-            draw_right_pane();
-        }
-        if(console_visible_) {
-            draw_console();
-        }
-        if(status_bar_->active()) {
-            draw_status_bar();
-        }
+	if(text_editor_visible_) {
+	    int w,h;
+	    glup_viewer_get_screen_size(&w, &h);
+	    if(status_bar_->active()) {
+		h -= (STATUS_HEIGHT()+1);
+	    }
+	    if(console_visible_) {
+		h -= (CONSOLE_HEIGHT()+1);
+	    }
+	    h -= MENU_HEIGHT();
+	    ImGui::SetNextWindowPos(
+		ImVec2(0.0f, float(MENU_HEIGHT())),
+		ImGuiSetCond_Always
+	    );
+	    ImGui::SetNextWindowSize(
+		ImVec2(float(w), float(h)),
+		ImGuiSetCond_Always
+	    );
+	    text_editor_.draw();
+	    if(console_visible_) {
+		draw_console();
+	    }
+	    if(status_bar_->active()) {
+		draw_status_bar();
+	    }
+	} else {
+	    if(left_pane_visible_) {
+		draw_left_pane();
+	    }
+	    if(right_pane_visible_) {
+		draw_right_pane();
+	    }
+	    if(console_visible_) {
+		draw_console();
+	    }
+	    if(status_bar_->active()) {
+		draw_status_bar();
+	    }
+	}
         load_dialog_.draw();
         save_dialog_.draw();
     }
@@ -1727,9 +1930,21 @@ namespace GEO {
                 if(supported_read_file_extensions() != "") {
                     draw_load_menu();
                 }
+#ifndef GEO_OS_EMSCRIPTEN		
+		if(current_file_ != "") {
+		    if(ImGui::MenuItem("Save")) {
+			if(save(current_file_)) {
+			    Logger::out("I/O") << "Saved " << current_file_ << std::endl;
+			} else {
+			    Logger::out("I/O") << "Could not save " << current_file_ << std::endl;			    
+			}
+		    }
+		}
+#endif		
                 if(supported_write_file_extensions() != "") {
                     draw_save_menu();
                 }
+		draw_fileops_menu();
                 draw_about();
 #ifndef GEO_OS_EMSCRIPTEN                        
                 ImGui::Separator();
@@ -1772,22 +1987,35 @@ namespace GEO {
     void Application::draw_save_menu() {
 #ifdef GEO_OS_EMSCRIPTEN
         if(ImGui::BeginMenu("Save as...")) {
+	    ImGui::MenuItem("Supported extensions:", NULL, false, false);	    
             std::vector<std::string> extensions;
             String::split_string(
                 supported_write_file_extensions(), ';', extensions
             );
             for(index_t i=0; i<extensions.size(); ++i) {
-                std::string filename = "out." + extensions[i];
-                if(ImGui::MenuItem(filename.c_str())) {
-                    if(save(filename)) {
-                        std::string command =
-                            "saveFileFromMemoryFSToDisk(\'" +
-                            filename +
-                            "\');" ;
-                        emscripten_run_script(command.c_str());
-                    }
-                }
-            }
+		ImGui::MenuItem((" ." + extensions[i]).c_str(), NULL, false, false);	    		
+	    }
+	    ImGui::Separator();
+	    static char buff[256];
+	    if(current_file_ != "") {
+		strcpy(buff, current_file_.c_str());
+	    } else if (extensions.size() != 0) {
+		strcpy(buff, ("out." + extensions[0]).c_str());		
+	    }
+
+	    if(ImGui::InputText("##MenuFileName",buff,256,ImGuiInputTextFlags_EnterReturnsTrue)) {
+		current_file_ = buff;
+		if(String::string_starts_with(current_file_, "/")) {
+		    current_file_ = current_file_.substr(1,current_file_.length()-1);
+		}
+		if(save(current_file_)) {
+		    std::string command =
+			"saveFileFromMemoryFSToDisk(\'" +
+			current_file_ +
+			"\');" ;
+		    emscripten_run_script(command.c_str());
+		}
+	    }
             ImGui::EndMenu();
         }
 #else        
@@ -1795,6 +2023,9 @@ namespace GEO {
             save_dialog_.show();
         }
 #endif        
+    }
+
+    void Application::draw_fileops_menu() {
     }
     
     void Application::draw_about() {
@@ -1829,6 +2060,7 @@ namespace GEO {
             ImGui::MenuItem("object properties", NULL, &right_pane_visible_);
             ImGui::MenuItem("viewer properties", NULL, &left_pane_visible_);
             ImGui::MenuItem("console", NULL, &console_visible_);
+            ImGui::MenuItem("text editor", NULL, &text_editor_visible_);	    
             if(ImGui::MenuItem(
                 "show/hide GUI [T]", NULL,
                 (bool*)glup_viewer_is_enabled_ptr(GLUP_VIEWER_TWEAKBARS)
@@ -1863,7 +2095,7 @@ namespace GEO {
         colormaps_.rbegin()->name = name;
         glGenTextures(1, &colormaps_.rbegin()->texture);
         glBindTexture(GL_TEXTURE_2D, colormaps_.rbegin()->texture);
-        glTexImage2DXPM(xpm_data);
+        glTexImage2DXPM(xpm_data, GL_TRUE);
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1886,7 +2118,35 @@ namespace GEO {
         init_colormap("plasma", plasma_xpm);
         init_colormap("blue_red", blue_red_xpm);
     }
-    
+
+    /**********************************************************************/
+
+    bool Application::exec_command(const char* command) {
+	if(luaL_dostring(lua_state_,command)) {
+	    adjust_lua_glup_state(lua_state_);
+	    const char* msg = lua_tostring(lua_state_,-1);
+	    const char* msg2 = strchr(msg,']');
+	    if(msg2 != nil) {
+		msg = msg2+2;
+	    }
+	    Logger::err("LUA") << "line " << msg << std::endl;
+	    lua_error_occured_ = true;
+	} else {
+	    lua_error_occured_ = false;
+	}
+	return !lua_error_occured_;
+    }
+
+    bool Application::on_key_pressed(const char* q) {
+	geo_argused(q);
+	return false;
+    }
+
+    bool Application::on_key_released(const char* q) {
+	geo_argused(q);
+	return false;
+    }
+
     /**********************************************************************/
 
     SimpleMeshApplication::SimpleMeshApplication(
@@ -1896,6 +2156,8 @@ namespace GEO {
         GEO::MeshIOHandlerFactory::list_creators(extensions);
         file_extensions_ = String::join_strings(extensions, ';');
 
+        save_dialog_.set_default_filename("out.meshb");
+	
         anim_speed_ = 1.0f;
         anim_time_ = 0.0f;
 
@@ -2274,6 +2536,7 @@ namespace GEO {
         show_vertices_ = (mesh_.facets.nb() == 0);
         mesh_gfx_.set_mesh(&mesh_);
 
+	current_file_ = filename;
         return true;
     }
 
@@ -2282,8 +2545,12 @@ namespace GEO {
         if(CmdLine::get_arg_bool("attributes")) {
             flags.set_attribute(MESH_FACET_REGION);
             flags.set_attribute(MESH_CELL_REGION);            
-        } 
-        return mesh_save(mesh_, filename, flags);
+        }
+	if(mesh_save(mesh_, filename, flags)) {
+	    current_file_ = filename;
+	    return true;
+	}
+	return false;
     }
     
     void SimpleMeshApplication::get_bbox(

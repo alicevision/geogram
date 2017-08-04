@@ -52,22 +52,23 @@
 #include <geogram/basic/logger.h>
 
 
-// TODO: documenter un peu tout ca (en particulier le "vertex_gather_mode")
 
-// TODO: for points: early fragment tests,   depth greater
-// (+ vertex shader qui "ramene le point devant" comme \c{c}a le
-//  fragment shader "pousse le point" et on a l'early fragment test).
-//
-//  layout(early_fragment_tests) in;
-//  layout(depth_greater) out float gl_FragDepth;
+// TODO: for points and spheres: early fragment tests, depth greater
+// (+ vertex shader that "drags the point to the camera" in such a way
+//  that the frag shader "pushes to the back" and we can have early depth
+//  cull (this can probably significantly accelerate rendering when there is
+//  a large number of big spheres/points).
+//      layout(early_fragment_tests) in;
+//       layout(depth_greater) out float gl_FragDepth;
+// -----------------------------------------------------------------------------
 
-// TODO: j'ai beaucoup de doutes sur matrice / transpose(matrice), dans le
-//  code de GLUP.cpp j'ai plein de corrections "a posteriori", en particulier
-//  - dans toutes les fonctions qui creent des matrice (transposees apres)
-//  - dans glupUnProject()
-//  experimentalement c'est bon (fait la meme chose qu'OpenGL), mais faudrait
-//  mieux piger tout ca...
-
+// TODO: in OpenGL, matrix storage is row major (oh my)... Most of my functions
+//  that manipulate matrices need to be renamed/rewritten, in the current state
+//  my code is *VERY CONFUSING* !!!
+// This concerns:
+//    -all the functions that create matrices (for now I transpose right after).
+//    -glupUnProject()
+//------------------------------------------------------------------------------
 
 namespace GLUP {
     using namespace GEO;
@@ -621,6 +622,9 @@ namespace GLUP {
         uniform_state_.toggle.push_back(
             StateVariable<GLboolean>(this,"picking_enabled",GL_FALSE)
         );
+        uniform_state_.toggle.push_back(
+            StateVariable<GLboolean>(this,"alpha_discard_enabled",GL_FALSE)
+        );
 	
         uniform_state_.color.push_back(
             VectorStateVariable(this, "front_color", 4)
@@ -664,7 +668,11 @@ namespace GLUP {
         uniform_state_.texture_type.initialize(
             this, "texture_type", GLUP_TEXTURE_2D
         );
-        
+
+	uniform_state_.alpha_threshold.initialize(
+	    this, "alpha_threshold", 0.5f
+	);
+	
         uniform_state_.modelview_matrix.initialize(this, "modelview_matrix");
         uniform_state_.modelviewprojection_matrix.initialize(
             this, "modelviewprojection_matrix"
@@ -1014,7 +1022,7 @@ namespace GLUP {
         if(user_program_ != 0) {
             use_program(user_program_);
         } else {
-            use_program(primitive_info_[primitive].program[toggles_config_]);
+            use_program(primitive_info_[primitive].program(toggles_config_));
         }
 
         GEO_CHECK_GLUP();        
@@ -1087,7 +1095,7 @@ namespace GLUP {
         if(user_program_ != 0) {
             use_program(user_program_);
         } else {
-            use_program(primitive_info_[primitive].program[toggles_config_]);
+            use_program(primitive_info_[primitive].program(toggles_config_));
         }
         glDrawArrays(primitive_info_[primitive].GL_primitive, first, count);
         GEO_CHECK_GLUP();         
@@ -1122,7 +1130,7 @@ namespace GLUP {
         if(user_program_ != 0) {
             use_program(user_program_);
         } else {
-            use_program(primitive_info_[primitive].program[toggles_config_]);
+            use_program(primitive_info_[primitive].program(toggles_config_));
         }
         GEO_CHECK_GLUP();                    
         glDrawElements(
@@ -1140,7 +1148,7 @@ namespace GLUP {
         geo_argused(primitive);
 #else
 
-        if(primitive == GLUP_POINTS) {
+        if(primitive == GLUP_POINTS || primitive == GLUP_SPHERES) {
             glEnable(GL_PROGRAM_POINT_SIZE);
         } else if(primitive == GLUP_LINES && !use_core_profile_) {
             // Note: glLineWidth is deprecated in OpenGL core profile,
@@ -1430,9 +1438,7 @@ namespace GLUP {
     ) {
         primitive_info_[glup_primitive].implemented = true;
         primitive_info_[glup_primitive].GL_primitive = gl_primitive;
-        primitive_info_[glup_primitive].program[toggles_config_] = program;
-        primitive_info_[glup_primitive].program_initialized[toggles_config_] =
-            true;
+        primitive_info_[glup_primitive].shader_map[toggles_config_] = program;
 
         if(!bind_attrib_loc) {
             return;
@@ -1616,37 +1622,6 @@ namespace GLUP {
     
     void Context::setup_primitives() {
         primitive_info_.resize(GLUP_NB_PRIMITIVES);
-
-        if(!precompile_shaders_) {
-            return;
-        }
-        
-        GEO::Logger::out("GLUP compile") << "Optimizing shaders..."
-                                         << std::endl;
-
-        {
-            GEO::ProgressTask progress(
-                "GLUP compile", PrimitiveInfo::nb_toggles_configs
-            );
-            for(index_t i=0; i<PrimitiveInfo::nb_toggles_configs; ++i) {
-                setup_shaders_source_for_toggles_config(i);
-                toggles_config_ = i;
-                setup_GLUP_POINTS();
-                setup_GLUP_LINES();
-                setup_GLUP_TRIANGLES();
-                setup_GLUP_QUADS();
-                setup_GLUP_TETRAHEDRA();
-                setup_GLUP_HEXAHEDRA();
-                setup_GLUP_PRISMS();
-                setup_GLUP_PYRAMIDS();
-                setup_GLUP_CONNECTORS();
-                setup_GLUP_SPHERES();		
-                progress.next();
-            }
-        }
-        
-        GEO::Logger::out("GLUP compile") << "Shaders ready."
-                                         << std::endl;
     }
 
     void Context::setup_shaders_source_for_toggles(
@@ -1697,7 +1672,7 @@ namespace GLUP {
 
     void Context::create_program_if_needed(GLUPprimitive primitive) {
         primitive_source_ = primitive;
-        if(!primitive_info_[primitive].program_initialized[toggles_config_]) {
+        if(!primitive_info_[primitive].program_is_initialized(toggles_config_)) {
             setup_shaders_source_for_primitive(primitive);
             setup_shaders_source_for_toggles_config(toggles_config_);
             switch(primitive) {

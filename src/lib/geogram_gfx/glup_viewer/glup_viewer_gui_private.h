@@ -25,6 +25,8 @@
 #ifndef GLUP_VIEWER_GUI
 #define GLUP_VIEWER_GUI
 
+#include <geogram_gfx/glup_viewer/glup_viewer.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -42,23 +44,23 @@ extern "C" {
      * \details Called at application startup.
      * \param[in] w a pointer to the GLFWwindow
      */
-    void glup_viewer_gui_init(GLFWwindow* w);
+    void GLUP_VIEWER_API glup_viewer_gui_init(GLFWwindow* w);
 
     /**
      * \brief Deletes all the variables allocated for the GUI.
      * \details Called at application shutdown.
      */
-    void glup_viewer_gui_cleanup();
+    void GLUP_VIEWER_API glup_viewer_gui_cleanup();
 
     /**
      * \brief Starts a new frame.
      */
-    void glup_viewer_gui_begin_frame();
+    void GLUP_VIEWER_API glup_viewer_gui_begin_frame();
 
     /**
      * \brief Ends a frame.
      */
-    void glup_viewer_gui_end_frame();
+    void GLUP_VIEWER_API glup_viewer_gui_end_frame();
 
     /**
      * \brief Tests whether callbacks are directed towards
@@ -67,7 +69,7 @@ extern "C" {
      * \retval zero if callbacks should be taken into account
      *  by the application.
      */
-    int glup_viewer_gui_takes_input();
+    int GLUP_VIEWER_API glup_viewer_gui_takes_input();
 
     /**
      * \brief Callback for mouse button events.
@@ -76,7 +78,7 @@ extern "C" {
      * \param[in] action the action
      * \param[in] mods modifiers
      */
-    void glup_viewer_gui_mouse_button_callback(
+    void GLUP_VIEWER_API glup_viewer_gui_mouse_button_callback(
         GLFWwindow* window, int button, int action, int mods
     );
 
@@ -86,7 +88,7 @@ extern "C" {
      * \param[in] xoffset horizontal displacement
      * \param[in] yoffset vertical displacement
      */
-    void glup_viewer_gui_scroll_callback(
+    void GLUP_VIEWER_API glup_viewer_gui_scroll_callback(
         GLFWwindow* window, double xoffset, double yoffset
     );
 
@@ -98,7 +100,7 @@ extern "C" {
      * \param[in] action the action
      * \param[in] mods modifiers
      */
-    void glup_viewer_gui_key_callback(
+    void GLUP_VIEWER_API glup_viewer_gui_key_callback(
         GLFWwindow* window, int key, int scancode, int action, int mods
     );
 
@@ -108,14 +110,14 @@ extern "C" {
      * \param[in] c the character that corresponds to the
      *  pushed key
      */
-    void glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c);
+    void GLUP_VIEWER_API glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c);
 
     /**
      * \brief Callback for window resize events.
      * \param[in] width the new width
      * \param[in] height the new height
      */
-    void glup_viewer_gui_resize(int width, int height);
+    void GLUP_VIEWER_API glup_viewer_gui_resize(int width, int height);
 
     /**
      * \brief Redraws the GUI and the scene.
@@ -124,14 +126,14 @@ extern "C" {
      *  console or whenever the progress bar is updated. It is ignored if called
      *  from the redraw or from the overlay callbacks.
      */
-    void glup_viewer_gui_update(void);
+    void GLUP_VIEWER_API glup_viewer_gui_update(void);
 
     /**
      * \brief Tests a boolean command line argument.
      * \param[in] param the name of the argument
      * \return the value of the argument
      */
-    GLboolean glup_viewer_get_arg_bool(const char* param);
+    GLboolean GLUP_VIEWER_API glup_viewer_get_arg_bool(const char* param);
 
     /**
      * \brief Tests a string command line argument.
@@ -140,13 +142,13 @@ extern "C" {
      * \retval GLtrue if command line argument \p param has value \p arg
      * \retval GLfalse otherwise
      */
-    GLboolean glup_viewer_test_arg_string(const char* param, const char* arg);
+    GLboolean GLUP_VIEWER_API glup_viewer_test_arg_string(const char* param, const char* arg);
 
 
     /**
      * \brief Gets the screen size from the arglist and sends it to GLUP.
      */
-    void glup_viewer_set_screen_size_from_args();
+    void GLUP_VIEWER_API glup_viewer_set_screen_size_from_args();
     
 #ifdef __cplusplus
 }

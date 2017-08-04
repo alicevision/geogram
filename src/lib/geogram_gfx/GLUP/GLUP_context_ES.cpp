@@ -178,8 +178,9 @@ namespace GLUP {
     }
     
     bool Context_ES2::primitive_supports_array_mode(GLUPprimitive prim) const {
-        // Note: points, spheres, lines and triangles without mesh can support array
-        // mode, but this will not work with picking, therefore it is disabled.
+        // Note: points, spheres, lines and triangles without mesh can
+	// support array mode, but this will not work with picking,
+	// therefore it is disabled.
         geo_argused(prim);
         return false;
     }
@@ -475,19 +476,22 @@ namespace GLUP {
 		latest_program_, "GLUP_VS.inverse_modelview_matrix"		
 	    );
 	    glUniformMatrix4fv(
-		loc, 1, GL_FALSE, uniform_state_.inverse_modelview_matrix.get_pointer()
+		loc, 1, GL_FALSE,
+		uniform_state_.inverse_modelview_matrix.get_pointer()
 	    );
 	    loc = glGetUniformLocation(
 		latest_program_, "GLUP_VS.inverse_projection_matrix"		
 	    );
 	    glUniformMatrix4fv(
-		loc, 1, GL_FALSE, uniform_state_.inverse_projection_matrix.get_pointer()
+		loc, 1, GL_FALSE,
+		uniform_state_.inverse_projection_matrix.get_pointer()
 	    );
 	    loc = glGetUniformLocation(
-		latest_program_, "GLUP_VS.inverse_modelviewprojection_matrix"		
+		latest_program_, "GLUP_VS.inverse_modelviewprojection_matrix"
 	    );
 	    glUniformMatrix4fv(
-		loc, 1, GL_FALSE, uniform_state_.inverse_modelviewprojection_matrix.get_pointer()
+		loc, 1, GL_FALSE,
+		uniform_state_.inverse_modelviewprojection_matrix.get_pointer()
 	    );
 	    
             loc = glGetUniformLocation(
@@ -517,13 +521,15 @@ namespace GLUP {
 		latest_program_, "GLUP.modelviewprojection_matrix"		
 	    );
 	    glUniformMatrix4fv(
-		loc, 1, GL_FALSE, uniform_state_.modelviewprojection_matrix.get_pointer()
+		loc, 1, GL_FALSE,
+		uniform_state_.modelviewprojection_matrix.get_pointer()
 	    );
 	    loc = glGetUniformLocation(
-		latest_program_, "GLUP.inverse_modelviewprojection_matrix"		
+		latest_program_, "GLUP.inverse_modelviewprojection_matrix"
 	    );
 	    glUniformMatrix4fv(
-		loc, 1, GL_FALSE, uniform_state_.inverse_modelviewprojection_matrix.get_pointer()
+		loc, 1, GL_FALSE,
+		uniform_state_.inverse_modelviewprojection_matrix.get_pointer()
 	    );
 
             loc = glGetUniformLocation(
@@ -663,6 +669,14 @@ namespace GLUP {
                 loc, 1, uniform_state_.world_clip_plane.get_pointer()
             );
         }
+
+        // alpha discard.
+        if(uniform_state_.toggle[GLUP_ALPHA_DISCARD].get()) {
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP.alpha_threshold"
+            );
+            glUniform1f(loc, uniform_state_.alpha_threshold.get());
+	}
     }
 
     void Context_ES2::update_base_picking_id(GLint new_value) {

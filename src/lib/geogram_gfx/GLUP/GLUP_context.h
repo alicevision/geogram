@@ -50,6 +50,7 @@
 #include <geogram_gfx/GLUP/GLUP.h>
 #include <geogram_gfx/GLUP/GLUP_marching_cells.h>
 #include <geogram_gfx/basic/GLSL.h>
+#include <map>
 
 // Uncomment to activate OpenGL error reporting for
 // each call to GLUP functions.
@@ -913,7 +914,8 @@ namespace GLUP {
         StateVariable<GLint>               base_picking_id; 
         StateVariable<GLint>               clipping_mode;
         StateVariable<GLint>               texture_mode;
-        StateVariable<GLint>               texture_type;        
+        StateVariable<GLint>               texture_type;
+        StateVariable<GLfloat>             alpha_threshold;
         VectorStateVariable                clip_plane;
         VectorStateVariable                world_clip_plane;
         VectorStateVariable                clip_clip_plane;	
@@ -936,8 +938,8 @@ namespace GLUP {
      */
     struct PrimitiveInfo {
 
-        static const index_t nb_toggles_configs = 256;
-        
+	typedef Numeric::uint64 ShaderKey;
+	
         /**
          * \brief PrimitiveInfo constructor.
          */
@@ -949,10 +951,6 @@ namespace GLUP {
             primitive_elements(nil),
             vertex_gather_mode(false),
             implemented(false) {
-            for(index_t i=0; i<nb_toggles_configs; ++i) {
-                program[i] = 0;
-                program_initialized[i] = false;
-            }
         }
 
         /**
@@ -961,7 +959,7 @@ namespace GLUP {
          * \details Should be only called with uninitialized PrimitiveInfo
          *  (else triggers an assertion failure).
          */
-        PrimitiveInfo(const PrimitiveInfo& rhs) {
+         PrimitiveInfo(const PrimitiveInfo& rhs) : shader_map(rhs.shader_map) {
             GL_primitive = rhs.GL_primitive;
             VAO = rhs.VAO;
             elements_VBO = rhs.elements_VBO;
@@ -969,10 +967,6 @@ namespace GLUP {
             primitive_elements = rhs.primitive_elements;
             vertex_gather_mode = rhs.vertex_gather_mode;
             implemented = rhs.implemented;
-            for(index_t i=0; i<nb_toggles_configs; ++i) {
-                program[i] = rhs.program[i];
-                program_initialized[i] = rhs.program_initialized[i];
-            }
             geo_assert(GL_primitive == 0);
             geo_assert(nb_elements_per_primitive == 0);
         }
@@ -982,12 +976,13 @@ namespace GLUP {
          * \details Deletes the programs and vertex array object if need be.
          */
         ~PrimitiveInfo() {
-            for(index_t i=0; i<nb_toggles_configs; ++i) {            
-                if(program[i] != 0) {
-                    glDeleteProgram(program[i]);
-                    program[i] = 0;
-                }
-            }
+	    for(std::map<ShaderKey, GLuint>::iterator it=shader_map.begin();
+		it != shader_map.end(); ++it) {
+		if(it->second != 0) {
+		    glDeleteProgram(it->second);
+		    it->second = 0;
+		}
+	    }
             if(elements_VBO != 0) {
                 glDeleteBuffers(1, &elements_VBO);
             }
@@ -996,10 +991,19 @@ namespace GLUP {
                 VAO = 0;
             }
         }
-        
+
+	bool program_is_initialized(ShaderKey k) const {
+	    return (shader_map.find(k) != shader_map.end());
+	}
+
+	GLuint program(ShaderKey k) const {
+	    std::map<ShaderKey, GLuint>::const_iterator it =
+		shader_map.find(k);
+	    return ((it == shader_map.end()) ? 0 : it->second);
+	}
+	
         GLenum GL_primitive;
-        GLuint program[nb_toggles_configs];
-        bool program_initialized[nb_toggles_configs];
+	std::map<ShaderKey, GLuint> shader_map;
         GLuint VAO;
         GLuint elements_VBO;
         index_t nb_elements_per_primitive;
@@ -1681,13 +1685,11 @@ namespace GLUP {
          * \param[in] toggles_config the identifier of the toggles
          *  configurations, used to index the GLSL program in the
          *  PrimitiveInfo class
-         * \pre toggles_config < PrimitiveInfo::nb_toggles_configs
          */
         void setup_shaders_source_for_toggles_config(
-            index_t toggles_config
+            PrimitiveInfo::ShaderKey toggles_config
         ) {
             if(toggles_config == (1 << GLUP_PICKING)) {
-                geo_debug_assert(toggles_config == 128);
                 setup_shaders_source_for_toggles(
                     (1 << GLUP_PICKING),  // picking=true
                     (1 << GLUP_CLIPPING)  // clipping=undecided (use state)
@@ -1904,7 +1906,7 @@ namespace GLUP {
         
         GLuint user_program_;
         
-        index_t toggles_config_;
+	PrimitiveInfo::ShaderKey toggles_config_;
         
         GLUPprimitive primitive_source_;
         GLUPbitfield toggles_source_state_;

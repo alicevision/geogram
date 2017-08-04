@@ -47,6 +47,6 @@
 
 namespace GEO {
     void EXPLORAGRAM_API view_FF_with_gyphs(Mesh* m, Mesh* render, bool SH, double scale_in);
-    void EXPLORAGRAM_API view_U_locks(Mesh* m, Mesh* render, double scale_in);
+    void EXPLORAGRAM_API view_U_locks(Mesh* m, Mesh* render, double scale_in, bool extractall);
 }
 #endif

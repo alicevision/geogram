@@ -63,7 +63,7 @@ namespace GEO {
 	
         bool EXPLORAGRAM_API Cavity(Mesh* quaddominant, Mesh* hexahedrons, Mesh* result);
 
-        void EXPLORAGRAM_API HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid=false);
+        void EXPLORAGRAM_API HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid=false, bool baudoin_carrier=false);
     }
 }
 

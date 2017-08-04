@@ -289,26 +289,28 @@ namespace GEO {
         /**
          * \brief Sets the points color
          * \details Specifies the color used to display points
-         * \param[in] r , g , b the components of the points color,
+         * \param[in] r , g , b , a the components of the points color,
          *  in (0.0 .. 1.0)
          * \see draw_points()
          */
-        void set_points_color(float r, float g, float b) {
+        void set_points_color(float r, float g, float b, float a=1.0f) {
             points_color_[0] = r;
             points_color_[1] = g;
             points_color_[2] = b;
+	    points_color_[3] = a;
         }
 
         /**
          * \brief Gets the points color
-         * \param[out] r , g , b the components of the points color,
+         * \param[out] r , g , b , a the components of the points color,
          *  in (0.0 .. 1.0)
          * \see draw_points()
          */
-        void get_points_color(float& r, float& g, float& b) const {
+        void get_points_color(float& r, float& g, float& b, float& a) const {
             r = points_color_[0];
             g = points_color_[1];
             b = points_color_[2];
+	    a = points_color_[3];
         }
 
         /**
@@ -333,26 +335,28 @@ namespace GEO {
          * \brief Sets the mesh color
          * \details Specifies the mesh color to be used if 
          *  mesh edges should be displayed.
-         * \param[in] r , g , b the components of the mesh color,
+         * \param[in] r , g , b , a the components of the mesh color,
          *  in (0.0 .. 1.0)
          * \see set_show_mesh(), draw_surface(), draw_volume()
          */
-        void set_mesh_color(float r, float g, float b) {
+        void set_mesh_color(float r, float g, float b, float a=1.0f) {
             mesh_color_[0] = r;
             mesh_color_[1] = g;
             mesh_color_[2] = b;
+	    mesh_color_[3] = a;
         }
 
         /**
          * \brief Gets the mesh color
-         * \param[out] r , g , b the components of the mesh color,
+         * \param[out] r , g , b , a the components of the mesh color,
          *  in (0.0 .. 1.0)
          * \see set_show_mesh(), draw_surface(), draw_volume()
          */
-        void get_mesh_color(float& r, float& g, float& b) const {
+        void get_mesh_color(float& r, float& g, float& b, float& a) const {
             r = mesh_color_[0];
             g = mesh_color_[1];
             b = mesh_color_[2];
+	    a = mesh_color_[3];
         }
         
         /**
@@ -360,69 +364,75 @@ namespace GEO {
          * \details Specifies the color used to display the
          *  surfacic part of the mesh. It specifies the color 
          *  of both frontfacing and backfacing faces.
-         * \param[in] r , g , b the components of the surface color,
+         * \param[in] r , g , b , a the components of the surface color,
          *  in (0.0 .. 1.0)
          * \see draw_surface(), set_backface_surface_color()
          */
-        void set_surface_color(float r, float g, float b) {
+        void set_surface_color(float r, float g, float b, float a=1.0f) {
             surface_color_[0] = r;
             surface_color_[1] = g;
             surface_color_[2] = b;
+	    surface_color_[3] = a;
             backface_surface_color_[0] = r;
             backface_surface_color_[1] = g;
             backface_surface_color_[2] = b;
+            backface_surface_color_[3] = a;	    
         }
 
         /**
          * \brief Gets the surface color
-         * \param[out] r , g , b the components of the surface color,
+         * \param[out] r , g , b , a the components of the surface color,
          *  in (0.0 .. 1.0)
          * \see draw_surface()
          */
-        void get_surface_color(float& r, float& g, float& b) const {
+        void get_surface_color(float& r, float& g, float& b, float& a) const {
             r = surface_color_[0];
             g = surface_color_[1];
             b = surface_color_[2];
+	    a = surface_color_[3];
         }
         
         /**
          * \brief Sets the surface color for backfacing faces.
          * \details Specifies the color used to display the
          *  backfaces of the surfacic part of the mesh. 
-         * \param[in] r , g , b the components of the surface color,
+         * \param[in] r , g , b , a the components of the surface color,
          *  in (0.0 .. 1.0)
          * \see set_show_mesh(), draw_surface(), draw_volume()
          */
-        void set_backface_surface_color(float r, float g, float b) {
+        void set_backface_surface_color(float r, float g, float b, float a=1.0f) {
             backface_surface_color_[0] = r;
             backface_surface_color_[1] = g;
             backface_surface_color_[2] = b;
+	    backface_surface_color_[3] = a;
         }
 
         /**
          * \brief Sets the color used to display mesh cells.
-         * \param[in] r , g , b the components of the cells color,
+         * \param[in] r , g , b , a the components of the cells color,
          *  in (0.0 .. 1.0)
          * \see set_cells_colors_by_type(), draw_volume()
          */
-        void set_cells_color(float r, float g, float b) {
+        void set_cells_color(float r, float g, float b, float a=1.0f) {
             for(index_t i=0; i<MESH_NB_CELL_TYPES; ++i) {
                 cells_color_[i][0] = r;
                 cells_color_[i][1] = g;
                 cells_color_[i][2] = b;
+		cells_color_[i][3] = a;
             }
         }
 
         /**
          * \brief Gets the cells color
-         * \param[out] r , g , b the components of the cells color,
+         * \param[out] r , g , b , a the components of the cells color,
          *  in (0.0 .. 1.0)
          * \see set_cells_colors_by_type(), draw_volume()
          */
-        void get_cells_color(float& r, float& g, float& b) const {
+        void get_cells_color(float& r, float& g, float& b, float& a) const {
             r = cells_color_[0][0];
             g = cells_color_[0][1];
             b = cells_color_[0][2];
+	    a = cells_color_[0][3];
         }
 
         /**
@@ -845,11 +855,11 @@ namespace GEO {
         bool draw_cells_[MESH_NB_CELL_TYPES];
         float points_size_;
         
-        float points_color_[3];
-        float mesh_color_[3];
-        float surface_color_[3];
-        float backface_surface_color_[3];
-        float cells_color_[MESH_NB_CELL_TYPES][3];
+        float points_color_[4];
+        float mesh_color_[4];
+        float surface_color_[4];
+        float backface_surface_color_[4];
+        float cells_color_[MESH_NB_CELL_TYPES][4];
         bool cells_colors_by_type_;
 
         bool lighting_;

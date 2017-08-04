@@ -1,0 +1,3 @@
+        if (g.ActiveId == move_id)
+            if (g.IO.KeyCtrl && IsKeyPressedMap(ImGuiKey_C))
+                ImGui::LogToClipboard();

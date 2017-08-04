@@ -20,5 +20,9 @@ if(WIN32)
     target_link_libraries(exploragram psapi)
 endif()
 
+if(GEOGRAM_WITH_VORPALINE)
+  target_link_libraries(exploragram vorpalib)
+endif()
+
 target_link_libraries(exploragram geogram)
 

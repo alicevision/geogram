@@ -118,6 +118,7 @@ void glup_viewer_post_redisplay() {
 static GlupViewerDisplayFunc display_func = NULL;
 static GlupViewerDisplayFunc overlay_func = NULL;
 static GlupViewerKeyboardFunc keyboard_func = NULL;
+static GlupViewerKeyboardFuncExt keyboard_func_ext = NULL;
 static GlupViewerMouseFunc mouse_func = NULL;
 static GlupViewerInitFunc init_func = NULL;
 static GlupViewerDragDropFunc drag_drop_func = NULL;
@@ -1157,10 +1158,100 @@ static void toggle_fixed_clip() {
 static void glup_viewer_key_callback(
     GLFWwindow* w, int key, int scancode, int action, int mods
 ) {
+    GLboolean handled = GL_FALSE;
+    enum GlupViewerEvent ev;
+    const char* keyname = NULL;
+
+#ifdef __EMSCRIPTEN__    
+    static char buffer[2];
+#endif
     
     if(glup_viewer_gui_takes_input()) {
         glup_viewer_gui_key_callback(w, key, scancode, action, mods);
-        return;
+	/* 
+	 * We continue capturing keypresses on function keys even if
+	 * ImGUI window is active, else we cannot "run program" with
+	 * F5 / "save file" with F2 in geocod !
+	 */
+	if(key < GLFW_KEY_F1 || key > GLFW_KEY_F12) {
+	    return;
+	}
+    }
+
+    if(keyboard_func_ext != NULL && action != GLFW_REPEAT) {
+	ev = (action == GLFW_PRESS) ? GLUP_VIEWER_DOWN : GLUP_VIEWER_UP;
+
+#ifdef __EMSCRIPTEN__
+	/* Argh, glfwGetKeyName is not implemented in Emscripten */
+	if(key < 128) {
+	    buffer[1] = '\0';
+	    buffer[0] = (char)(key);
+	    keyname = buffer;
+	}
+#else	
+	keyname = glfwGetKeyName(key,0);
+#endif	
+	if(keyname != NULL) {
+	    handled = keyboard_func_ext(keyname,ev);	    
+	} else {
+	    if(key == GLFW_KEY_LEFT) {
+		handled = keyboard_func_ext("left",ev);		
+	    } else if(key == GLFW_KEY_RIGHT) {
+		handled = keyboard_func_ext("right",ev);
+	    } else if(key == GLFW_KEY_UP) {
+		handled = keyboard_func_ext("up",ev);
+	    } else if(key == GLFW_KEY_DOWN) {
+		handled = keyboard_func_ext("down",ev);
+	    } else if(key == GLFW_KEY_SPACE) {
+		handled = keyboard_func_ext(" ",ev);		
+	    } else if(key == GLFW_KEY_F1) {
+		handled = keyboard_func_ext("F1",ev);				
+	    } else if(key == GLFW_KEY_F2) {
+		handled = keyboard_func_ext("F2",ev);				
+	    } else if(key == GLFW_KEY_F3) {
+		handled = keyboard_func_ext("F3",ev);				
+	    } else if(key == GLFW_KEY_F4) {
+		handled = keyboard_func_ext("F4",ev);				
+	    } else if(key == GLFW_KEY_F5) {
+		handled = keyboard_func_ext("F5",ev);				
+	    } else if(key == GLFW_KEY_F6) {
+		handled = keyboard_func_ext("F6",ev);				
+	    } else if(key == GLFW_KEY_F7) {
+		handled = keyboard_func_ext("F7",ev);				
+	    } else if(key == GLFW_KEY_F18) {
+		handled = keyboard_func_ext("F8",ev);				
+	    } else if(key == GLFW_KEY_F9) {
+		handled = keyboard_func_ext("F9",ev);				
+	    } else if(key == GLFW_KEY_F10) {
+		handled = keyboard_func_ext("F10",ev);				
+	    } else if(key == GLFW_KEY_F11) {
+		handled = keyboard_func_ext("F11",ev);				
+	    } else if(key == GLFW_KEY_F12) {
+		handled = keyboard_func_ext("F12",ev);				
+	    } else if(key == GLFW_KEY_LEFT_CONTROL) {
+		handled = keyboard_func_ext("left_control",ev);						
+	    } else if(key == GLFW_KEY_RIGHT_CONTROL) {
+		handled = keyboard_func_ext("right_control",ev);						
+	    } else if(key == GLFW_KEY_LEFT_ALT) {
+		handled = keyboard_func_ext("left_alt",ev);						
+	    } else if(key == GLFW_KEY_RIGHT_ALT) {
+		handled = keyboard_func_ext("right_alt",ev);						
+	    } else if(key == GLFW_KEY_LEFT_SHIFT) {
+		handled = keyboard_func_ext("left_shift",ev);						
+	    } else if(key == GLFW_KEY_RIGHT_SHIFT) {
+		handled = keyboard_func_ext("right_shift",ev);						
+	    } else if(key == GLFW_KEY_ESCAPE) {
+		handled = keyboard_func_ext("escape",ev);		
+	    } else if(key == GLFW_KEY_TAB) {
+		handled = keyboard_func_ext("tab",ev);		
+	    } else if(key == GLFW_KEY_BACKSPACE) {
+		handled = keyboard_func_ext("backspace",ev);		
+	    }
+	}
+	if(handled) {
+	    glup_viewer_post_redisplay();
+	    return;
+	}
     }
     
     if(action != GLFW_PRESS) {
@@ -1206,6 +1297,10 @@ static void init() {
         glupMakeCurrent(glupCreateContext());
     }
 
+    if(glupCurrentContext() == NULL) {
+	exit(-1);
+    }
+    
     glup_viewer_gui_init(glup_viewer_window);
     
     glup_viewer_disable(GLUP_VIEWER_IDLE_REDRAW);
@@ -1248,6 +1343,10 @@ void glup_viewer_set_overlay_func(GlupViewerDisplayFunc f) {
 
 void glup_viewer_set_keyboard_func(GlupViewerKeyboardFunc f) {
     keyboard_func = f;
+}
+
+void glup_viewer_set_keyboard_func_ext(GlupViewerKeyboardFuncExt f) {
+    keyboard_func_ext = f;
 }
 
 void glup_viewer_set_mouse_func(GlupViewerMouseFunc f) {
@@ -1363,10 +1462,11 @@ void glup_viewer_one_frame() {
     int cur_width;
     int cur_height;
     double start;
-
-    if(init_func != NULL) {
-        init_func();
-        init_func = NULL;
+    GlupViewerInitFunc init = init_func;
+    
+    if(init != NULL) {
+	init_func = NULL;
+        init();
     }
 
     start = now();
@@ -1506,6 +1606,17 @@ void glup_viewer_set_region_of_interest(
         0.25f * (ymax - ymin) * (ymax - ymin) +
         0.25f * (zmax - zmin) * (zmax - zmin)
     ));
+}
+
+void glup_viewer_get_region_of_interest(
+    float* xm, float* ym, float* zm, float* xM, float* yM, float* zM
+) {
+    *xm = xmin;
+    *ym = ymin;
+    *zm = zmin;
+    *xM = xmax;
+    *yM = ymax;
+    *zM = zmax;
 }
 
 void glup_viewer_set_background(int tex) {
@@ -1910,7 +2021,7 @@ static unsigned char i2a[1024];
  */
 static int char_to_index[256][256];
 
-void glTexImage2DXPM(const char** xpm_data) {
+void glTexImage2DXPM(const char** xpm_data, GLboolean alpha_is_index) {
     int width, height, nb_colors, chars_per_pixel;
     int line = 0;
     int color = 0;
@@ -1959,7 +2070,11 @@ void glTexImage2DXPM(const char** xpm_data) {
         i2r[color] = (unsigned char) r;
         i2g[color] = (unsigned char) g;
         i2b[color] = (unsigned char) b;
-        i2a[color] = none ? 0 : 255;
+	if(alpha_is_index) {
+	    i2a[color] = (unsigned char) (255 - 255 * color / nb_colors);
+	} else {
+	    i2a[color] = none ? 0 : 255;
+	}
         char_to_index[key1][key2] = color;
         line++;
     }

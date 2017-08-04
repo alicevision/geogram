@@ -59,6 +59,10 @@
 
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 
+extern "C" {
+#include <geogram/third_party/lua/lua.h>
+}
+
 /**
  * \file geogram_gfx/glup_viewer/glup_viewer_gui.h
  * \brief Utilities and C++ classes for easily creating 
@@ -177,6 +181,11 @@ namespace GEO {
          */
         void draw(bool* visible=NULL);
 
+	int TextEditCallback(ImGuiTextEditCallbackData* data);
+	
+      protected:
+	bool exec_command(const char* command);
+	
     private:
         ImGuiTextBuffer buf_;
         ImGuiTextFilter filter_;
@@ -184,6 +193,7 @@ namespace GEO {
         ImVector<int>   line_offsets_;   
         bool            scroll_to_bottom_;
         bool*           visible_flag_;
+	char            input_buf_[256];
     };
     
     /*****************************************************************/
@@ -209,6 +219,13 @@ namespace GEO {
             const std::string& default_filename=""
         );
 
+	/** 
+	 * \brief Sets the default file.
+	 * \details Only valuid if save_mode is set.
+         * \param[in] default_filename the default file name.
+	 */	
+	void set_default_filename(const std::string& default_filename);
+	
         /**
          * \brief Makes this FileDialog visible.
          */
@@ -1673,6 +1690,29 @@ namespace GEO {
     /*****************************************************************/    
 
     /**
+     * \brief A simple text editor
+     */
+    class GEOGRAM_GFX_API TextEditor {
+    public:
+	TextEditor(bool* visible);
+	void draw();
+	const char* text() const {
+	    return text_;
+	}
+	void load(const std::string& filename);
+	void save(const std::string& filename);
+	void clear();
+	void load_data(const char* data);
+	
+    private:
+	char text_[65536];
+	bool* visible_;
+    };
+    
+    /*****************************************************************/    
+
+    
+    /**
      * \brief Base class for glup_viewer applications with a gui.
      */
     class GEOGRAM_GFX_API Application {
@@ -1762,7 +1802,29 @@ namespace GEO {
         float scaling() const {
             return scaling_;
         }
-        
+
+
+	virtual bool exec_command(const char* command);
+
+	Console* console() {
+	    return console_;
+	}
+	
+	bool retina_mode() const {
+	    return retina_mode_;
+	}
+
+	virtual bool on_key_pressed(const char* key);
+	virtual bool on_key_released(const char* key);
+
+	void set_lighting(bool x) {
+	    lighting_ = x;
+	}
+
+	void set_white_bg(bool x) {
+	    white_bg_ = x;
+	}
+	
     protected:
 
         /**
@@ -1827,7 +1889,15 @@ namespace GEO {
          * \brief Draws the save menu.
          */
         virtual void draw_save_menu();
-        
+
+	/**
+	 * \brief Draws other file operation menu.
+	 * \details Default implementation does nothing.
+	 *  It can be overloaded to add other menu
+	 *  items in the file menu.
+	 */
+	virtual void draw_fileops_menu();
+	
         /**
          * \brief Draws the about box in the file menu.
          */
@@ -1984,9 +2054,16 @@ namespace GEO {
 
         FileDialog load_dialog_;
         FileDialog save_dialog_;
+	std::string current_file_;
+	
+	bool text_editor_visible_;
+	TextEditor text_editor_;
 
         float scaling_;
         bool retina_mode_;
+
+	lua_State* lua_state_;
+	bool lua_error_occured_;
     };
 
     /*****************************************************************/

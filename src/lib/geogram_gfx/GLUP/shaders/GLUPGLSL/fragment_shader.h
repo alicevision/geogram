@@ -52,7 +52,7 @@ float edge_factor(in vec4 mesh_tex_coord) {
 
 vec4 glup_draw_mesh(in vec4 color, in vec4 mesh_tex_coord) {
     return mix(
-        GLUP.mesh_color, color, edge_factor(mesh_tex_coord)                  
+	GLUP.mesh_color, color, edge_factor(mesh_tex_coord)                  
     );
 }
 
@@ -89,7 +89,7 @@ void main() {
 	} else
 #endif
 	{
-	    vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);                     
+	    vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);
 	    vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);
 	    mat3 M = transpose(
 		mat3(
@@ -106,6 +106,7 @@ void main() {
         result = glup_draw_mesh(result, FragmentIn.mesh_tex_coord);
     }                                                     
     glup_FragColor = result;
+    glup_alpha_discard();
 }
 
 

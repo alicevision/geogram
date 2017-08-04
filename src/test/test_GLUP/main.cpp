@@ -418,6 +418,17 @@ namespace {
         }
     }
 
+    /**
+     * \brief Toggles fragment discard.
+     */
+    void toggle_alpha_discard() {
+        if(glupIsEnabled(GLUP_ALPHA_DISCARD)) {
+            glupDisable(GLUP_ALPHA_DISCARD);
+        } else {
+            glupEnable(GLUP_ALPHA_DISCARD);
+        }
+    }
+    
     void inc_n() {
         reset_VBOs();
         GEO::index_t new_n = n * 3;
@@ -443,10 +454,11 @@ namespace {
     inline void draw_vertex_grid(
         GEO::index_t i, GEO::index_t j, GEO::index_t k, float R=0.0f
     ) {
-	glupColor3f(
+	glupColor4f(
 	    float(i)/float(n),
 	    float(j)/float(n),
-	    float(k)/float(n)                        
+	    float(k)/float(n),
+	    0.0f
 	);
         glupTexCoord3f(
             float(i)/float(n),
@@ -469,7 +481,7 @@ namespace {
         double y = (sin(theta)*cos(phi) + 1.0)/2.0;
         double z = (sin(phi) + 1.0) / 2.0;
 
-        glupColor3d(x,y,z);
+        glupColor4d(x,y,z,0.0);
         glupTexCoord3d(x,y,z);
 	glupNormal3d(x-0.5,y-0.5,z-0.5);
         glupVertex3d(x,y,z);
@@ -530,7 +542,7 @@ namespace {
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2DXPM(uv);
+        glTexImage2DXPM(uv,GL_FALSE);
 
         glupTextureType(GLUP_TEXTURE_2D);
         glupTextureMode(GLUP_TEXTURE_REPLACE);
@@ -800,8 +812,8 @@ namespace {
         glupMatrixMode(GLUP_TEXTURE_MATRIX);
         glupLoadMatrixf(glup_viewer_get_light_matrix());
         
-        glupSetColor4f(GLUP_FRONT_COLOR, 1.0f, 1.0f, 0.0f, 1.0f);
-        glupSetColor4f(GLUP_BACK_COLOR,  1.0f, 0.0f, 1.0f, 1.0f);        
+        glupSetColor4f(GLUP_FRONT_COLOR, 1.0f, 1.0f, 0.0f, 0.0f);
+        glupSetColor4f(GLUP_BACK_COLOR,  1.0f, 0.0f, 1.0f, 0.0f);        
 
         if(!recurse)
         switch(prim) {
@@ -887,6 +899,7 @@ int main(int argc, char** argv) {
     glup_viewer_add_key_func('y', cycle_texturing_mode, "texturing mode");
     glup_viewer_add_key_func('C', cycle_clipping_mode, "clipping mode");    
     glup_viewer_add_key_func('W', toggle_vertex_normals, "toggle vrtx normals");
+    glup_viewer_add_key_func('a', toggle_alpha_discard, "toggle alpha discard");
     
     if(GEO::CmdLine::get_arg_bool("gfx:full_screen")) {
        glup_viewer_enable(GLUP_VIEWER_FULL_SCREEN);

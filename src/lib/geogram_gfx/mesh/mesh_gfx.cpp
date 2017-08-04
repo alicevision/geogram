@@ -260,7 +260,7 @@ namespace GEO {
         update_buffer_objects_if_needed();
         
         glupEnable(GLUP_LIGHTING);
-        glupSetColor3fv(GLUP_FRONT_COLOR, points_color_);
+        glupSetColor4fv(GLUP_FRONT_COLOR, points_color_);
         glupSetPointSize(points_size_ * 5.0f);
 
         if(vertices_selection_ == "") {
@@ -346,7 +346,7 @@ namespace GEO {
         set_GLUP_picking(MESH_EDGES);
         update_buffer_objects_if_needed();
         
-        glupSetColor3fv(GLUP_FRONT_COLOR, mesh_color_);
+        glupSetColor4fv(GLUP_FRONT_COLOR, mesh_color_);
         glupSetMeshWidth(GLUPint(mesh_width_));
         if(can_use_array_mode(GLUP_LINES) && edges_VAO_ != 0) {
             draw_edges_array();
@@ -713,8 +713,8 @@ namespace GEO {
         if(attribute_subelements_ != MESH_NONE) {
             glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 1.0f, 1.0f, 1.0f);
         } else {
-            glupSetColor3fv(GLUP_FRONT_COLOR, surface_color_);
-            glupSetColor3fv(GLUP_BACK_COLOR, backface_surface_color_);
+            glupSetColor4fv(GLUP_FRONT_COLOR, surface_color_);
+            glupSetColor4fv(GLUP_BACK_COLOR, backface_surface_color_);
         }
 
         if(mesh_->facets.are_simplices()) {
@@ -730,7 +730,7 @@ namespace GEO {
 
     void MeshGfx::draw_surface_mesh_with_lines() {
         glupSetMeshWidth(GLUPint(mesh_width_));        
-        glupSetColor3fv(GLUP_FRONT_AND_BACK_COLOR, mesh_color_);
+        glupSetColor4fv(GLUP_FRONT_AND_BACK_COLOR, mesh_color_);
         glupBegin(GLUP_LINES);
         for(index_t f=0; f<mesh_->facets.nb(); ++f) {
             for(index_t c1=mesh_->facets.corners_begin(f);
@@ -752,7 +752,7 @@ namespace GEO {
             return;
         }
         set_GLUP_parameters();
-        glupSetColor3fv(GLUP_FRONT_COLOR, mesh_color_);
+        glupSetColor4fv(GLUP_FRONT_COLOR, mesh_color_);
         glupSetMeshWidth(GLUPint(mesh_border_width_));
         glupBegin(GLUP_LINES);
         for(index_t f=0; f<mesh_->facets.nb(); ++f) {
@@ -778,7 +778,7 @@ namespace GEO {
         if(!draw_cells_[MESH_TET]) {
             return;
         }
-        glupSetColor3fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[MESH_TET]);
+        glupSetColor4fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[MESH_TET]);
         if(can_use_array_mode(GLUP_TETRAHEDRA) && cells_VAO_ != 0) {
             draw_tets_array();
         } else {
@@ -898,7 +898,7 @@ namespace GEO {
                 continue;
             }
             if(attribute_subelements_ != MESH_VERTICES) {            
-                glupSetColor3fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[type]);
+                glupSetColor4fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[type]);
             }
 
             GLUPprimitive glup_prim = geogram_cell_to_glup[type];
@@ -956,7 +956,7 @@ namespace GEO {
             if(!draw_cells_[type] || !has_cells[type]) {
                 continue;
             }
-            glupSetColor3fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[type]);
+            glupSetColor4fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[type]);
             glupBegin(geogram_cell_to_glup[type]);
             for(index_t cell=0; cell<mesh_->cells.nb(); ++cell) {
                 index_t this_cell_type = index_t(mesh_->cells.type(cell));
@@ -1070,7 +1070,7 @@ namespace GEO {
         } else {
             glupDisable(GLUP_DRAW_MESH);
         }
-        glupSetColor3fv(GLUP_MESH_COLOR, mesh_color_);
+        glupSetColor4fv(GLUP_MESH_COLOR, mesh_color_);
         glupSetMeshWidth(GLUPint(mesh_width_));
         glupSetPointSize(points_size_);
         if(lighting_) {

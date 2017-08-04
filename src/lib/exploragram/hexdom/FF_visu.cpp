@@ -113,7 +113,7 @@ namespace GEO {
     }
 
 
-    void view_U_locks(Mesh* m, Mesh* render, double scale_in) {
+    void view_U_locks(Mesh* m, Mesh* render, double scale_in,bool extractall) {
         double scale =scale_in;
         if (!m->vertices.attributes().is_defined("B")) return;
         if (!m->vertices.attributes().is_defined("lockU")) return;
@@ -138,15 +138,18 @@ namespace GEO {
             vec3 dir[3];
             FOR(i, 3)dir[i] = col(B[v], i);
             
+			int extracteddim = 0;
             for (index_t dim = 0; dim < 3; dim++) {
-                if (lockU[v][dim] == 0) continue;
-                    vec3 x = scale * dir[dim];
+                if (lockU[v][dim] == 0 && !extractall) continue;
+				extracteddim++;
+				vec3 x = scale * dir[dim];
                     index_t off_v = render->vertices.create_vertices(2);
                     X(render)[off_v] = X(m)[v] + x ;
                     X(render)[off_v + 1] = X(m)[v] - x ;
                     index_t f = render->edges.create_edge(off_v + 0, off_v + 1);
-                    orient[f] = dim;
-                }
+					//orient[f] = dim;
+					orient[f] = extracteddim;
+				}
             }
         }
 

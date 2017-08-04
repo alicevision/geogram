@@ -48,6 +48,8 @@
 #include <geogram/basic/process.h>
 #include <geogram/basic/logger.h>
 
+#include <set>
+
 namespace {
 
     using namespace GEO;
@@ -555,17 +557,10 @@ namespace {
      */
     void import_arg_group_gfx() {
         declare_arg_group("gfx", "OpenGL graphics options", ARG_ADVANCED);
-#ifdef GEO_OS_APPLE
         declare_arg(
             "gfx:GL_profile", "core",
             "one of core,compatibility,ES"
         );
-#else        
-        declare_arg(
-            "gfx:GL_profile", "compatibility",
-            "one of core,compatibility,ES"
-        );
-#endif        
         declare_arg(
             "gfx:GL_version", 0.0,
             "If non-zero, override GL version detection"
@@ -688,6 +683,12 @@ namespace GEO {
         bool import_arg_group(
             const std::string& name
         ) {
+	    static std::set<std::string> imported;
+	    if(imported.find(name) != imported.end()) {
+		return true;
+	    }
+	    imported.insert(name);
+	    
             if(name == "standard") {
                 import_arg_group_global();
                 import_arg_group_sys();

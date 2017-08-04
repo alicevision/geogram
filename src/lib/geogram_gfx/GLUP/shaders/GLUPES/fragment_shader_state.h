@@ -28,6 +28,9 @@ struct UniformState {
     int   clipping_mode;             
     vec4  clip_plane;                
     vec4  world_clip_plane;
+
+    bool alpha_discard_enabled;
+    float alpha_threshold;
     
     mat4 texture_matrix;
     mat4 modelviewprojection_matrix;

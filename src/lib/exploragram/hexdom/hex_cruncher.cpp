@@ -1399,8 +1399,8 @@ namespace GEO {
     //    AxisAngleRot r;
     //};
 
-    void Baudoin_mesher(Mesh* m) {
-	geo_argused(m);
+ //   void Baudoin_mesher(Mesh* m) {
+	//geo_argused(m);
 
         //// init rot
         //Attribute<bool> isquad(m->facets.attributes(), "isquad");
@@ -1473,6 +1473,6 @@ namespace GEO {
         //index_t off_v = m->vertices.create_vertices(nvvertices.size());
         //FOR(i, nvvertices.size())  X(m)[off_v + i] = nvvertices[i];
 
-    }
+    //}
 
 }

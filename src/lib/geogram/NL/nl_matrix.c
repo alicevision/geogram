@@ -848,7 +848,9 @@ static void nlFunctionMatrixDestroy(NLFunctionMatrix* M) {
      */
 }
 
-static void nlFunctionMatrixMult(NLFunctionMatrix* M, const NLdouble* x, NLdouble* y) {
+static void nlFunctionMatrixMult(
+    NLFunctionMatrix* M, const NLdouble* x, NLdouble* y
+) {
     M->matrix_func(x,y);
 }
 
@@ -950,12 +952,16 @@ static void nlMatrixProductDestroy(NLMatrixProduct* P) {
     }
 }
 
-static void nlMatrixProductMult(NLMatrixProduct* P, const NLdouble* x, NLdouble* y) {
+static void nlMatrixProductMult(
+    NLMatrixProduct* P, const NLdouble* x, NLdouble* y
+) {
     nlMultMatrixVector(P->N, x, P->work);
     nlMultMatrixVector(P->M, P->work, y);
 }
 
-NLMatrix nlMatrixNewFromProduct(NLMatrix M, NLboolean owns_M, NLMatrix N, NLboolean owns_N) {
+NLMatrix nlMatrixNewFromProduct(
+    NLMatrix M, NLboolean owns_M, NLMatrix N, NLboolean owns_N
+) {
     NLMatrixProduct* result = NL_NEW(NLMatrixProduct);
     nl_assert(M->n == N->m);
     result->m = M->m;

@@ -191,7 +191,7 @@ namespace {
          *  drawing modes.
          */
         virtual void draw_scene() {
-
+	    
             // GLUP can have different colors for frontfacing and
             // backfacing polygons.
             glupSetColor3f(GLUP_FRONT_COLOR, 1.0f, 1.0f, 0.0f);
@@ -400,14 +400,14 @@ namespace {
          */
         virtual void init_graphics() {
             Application::init_graphics();
-
+	    
             // Create the texture and initialize its texturing modes
             glGenTextures(1, &texture_);
             glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
             glBindTexture(GL_TEXTURE_2D, texture_);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2DXPM(uv);
+            glTexImage2DXPM(uv,GL_FALSE);
             glupTextureType(GLUP_TEXTURE_2D);
             glupTextureMode(GLUP_TEXTURE_REPLACE);
         }
