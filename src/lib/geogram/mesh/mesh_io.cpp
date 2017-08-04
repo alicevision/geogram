@@ -2686,9 +2686,10 @@ namespace GEO {
         ) {
             M.clear();
             try {
-                
+
+                std::string chunk_class;
                 for(
-                    std::string chunk_class = in.next_chunk();
+                    chunk_class = in.next_chunk();
                     chunk_class != "EOFL" && chunk_class != "SPTR";
                     chunk_class = in.next_chunk()
                 ) {
@@ -2707,6 +2708,16 @@ namespace GEO {
                         }
                     } 
                 }
+
+                if(chunk_class == "SPTR") {
+                    Logger::warn("I/O")
+                        << "File may contain several objects"
+                        << std::endl;
+                    Logger::warn("I/O")
+                        << "(reading the first one)"
+                        << std::endl;
+                }
+                
             } catch(const GeoFileException& exc) {
                 Logger::err("I/O") << exc.what() << std::endl;
                 M.clear();
@@ -3247,6 +3258,29 @@ namespace GEO {
         }
     };
 
+    /**
+     * \brief IO handler for graphite files.
+     * \details Graphite files with a single object can be directly read
+     *  by geogram. 
+     */
+    class GraphiteIOHandler : public GeogramIOHandler {
+    public:
+        /**
+         * \copydoc MeshIOHandler::save()
+         */
+        virtual bool save(
+            const Mesh& M, const std::string& filename,
+            const MeshIOFlags& ioflags = MeshIOFlags()
+        ) {
+            geo_argused(M);
+            geo_argused(filename);
+            geo_argused(ioflags);
+            Logger::err("I/O") << "graphite file format not supported for writing"
+                               << std::endl;
+            return false;
+        }
+    };
+    
 }
 
 /****************************************************************************/
@@ -3425,7 +3459,8 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(PTSIOHandler,  "pts");
         geo_register_MeshIOHandler_creator(TETIOHandler,  "tet");
         geo_register_MeshIOHandler_creator(TET6IOHandler, "tet6");
-        geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram");        
+        geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram");
+        geo_register_MeshIOHandler_creator(GraphiteIOHandler, "graphite");
     }
 
     

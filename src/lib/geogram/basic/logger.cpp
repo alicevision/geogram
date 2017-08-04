@@ -355,6 +355,9 @@ namespace GEO {
     {
         // Add a default client printing stuff to std::cout
         register_client(new ConsoleLogger());
+#ifdef GEO_DEBUG
+        quiet_ = false;
+#endif        
     }
 
     Logger::~Logger() {

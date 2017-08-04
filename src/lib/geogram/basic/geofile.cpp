@@ -395,6 +395,17 @@ namespace GEO {
         write_string(magic);
         write_string(version);
         check_chunk_size();
+        write_comment(
+            "geogram version=" + Environment::instance()->get_value("version")
+        );
+        write_comment(
+            "geogram release date=" +
+            Environment::instance()->get_value("release_date")
+            );
+        write_comment(
+            "geogram SVN revision=" +
+            Environment::instance()->get_value("SVN revision")
+        );
     }
 
     void OutputGeoFile::write_attribute_set(

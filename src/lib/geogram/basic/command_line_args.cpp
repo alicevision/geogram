@@ -280,10 +280,19 @@ namespace {
      */
     void import_arg_group_sys() {
         declare_arg_group("sys", "System fine tuning", ARG_ADVANCED);
+
+#ifdef GEO_DEBUG
+        declare_arg(
+            "sys:assert", "abort",
+            "Assertion behavior (abort, throw)"
+        );
+#else        
         declare_arg(
             "sys:assert", "throw",
             "Assertion behavior (abort, throw)"
         );
+#endif
+        
         declare_arg(
             "sys:multithread", Process::multithreading_enabled(),
             "Enables multi-threaded computations"

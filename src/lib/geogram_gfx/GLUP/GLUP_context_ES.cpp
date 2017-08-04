@@ -81,6 +81,12 @@
  *       Rem: le ELEMENT_ARRAY_BUFFER est en entiers 32 bits, certains archis
  *    (telephones etc...) peuvent avoir besoin d'un ELEMENT_ARRAY_BUFFER 16 bits
  *    (ce qu'on pourrait assez facilement avoir...)
+ *
+ * texture 3D:
+ * ===========
+ *   OpenGL ES 2.0 n'a pas de textures 3D, mais on peut les emuler avec des
+ * textures 2D:
+ * https://www.khronos.org/webgl/wiki/WebGL_and_OpenGL_Differences
  */
 
 namespace GLUP {
@@ -94,7 +100,10 @@ namespace GLUP {
     void Context_ES2::prepare_to_draw(GLUPprimitive primitive) {
         Context::prepare_to_draw(primitive);
 #ifdef GEO_GL_150
-        if((!use_core_profile_) && primitive == GLUP_POINTS) {
+        if(
+            (!use_core_profile_ || use_ES_profile_) &&
+            primitive == GLUP_POINTS
+        ) {
             glEnable(GL_POINT_SPRITE);
             // Not needed anymore it seems
             // glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
@@ -250,38 +259,43 @@ namespace GLUP {
         
         ;
 
-    static const char* fshader_header =
-#ifdef GEO_OS_EMSCRIPTEN
-    "#extension GL_OES_standard_derivatives : enable \n"        
-    "precision mediump float;                        \n"
-    "vec4 glup_FragColor;                            \n"
-    "void glup_write_fragment() {                    \n"
-    "    gl_FragColor = glup_FragColor;              \n"
-    "}                                               \n"
-    "vec4 glup_texture(                              \n"
-    "    in sampler2D samp, in vec2 uv               \n"
-    ") {                                             \n"
-    "    return texture2D(samp, uv);                 \n"
-    "}                                               \n"
-#else
-    "#version 150 core                               \n"
-    "out vec4 glup_FragColor;                        \n"
-    "vec4 glup_texture(                              \n"
-    "    in sampler2D samp, in vec2 uv               \n"
-    ") {                                             \n"
-    "    return texture(samp, uv);                   \n"
-    "}                                               \n"
-    "void glup_write_fragment() { }                  \n"
-#endif
-    ;
+    const char* Context_ES2::fshader_header() {
 
-    static const char* vshader_header =
-#ifndef GEO_OS_EMSCRIPTEN
-    "#version 150 core \n"    
-#endif        
-    "  "
-    ;
+        // Note: for OpenGL ES 2.0, #version is 100 (??)
+        //       for OpenGL ES 3.0, #version is 300 es (makes more sense)
+        
+        static const char* fshader_header_ES =
+            "#version 100                                    \n"
+            "#extension GL_OES_standard_derivatives : enable \n"        
+            "precision mediump float;                        \n"
+            "vec4 glup_FragColor;                            \n"
+            "void glup_write_fragment() {                    \n"
+            "    gl_FragColor = glup_FragColor;              \n"
+            "}                                               \n"
+            "vec4 glup_texture(                              \n"
+            "    in sampler2D samp, in vec2 uv               \n"
+            ") {                                             \n"
+            "    return texture2D(samp, uv);                 \n"
+            "}                                               \n"
+            ;
 
+
+        static const char* fshader_header_150 = 
+            "#version 150 core                               \n"
+            "out vec4 glup_FragColor;                        \n"
+            "vec4 glup_texture(                              \n"
+            "    in sampler2D samp, in vec2 uv               \n"
+            ") {                                             \n"
+            "    return texture(samp, uv);                   \n"
+            "}                                               \n"
+            "void glup_write_fragment() { }                  \n"
+            ;
+        return use_ES_profile_ ? fshader_header_ES : fshader_header_150;
+    }
+   
+    const char* Context_ES2::vshader_header() {
+        return use_ES_profile_ ? "#version 100\n" : "#version 150 core \n";
+    }
 
     /**
      * \brief Computes the number of elements in the buffer for
@@ -324,52 +338,56 @@ namespace GLUP {
         );},0) != 0 
 
         
-        GL_OES_standard_derivatives_ = WEBGL_EXTENSION_SUPPORTED(
+        extension_standard_derivatives_ = WEBGL_EXTENSION_SUPPORTED(
             'OES_standard_derivatives'
         );
 
-        GL_OES_vertex_array_object_ = WEBGL_EXTENSION_SUPPORTED(
+        extension_vertex_array_object_ = WEBGL_EXTENSION_SUPPORTED(
             'OES_vertex_array_object'
         );
 
-        GL_EXT_frag_depth_ = WEBGL_EXTENSION_SUPPORTED(
+        extension_frag_depth_ = WEBGL_EXTENSION_SUPPORTED(
             'EXT_frag_depth'
         );
 #else
-        GL_OES_standard_derivatives_ =
-            extension_is_supported("GL_OES_standard_derivatives");
-
-        GL_OES_vertex_array_object_ =
-            extension_is_supported("GL_OES_vertex_array_object");
-
-        GL_EXT_frag_depth_ =
-            extension_is_supported("GL_EXT_frag_depth");
-#endif
-
-#ifdef GEO_OS_APPLE
-        GL_OES_vertex_array_object_ = true;
-        GL_OES_standard_derivatives_ = true;
-#endif
+        //TODO: it seems that standard derivatives and vertex array
+        //object extension names are not prefixed with GL_OES_ in
+        //OpenGL ES mode (but it is in WebGL, oh my....)
         
+        extension_frag_depth_ =
+            extension_is_supported("GL_EXT_frag_depth");
+        
+        if(use_ES_profile_) {
+            extension_standard_derivatives_ =
+                extension_is_supported("GL_OES_standard_derivatives");
+            
+            extension_vertex_array_object_ =
+                extension_is_supported("GL_OES_vertex_array_object");
+        } else {
+            extension_standard_derivatives_ = true;
+            extension_vertex_array_object_ = true;
+        }
+#endif
+
         //   Switch-on GLUP's emulation for Vertex Array
         // Objects if they are not supported.
-        if(!GL_OES_vertex_array_object_) {
+        if(!extension_vertex_array_object_) {
             GLUP::vertex_array_emulate = true;
         }
 
         Logger::out("GLUP") 
-            << "GL_OES_standard_derivatives: "
-            << GL_OES_standard_derivatives_
+            << "standard_derivatives: "
+            << extension_standard_derivatives_
             << std::endl;
 
         Logger::out("GLUP")
-            << "GL_OES_vertex_array_object: "
-            << GL_OES_vertex_array_object_
+            << "vertex_array_object: "
+            << extension_vertex_array_object_
             << std::endl;
 
         Logger::out("GLUP")
-            << "GL_EXT_frag_depth:"
-            << GL_EXT_frag_depth_
+            << "frag_depth:"
+            << extension_frag_depth_
             << std::endl;
             
         create_CPU_side_uniform_buffer();
@@ -455,13 +473,16 @@ namespace GLUP {
         clip_cells_VAO_(0),
         sliced_cells_elements_VBO_(0),
         sliced_cells_VAO_(0) {
-        GL_OES_standard_derivatives_ = false;        
-        GL_OES_vertex_array_object_ = false;
-        GL_EXT_frag_depth_ = false;
+        extension_standard_derivatives_ = false;        
+        extension_vertex_array_object_ = false;
+        extension_frag_depth_ = false;
         for(index_t i=0; i<3; ++i) {
             sliced_cells_vertex_attrib_VBO_[i] = 0;
         }
-        uses_mesh_tex_coord_ = true;        
+        uses_mesh_tex_coord_ = true;
+#ifdef GEO_OS_EMSCRIPTEN        
+        use_ES_profile_ = true;
+#endif        
     }
     
     Context_ES2::~Context_ES2() {
@@ -665,22 +686,22 @@ namespace GLUP {
 /*****************************************************************************/
 
     static const char* points_vshader_source =
-#ifdef GEO_OS_EMSCRIPTEN        
-        "attribute vec4 vertex_in;                             \n"
-        "attribute vec4 color_in;                              \n"
-        "attribute vec4 tex_coord_in;                          \n"
-        "varying vec4 color;                                   \n"
-        "varying vec4 tex_coord;                               \n"
-        "varying float clip_dist;                              \n"
-#else
-        "in vec4 vertex_in;                                    \n"
-        "in vec4 color_in;                                     \n"
-        "in vec4 tex_coord_in;                                 \n"
-        "out vec4 color;                                       \n"
-        "out vec4 tex_coord;                                   \n"
-        "out float clip_dist;                                  \n"
-#endif
-        
+        "#ifdef GL_ES                                          \n"
+        "   attribute vec4 vertex_in;                          \n"
+        "   attribute vec4 color_in;                           \n"
+        "   attribute vec4 tex_coord_in;                       \n"
+        "   varying vec4 color;                                \n"
+        "   varying vec4 tex_coord;                            \n"
+        "   varying float clip_dist;                           \n"
+        "#else                                                 \n"
+        "   in vec4 vertex_in;                                 \n"
+        "   in vec4 color_in;                                  \n"
+        "   in vec4 tex_coord_in;                              \n"
+        "   out vec4 color;                                    \n"
+        "   out vec4 tex_coord;                                \n"
+        "   out float clip_dist;                               \n"
+        "#endif                                                \n"
+        "                                                      \n"
         "void main() {                                         \n"
         "   if(maybe_clipping_enabled()) {                     \n"
         "      clip_dist = dot(                                \n"
@@ -712,15 +733,16 @@ namespace GLUP {
         ;
                 
     static const char* points_fshader_source =
-#ifdef GEO_OS_EMSCRIPTEN        
-        "varying vec4 color;                                           \n"
-        "varying vec4 tex_coord;                                       \n"
-        "varying float clip_dist;                                      \n"
-#else
-        "in vec4 color;                                                \n"
-        "in vec4 tex_coord;                                            \n"
-        "in float clip_dist;                                           \n"
-#endif        
+        "#ifdef GL_ES                                                  \n"
+        "   varying vec4 color;                                        \n"
+        "   varying vec4 tex_coord;                                    \n"
+        "   varying float clip_dist;                                   \n"
+        "#else                                                         \n"
+        "   in vec4 color;                                             \n"
+        "   in vec4 tex_coord;                                         \n"
+        "   in float clip_dist;                                        \n"
+        "#endif                                                        \n"
+        "                                                              \n"
         "void main() {                                                 \n"
         "   if(clipping_enabled() && (clip_dist < 0.0)) {              \n"
         "      discard;                                                \n"
@@ -767,7 +789,7 @@ namespace GLUP {
     void Context_ES2::setup_GLUP_POINTS() {
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -776,11 +798,11 @@ namespace GLUP {
         );
 
         GLuint fshader = 0;
-        if(GL_EXT_frag_depth_) {
+        if(extension_frag_depth_) {
             fshader = GLSL::compile_shader(
                 GL_FRAGMENT_SHADER,
+                fshader_header(),                
                 "#extension GL_EXT_frag_depth : enable\n",            
-                fshader_header,
                 uniform_state_fs_ES2,
                 glup_constants,
                 toggles_declaration(),
@@ -792,7 +814,7 @@ namespace GLUP {
         } else {
             fshader = GLSL::compile_shader(
                 GL_FRAGMENT_SHADER,
-                fshader_header,
+                fshader_header(),
                 uniform_state_fs_ES2,
                 glup_constants,
                 toggles_declaration(),
@@ -816,21 +838,22 @@ namespace GLUP {
 /*****************************************************************************/
 
     static const char* lines_vshader_source =
-#ifdef GEO_OS_EMSCRIPTEN        
-        "attribute vec4 vertex_in;                         \n"
-        "attribute vec4 color_in;                          \n"
-        "attribute vec4 tex_coord_in;                      \n"
-        "varying vec4 color;                               \n"
-        "varying vec4 tex_coord;                           \n"
-        "varying float clip_dist;                          \n"
-#else
-        "in vec4 vertex_in;                                \n"
-        "in vec4 color_in;                                 \n"
-        "in vec4 tex_coord_in;                             \n"
-        "out vec4 color;                                   \n"
-        "out vec4 tex_coord;                               \n"
-        "out float clip_dist;                              \n"
-#endif        
+        "#ifdef GL_ES                                      \n"        
+        "   attribute vec4 vertex_in;                      \n"
+        "   attribute vec4 color_in;                       \n"
+        "   attribute vec4 tex_coord_in;                   \n"
+        "   varying vec4 color;                            \n"
+        "   varying vec4 tex_coord;                        \n"
+        "   varying float clip_dist;                       \n"
+        "#else                                             \n"
+        "   in vec4 vertex_in;                             \n"
+        "   in vec4 color_in;                              \n"
+        "   in vec4 tex_coord_in;                          \n"
+        "   out vec4 color;                                \n"
+        "   out vec4 tex_coord;                            \n"
+        "   out float clip_dist;                           \n"
+        "#endif                                            \n"
+        "                                                  \n"        
         "void main() {                                           \n"
         "   if(maybe_clipping_enabled()) {                       \n"
         "      clip_dist = dot(                                  \n"
@@ -849,15 +872,16 @@ namespace GLUP {
         ;
 
     static const char* lines_fshader_source =
-#ifdef GEO_OS_EMSCRIPTEN        
-        "varying vec4 color;                                           \n"
-        "varying vec4 tex_coord;                                       \n"
-        "varying float clip_dist;                                      \n"
-#else
-        "in vec4 color;                                                \n"
-        "in vec4 tex_coord;                                            \n"
-        "in float clip_dist;                                           \n"
-#endif        
+        "#ifdef GL_ES                                                  \n"                
+        "   varying vec4 color;                                        \n"
+        "   varying vec4 tex_coord;                                    \n"
+        "   varying float clip_dist;                                   \n"
+        "#else                                                         \n"
+        "   in vec4 color;                                             \n"
+        "   in vec4 tex_coord;                                         \n"
+        "   in float clip_dist;                                        \n"
+        "#endif                                                        \n"
+        "                                                              \n"
         "void main() {                                                 \n"
         "   if(clipping_enabled() && (clip_dist < 0.0)) {              \n"
         "      discard;                                                \n"
@@ -893,7 +917,7 @@ namespace GLUP {
     void Context_ES2::setup_GLUP_LINES() {
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -903,7 +927,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -925,27 +949,27 @@ namespace GLUP {
 /*****************************************************************************/
 
     static const char* polygons_vshader_source =
-#ifdef GEO_OS_EMSCRIPTEN        
-        "attribute vec4 vertex_in;                             \n"
-        "attribute vec4 color_in;                              \n"
-        "attribute vec4 tex_coord_in;                          \n"
-        "attribute vec4 mesh_tex_coord_in;                     \n"
-        "varying vec3 vertex_clip_space;                       \n"
-        "varying float clip_dist;                              \n"        
-        "varying vec4 color;                                   \n"
-        "varying vec4 tex_coord;                               \n"
-        "varying vec4 mesh_tex_coord;                          \n"
-#else
-        "in vec4 vertex_in;                                    \n"
-        "in vec4 color_in;                                     \n"
-        "in vec4 tex_coord_in;                                 \n"
-        "in vec4 mesh_tex_coord_in;                            \n"
-        "out vec3 vertex_clip_space;                           \n"
-        "out float clip_dist;                                  \n"
-        "out vec4 color;                                       \n"
-        "out vec4 tex_coord;                                   \n"
-        "out vec4 mesh_tex_coord;                              \n"
-#endif        
+        "#ifdef GL_ES                                          \n"
+        "   attribute vec4 vertex_in;                          \n"
+        "   attribute vec4 color_in;                           \n"
+        "   attribute vec4 tex_coord_in;                       \n"
+        "   attribute vec4 mesh_tex_coord_in;                  \n"
+        "   varying vec3 vertex_clip_space;                    \n"
+        "   varying float clip_dist;                           \n"        
+        "   varying vec4 color;                                \n"
+        "   varying vec4 tex_coord;                            \n"
+        "   varying vec4 mesh_tex_coord;                       \n"
+        "#else                                                 \n"
+        "   in vec4 vertex_in;                                 \n"
+        "   in vec4 color_in;                                  \n"
+        "   in vec4 tex_coord_in;                              \n"
+        "   in vec4 mesh_tex_coord_in;                         \n"
+        "   out vec3 vertex_clip_space;                        \n"
+        "   out float clip_dist;                               \n"
+        "   out vec4 color;                                    \n"
+        "   out vec4 tex_coord;                                \n"
+        "   out vec4 mesh_tex_coord;                           \n"
+        "#endif                                                \n"
 
         "void main() {                                         \n"
         "   if(maybe_clipping_enabled()) {                     \n"
@@ -1005,21 +1029,25 @@ namespace GLUP {
     // well, and satisfies my goal of directly playing back
     // a vertex buffer object.
 
+    // TODO:
+    // Note: dFdX with vectors does not work with some Intel
+    // cards (use vec3(dFdX(v.x),dFdX(v.y),dFdX(v.z))) instead.
     
     static const char* polygons_fshader_source =
-#ifdef GEO_OS_EMSCRIPTEN        
-        "varying vec3 vertex_clip_space;              \n"
-        "varying float clip_dist;                     \n"
-        "varying vec4 color;                          \n"
-        "varying vec4 tex_coord;                      \n"
-        "varying vec4 mesh_tex_coord;                 \n"
-#else
-        "in vec3 vertex_clip_space;                   \n"
-        "in float clip_dist;                          \n"
-        "in vec4 color;                               \n"
-        "in vec4 tex_coord;                           \n"
-        "in vec4 mesh_tex_coord;                      \n"
-#endif        
+        "#ifdef GL_ES                                 \n"
+        "   varying vec3 vertex_clip_space;           \n"
+        "   varying float clip_dist;                  \n"
+        "   varying vec4 color;                       \n"
+        "   varying vec4 tex_coord;                   \n"
+        "   varying vec4 mesh_tex_coord;              \n"
+        "#else                                        \n"
+        "   in vec3 vertex_clip_space;                \n"
+        "   in float clip_dist;                       \n"
+        "   in vec4 color;                            \n"
+        "   in vec4 tex_coord;                        \n"
+        "   in vec4 mesh_tex_coord;                   \n"
+        "#endif                                       \n"
+        
         "void main() {                                \n"
         "   clip_fragment(clip_dist);                 \n"
         "   if(vertex_colors_enabled()) {             \n"
@@ -1092,7 +1120,7 @@ namespace GLUP {
 
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,
+            vshader_header(),
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1102,7 +1130,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -1150,7 +1178,7 @@ namespace GLUP {
 
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1160,7 +1188,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -1215,7 +1243,7 @@ namespace GLUP {
 
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1225,7 +1253,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -1302,7 +1330,7 @@ namespace GLUP {
 
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1312,7 +1340,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -1376,7 +1404,7 @@ namespace GLUP {
         
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1386,7 +1414,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -1433,7 +1461,7 @@ namespace GLUP {
 
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1443,7 +1471,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),
@@ -1476,7 +1504,7 @@ namespace GLUP {
 
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER,
-            vshader_header,            
+            vshader_header(),            
             uniform_state_vs_ES2,
             glup_constants,
             potential_toggles_declaration(),            
@@ -1486,7 +1514,7 @@ namespace GLUP {
 
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
-            fshader_header,
+            fshader_header(),
             uniform_state_fs_ES2,
             glup_constants,
             toggles_declaration(),

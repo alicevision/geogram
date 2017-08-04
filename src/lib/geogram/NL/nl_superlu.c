@@ -46,44 +46,21 @@
 #include "nl_context.h"
 
 /**
- * \file Weak-coupling adapter to call SuperLU from OpenNL, 
+ * \file nl_superlu.c
+ * \brief Weak-coupling adapter to call SuperLU from OpenNL, 
  *  works with both SuperLU 3.x and SuperLU 4.x.
  */
 
-#ifdef GEO_DYNAMIC_LIBS
-
-#if defined(__APPLE__) && defined(__MACH__)
-#define unix
-#define SUPERLU_LIB_NAME "libsuperlu_4.dylib"
-#else
-#define SUPERLU_LIB_NAME "libsuperlu.so"
-#endif
-
-#  ifdef unix
-#include <dlfcn.h>
-
-/**
- * \brief A version of dlsym() that returns a function pointer
- * \param[in] handle an opaque handle to a shared object
- *  previously returned by dlopen()
- * \param[in] name the name of the function to lookup in the 
- *  shared object
- * \return a function pointer to the function with the specified name,
- *  or a NULL pointer if no such function exists
- * \details It is not legal in modern C to cast a void*
- *  pointer into a function pointer, thus requiring this
- *  (quite dirty) function that uses a union.
- */
-static NLfunc fun_dlsym(void* handle, const char* name) {
-    union {
-        void* ptr;
-        NLfunc fptr;
-    } u;
-    u.ptr = dlsym(handle, name);
-    return u.fptr;
-}
+#ifdef NL_OS_UNIX
+#  ifdef NL_OS_APPLE
+#      define SUPERLU_LIB_NAME "libsuperlu_4.dylib"
+#  else
+#      define SUPERLU_LIB_NAME "libsuperlu.so"
 #  endif
+#else
+#  define SUPERLU_LIB_NAME "libsuperlu.xxx"
 #endif
+
 
 /**********************************/
 /** Exerpt from SuperLU includes **/
@@ -303,7 +280,7 @@ typedef struct {
     FUNPTR_Destroy_SuperMatrix_Store Destroy_SuperMatrix_Store;
     FUNPTR_dgssv dgssv;
 
-    void* DLL_handle;
+    NLdll DLL_handle;
 
     double version;
 } SuperLUContext;
@@ -364,8 +341,6 @@ static NLboolean SuperLU_is_initialized() {
         SuperLU()->dgssv != NULL;
 }
 
-#ifdef GEO_DYNAMIC_LIBS
-
 /**
  * \brief Finds and initializes a function pointer to
  *  one of the functions in SuperLU.
@@ -378,14 +353,12 @@ static NLboolean SuperLU_is_initialized() {
     if(                                                           \
         (                                                         \
             SuperLU()->name =                                     \
-            (FUNPTR_##name)fun_dlsym(SuperLU()->DLL_handle,#name) \
+            (FUNPTR_##name)nlFindFunction(SuperLU()->DLL_handle,#name) \
         ) == NULL                                                 \
     ) {                                                           \
-        nlError("nlInitExtension_SUPERLU/dlsym",dlerror());   \
+        nlError("nlInitExtension_SUPERLU","function not found");  \
         return NL_FALSE;                                          \
     }
-
-#endif
 
 /**
  * \brief Version-independent constant for SLU_NR 
@@ -599,7 +572,7 @@ NLboolean nlSolve_system_with_SUPERLU(
 
 /************************************************************************/
 
-NLboolean nlSolve_SUPERLU() {
+NLboolean nlSolve_SUPERLU(void) {
     /* Get current linear system from context */
     NLSparseMatrix* M  = &(nlCurrentContext->M);
     NLdouble* b          = nlCurrentContext->b;
@@ -616,24 +589,21 @@ NLboolean nlSolve_SUPERLU() {
 }
 
 
-#if defined(GEO_DYNAMIC_LIBS) && defined(unix)
-
-static void nlTerminateExtension_SUPERLU() {
+static void nlTerminateExtension_SUPERLU(void) {
     if(SuperLU()->DLL_handle != NULL) {
-        dlclose(SuperLU()->DLL_handle);
+        nlCloseDLL(SuperLU()->DLL_handle);
         SuperLU()->DLL_handle = NULL;
     }
 }
 
-NLboolean nlInitExtension_SUPERLU() {
+NLboolean nlInitExtension_SUPERLU(void) {
     
     if(SuperLU()->DLL_handle != NULL) {
         return SuperLU_is_initialized();
     }
 
-    SuperLU()->DLL_handle = dlopen(SUPERLU_LIB_NAME, RTLD_NOW);
+    SuperLU()->DLL_handle = nlOpenDLL(SUPERLU_LIB_NAME);
     if(SuperLU()->DLL_handle == NULL) {
-        nlError("nlInitExtension_SUPERLU/dlopen",dlerror());
         return NL_FALSE;
     }
 
@@ -644,7 +614,7 @@ NLboolean nlInitExtension_SUPERLU() {
      * a 4.x.
      * TODO: there may be a finer way to detect version.
      */
-    if(dlsym(SuperLU()->DLL_handle,"ilu_set_default_options") != NULL) {
+    if(nlFindFunction(SuperLU()->DLL_handle,"ilu_set_default_options") != NULL) {
         SuperLU()->version = 4.0;
     } else {
         SuperLU()->version = 3.0;
@@ -664,15 +634,5 @@ NLboolean nlInitExtension_SUPERLU() {
     return NL_TRUE;
 }
 
-#else
 
-NLboolean nlInitExtension_SUPERLU() {
-    nlError(
-        "nlInitExtension_SUPERLU",
-        "Only supported in Linux / dynamic lib. mode"
-    );
-    return NL_FALSE;
-}
-
-#endif
 

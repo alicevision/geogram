@@ -1361,11 +1361,14 @@ void glup_viewer_one_frame(void);
 void glup_viewer_one_frame() {
     int cur_width;
     int cur_height;
+    double start;
 
     if(init_func != NULL) {
         init_func();
         init_func = NULL;
     }
+
+    start = now();
     
     if(!glfwWindowShouldClose(glup_viewer_window) && in_main_loop_) {
         glfwGetFramebufferSize(glup_viewer_window, &cur_width, &cur_height);
@@ -1375,7 +1378,8 @@ void glup_viewer_one_frame() {
         glfwPollEvents();
         if(
             glup_viewer_is_enabled(GLUP_VIEWER_IDLE_REDRAW) ||
-            glup_viewer_needs_redraw > 0
+            glup_viewer_needs_redraw > 0 ||
+            (now()-start) < 1.0 /* overcomes missing update at startup */
         ) {
             if(glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)) {
                 glup_viewer_gui_begin_frame();
@@ -1391,7 +1395,7 @@ void glup_viewer_one_frame() {
             glup_viewer_pause();
         }
         glfwSwapBuffers(glup_viewer_window);
-    }
+    } 
 }
 
 void glup_viewer_main_loop(int argc, char** argv) {
@@ -1416,6 +1420,11 @@ void glup_viewer_main_loop(int argc, char** argv) {
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);            
     }
 
+    if(glup_viewer_is_high_dpi()) {
+        glup_viewer_W *= 2;
+        glup_viewer_H *= 2;
+    }
+    
     if(
         glup_viewer_get_arg_bool("gfx:fullscreen") ||
         glup_viewer_is_enabled(GLUP_VIEWER_FULL_SCREEN)
@@ -1457,7 +1466,7 @@ void glup_viewer_main_loop(int argc, char** argv) {
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(glup_viewer_one_frame, 0, 1);
-#else    
+#else
     while (!glfwWindowShouldClose(glup_viewer_window) && in_main_loop_) {
         glup_viewer_one_frame();
     }
@@ -2312,4 +2321,14 @@ void glup_viewer_random_color_from_index(int index) {
     } else {
         glupColor4fv(white) ;
     }
+}
+
+GLboolean glup_viewer_is_high_dpi(void) {
+#ifdef __EMSCRIPTEN__
+    return GL_FALSE;
+#else    
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
+    return (vidmode->width > 1920);
+#endif    
 }

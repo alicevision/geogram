@@ -632,7 +632,7 @@ namespace {
                 ImGui::Text("\n");
                 ImGui::Image(
                     convert_to_ImTextureID(geogram_logo_texture_),
-                    ImVec2(256, 256)
+                    ImVec2(256.0f * scaling(), 256.0f * scaling())
                 );
                 ImGui::Text("\n");
                 ImGui::Text(

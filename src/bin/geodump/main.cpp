@@ -87,6 +87,11 @@ int main(int argc, char** argv) {
                         << file.read_string()
                         << std::endl;
                 }
+            } else if(chunk_class == "CMNT") {
+                GEO::Logger::out("GeoFile")
+                    << "comment: "
+                    << file.current_comment()
+                    << std::endl;
             } else if(
                 chunk_class == "GROB" ||
                 chunk_class == "SHDR" ||

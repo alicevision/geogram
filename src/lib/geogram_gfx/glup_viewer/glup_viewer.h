@@ -192,11 +192,7 @@ extern GLUP_VIEWER_API void glup_viewer_post_redisplay(void);
 
 extern GLUP_VIEWER_API void glup_viewer_home(void);
 
-    /* TODO REMOVE */
-extern GLUP_VIEWER_API void glup_viewer_draw_console(void);
-
-    /* TODO REMOVE */    
-extern GLUP_VIEWER_API void glup_viewer_draw_status_bar(void);
+extern GLUP_VIEWER_API GLboolean glup_viewer_is_high_dpi(void);
     
 #ifdef __cplusplus
 }

@@ -55,11 +55,14 @@
  *  = \left[ \begin{array}{l} 5 \\ 6 \end{array} \right] \f$
  */
 static void test_simple_linear_solve(NLint solver) {
-
+    NLboolean symmetric = NL_FALSE;
+    
     printf("\n");    
     printf("Testing linear solve\n");
     printf("====================\n");
 
+
+    
     switch(solver) {
     case NL_SOLVER_DEFAULT:
         printf("Using default solver (BiCGStab)\n");
@@ -82,11 +85,28 @@ static void test_simple_linear_solve(NLint solver) {
             return;
         }
         break;
+    case NL_CHOLMOD_EXT:
+        symmetric = NL_TRUE;
+        printf("using CHOLMOD\n");
+        if(nlInitExtension("CHOLMOD")) {
+            printf("...CHOLMOD extension successfully initialized\n");
+        }else {
+            printf("...failed to initialize CHOLMOD extension\n");
+            printf("Needs Linux/shared librariess/-DGEO_DYNAMIC_LIBS\n");
+            return;
+        }
+        break;
     }
-    
-    printf("Creating linear system:\n");
-    printf("  1.0*x0 + 2.0*x1 = 5.0\n");
-    printf("  3.0*x0 + 4.0*x1 = 6.0\n");        
+
+    if(symmetric) {
+        printf("Creating linear system:\n");
+        printf("  1.0*x0 - 5.0*x1 = 5.0\n");
+        printf(" -5.0*x0 + 4.0*x1 = 6.0\n");
+    } else {
+        printf("Creating linear system:\n");
+        printf("  1.0*x0 + 2.0*x1 = 5.0\n");
+        printf("  3.0*x0 + 4.0*x1 = 6.0\n");
+    }
     
     /* Create and initialize OpenNL context */
     nlNewContext();
@@ -98,11 +118,11 @@ static void test_simple_linear_solve(NLint solver) {
     nlBegin(NL_MATRIX);
     nlBegin(NL_ROW);
     nlCoefficient(0, 1.0);
-    nlCoefficient(1, 2.0);
+    nlCoefficient(1, symmetric ? -5.0 : 2.0);
     nlRightHandSide(5.0);
     nlEnd(NL_ROW);
     nlBegin(NL_ROW);
-    nlCoefficient(0, 3.0);
+    nlCoefficient(0, symmetric ? -5.0 : 3.0);
     nlCoefficient(1, 4.0);
     nlRightHandSide(6.0);
     nlEnd(NL_ROW);
@@ -115,15 +135,28 @@ static void test_simple_linear_solve(NLint solver) {
     
 
     printf("Solution:   x0=%f   x1=%f\n", nlGetVariable(0), nlGetVariable(1));
-    printf("Verifying:\n");
-    printf(
-        "  1.0*x0 + 2.0*x1 = %f\n",
-        1.0 * nlGetVariable(0) + 2.0 * nlGetVariable(1)
-    );
-    printf(
-        "  3.0*x0 + 4.0*x1 = %f\n",
-        3.0 * nlGetVariable(0) + 4.0 * nlGetVariable(1)
-    );
+
+    if(symmetric) {
+        printf("Verifying:\n");
+        printf(
+            "  1.0*x0 - 5.0*x1 = %f\n",
+            1.0 * nlGetVariable(0) - 5.0 * nlGetVariable(1)
+        );
+        printf(
+            " -5.0*x0 + 4.0*x1 = %f\n",
+            -5.0 * nlGetVariable(0) + 4.0 * nlGetVariable(1)
+        );
+    } else {
+        printf("Verifying:\n");
+        printf(
+            "  1.0*x0 + 2.0*x1 = %f\n",
+            1.0 * nlGetVariable(0) + 2.0 * nlGetVariable(1)
+        );
+        printf(
+            "  3.0*x0 + 4.0*x1 = %f\n",
+            3.0 * nlGetVariable(0) + 4.0 * nlGetVariable(1)
+        );
+    }
 
     /* Cleanup */
     nlDeleteContext(nlGetCurrent());
@@ -197,6 +230,7 @@ int main() {
     test_simple_linear_solve(NL_BICGSTAB);
     test_simple_linear_solve(NL_SUPERLU_EXT);
     test_simple_linear_solve(NL_PERM_SUPERLU_EXT);
+    test_simple_linear_solve(NL_CHOLMOD_EXT);
     
     test_least_squares_regression(NL_FALSE, NL_FALSE);
     test_least_squares_regression(NL_FALSE, NL_TRUE);    

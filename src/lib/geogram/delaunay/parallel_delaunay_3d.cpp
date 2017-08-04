@@ -2221,12 +2221,12 @@ namespace GEO {
          *  conflict zone, a new tetrahedron is created, resting on
          *  the facet and incident to vertex \p v. The function is 
          *  called recursively until the entire conflict zone is filled.
-         * \param[in] v the index of the point to be inserted
-         * \param[in] t_bndry index of a tetrahedron on the border
+         * \param[in] v_in the index of the point to be inserted
+         * \param[in] t1 index of a tetrahedron on the border
          *  of the conflict zone.
-         * \param[in] f_bndry index of the facet along which \p t_bndry
+         * \param[in] t1fbord index of the facet along which \p t_bndry
          *  is incident to the border of the conflict zone
-         * \param[in] prev_f the facet of \p t_bndry connected to the
+         * \param[in] t1fprev the facet of \p t_bndry connected to the
          *  tetrahedron that \p t_bndry was reached from, or index_t(-1)
          *  if it is the first tetrahedron.
          * \return the index of one the newly created tetrahedron

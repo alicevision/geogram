@@ -49,6 +49,7 @@
 #include "nl_preconditioners.h"
 #include "nl_cnc_gpu_cuda.h"
 #include "nl_superlu.h"
+#include "nl_cholmod.h"
 
 /*****************************************************************************/
 
@@ -57,7 +58,9 @@ NLboolean nlInitExtension(const char* extension) {
     nl_arg_used(extension);
 
     if(!strcmp(extension, "SUPERLU")) {
-        return nlInitExtension_SUPERLU() ;
+        return nlInitExtension_SUPERLU();
+    } else if(!strcmp(extension, "CHOLMOD")) {
+        return nlInitExtension_CHOLMOD();
     }
 
 #ifdef NL_USE_CNC
@@ -535,8 +538,8 @@ static void nlEndMatrix() {
         nlCurrentContext->preconditioner != NL_PRECOND_SSOR &&
         nlCurrentContext->solver != NL_SUPERLU_EXT       &&
         nlCurrentContext->solver != NL_PERM_SUPERLU_EXT  &&
-        nlCurrentContext->solver != NL_SYMMETRIC_SUPERLU_EXT 
-       
+        nlCurrentContext->solver != NL_SYMMETRIC_SUPERLU_EXT &&
+        nlCurrentContext->solver != NL_CHOLMOD_EXT
     ) {
         if(getenv("NL_LOW_MEM") == NULL) {
             nlSparseMatrixCompress(&nlCurrentContext->M);

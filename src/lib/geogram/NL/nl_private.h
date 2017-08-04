@@ -56,6 +56,19 @@
  * \brief Some macros and functions used internally by OpenNL.
  */
 
+#if defined(__APPLE__) && defined(__MACH__)
+/**
+ * \brief Defined if compiled on a Mac OS/X platform.
+ */
+#define NL_OS_APPLE
+#endif
+
+#if defined(__linux__) || defined(__ANDROID__) || defined(NL_OS_APPLE)
+/**
+ * \brief Defined if compiled on a Unix-like platform.
+ */
+#define NL_OS_UNIX
+#endif
 
 /**
  * \brief Suppresses unsused argument warnings
@@ -201,6 +214,36 @@ void nlWarning(const char* function, const char* message) ;
  * \return the current time in seconds (starting from a given reference time)
  */
 NLdouble nlCurrentTime(void);
+
+/**
+ * \brief Type for manipulating DLL/shared object/dylib handles.
+ */
+typedef void* NLdll;
+
+/**
+ * \brief Dynamically links a DLL/shared object/dylib to the current process.
+ * \param[in] filename the file name fo the DLL/shared object/dylib.
+ * \return a handle to the DLL/shared object/dylib or NULL if it could not
+ *  be found.
+ * \note Only implemented for Linux for now.
+ */
+NLdll nlOpenDLL(const char* filename);
+
+/**
+ * \brief Closes a DLL/shared object/dylib.
+ * \param[in] handle a handle to a DLL/shared object/dylib that was previously
+ *  obtained by nlOpenDLL()
+ */
+void nlCloseDLL(NLdll handle);
+
+/**
+ * \brief Finds a function in a DLL/shared object/dylib.
+ * \param[in] handle a handle to a DLL/shared object/dylib that was previously
+ *  obtained by nlOpenDLL()
+ * \param[in] funcname the name of the function
+ * \return a pointer to the function or NULL if no such function was found
+ */
+NLfunc nlFindFunction(NLdll handle, const char* funcname);
 
 /******************************************************************************/
 /* classic macros */

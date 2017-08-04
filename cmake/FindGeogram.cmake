@@ -5,8 +5,9 @@
 #
 # This module defines the following variables:
 #
-#   Geogram_FOUND       - True if geogram has been found.
-#   Geogram::geogram    - Imported target for the main Geogram library.
+#   Geogram_FOUND        - True if geogram has been found.
+#   Geogram::geogram     - Imported target for the main Geogram library.
+#   Geogram::geogram_gfx - Imported target for Geogram graphics library.
 #
 # This module reads hints about the Geogram location from the following
 # environment variables:

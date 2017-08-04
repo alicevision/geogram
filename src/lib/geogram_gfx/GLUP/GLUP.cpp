@@ -1668,6 +1668,17 @@ namespace GLUP {
 
 }
 
+// TODO1: ArraysOES()/Arrays() switch based on OpenGL profile
+// (runtime) rather than GEO_OS_EMSCRIPTEN macro (compile-time)
+//
+// TODO2: glupVertexAttribPointer that stores the binding in
+// the currently bound emulated VAO (because query functions
+// do not work in certain browsers).
+//
+// NOTE: glup.h could '#define' glVertexAttribPointer as
+//  glupVertexAttribPointer (if GLUP_INTERNAL is not
+//  defined of course !)
+
 void glupGenVertexArrays(GLUPsizei n, GLUPuint* arrays) {
     if(GLUP::vertex_array_emulate) {
         for(GLUPsizei i=0; i<n; ++i) {

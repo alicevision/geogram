@@ -68,7 +68,11 @@
 namespace GEO {
 
     namespace {
+#ifdef GEO_DEBUG
+        AssertMode assert_mode_ = ASSERT_ABORT;        
+#else
         AssertMode assert_mode_ = ASSERT_THROW;
+#endif        
         bool aborting = false;
     }
 

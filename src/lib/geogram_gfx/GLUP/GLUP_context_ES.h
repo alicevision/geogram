@@ -64,7 +64,8 @@ namespace GLUP {
 
     /**
      * \brief Implementation of GLUP using OpenGL ES 2.0.
-     * \details Can be also used with OpenGL 3.30 
+     * \details Can be also used with OpenGL 3.30. This is the default
+     *  GLUP profile used on MacOS/X.
      * \note the following functionalities are not implemented (yet) in
      *   this profile:
      *  - picking is not implemented
@@ -101,6 +102,18 @@ namespace GLUP {
         
     protected:
 
+        /**
+         * \brief Gets the header of a vertex shader.
+         * \return the source that starts a vertex shader
+         */
+        const char* vshader_header();
+
+        /**
+         * \brief Gets the header of a fragment shader.
+         * \return the source that starts a fragment shader
+         */
+        const char* fshader_header();
+        
         /**
          * \copydoc Context::prepare_to_draw()
          */
@@ -224,9 +237,9 @@ namespace GLUP {
         GLuint sliced_cells_vertex_attrib_VBO_[3];
         GLuint sliced_cells_VAO_;
         
-        bool GL_OES_standard_derivatives_;        
-        bool GL_OES_vertex_array_object_;
-        bool GL_EXT_frag_depth_;
+        bool extension_standard_derivatives_;        
+        bool extension_vertex_array_object_;
+        bool extension_frag_depth_;
     };
 
     /*********************************************************************/

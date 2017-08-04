@@ -44,12 +44,15 @@
 
 #include "nl_private.h"
 
-
 #if (defined (WIN32) || defined(_WIN64))
 #include <windows.h>
 #else
 #include <sys/types.h>
 #include <sys/times.h> 
+#endif
+
+#if defined(GEO_DYNAMIC_LIBS) && defined(NL_OS_UNIX)
+#include <dlfcn.h>
 #endif
 
 /******************************************************************************/
@@ -102,6 +105,63 @@ double nlCurrentTime() {
 }
 #endif
 
+/************************************************************************************/
+/* DLLs/shared objects/dylibs */
+
+#if defined(GEO_DYNAMIC_LIBS) && defined(NL_OS_UNIX)
+
+NLdll nlOpenDLL(const char* name) {
+    void* result=dlopen(name, RTLD_NOW);
+    if(result == NULL) {
+        nlError("nlOpenDLL/dlopen",dlerror());
+    }
+    return result;
+}
+
+void nlCloseDLL(void* handle) {
+    dlclose(handle);
+}
+
+NLfunc nlFindFunction(void* handle, const char* name) {
+    /*
+     * It is not legal in modern C to cast a void*
+     *  pointer into a function pointer, thus requiring this
+     *  (quite dirty) function that uses a union.    
+     */
+    union {
+        void* ptr;
+        NLfunc fptr;
+    } u;
+    u.ptr = dlsym(handle, name);
+    return u.fptr;
+}
+
+#else
+
+NLdll nlOpenDLL(const char* name) {
+    nl_arg_used(name);
+#ifdef NL_OS_UNIX
+    nlError("nlOpenDLL","Was not compiled with dynamic linking enabled");
+    nlError("nlOpenDLL","(see VORPALINE_BUILD_DYNAMIC in CMakeLists.txt)");        
+#else    
+    nlError("nlOpenDLL","Not implemented");
+#endif    
+    return NULL;
+}
+
+void nlCloseDLL(void* handle) {
+    nl_arg_used(handle);
+    nlError("nlCloseDLL","Not implemented");        
+}
+
+NLfunc nlFindFunction(void* handle, const char* name) {
+    nl_arg_used(handle);
+    nl_arg_used(name);
+    nlError("nlFindFunction","Not implemented");            
+    return NULL;
+}
+
+#endif
 
 /************************************************************************************/
 /* Error-reporting functions */

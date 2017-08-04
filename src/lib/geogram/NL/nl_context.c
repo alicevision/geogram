@@ -46,6 +46,7 @@
 #include "nl_iterative_solvers.h"
 #include "nl_preconditioners.h"
 #include "nl_superlu.h"
+#include "nl_cholmod.h"
 #include "nl_cnc_gpu_cuda.h"
 
 NLContextStruct* nlCurrentContext = NULL ;
@@ -176,6 +177,14 @@ static void nlSetupPreconditioner() {
         nlCurrentContext->precond_vector_prod = NULL ;
     }
     if(
+        nlCurrentContext->solver == NL_CHOLMOD_EXT && 
+        nlCurrentContext->preconditioner != NL_PRECOND_NONE
+    ) {
+        nlWarning("nlSolve", "Preconditioner not implemented yet for CHOLMOD") ;
+        nlCurrentContext->preconditioner = NL_PRECOND_NONE ;        
+        nlCurrentContext->precond_vector_prod = NULL ;
+    }
+    if(
         nlCurrentContext->solver == NL_PERM_SUPERLU_EXT && 
         nlCurrentContext->preconditioner != NL_PRECOND_NONE
     ) {
@@ -227,8 +236,11 @@ NLboolean nlDefaultSolver() {
     case NL_SUPERLU_EXT: 
     case NL_PERM_SUPERLU_EXT: 
     case NL_SYMMETRIC_SUPERLU_EXT: {
-        result = nlSolve_SUPERLU() ;
+        result = nlSolve_SUPERLU();
     } break ;
+    case NL_CHOLMOD_EXT: {
+        result = nlSolve_CHOLMOD();
+    } break;
     default:
         nl_assert_not_reached ;
     }

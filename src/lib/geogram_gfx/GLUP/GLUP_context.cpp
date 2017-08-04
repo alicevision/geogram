@@ -157,7 +157,6 @@ namespace GLUP {
                             return true;
                         }
                     }
-                    return false;
                 }
             }
         }
@@ -165,6 +164,10 @@ namespace GLUP {
 
         // If new way is unsupported or if using an old-style OpenGL
         // context, then we do it the old way.
+        
+        // It can happen for instance with OpenGL ES 2.0, that does not
+        // support glGetStringi...
+        
         const char* extensions = (const char*)(glGetString(GL_EXTENSIONS));
         if(extensions == nil) {
             return false;
@@ -1631,7 +1634,7 @@ namespace GLUP {
             // associated "decompression" code in the vertex
             // shader. This works fine on OpenGL ES, but this
             // does not works under WebGL with VAO emulation,
-            // because getVertexAttrib() does not retreives
+            // because getVertexAttrib() does not retreive
             // the correct attribute size and type on some
             // browsers (so I'm using plain ordinary floats).
             
@@ -1909,13 +1912,13 @@ namespace GLUP {
         uniform_binding_point_=1;
 
         std::map<std::string, GLsizei> type_to_size;
-        type_to_size["bool"] = sizeof(int);
-        type_to_size["vec4"] = 4*sizeof(GLfloat);
-        type_to_size["vec3"] = 3*sizeof(GLfloat);
-        type_to_size["mat4"] = 4*4*sizeof(GLfloat);
-        type_to_size["mat3"] = 4*3*sizeof(GLfloat); // yes, 4, there is padding
-        type_to_size["float"] = sizeof(GLfloat);
-        type_to_size["int"] = sizeof(GLint);
+        type_to_size["bool"] = GLsizei(sizeof(int));
+        type_to_size["vec4"] = GLsizei(4*sizeof(GLfloat));
+        type_to_size["vec3"] = GLsizei(3*sizeof(GLfloat));
+        type_to_size["mat4"] = GLsizei(4*4*sizeof(GLfloat));
+        type_to_size["mat3"] = GLsizei(4*3*sizeof(GLfloat)); // yes, 4, there is padding
+        type_to_size["float"] = GLsizei(sizeof(GLfloat));
+        type_to_size["int"] = GLsizei(sizeof(GLint));
 
         // Parse uniform state declaration in order to "emulate" it...
         uniform_buffer_size_ = 0;

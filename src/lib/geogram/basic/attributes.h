@@ -1169,45 +1169,8 @@ namespace GEO {
             superclass(manager,name) {
         }
 
-        /**
-         * \brief Accessor class for adapting Attribute<bool>
-         *  indexing.
-         */
-        class BoolAttributeAccessor {
-        public:
-            /**
-             * \brief BoolAttributeAccessor constructor.
-             */
-            BoolAttributeAccessor(
-                Attribute<bool>& attribute,
-                index_t index
-            ) :
-                attribute_(&attribute),
-                index_(index) {
-            }
-
-            /**
-             * \brief Converts a BoolAttributeAccessor to a bool.
-             * \details Performs the actual lookup.
-             */
-            operator bool() const {
-                return (attribute_->element(index_) != 0);
-            }
-
-            /**
-             * \brief Assigns a bool to a BoolAttributeAccessor.
-             * \details Stores the boolean into the Attribute.
-             */
-            BoolAttributeAccessor& operator=(bool x) {
-                attribute_->element(index_) = Numeric::uint8(x);
-                return *this;
-            }
-            
-        private:
-            Attribute<bool>* attribute_;
-            index_t index_;
-        };
-
+        class BoolAttributeAccessor;
+        
 
         /**
          * \brief Accessor class for adapting Attribute<bool>
@@ -1237,8 +1200,87 @@ namespace GEO {
         private:
             const Attribute<bool>* attribute_;
             index_t index_;
+
+            friend class BoolAttributeAccessor;
         };
-        
+
+        /**
+         * \brief Accessor class for adapting Attribute<bool>
+         *  indexing.
+         */
+        class BoolAttributeAccessor {
+        public:
+            /**
+             * \brief BoolAttributeAccessor constructor.
+             */
+            BoolAttributeAccessor(
+                Attribute<bool>& attribute,
+                index_t index
+            ) :
+                attribute_(&attribute),
+                index_(index) {
+            }
+
+            /**
+             * \brief Converts a BoolAttributeAccessor to a bool.
+             * \details Performs the actual lookup.
+             */
+            operator bool() const {
+                return (attribute_->element(index_) != 0);
+            }
+
+            /**
+             * \brief Copy-constructor.
+             * \param[in] rhs a const reference to the 
+             *  BoolAttributeAccessor to be copied.
+             */
+            BoolAttributeAccessor(const BoolAttributeAccessor& rhs) {
+                attribute_ = rhs.attribute_;
+                index_ = rhs.index_;
+            }
+            
+            /**
+             * \brief Assigns a bool to a BoolAttributeAccessor.
+             * \details Stores the boolean into the Attribute.
+             */
+            BoolAttributeAccessor& operator=(bool x) {
+                attribute_->element(index_) = Numeric::uint8(x);
+                return *this;
+            }
+
+            /**
+             * \brief Copies a bool from another attribute.
+             * \param[in] rhs a const reference to the BoolAttributeAccessor
+             *  to be copied.
+             */
+            BoolAttributeAccessor& operator=(
+                const BoolAttributeAccessor& rhs
+            ) {
+                if(&rhs != this) {
+                    attribute_->element(index_) =
+                        rhs.attribute_->element(rhs.index_);
+                }
+                return *this;
+            }
+
+            /**
+             * \brief Copies a bool from another attribute.
+             * \param[in] rhs a const reference to the 
+             *  ConstBoolAttributeAccessor to be copied.
+             */
+            BoolAttributeAccessor& operator=(
+                const ConstBoolAttributeAccessor& rhs
+            ) {
+                attribute_->element(index_) =
+                    rhs.attribute_->element(rhs.index_);
+                return *this;
+            }
+            
+        private:
+            Attribute<bool>* attribute_;
+            index_t index_;
+        };
+
 
         BoolAttributeAccessor operator[](index_t i) {
             return BoolAttributeAccessor(*this,i);

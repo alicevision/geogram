@@ -21,7 +21,7 @@ then
     exit -1
 fi
 
-if [ -z $FILES ]
+if [ -z "$FILES" ]
 then
    echo generating $EXENAME.html
    cat $SCRIPTDIR/template_emscripten.html | sed -e 's/%EXENAME%/'$EXENAME'/g' > $EXENAME.html

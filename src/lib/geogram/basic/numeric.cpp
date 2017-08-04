@@ -73,7 +73,7 @@ namespace GEO {
             
 #ifdef GEO_COMPILER_GCC
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-conversion"       
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
 #endif            
         
         bool is_nan(float64 x) {

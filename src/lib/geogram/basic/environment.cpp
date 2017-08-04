@@ -218,6 +218,9 @@ namespace GEO {
             Logger::err("Environment")
                 << "No such variable: " << name
                 << std::endl;
+            Logger::err("Environment")
+                << "Probably missing CmdLine::import_arg_group(\"...\");"
+                << std::endl;
         }
         geo_assert(variable_exists);
         return value;

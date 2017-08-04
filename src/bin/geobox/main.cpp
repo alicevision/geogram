@@ -55,6 +55,7 @@
 #include <geogram/mesh/mesh_decimate.h>
 #include <geogram/mesh/mesh_tetrahedralize.h>
 #include <geogram/mesh/mesh_topology.h>
+#include <geogram/mesh/mesh_AABB.h>
 
 #include <geogram/delaunay/LFS.h>
 
@@ -101,7 +102,7 @@ namespace {
                     );
                 ImGui::Image(
                     convert_to_ImTextureID(geogram_logo_texture_),
-                    ImVec2(256, 256)
+                    ImVec2(256.0f * scaling(), 256.0f * scaling())
                 );
                 ImGui::Text(
                     "\n"
@@ -127,6 +128,15 @@ namespace {
                     "\n"
                     "       (C)opyright 2006-2016\n"
                     "      The ALICE project, Inria\n"
+                );
+                ImGui::Text("\n");
+                ImGui::Separator();
+                ImGui::Text(
+                    "%s",
+                    (
+                        "GEOGRAM version:" +
+                        Environment::instance()->get_value("version")
+                    ).c_str()
                 );
                 ImGui::EndMenu();
             }
@@ -338,6 +348,12 @@ namespace {
                     Command::set_current(
                         "compute_local_feature_size(std::string attribute_name=\"LFS\")",
                         this, &GeoBoxApplication::compute_local_feature_size
+                    );
+                }
+                if(ImGui::MenuItem("compute distance to border")) {
+                    Command::set_current(
+                        "compute_distance_to_border(std::string attribute_name=\"distance\")",
+                        this, &GeoBoxApplication::compute_distance_to_border
                     );
                 }
                 ImGui::EndMenu();
@@ -836,6 +852,27 @@ namespace {
             for(index_t v=0; v<mesh()->vertices.nb(); ++v) {
                 lfs[v] = ::sqrt(
                     LFS.squared_lfs(mesh()->vertices.point_ptr(v))
+                );
+            }
+            end();
+            set_attribute("vertices." + attribute_name);
+            show_attributes();
+        }
+
+        void compute_distance_to_border(std::string attribute_name) {
+            if(mesh()->cells.nb() == 0) {
+                Logger::err("Distance") << "Mesh has no cell"
+                                        << std::endl;
+                return;
+            }
+            begin();
+            Attribute<double> distance(
+                mesh()->vertices.attributes(), attribute_name
+            );
+            MeshFacetsAABB AABB(*mesh());
+            for(index_t v=0; v<mesh()->vertices.nb(); ++v) {
+                distance[v] = ::sqrt(
+                    AABB.squared_distance(vec3(mesh()->vertices.point_ptr(v)))
                 );
             }
             end();
