@@ -57,6 +57,79 @@ extern "C" {
 #endif
 
 /******************************************************************************/
+/* Abstract matrix interface */
+
+struct NLMatrixStruct;
+typedef struct NLMatrixStruct* NLMatrix;
+
+/**
+ * \brief Function pointer type for matrix destructors.
+ */    
+typedef void(*NLDestroyMatrixFunc)(NLMatrix M);    
+
+/**
+ * \brief Function pointer type for matrix x vector product.
+ */
+typedef void(*NLMultMatrixVectorFunc)(NLMatrix M, const double* x, double* y);
+
+#define NL_MATRIX_SPARSE_DYNAMIC 0x1001
+#define NL_MATRIX_CRS            0x1002
+#define NL_MATRIX_SUPERLU_EXT    0x1003    
+#define NL_MATRIX_CHOLMOD_EXT    0x1004    
+#define NL_MATRIX_FUNCTION       0x1005
+#define NL_MATRIX_OTHER          0x1006
+    
+/**
+ * \brief The base class for abstract matrices.
+ */
+struct NLMatrixStruct {
+    /**
+     * \brief number of rows 
+     */    
+    NLuint m;
+
+    /**
+     * \brief number of columns 
+     */    
+    NLuint n;
+
+    /**
+     * \brief Matrix type
+     * \details One of NL_MATRIX_SPARSE_DYNAMIC, 
+     *  NL_MATRIX_CRS, NL_MATRIX_SUPERLU_EXT,
+     *  NL_CHOLDMOD_MATRIX_EXT
+     */
+    NLenum type;
+
+    /**
+     * \brief Destructor
+     */
+    NLDestroyMatrixFunc destroy_func;
+
+    /**
+     * \brief Matrix x vector product
+     */
+    NLMultMatrixVectorFunc mult_func;
+};
+
+/**
+ * \brief Deletes a matrix
+ * \details If \p M is NULL, then the function does nothing
+ * \param[in] M the matrix to be deleted
+ */
+NLAPI void NLAPIENTRY nlDeleteMatrix(NLMatrix M);
+
+/**
+ * \brief Computes a matrix x vector product
+ * \param[in] M the matrix
+ * \param[in] x the vector to be multipled by the matrix
+ * \param[out] y the result
+ */
+NLAPI void NLAPIENTRY nlMultMatrixVector(
+    NLMatrix M, const double* x, double* y
+);
+    
+/******************************************************************************/
 /* Dynamic arrays for sparse row/columns */
 
 /**
@@ -196,15 +269,32 @@ NLAPI void NLAPIENTRY nlRowColumnSort(NLRowColumn* c);
  */
 typedef struct {
     /**
-     * \brief number of rows. 
+     * \brief number of rows 
      */    
     NLuint m;
     
     /**
-     * \brief number of columns. 
+     * \brief number of columns
      */    
     NLuint n;
 
+    /**
+     * \brief Matrix type
+     * \details One of NL_MATRIX_DYNAMIC, NL_MATRIX_CRS, NL_MATRIX_SUPERLU_EXT,
+     *  NL_CHOLDMOD_MATRIX_EXT
+     */
+    NLenum type;
+    
+    /**
+     * \brief destructor
+     */
+    NLDestroyMatrixFunc destroy_func;
+
+    /**
+     * \brief Matrix x vector product
+     */
+    NLMultMatrixVectorFunc mult_func;
+    
     /**
      * \brief array of coefficient values, 
      * size = NNZ (number of non-zero coefficients)
@@ -230,7 +320,13 @@ typedef struct {
      * \brief slice pointers, size = nslices + 1, 
      * used by parallel spMv 
      */    
-    NLuint* sliceptr; 
+    NLuint* sliceptr;
+
+    /**
+     * \brief NL_TRUE if symmetric storage is used,
+     *  NL_FALSE otherwise.
+     */
+    NLboolean symmetric_storage;
 } NLCRSMatrix;
 
 /**
@@ -248,14 +344,16 @@ NLAPI void NLAPIENTRY nlCRSMatrixConstruct(
 );
 
 /**
- * \brief Destroys a NLCRSMatrix
- * \details Only the memory allocated by the NLCRSMatrix is freed,
- *  The NLCRSMatrix structure is not freed.
- * \param[in,out] M pointer to an NLCRSMatrix
+ * \brief Constructs a new NLCRSMatrix with symmetric storage
+ * \param[in,out] M pointer to an uninitialized NLCRSMatrix
+ * \param[in] n number of rows and columns
+ * \param[in] nnz number of non-zero coefficients
  * \relates NLCRSMatrix
  */
-NLAPI void NLAPIENTRY nlCRSMatrixDestroy(NLCRSMatrix* M);
-
+NLAPI void NLAPIENTRY nlCRSMatrixConstructSymmetric(
+    NLCRSMatrix* M, NLuint n, NLuint nnz
+);
+    
 /**
  * \brief Loads a NLCRSMatrix from a file
  * \param[out] M a pointer to an uninitialized NLCRSMatriix 
@@ -280,6 +378,15 @@ NLAPI NLboolean NLAPIENTRY nlCRSMatrixSave(
     NLCRSMatrix* M, const char* filename
 );
 
+/**
+ * \brief Gets the number of non-zero coefficient
+ *  in an NLCRSMatrix
+ * \param[in] M a pointer to the NLCRSMatrix
+ * \return the number of non-zero coefficients in \p M
+ * \relates NLCRSMatrix
+ */
+NLAPI NLuint NLAPIENTRY nlCRSMatrixNNZ(NLCRSMatrix* M);
+    
 /******************************************************************************/
 /* SparseMatrix data structure */
 
@@ -301,20 +408,6 @@ NLAPI NLboolean NLAPIENTRY nlCRSMatrixSave(
  * \relates NLSparseMatrix
  */
 #define NL_MATRIX_STORE_SYMMETRIC     4
-
-/**
- * for NLSparseMatrix storage: indicates that the matrix
- * is compressed into an NLCRSMatrix.
- * \relates NLSparseMatrix
- */
-#define NL_MATRIX_STORE_COMPRESSED    8
-
-/**
- * for NLSparseMatrix storage: indicates that the inverse
- * of the diagonal is stored.
- * \relates NLSparseMatrix
- */
-#define NL_MATRIX_STORE_DIAG_INV      16
     
 typedef struct {
     /**
@@ -327,6 +420,24 @@ typedef struct {
      */    
     NLuint n;
 
+    /**
+     * \brief Matrix type
+     * \details One of NL_MATRIX_DYNAMIC, NL_MATRIX_CRS, NL_MATRIX_SUPERLU_EXT,
+     *  NL_CHOLDMOD_MATRIX_EXT
+     */
+    NLenum type;
+    
+    /**
+     * \brief destructor
+     */
+    NLDestroyMatrixFunc destroy_func;
+
+    /**
+     * \brief Matrix x vector product
+     */
+    NLMultMatrixVectorFunc mult_func;
+
+    
     /**
      * \brief number of elements in the diagonal 
      */    
@@ -354,19 +465,6 @@ typedef struct {
      */     
     NLdouble*    diag;
 
-    /**
-     * \brief the inverse of the diagonal if 
-     *  (storage & NL_MATRIX_STORE_DIAG_INV), 
-     * size = diag_size, NULL otherwise 
-     */    
-    NLdouble*    diag_inv;
-
-    /**
-     * \brief the compressed CRS representation 
-     * if (storage & NL_MATRIX_STORE_COMPRESSED),
-     * NULL otherwise
-     */    
-    NLCRSMatrix* compressed;  
 } NLSparseMatrix;
 
 
@@ -382,15 +480,6 @@ typedef struct {
 NLAPI void NLAPIENTRY nlSparseMatrixConstruct(
     NLSparseMatrix* M, NLuint m, NLuint n, NLenum storage
 );
-
-/**
- * \brief Destroys an NLSparseMatrix
- * \details Only the memory allocated by the NLSparseMatrix
- *  is freed. The NLSparseMatrix structure is not freed.
- * \param[in,out] M a pointer to an NLSparseMatrix
- * \relates NLSparseMatrix
- */
-NLAPI void NLAPIENTRY nlSparseMatrixDestroy(NLSparseMatrix* M);
 
 /**
  * \brief Adds a coefficient to an NLSparseMatrix
@@ -438,40 +527,116 @@ NLAPI NLuint NLAPIENTRY nlSparseMatrixNNZ( NLSparseMatrix* M);
  */
 NLAPI void NLAPIENTRY nlSparseMatrixSort( NLSparseMatrix* M);
 
-/**
- * \brief Computes the inverse of the diagonal and
- *  stores it into an NLSparseMatrix.
- * \details This is used for instance by the Jacobi
- *  pre-conditioner.
- * \param[in,out] M a pointer to the NLSparseMatrix 
- * \relates NLSparseMatrix
- */
-NLAPI void NLAPIENTRY nlSparseMatrixComputeDiagInv( NLSparseMatrix* M);
+/******************************************************************************/
 
 /**
- * \brief Computes a Compressed Row Storage representation
- *  of a NLSparseMatrix.
- * \details Once this function is called, nlSparseMatrixMult()
- *  is faster by an order of magnitude
- * \param[in,out] M a pointer to the NLSparseMatrix 
- * \relates NLSparseMatrix
+ * \brief Creates a compressed row storage matrix from a dynamic sparse matrix.
+ * \details The matrix \p M should have stored rows. If \p M has 
+ *  symmetric storage, then the constructed matrix also has symmetric storage.
+ * \param[in] M the dynamic sparse matrix.
+ * \return a pointer to the created NLCRSMatrix
+ * \relates NLCRSMatrix
  */
-NLAPI void NLAPIENTRY nlSparseMatrixCompress( NLSparseMatrix* M);
+NLAPI NLMatrix NLAPIENTRY nlCRSMatrixNewFromSparseMatrix(NLSparseMatrix* M);    
+
+/**
+ * \brief Creates a compressed row storage matrix from a dynamic sparse matrix.
+ * \details The matrix \p M should have stored rows. It is supposed 
+ *  to be symmetric. If it does not have symmetric storage, then its upper 
+ *  triangular part is ignored.
+ * \param[in] M the dynamic sparse matrix.
+ * \return a pointer to the created NLCRSMatrix
+ * \relates NLCRSMatrix
+ */
+NLAPI NLMatrix NLAPIENTRY nlCRSMatrixNewFromSparseMatrixSymmetric(
+    NLSparseMatrix* M
+);    
+
+    
+/**
+ * \brief Compresses a dynamic sparse matrix into a CRS matrix.
+ * \details If the input matrix is not a dynamic sparse matrix, it is left
+ *  unmodified.
+ * \param[in,out] M a pointer to the matrix to be compressed
+ * \relates NLMatrix
+ */
+NLAPI void NLAPIENTRY nlMatrixCompress(NLMatrix* M);
+
+/**
+ * \brief Gets the number of non-zero entries in a matrix.
+ * \details If the matrix is sparse, it gets the number of non-zero entries,
+ *  else it returns m*n
+ * \return the number of non-zero entries in \p M
+ */
+NLAPI NLuint NLAPIENTRY nlMatrixNNZ(NLMatrix M);
+
+/**
+ * \brief Factorizes a matrix.
+ * \details The corresponding extension needs to be sucessfully initialized
+ *  before calling this function.
+ * \param[in] M the input matrix
+ * \param[in] solver a direct solver, i.e., one of:
+ *   - NL_SUPERLU_EXT
+ *   - NL_PERM_SUPERLU_EXT
+ *   - NL_SYMMETRIC_SUPERLU_EXT
+ *   - NL_CHOLMOD_EXT
+ * \return a factorization of \p M, or NULL if \p M is singular. When calling
+ *  nlMultMatrixVector() with the result, it solves a linear system (the result
+ *  may be thought of as the inverse of \p M).
+ */
+NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize(NLMatrix M, NLenum solver);
     
 /******************************************************************************/
-/* SparseMatrix x Vector routine */
 
 /**
- * \brief Computes a matrix-vector product
- * \param[in] A a pointer to the matrix
- * \param[in] x the vector to be multiplied, size = A->n
- * \param[in] y where to store the result, size = A->m
- * \relates NLSparseMatrix
+ * \brief Function pointer type for matrix-vector products.
  */
-NLAPI void NLAPIENTRY nlSparseMatrixMult(
-    NLSparseMatrix* A, const NLdouble* x, NLdouble* y
+    typedef void(*NLMatrixFunc)(const double* x, double* y);
+
+/**
+ * \brief Creates a matrix implemented by a matrix-vector function.
+ * \param[in] m number of rows 
+ * \param[in] n number of columns
+ * \param[in] func a function that implements the matrix x vector product,
+ *  and that takes the right hand side and the left hand side as arguments.
+ */	     
+NLAPI NLMatrix NLAPIENTRY nlMatrixNewFromFunction(
+    NLuint m, NLuint n, NLMatrixFunc func
+);	     
+
+/**
+ * \brief Gets the function pointer that implements matrix x vector product.
+ * \param[in] M the matrix
+ * \return the pointer to the matrix x vector product function if M was created
+ *   by nlMatrixNewFromFunction(), NULL otherwise
+ */
+NLAPI NLMatrixFunc NLAPIENTRY nlMatrixGetFunction(NLMatrix M);
+
+/******************************************************************************/
+
+/**
+ * \brief Creates a matrix that represents the product of two matrices.
+ * \param[in] M an m times k matrix. 
+ * \param[in] product_owns_M if set to NL_TRUE, then caller is no longer 
+ *  responsible for the memory associated to M, and M will be destroyed 
+ *  when the product will be destroyed. If it is set to NL_FALSE, then the
+ *  product only keeps a reference to M, and the caller remains responsible
+ *  for deallocating M.
+ * \param[in] N a k times n matrix. 
+ * \param[in] product_owns_N if set to NL_TRUE, then caller is no longer 
+ *  responsible for the memory associated to N, and N will be destroyed 
+ *  when the product will be destroyed. If it is set to NL_FALSE, then the
+ *  product only keeps a reference to N, and the caller remains responsible
+ *  for deallocating N.
+ * \return an NLMatrix that represents the product between M and N
+ */
+NLAPI NLMatrix NLAPIENTRY nlMatrixNewFromProduct(
+    NLMatrix M, NLboolean product_owns_M,
+    NLMatrix N, NLboolean product_owns_N
 );
 
+/******************************************************************************/
+    
 #ifdef __cplusplus
 }
 #endif

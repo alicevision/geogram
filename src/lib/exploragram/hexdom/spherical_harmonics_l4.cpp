@@ -38,7 +38,6 @@
  */
 
 #include <exploragram/hexdom/spherical_harmonics_l4.h>
-
 #include <exploragram/hexdom/frame.h>
 #include <cmath>
 
@@ -49,53 +48,8 @@ namespace GEO {
     //    ___) | | |_) | | | | | |  __/ | |    | | | (__  | (_| | | | |  _  | | (_| | | |    | | | | | | | (_) | | | | | | | | (__  | |___  |__   _|
     //   |____/  | .__/  |_| |_|  \___| |_|    |_|  \___|  \__,_| |_| |_| |_|  \__,_| |_|    |_| |_| |_|  \___/  |_| |_| |_|  \___| |_____|    |_|
     //           |_|
-    SphericalHarmonicL4::SphericalHarmonicL4(const SphericalHarmonicL4& ref) {
-    
-        coeff = ref.coeff;
-    }
-    
-    SphericalHarmonicL4::SphericalHarmonicL4(const vecng<9, Numeric::float64>& p_coeff) {
-        coeff = p_coeff;
-    }
         
-    SphericalHarmonicL4::SphericalHarmonicL4(double x0, double x1, double x2, double x3, double x4, double x5, double x6, double x7, double x8) {
-        coeff[0] = x0; coeff[1] = x1; coeff[2] = x2; coeff[3] = x3; coeff[4] = x4; coeff[5] = x5; coeff[6] = x6; coeff[7] = x7; coeff[8] = x8;
-    }
-
-    SphericalHarmonicL4::SphericalHarmonicL4(double *fv) {
-   
-        FOR(i, 9)  coeff[i] = fv[i];
-    }
-
-    SphericalHarmonicL4::SphericalHarmonicL4() {
-     
-        FOR(i, 9)  coeff[i] = 0.;
-    }
-    double SphericalHarmonicL4::operator *(const SphericalHarmonicL4 &other) {
-        return dot(coeff, other.coeff);
-    }
-
-    SphericalHarmonicL4 SphericalHarmonicL4::operator -(const SphericalHarmonicL4 &other) {
-        return SphericalHarmonicL4(coeff - other.coeff);
-    }
-
-    double SphericalHarmonicL4::norm() {
-        return coeff.length();
-    }
-
-    SphericalHarmonicL4 SphericalHarmonicL4::operator *(double s) {
-        return SphericalHarmonicL4(s*coeff);
-    }
-
-    SphericalHarmonicL4 SphericalHarmonicL4::operator /(double s) {
-        return SphericalHarmonicL4(coeff / s);
-    }
-
-    SphericalHarmonicL4 SphericalHarmonicL4::operator +(const SphericalHarmonicL4 &v) {
-        return SphericalHarmonicL4(coeff + v.coeff);
-    }
-
-    double SphericalHarmonicL4::basis(index_t id, vec3 v) {
+    double SphericalHarmonicL4::basis(index_t id, const vec3& v) {
         double x=v.x, x2=x*x;
         double y=v.y, y2=y*y;
         double z=v.z, z2=z*z;
@@ -110,13 +64,6 @@ namespace GEO {
         if (id==8) return (3./16.)*std::sqrt(35./M_PI) * (x2*(x2-3.*y2)-y2*(3.*x2-y2));
 	geo_assert_not_reached;
 
-    }
-
-    double SphericalHarmonicL4::value(vec3 v) {
-        double res = 0;
-    
-        FOR(i, 9)res += coeff[i]*basis(i,v);
-        return res;
     }
 
     void SphericalHarmonicL4::Rz(double a) {
@@ -164,23 +111,16 @@ namespace GEO {
         coeff[8] =                                       (s4a+14.*s2a)*sqrt(.001953125)*c[1] +                                        (s4a-2.*s2a)*sqrt(.013671875)*c[3] +     (c4a-4.*c2a+3.)*sqrt(.008544921875)*c[4] +                                             (c4a+4.*c2a-5.)*sqrt(.0068359375)*c[6] +                                                 (c4a+28.*c2a+35.)*.015625*c[8];
     }
 
-    SphericalHarmonicL4 SphericalHarmonicL4::Ex() {
+    SphericalHarmonicL4 SphericalHarmonicL4::Ex() const {
         return SphericalHarmonicL4(-sqrt(2.)*coeff[7], -sqrt(2.)*coeff[8]-sqrt(3.5)*coeff[6], -sqrt(3.5)*coeff[7]-sqrt(4.5)*coeff[5], -sqrt(4.5)*coeff[6]-sqrt(10.)*coeff[4], sqrt(10.)*coeff[3], sqrt(4.5)*coeff[2], sqrt(3.5)*coeff[1]+sqrt(4.5)*coeff[3], sqrt(2.)*coeff[0]+sqrt(3.5)*coeff[2], sqrt(2.)*coeff[1] );
     }
 
-    SphericalHarmonicL4 SphericalHarmonicL4::Ey() {
+    SphericalHarmonicL4 SphericalHarmonicL4::Ey() const {
         return SphericalHarmonicL4(sqrt(2.)*coeff[1], -sqrt(2.)*coeff[0]+sqrt(3.5)*coeff[2], -sqrt(3.5)*coeff[1]+sqrt(4.5)*coeff[3], -sqrt(4.5)*coeff[2], -sqrt(10.)*coeff[5], -sqrt(4.5)*coeff[6] + sqrt(10.)*coeff[4], -sqrt(3.5)*coeff[7]+sqrt(4.5)*coeff[5], -sqrt(2.)*coeff[8]+sqrt(3.5)*coeff[6], sqrt(2.)*coeff[7]);
     }
 
-    SphericalHarmonicL4 SphericalHarmonicL4::Ez() {
+    SphericalHarmonicL4 SphericalHarmonicL4::Ez() const {
         return SphericalHarmonicL4(4*coeff[8], 3*coeff[7], 2*coeff[6], coeff[5], 0, -coeff[3], -2*coeff[2], -3*coeff[1], -4*coeff[0]);
-    }
-
-
-    void SphericalHarmonicL4::euler_rot(vec3 rv) {
-        Rx(rv[0]);
-        Ry(rv[1]);
-        Rz(rv[2]);
     }
 
 

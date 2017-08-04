@@ -1,12 +1,5 @@
 include(${PROJECT_SOURCE_DIR}/cmake/opengl.cmake)
 
-if(GEOGRAM_USE_BUILTIN_GLFW3)
-  add_definitions(-DGEO_USE_BUILTIN_GLFW3)
-  set(GEO_GLFW3_LIBNAME geogram_glfw3)
-else()
-  set(GEO_GLFW3_LIBNAME glfw)  
-endif()
-
 configure_file(geogram_gfx.pc.in ${PROJECT_BINARY_DIR}/geogram_gfx${VORPALINE_VERSION_MAJOR}.pc @ONLY)
 
 add_subdirectory(third_party)
@@ -26,10 +19,11 @@ set_target_properties(geogram_gfx PROPERTIES
                       VERSION ${VORPALINE_VERSION}
                       SOVERSION ${VORPALINE_VERSION_MAJOR})
 
+target_link_libraries(geogram_gfx glfw)
+
 if(VORPALINE_BUILD_DYNAMIC)
     # Must provide all symbols at link time
     target_link_libraries(geogram_gfx geogram)
-    target_link_libraries(geogram_gfx glfw)
     target_link_libraries(geogram_gfx ${OPENGL_LIBRARIES})
 endif()
 

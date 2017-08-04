@@ -73,7 +73,8 @@ void nl_range_assertion_failed(
 ) {
     fprintf(
         stderr, 
-        "OpenNL range assertion failed: %f in [ %f ... %f ], file:%s, line:%d\n",
+        "OpenNL range assertion failed: "
+	"%f in [ %f ... %f ], file:%s, line:%d\n",
         x, min_val, max_val, file,line
     ) ;
     abort() ;
@@ -89,7 +90,7 @@ void nl_should_not_have_reached(const char* file, int line) {
 }
 
 
-/************************************************************************************/
+/******************************************************************************/
 /* Timing */
 
 #ifdef WIN32
@@ -105,15 +106,22 @@ double nlCurrentTime() {
 }
 #endif
 
-/************************************************************************************/
+/******************************************************************************/
 /* DLLs/shared objects/dylibs */
 
-#if defined(GEO_DYNAMIC_LIBS) && defined(NL_OS_UNIX)
+#if defined(GEO_DYNAMIC_LIBS) 
+
+#  if defined(NL_OS_UNIX)
 
 NLdll nlOpenDLL(const char* name) {
-    void* result=dlopen(name, RTLD_NOW);
+    void* result = dlopen(name, RTLD_NOW);  
     if(result == NULL) {
-        nlError("nlOpenDLL/dlopen",dlerror());
+        fprintf(stderr,"Did not find %s,\n", name);
+        fprintf(stderr,"Retrying with libgeogram_num_3rdparty.so\n");
+        result=dlopen("libgeogram_num_3rdparty.so", RTLD_NOW);
+        if(result == NULL) {
+            nlError("nlOpenDLL/dlopen",dlerror());
+        }
     }
     return result;
 }
@@ -135,6 +143,28 @@ NLfunc nlFindFunction(void* handle, const char* name) {
     u.ptr = dlsym(handle, name);
     return u.fptr;
 }
+
+#  elif defined(NL_OS_WINDOWS)
+
+NLdll nlOpenDLL(const char* name) {
+    void* result = LoadLibrary(name);
+    if(result == NULL) {
+        fprintf(stderr,"Did not find %s,\n", name);
+        fprintf(stderr,"Retrying with geogram_num_3rdparty\n");
+        result=LoadLibrary("geogram_num_3rdparty.dll");
+    }
+    return result;
+}
+
+void nlCloseDLL(void* handle) {
+    FreeLibrary((HMODULE)handle);
+}
+
+NLfunc nlFindFunction(void* handle, const char* name) {
+    return (NLfunc)GetProcAddress((HMODULE)handle, name);
+}
+
+#  endif
 
 #else
 

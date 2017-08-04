@@ -60,7 +60,7 @@ struct EXPLORAGRAM_API LogTime {
     //                       / _ \|  _/| | 
     //                      /_/ \_\_| |___|
     //                                                                        
-    LogTime() { }
+	LogTime() { post_fix = ""; }
     ~LogTime(){}
     // construct API
     /**
@@ -95,6 +95,7 @@ struct EXPLORAGRAM_API LogTime {
      */
     void drop_file(std::string filename, bool append = false,unsigned int timing_depth=1000);
 
+	void set_suffix(const std::string& suffix) { post_fix=suffix; }
     //                                _          _       
     //                       _ __ _ _(_)_ ____ _| |_ ___ 
     //                      | '_ \ '_| \ V / _` |  _/ -_)
@@ -125,7 +126,9 @@ struct EXPLORAGRAM_API LogTime {
     std::string cur_stack();
     void report(std::ostream &out, unsigned int timing_depth = 10000);
     void report_py(std::ostream &out, unsigned int timing_depth = 10000);
- private:
+	
+private:
+	std::string post_fix;
     std::vector<CheckPoint> check;
     std::vector<std::pair<std::string, double> > out_values;
     std::vector<std::pair<std::string, std::string> > out_strings;

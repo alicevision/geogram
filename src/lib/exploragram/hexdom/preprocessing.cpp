@@ -81,41 +81,11 @@ namespace GEO {
                         lockU[v][a] = 1;
                         lockB[v][a] = 1;
                     }
-                if (lockB[v].length2() > 1) lockB[v] = vec3(1, 1, 1);
-                U[v] = vec3(0, 0, 0);
+				if (lockB[v].length2() == 1) lockB[v] = vec3(0, 0, 1); // it may not always be true (happened once)
+				if (lockB[v].length2() > 1) lockB[v] = vec3(1, 1, 1);
+				U[v] = vec3(0, 0, 0);
             }
-            //B[v].load_identity();
-            //lockB[v] = vec3(0, 0, 0);
-            //if (n.size() > 0) {
-            //    vec3 pca_result;
-            //    vec3 frame_result[3];
-
-            //    // compute PCA and see how it explains the distribution
-            //    UncenteredPCA3D pca;
-            //    pca.begin_points();
-            //    for (index_t i = 0; i < n.size(); i++) pca.point(n[i], w[i]);
-            //    pca.end_points();
-            //    pca_result = normalize(pca.axis[0]);
-
-            //    // fast output if the PCA is very good
-            //    bool PCA_is_good_enough = true;
-            //    FOR(i, n.size()) PCA_is_good_enough = PCA_is_good_enough && (std::abs(dot(n[0], n[i])) > .7);
-            //    if (PCA_is_good_enough) {
-            //        Frame(B[v]).make_z_equal_to(pca_result);
-            //        lockB[v] = vec3(0, 0, 1);
-            //    }
-            //    else {// PCA was not sufficient
-            //        B[v] = Frame::representative_frame(n, w);// rot_to_B(representative_frame(n, w));
-            //        
-            //        lockB[v] = vec3(1, 1, 1);
-            //    }
-            //}
-            //lockU[v] = vec3(0, 0, 0);
-            //FOR(i, n.size()) FOR(a, 3)
-            //    if (std::abs(dot(col(B[v], a), n[i])) > .7) lockU[v][a] = 1;
-            //U[v] = vec3(0, 0, 0);
         }
-
     }
 
 
@@ -123,69 +93,71 @@ namespace GEO {
 
 
 
-    void reorder_vertices_according_to_constraints(Mesh* m) {
+    void reorder_vertices_according_to_constraints(Mesh* m,bool hibert_sort) {
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");// how many vectors are locked
+
 
         GEO::vector<index_t > ind_map(m->vertices.nb());
         index_t n = 0;
         index_t num_l_v = 0;
         index_t num_ln_v = 0;
-        FOR(v, m->vertices.nb()) if (lockB[v][0] == 1) { ind_map[n] = v; n++; }
-        num_l_v = n;
-        FOR(v, m->vertices.nb()) if (lockB[v][0] == 0 && lockB[v][2] == 1) { ind_map[n] = v; n++; }
+		FOR(v, m->vertices.nb()) if (lockB[v][0] == 1) { geo_assert(lockB[v][1] == 1); geo_assert(lockB[v][2] == 1); ind_map[n] = v; n++; }
+        num_l_v = n;		
+		FOR(v, m->vertices.nb()) if (lockB[v][0] == 0 && lockB[v][2] == 1) { geo_assert(lockB[v][1] == 0);  ind_map[n] = v; n++; }
         num_ln_v = n;
-        FOR(v, m->vertices.nb()) if (lockB[v][2] == 0) { ind_map[n] = v; n++; }
+		FOR(v, m->vertices.nb()) if (lockB[v][2] == 0) { ind_map[n] = v; n++; }
 
         for (index_t i = 0; i < num_l_v; i++)                   geo_assert(lockB[ind_map[i]][0] == 1);
-        for (index_t i = num_l_v; i < num_ln_v; i++)            geo_assert(lockB[ind_map[i]][2] == 1);
-        for (index_t i = num_ln_v; i < m->vertices.nb(); i++)   geo_assert(lockB[ind_map[i]][2] == 0);
+		for (index_t i = num_l_v; i < num_ln_v; i++)            geo_assert(lockB[ind_map[i]][2] == 1);
+		for (index_t i = num_ln_v; i < m->vertices.nb(); i++)   geo_assert(lockB[ind_map[i]][2] == 0);
 
         geo_assert(num_l_v <= num_ln_v && num_ln_v <= m->vertices.nb());
 	
-        compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, 0, num_l_v);
-        compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_l_v, num_ln_v);
-        compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_ln_v, m->vertices.nb());
-	
+		plop(hibert_sort);
+		if (hibert_sort) {
+			compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, 0, num_l_v);
+			compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_l_v, num_ln_v);
+			compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_ln_v, m->vertices.nb());
+		}
         m->vertices.permute_elements(ind_map);          // note: it also updates the cell_corners.vertex... and invert ind_map :(
     }
 
 
-    void produce_hexdom_input(Mesh* m,std::string& error_msg) {
+    void produce_hexdom_input(Mesh* m,std::string& error_msg,bool hilbert_sort ) {
 
         // some check on the input mesh
         m->edges.clear();
         m->vertices.remove_isolated();
        
 
-
         if (have_negative_tet_volume(m)) {
             throw ("contains tets with negative volume");
         }
 
-        if (!m->cells.are_simplices()) {
+		if (!m->cells.are_simplices()) {
             throw ("cells contains non tet elements");
         }
-   
-        if (!volume_boundary_is_manifold(m, error_msg)) {
+		
+		if (!volume_boundary_is_manifold(m, error_msg)) {
             throw (error_msg.c_str());
         }
-
-        if (!volume_is_tetgenifiable(m)) {
+		
+		if (!volume_is_tetgenifiable(m)) {
             throw (" tetgen is not able to remesh the volume from its boundary");
         }
-
-        // add some attributes
+		
+		// add some attributes
 
         compute_input_constraints(m);
-        
-        // compute scale
+		
+		// compute scale
         double wanted_edge_length = get_cell_average_edge_size(m);
         
-        Attribute<mat3> B(m->vertices.attributes(), "B"); 
+		
+		Attribute<mat3> B(m->vertices.attributes(), "B");
         FOR(v, m->vertices.nb()) FOR(ij, 9) B[v].data()[ij] *= wanted_edge_length;
-
-        reorder_vertices_according_to_constraints(m);
-    }
+        reorder_vertices_according_to_constraints(m,hilbert_sort );
+	}
 
 
 }

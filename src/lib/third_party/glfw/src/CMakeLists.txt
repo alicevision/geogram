@@ -97,8 +97,9 @@ if (BUILD_SHARED_LIBS)
         # Add -fno-common to work around a bug in Apple's GCC
         target_compile_options(glfw PRIVATE "-fno-common")
 
+        # [Laurent Alonso]: added "${CMAKE_INSTALL_PREFIX}/"
         set_target_properties(glfw PROPERTIES
-                              INSTALL_NAME_DIR "lib${LIB_SUFFIX}")
+                              INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
     elseif (UNIX)
         # Hide symbols not explicitly tagged for export from the shared library
         target_compile_options(glfw PRIVATE "-fvisibility=hidden")

@@ -48,106 +48,87 @@
 #include "nl_superlu.h"
 #include "nl_cholmod.h"
 #include "nl_cnc_gpu_cuda.h"
+#include "nl_matrix.h"
 
-NLContextStruct* nlCurrentContext = NULL ;
-
-void nlMatrixVectorProd_default(const NLdouble* x, NLdouble* y) {
-    NLSparseMatrix* M = &(nlCurrentContext->M);
-    nlSparseMatrixMult(M, x, y) ;
-    nlCurrentContext->flops += (NLulong)(nlSparseMatrixNNZ(M)*2);
-}
+NLContextStruct* nlCurrentContext = NULL;
 
 NLContext nlNewContext() {
-    NLContextStruct* result     = NL_NEW(NLContextStruct) ;
-    result->state               = NL_STATE_INITIAL ;
-    result->solver              = NL_SOLVER_DEFAULT ;
-    result->max_iterations      = 100 ;
-    result->threshold           = 1e-6 ;
-    result->omega               = 1.5 ;
-    result->row_scaling         = 1.0 ;
-    result->right_hand_side     = 0.0 ;
-    result->right_hand_side_set = NL_FALSE ;
-    result->inner_iterations    = 5 ;
-    result->matrix_vector_prod  = nlMatrixVectorProd_default ;
-    result->solver_func         = nlDefaultSolver ;
+    NLContextStruct* result     = NL_NEW(NLContextStruct);
+    result->state               = NL_STATE_INITIAL;
+    result->solver              = NL_SOLVER_DEFAULT;
+    result->max_iterations      = 100;
+    result->threshold           = 1e-6;
+    result->omega               = 1.5;
+    result->row_scaling         = 1.0;
+    result->inner_iterations    = 5;
+    result->solver_func         = nlDefaultSolver;
     result->progress_func       = NULL;
     result->verbose             = NL_FALSE;
-    nlMakeCurrent(result) ;
-    return result ;
+    result->nb_systems          = 1;
+    result->matrix_mode         = NL_STIFFNESS_MATRIX;
+    nlMakeCurrent(result);
+    return result;
 }
 
 void nlDeleteContext(NLContext context_in) {
-    NLContextStruct* context = (NLContextStruct*)(context_in) ;
+    NLContextStruct* context = (NLContextStruct*)(context_in);
     if(nlCurrentContext == context) {
-        nlCurrentContext = NULL ;
-    }
-    if(context->alloc_M) {
-        nlSparseMatrixDestroy(&context->M) ;
-    }
-    if(context->alloc_af) {
-        nlRowColumnDestroy(&context->af) ;
-    }
-    if(context->alloc_al) {
-        nlRowColumnDestroy(&context->al) ;
-    }
-    if(context->alloc_xl) {
-        nlRowColumnDestroy(&context->xl) ;
-    }
-    if(context->alloc_variable) {
-        NL_DELETE_ARRAY(context->variable) ;
-    }
-    if(context->alloc_x) {
-        NL_DELETE_ARRAY(context->x) ;
-    }
-    if(context->alloc_b) {
-        NL_DELETE_ARRAY(context->b) ;
+        nlCurrentContext = NULL;
     }
 
+    nlDeleteMatrix(context->M);
+    context->M = NULL;
+
+    nlDeleteMatrix(context->P);
+    context->P = NULL;
+
+    nlDeleteMatrix(context->B);
+    context->B = NULL;
+    
+    nlRowColumnDestroy(&context->af);
+    nlRowColumnDestroy(&context->al);
+
+    NL_DELETE_ARRAY(context->variable_value);
+    NL_DELETE_ARRAY(context->variable_buffer);
+    NL_DELETE_ARRAY(context->variable_is_locked);
+    NL_DELETE_ARRAY(context->variable_index);
+    
+    NL_DELETE_ARRAY(context->x);
+    NL_DELETE_ARRAY(context->b);
+    NL_DELETE_ARRAY(context->right_hand_side);
+
+    NL_DELETE_ARRAY(context->eigen_value);
+    
 #ifdef NL_PARANOID
-    NL_CLEAR(NLContextStruct, context) ;
+    NL_CLEAR(NLContextStruct, context);
 #endif
-    NL_DELETE(context) ;
+    NL_DELETE(context);
 }
 
 void nlMakeCurrent(NLContext context) {
-    nlCurrentContext = (NLContextStruct*)(context) ;
+    nlCurrentContext = (NLContextStruct*)(context);
 }
 
 NLContext nlGetCurrent() {
-    return nlCurrentContext ;
+    return nlCurrentContext;
 }
 
 /************************************************************************/
 /* Finite state automaton   */
 
 void nlCheckState(NLenum state) {
-    nl_assert(nlCurrentContext->state == state) ;
+    nl_assert(nlCurrentContext->state == state);
 }
 
 void nlTransition(NLenum from_state, NLenum to_state) {
-    nlCheckState(from_state) ;
-    nlCurrentContext->state = to_state ;
+    nlCheckState(from_state);
+    nlCurrentContext->state = to_state;
 }
 
 /************************************************************************/
 /* Preconditioner setup and default solver */
 
 static void nlSetupPreconditioner() {
-    switch(nlCurrentContext->preconditioner) {
-    case NL_PRECOND_NONE:
-        nlCurrentContext->precond_vector_prod = NULL ;
-        break ;
-    case NL_PRECOND_JACOBI:
-        nlCurrentContext->precond_vector_prod = nlPreconditioner_Jacobi ;
-        break ;
-    case NL_PRECOND_SSOR:
-        nlCurrentContext->precond_vector_prod = nlPreconditioner_SSOR ;
-        break ;
-    case NL_PRECOND_USER:
-        break ;
-    default:
-        nl_assert_not_reached ;
-    }
     /* Check compatibility between solver and preconditioner */
     if(
         nlCurrentContext->solver == NL_BICGSTAB && 
@@ -155,94 +136,150 @@ static void nlSetupPreconditioner() {
     ) {
         nlWarning(
             "nlSolve", 
-            "cannot use SSOR preconditioner with non-symmetric matrix, switching to Jacobi"
-        ) ;
-        nlCurrentContext->preconditioner = NL_PRECOND_JACOBI ;        
-        nlCurrentContext->precond_vector_prod = nlPreconditioner_Jacobi ;
+            "cannot use SSOR preconditioner with non-symmetric matrix, "
+	    "switching to Jacobi"
+        );
+        nlCurrentContext->preconditioner = NL_PRECOND_JACOBI;        
     }
     if(
         nlCurrentContext->solver == NL_GMRES && 
         nlCurrentContext->preconditioner != NL_PRECOND_NONE
     ) {
-        nlWarning("nlSolve", "Preconditioner not implemented yet for GMRES") ;
-        nlCurrentContext->preconditioner = NL_PRECOND_NONE ;        
-        nlCurrentContext->precond_vector_prod = NULL ;
+        nlWarning("nlSolve", "Preconditioner not implemented yet for GMRES");
+        nlCurrentContext->preconditioner = NL_PRECOND_NONE;        
     }
     if(
         nlCurrentContext->solver == NL_SUPERLU_EXT && 
         nlCurrentContext->preconditioner != NL_PRECOND_NONE
     ) {
-        nlWarning("nlSolve", "Preconditioner not implemented yet for SUPERLU") ;
-        nlCurrentContext->preconditioner = NL_PRECOND_NONE ;        
-        nlCurrentContext->precond_vector_prod = NULL ;
+        nlWarning("nlSolve", "Preconditioner not implemented yet for SUPERLU");
+        nlCurrentContext->preconditioner = NL_PRECOND_NONE;        
     }
     if(
         nlCurrentContext->solver == NL_CHOLMOD_EXT && 
         nlCurrentContext->preconditioner != NL_PRECOND_NONE
     ) {
-        nlWarning("nlSolve", "Preconditioner not implemented yet for CHOLMOD") ;
-        nlCurrentContext->preconditioner = NL_PRECOND_NONE ;        
-        nlCurrentContext->precond_vector_prod = NULL ;
+        nlWarning("nlSolve", "Preconditioner not implemented yet for CHOLMOD");
+        nlCurrentContext->preconditioner = NL_PRECOND_NONE;        
     }
     if(
         nlCurrentContext->solver == NL_PERM_SUPERLU_EXT && 
         nlCurrentContext->preconditioner != NL_PRECOND_NONE
     ) {
-        nlWarning("nlSolve", "Preconditioner not implemented yet for PERMSUPERLU") ;
-        nlCurrentContext->preconditioner = NL_PRECOND_NONE ;        
-        nlCurrentContext->precond_vector_prod = NULL ;
+        nlWarning(
+	    "nlSolve", "Preconditioner not implemented yet for PERMSUPERLU"
+	);
+        nlCurrentContext->preconditioner = NL_PRECOND_NONE;        
     }
     if(
         nlCurrentContext->solver == NL_SYMMETRIC_SUPERLU_EXT && 
         nlCurrentContext->preconditioner != NL_PRECOND_NONE
     ) {
-        nlWarning("nlSolve", "Preconditioner not implemented yet for PERMSUPERLU") ;
-        nlCurrentContext->preconditioner = NL_PRECOND_NONE ;        
-        nlCurrentContext->precond_vector_prod = NULL ;
+        nlWarning(
+	    "nlSolve", "Preconditioner not implemented yet for PERMSUPERLU"
+	);
+        nlCurrentContext->preconditioner = NL_PRECOND_NONE;        
+    }
+
+    nlDeleteMatrix(nlCurrentContext->P);
+    nlCurrentContext->P = NULL;
+    
+    switch(nlCurrentContext->preconditioner) {
+    case NL_PRECOND_NONE:
+        break;
+    case NL_PRECOND_JACOBI:
+	nlCurrentContext->P = nlNewJacobiPreconditioner(nlCurrentContext->M);
+        break;
+    case NL_PRECOND_SSOR:
+	nlCurrentContext->P = nlNewSSORPreconditioner(
+	    nlCurrentContext->M,nlCurrentContext->omega
+	);	
+        break;
+    case NL_PRECOND_USER:
+        break;
+    default:
+        nl_assert_not_reached;
+    }
+
+    if(nlCurrentContext->preconditioner != NL_PRECOND_SSOR) {
+        if(getenv("NL_LOW_MEM") == NULL) {
+            nlMatrixCompress(&nlCurrentContext->M);
+        }
     }
 }
 
-NLboolean nlDefaultSolver() {
-    NLboolean result = NL_TRUE ;
-    nlSetupPreconditioner() ;
-    switch(nlCurrentContext->solver) {
-    case NL_CG: {
-        if(nlCurrentContext->preconditioner == NL_PRECOND_NONE) {
-            nlCurrentContext->used_iterations = nlSolve_CG() ;
-        } else {
-            nlCurrentContext->used_iterations = nlSolve_CG_precond() ;
-        }
-    } break ;
-    case NL_BICGSTAB: {
-        if(nlCurrentContext->preconditioner == NL_PRECOND_NONE) {
-            nlCurrentContext->used_iterations = nlSolve_BICGSTAB() ;
-        } else {
-            nlCurrentContext->used_iterations = nlSolve_BICGSTAB_precond() ;
-        }
-    } break ;
-    case NL_GMRES: {
-        nlCurrentContext->used_iterations = nlSolve_GMRES() ;
-    } break ;
-    case NL_CNC_FLOAT_CRS_EXT:
-    case NL_CNC_DOUBLE_CRS_EXT:
-    case NL_CNC_FLOAT_BCRS2_EXT:
-    case NL_CNC_DOUBLE_BCRS2_EXT:
-    case NL_CNC_FLOAT_ELL_EXT:
-    case NL_CNC_DOUBLE_ELL_EXT:
-    case NL_CNC_FLOAT_HYB_EXT:
-    case NL_CNC_DOUBLE_HYB_EXT: {
-        nlCurrentContext->used_iterations = nlSolve_CNC() ;
-    } break ;
-    case NL_SUPERLU_EXT: 
-    case NL_PERM_SUPERLU_EXT: 
-    case NL_SYMMETRIC_SUPERLU_EXT: {
-        result = nlSolve_SUPERLU();
-    } break ;
-    case NL_CHOLMOD_EXT: {
-        result = nlSolve_CHOLMOD();
-    } break;
-    default:
-        nl_assert_not_reached ;
+static NLboolean nlSolveDirect() {
+    NLdouble* b = nlCurrentContext->b;
+    NLdouble* x = nlCurrentContext->x;
+    NLuint n = nlCurrentContext->n;
+    NLuint k;
+    
+    NLMatrix F = nlMatrixFactorize(
+	nlCurrentContext->M, nlCurrentContext->solver
+    );
+    if(F == NULL) {
+	return NL_FALSE;
     }
-    return result ;
+    for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+	nlMultMatrixVector(F, b, x);
+	b += n;
+	x += n;
+    }
+    nlDeleteMatrix(F);
+    return NL_TRUE;
+}
+
+static NLboolean nlSolveIterative() {
+    NLdouble* b = nlCurrentContext->b;
+    NLdouble* x = nlCurrentContext->x;
+    NLuint n = nlCurrentContext->n;
+    NLuint k;
+    for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+	nlSolveSystemIterative(
+	    nlCurrentContext->M,
+	    nlCurrentContext->P,
+	    b,
+	    x,
+	    nlCurrentContext->solver,
+	    nlCurrentContext->threshold,
+	    nlCurrentContext->max_iterations,
+	    nlCurrentContext->inner_iterations
+	);
+	b += n;
+	x += n;
+    }
+    return NL_TRUE;
+}
+
+
+NLboolean nlDefaultSolver() {
+    NLboolean result = NL_TRUE;
+    nlSetupPreconditioner();
+    switch(nlCurrentContext->solver) {
+	case NL_CG:
+	case NL_BICGSTAB:
+	case NL_GMRES: {
+	    result = nlSolveIterative();
+	} break;
+	case NL_CNC_FLOAT_CRS_EXT:
+	case NL_CNC_DOUBLE_CRS_EXT:
+	case NL_CNC_FLOAT_BCRS2_EXT:
+	case NL_CNC_DOUBLE_BCRS2_EXT:
+	case NL_CNC_FLOAT_ELL_EXT:
+	case NL_CNC_DOUBLE_ELL_EXT:
+	case NL_CNC_FLOAT_HYB_EXT:
+	case NL_CNC_DOUBLE_HYB_EXT: {
+	    nlSolve_CNC();
+	    result = NL_TRUE;
+	} break;
+	case NL_SUPERLU_EXT: 
+	case NL_PERM_SUPERLU_EXT: 
+	case NL_SYMMETRIC_SUPERLU_EXT: 
+	case NL_CHOLMOD_EXT: {
+	    result = nlSolveDirect();
+	} break;
+	default:
+	    nl_assert_not_reached;
+    }
+    return result;
 }

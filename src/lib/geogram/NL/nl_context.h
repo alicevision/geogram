@@ -56,15 +56,6 @@
 /******************************************************************************/
 /* NLContext data structure */
 
-/**
- * \brief The callback type for user-defined matrix vector product
- *   routines.
- * \details Used to specify matrix vector product and preconditioners,
- *  as in:
- *  - nlSetFunction(NL_FUNC_MATRIX,f)
- *  - nlSetFunction(NL_FUNC_PRECONDITIONER,f)
- */
-typedef void(*NLMatrixFunc)(const double* x, double* y);
 
 /**
  * \brief The callback type for solver routines.
@@ -80,26 +71,6 @@ typedef void(*NLProgressFunc)(
     NLuint cur_iter, NLuint max_iter, double cur_err, double max_err
 );
 
-/**
- * \brief The structure that describe the variables
- *  of the system
- */
-typedef struct {
-    /** 
-     * \brief The value of the variable.
-     */
-    NLdouble  value ;
-    /** 
-     * \brief Each variable can be locked.
-     */
-    NLboolean locked ;
-    /**
-     * \brief Each variable that is not locked
-     *  has a unique index.
-     */
-    NLuint    index ;
-} NLVariable ;
-
 #define NL_STATE_INITIAL                0
 #define NL_STATE_SYSTEM                 1
 #define NL_STATE_MATRIX                 2
@@ -108,86 +79,146 @@ typedef struct {
 #define NL_STATE_SYSTEM_CONSTRUCTED     5
 #define NL_STATE_SOLVED                 6
 
+/**
+ * \brief Stores the information relevant to
+ *  access variables stored in buffers.
+ */
+typedef struct {
+    /**
+     * \brief Address of the first element in the buffer.
+     */
+    void* base_address;
+    /**
+     * \brief Number of bytes between the addresses of two 
+     *   consecutive elements in the buffer.
+     */
+    NLuint stride;
+} NLBufferBinding;
+
+/**
+ * \brief Access to a double value in a buffer
+ * \param[in] B a NLBufferBinding
+ * \param[in] i index
+ * \return the \p i th value in \p B
+ */
+#define NL_BUFFER_ITEM(B,i) \
+    *(double*)((void*)((char*)((B).base_address)+((i)*(B).stride)))
+
+
 typedef struct {
     /**
      * \brief State of the finite-state automaton.
      * \details Used to check that OpenNL functions
      *  were called in the correct order.
      */
-    NLenum           state ;
+    NLenum           state;
 
     /**
-     * \brief The array of nb_variables variables.
+     * \brief NL_TRUE if variables are allocated by the user,
+     *  NL_FALSE if they are managed by OpenNL.
      */
-    NLVariable*      variable ;
+    NLboolean        user_variable_buffers;
+    
+    /**
+     * \brief Buffer bindings for the variables, dimension = nb_systems.
+     */
+    NLBufferBinding* variable_buffer;
+    
+    /**
+     * \brief Values of the variables, dimension = nb_systems * nb_variables.
+     */
+    NLdouble*        variable_value;
 
+    /**
+     * \brief Locked flags of the variables, dimension = nb_variables.
+     */
+    NLboolean*       variable_is_locked;
+
+    /**
+     * \brief Index of the variable in the actual linear system,
+     *  dimension = nb_variables.
+     */
+    NLuint*          variable_index;
+    
     /**
      * \brief The number of not locked variables.
      */
-    NLuint           n ;
+    NLuint           n;
+
 
     /**
-     * \brief The sparse matrix of the system.
+     * \brief The current matrix mode.
+     * \details One of NL_STIFFNESS_MATRIX, NL_MASS_MATRIX.
      */
-    NLSparseMatrix   M ;
+    NLenum           matrix_mode;
 
+    /**
+     * \brief The matrix of the system.
+     */
+    NLMatrix         M;
+
+    /**
+     * \brief The preconditioner.
+     */
+    NLMatrix         P;
+
+    /**
+     * \brief The right-hand side matrix.
+     * \details Used by the eigen solver for generalized
+     *  eigenproblems.
+     */
+    NLMatrix         B;
+    
     /**
      * \brief The coefficients that correspond to the
      *  free variables in the row being built.
+     * \details Indices correspond to system indices,
+     *  within [0..n-1].
      */
-    NLRowColumn      af ;
+    NLRowColumn      af;
 
     /**
      * \brief The coefficients that correspond to the
      *  locked variables in the row being built.
+     * \details Indices correspond to variables indices,
+     *  within [0..nb_variables-1].
      */
-    NLRowColumn      al ;
-
-    /**
-     * \brief The (constant) vector of locked variables.
-     */
-    NLRowColumn      xl ;
+    NLRowColumn      al;
 
     /**
      * \brief The vector of free variables, solution of
      *  the system.
      */
-    NLdouble*        x ;
+    NLdouble*        x;
 
     /**
-     * \brief The vector of right hand sides.
+     * \brief The vector of right hand sides, of size nb_systems * n.
      */
-    NLdouble*        b ;
+    NLdouble*        b;
 
     /**
-     * \brief The right hand side of the row being 
-     *  build.
-     * \details Specified by nlSetRowParameter(NL_RIGHT_HAND_SIDE, rhs)
+     * \brief The right hand sides of the row being 
+     *  built. An array of nb_systems doubles.
+     * \details Specified by nlRightHandSide() and nlMultiRightHandSide()
      */
-    NLdouble         right_hand_side ;
+    NLdouble*        right_hand_side;
 
-    /**
-     * \brief Indicates whether the right hand side
-     *  was set in the current row.
-     */
-    NLboolean        right_hand_side_set ;
-    
     /**
      * \brief The scaling coefficient for the row being 
      *  build.
      * \details Specified by nlSetRowParameter(NL_ROW_SCALING, rhs)
      */
-    NLdouble         row_scaling ;
+    NLdouble         row_scaling;
 
     /**
      * \brief The used solver, as a symbolic constant.
      */
-    NLenum           solver ;
+    NLenum           solver;
 
     /**
      * \brief The used preconditioner, as a symbolic constant.
      */
-    NLenum           preconditioner ;
+    NLenum           preconditioner;
 
     /**
      * \brief True if preconditioner was defined by client.
@@ -197,8 +228,12 @@ typedef struct {
     /**
      * \brief The number of variables.
      */
-    NLuint           nb_variables ;
+    NLuint           nb_variables;
 
+    /**
+     * \brief The number of linear systems to solve.
+     */
+    NLuint           nb_systems;
 
     /**
      * \brief True if NLIJCoefficient() was called
@@ -208,128 +243,83 @@ typedef struct {
     /**
      * \brief The index of the current row
      */
-    NLuint           current_row ;
+    NLuint           current_row;
 
     /**
      * \brief Indicates whether a least squares system
      *  is constructed.
      */
-    NLboolean        least_squares ;
+    NLboolean        least_squares;
 
     /**
      * \brief Indicates whether the matrix is symmetric.
      */
-    NLboolean        symmetric ;
+    NLboolean        symmetric;
 
     /**
      * \brief Maximum number of iterations.
      */
-    NLuint           max_iterations ;
+    NLuint           max_iterations;
 
 
     /**
      * \brief True if max_iterations was defined by client.
      */
-    NLboolean        max_iterations_defined ;
+    NLboolean        max_iterations_defined;
     
     /**
      * \brief Maximum number of inner iterations.
      * \details used by GMRES.
      */
-    NLuint           inner_iterations ;
+    NLuint           inner_iterations;
 
     /**
      * \brief Convergence threshold.
      * \details Iterations are stopped whenever
      *  \f$ \| A x - b \| / \| b \| < \mbox{threshold} \f$
      */
-    NLdouble         threshold ;
+    NLdouble         threshold;
 
     /**
      * \brief True if threshold was defined by client.
      */
-    NLboolean        threshold_defined ;
+    NLboolean        threshold_defined;
     
     /**
      * \brief Relaxation parameter for the SSOR 
      *  preconditioner.
      */
-    NLdouble         omega ;
+    NLdouble         omega;
 
     /**
      * \brief If true, all the rows are normalized.
      */
-    NLboolean        normalize_rows ;
-
-    /**
-     * \brief Indicates that M was allocated.
-     */
-    NLboolean        alloc_M ;
-
-    /**
-     * \brief Indicates that af was allocated.
-     */
-    NLboolean        alloc_af ;
-
-    /**
-     * \brief Indicates that al was allocated.
-     */
-    NLboolean        alloc_al ;
-
-    /**
-     * \brief Indicates that xl was allocated.
-     */
-    NLboolean        alloc_xl ;
-
-    /**
-     * \brief Indicates that variables were allocated.
-     */
-    NLboolean        alloc_variable ;
-
-    /**
-     * \brief Indicates that x was allocated.
-     */
-    NLboolean        alloc_x ;
-
-    /**
-     * \brief Indicates that b was allocated.
-     */
-    NLboolean        alloc_b ;
-
+    NLboolean        normalize_rows;
+    
     /**
      * \brief used number of iterations during latest solve.
      */
-    NLuint           used_iterations ;
+    NLuint           used_iterations;
 
     /**
      * \brief error obtained after latest solve.
      */
-    NLdouble         error ;
+    NLdouble         error;
 
     /**
      * \brief elapsed time for latest solve.
      */
-    NLdouble         elapsed_time ;
-
-    /**
-     * \brief the function pointer for matrix vector product.
-     */
-    NLMatrixFunc     matrix_vector_prod ;
-
-    /**
-     * \brief the function pointer for preconditioner vector product.
-     */
-    NLMatrixFunc     precond_vector_prod ;
+    NLdouble         elapsed_time;
 
     /**
      * \brief the function pointer for the solver.
      */
-    NLSolverFunc     solver_func ;
+    NLSolverFunc     solver_func;
 
     /**
      * \brief the function pointer for logging progress.
      */
-    NLProgressFunc   progress_func ;
+    NLProgressFunc   progress_func;
 
     /**
      * \brief if true, some logging information is 
@@ -342,12 +332,43 @@ typedef struct {
      *  used during latest solve.
      */
     NLulong          flops;
-} NLContextStruct ;
+
+    /**
+     * \brief The eigen solver. Should be NL_ARPACK_EXT.
+     */
+    NLenum           eigen_solver;
+
+    /**
+     * \brief The shift parameter of the spectral shift-invert
+     *   transform.
+     */
+    NLdouble         eigen_shift;
+
+    /**
+     * \brief NL_TRUE if spectral shift-invert transform is used,
+     *   NL_FALSE otherwise;
+     */
+    NLboolean        eigen_shift_invert;
+
+    /**
+     * \brief the array of eigen values. Dimension = nb_systems. 
+     */
+    NLdouble*        eigen_value;
+
+    /**
+     * \brief temporary array for eigen values, used for sorting.
+     * \details It is put in the context so that in a multithreading
+     *  context, with a thread local storage context, it will continue
+     *  to work.
+     */
+    NLdouble*        temp_eigen_value;
+    
+} NLContextStruct;
 
 /**
  * \brief Pointer to the current context.
  */
-extern NLContextStruct* nlCurrentContext ;
+extern NLContextStruct* nlCurrentContext;
 
 /**
  * \brief Makes sure that the finite state automaton is
@@ -356,7 +377,7 @@ extern NLContextStruct* nlCurrentContext ;
  *  then the program is aborted with an error message.
  * \param[in] state the expected state.
  */
-void nlCheckState(NLenum state) ;
+void nlCheckState(NLenum state);
 
 /**
  * \brief Implements a transition of the finite state automaton.
@@ -366,16 +387,7 @@ void nlCheckState(NLenum state) ;
  * \param[in] from_state the expected current state
  * \param[in] to_state the new state
  */
-void nlTransition(NLenum from_state, NLenum to_state) ;
-
-/**
- * \brief Implements the default matrix vector product.
- * \details Uses the sparse matrix stored in the current
- *  context.
- * \param[in] x the constant right hand side (size = nlCurrentContext->m)
- * \param[out] y the result (size = nlCurrentContext->n)
- */
-void nlMatrixVectorProd_default(const NLdouble* x, NLdouble* y) ;
+void nlTransition(NLenum from_state, NLenum to_state);
 
 /**
  * \brief Implements the default solver
@@ -384,6 +396,6 @@ void nlMatrixVectorProd_default(const NLdouble* x, NLdouble* y) ;
  * \retval NL_TRUE if solve was successful
  * \retval NL_FALSE otherwise
  */
-NLboolean nlDefaultSolver(void) ;
+NLboolean nlDefaultSolver(void);
 
 #endif

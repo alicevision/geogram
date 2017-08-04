@@ -46,6 +46,7 @@
 #define OPENNL_ITERATIVE_SOLVERS_H
 
 #include "nl_private.h"
+#include "nl_matrix.h"
 
 /**
  * \file geogram/NL/nl_iterative_solvers.h
@@ -53,60 +54,31 @@
  */
 
 /**
- * \brief Solves the system in nlCurrentContext 
- *  using the Conjugate Gradient solver
- * \details The implementation is inspired by 
+ * \brief Solves a linear system using an iterative solver
+ * \details The implementation of the solvers is inspired by 
  * the lsolver library, by Christian Badura, available from:
- * http://www.mathematik.uni-freiburg.de
- * /IAM/Research/projectskr/lin_solver/
- * \return the used number of iterations
+ * http://www.mathematik.uni-freiburg.de/IAM/Research/projectskr/lin_solver/
+ *
+ * About the Conjugate Gradient, details can be found in:
+ *  Ashby, Manteuffel, Saylor
+ *     A taxononmy for conjugate gradient methods
+ *     SIAM J Numer Anal 27, 1542-1568 (1990)
+ *
+ * \param[in] M the matrix of the system
+ * \param[in] P a preconditionner or NULL if not using a preconditioner
+ * \param[in] b the right-hand side of the system
+ * \param[out] x the solution of the system
+ * \param[in] solver one of NL_CG, NL_BICGSTAB, NL_GMRES
+ * \param[in] eps convergence bound, iterations are stopped as soon as
+ *   \f$ \| Mx - b \| / \| b \| <  \mbox{eps}\f$
+ * \param[in] max_iter maximum number of iterations
+ * \param[in] inner_iter number of inner iterations, used by GMRES only
  */
-NLuint nlSolve_CG(void);
-
-/**
- * \brief Solves the system in nlCurrentContext 
- *  using the preconditioned Conjugate Gradient solver
- * \details The implementation is inspired by 
- * the lsolver library, by Christian Badura, available from:
- * http://www.mathematik.uni-freiburg.de
- * /IAM/Research/projectskr/lin_solver/
- * \return the used number of iterations
- */
-NLuint nlSolve_CG_precond(void);
-
-/**
- * \brief Solves the system in nlCurrentContext 
- *  using the stabilized bi conjugate gradient solver.
- * \details The implementation is inspired by 
- * the lsolver library, by Christian Badura, available from:
- * http://www.mathematik.uni-freiburg.de
- * /IAM/Research/projectskr/lin_solver/
- * \return the used number of iterations
- */
-NLuint nlSolve_BICGSTAB(void);
-
-/**
- * \brief Solves the system in nlCurrentContext 
- *  using the preconditioned stabilized 
- *  bi conjugate gradient solver.
- * \details The implementation is inspired by 
- * the lsolver library, by Christian Badura, available from:
- * http://www.mathematik.uni-freiburg.de
- * /IAM/Research/projectskr/lin_solver/
- * \return the used number of iterations
- */
-NLuint nlSolve_BICGSTAB_precond(void);
-
-/**
- * \brief Solves the system in nlCurrentContext 
- *  using the GMRES solver.
- * \details The implementation is inspired by 
- * the lsolver library, by Christian Badura, available from:
- * http://www.mathematik.uni-freiburg.de
- * /IAM/Research/projectskr/lin_solver/
- * \return the used number of iterations
- */
-NLuint nlSolve_GMRES(void);
+NLAPI NLuint NLAPIENTRY nlSolveSystemIterative(
+    NLMatrix M, NLMatrix P, NLdouble* b, NLdouble* x,
+    NLenum solver,
+    double eps, NLuint max_iter, NLuint inner_iter
+);
 
 #endif
 

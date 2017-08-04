@@ -747,25 +747,28 @@ namespace GEO {
         expansion_splitter_ += 1.0;
     }
 
+    static Process::spinlock expansions_lock = 0;
+    
     expansion* expansion::new_expansion_on_heap(index_t capa) {
-        static Process::spinlock lock = 0;
+	Process::acquire_spinlock(expansions_lock);
         if(expansion_length_stat_) {
-            Process::acquire_spinlock(lock);
             if(capa >= expansion_length_histo_.size()) {
                 expansion_length_histo_.resize(capa + 1);
             }
             expansion_length_histo_[capa]++;
-            Process::release_spinlock(lock);
         }
         Memory::pointer addr = Memory::pointer(
             pools_.malloc(expansion::bytes(capa))
         );
+	Process::release_spinlock(expansions_lock);
         expansion* result = new(addr)expansion(capa);
         return result;
     }
 
     void expansion::delete_expansion_on_heap(expansion* e) {
+	Process::acquire_spinlock(expansions_lock);	
         pools_.free(e, expansion::bytes(e->capacity()));
+	Process::release_spinlock(expansions_lock);	
     }
 
     // ====== Initialization from expansion and double ===============

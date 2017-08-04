@@ -62,38 +62,38 @@
  *     SIAM J Numer Anal 27, 1542-1568 (1990)
  */
 
-NLuint nlSolve_CG() {
-    NLdouble* b        = nlCurrentContext->b ;
-    NLdouble* x        = nlCurrentContext->x ;
-    NLdouble  eps      = nlCurrentContext->threshold ;
-    NLuint    max_iter = nlCurrentContext->max_iterations ;
-    NLint     N        = (NLint)(nlCurrentContext->n) ;
+/************************************************************************/
 
-    NLdouble *g = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *r = NL_NEW_ARRAY(NLdouble, N) ; 
-    NLdouble *p = NL_NEW_ARRAY(NLdouble, N) ;
+static NLuint nlSolveSystem_CG(
+    NLMatrix M, NLdouble* b, NLdouble* x,
+    double eps, NLuint max_iter
+) {
+    NLint N = (NLint)M->m;
+
+    NLdouble *g = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *r = NL_NEW_ARRAY(NLdouble, N); 
+    NLdouble *p = NL_NEW_ARRAY(NLdouble, N);
     NLuint its=0;
-    NLint i;
     NLdouble t, tau, sig, rho, gam;
     NLdouble b_square=ddot(N,b,1,b,1);
     NLdouble err=eps*eps*b_square;
-    NLdouble accu =0.0;
-    NLdouble * Ax=NL_NEW_ARRAY(NLdouble,nlCurrentContext->n);
     NLdouble curr_err;
-    
-    nlCurrentContext->matrix_vector_prod(x,g);
+
+    nlMultMatrixVector(M,x,g);
     daxpy(N,-1.,b,1,g,1);
     dscal(N,-1.,g,1);
     dcopy(N,g,1,r,1);
     curr_err = ddot(N,g,1,g,1);
     while ( curr_err >err && its < max_iter) {
-        if(nlCurrentContext->progress_func != NULL) {
-            nlCurrentContext->progress_func(its, max_iter, curr_err, err);
-        }
-        if(nlCurrentContext->verbose && !(its % 100)) {
-            printf ( "%d : %.10e -- %.10e\n", its, curr_err, err ) ;
-        }
-        nlCurrentContext->matrix_vector_prod(r,p);
+	if(nlCurrentContext != NULL) {
+	    if(nlCurrentContext->progress_func != NULL) {
+		nlCurrentContext->progress_func(its, max_iter, curr_err, err);
+	    }
+	    if(nlCurrentContext->verbose && !(its % 100)) {
+		printf ( "%d : %.10e -- %.10e\n", its, curr_err, err );
+	    }
+	}
+	nlMultMatrixVector(M,r,p);
         rho=ddot(N,p,1,p,1);
         sig=ddot(N,r,1,p,1);
         tau=ddot(N,g,1,r,1);
@@ -106,129 +106,78 @@ NLuint nlSolve_CG() {
         ++its;
         curr_err = ddot(N,g,1,g,1);
     }
-    nlCurrentContext->matrix_vector_prod(x,Ax);
-    for(i = 0 ; i < N ; ++i) {
-        accu+=(Ax[i]-b[i])*(Ax[i]-b[i]);
-    }
-    if(b_square == 0.0) {
-        nlCurrentContext->error = sqrt(accu);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
-        }
-    } else {
-        nlCurrentContext->error = sqrt(accu/b_square);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b||/||b|| = %e\n",nlCurrentContext->error);
-        }
-    }
-    
-    NL_DELETE_ARRAY(Ax);
-    NL_DELETE_ARRAY(g) ;
-    NL_DELETE_ARRAY(r) ;
-    NL_DELETE_ARRAY(p) ;
-
-    nlCurrentContext->used_iterations = its;
-    
+    NL_DELETE_ARRAY(g);
+    NL_DELETE_ARRAY(r);
+    NL_DELETE_ARRAY(p);
     return its;
-} 
+}
 
-
-NLuint nlSolve_CG_precond()  {
-    NLdouble* b        = nlCurrentContext->b ;
-    NLdouble* x        = nlCurrentContext->x ;
-    NLdouble  eps      = nlCurrentContext->threshold ;
-    NLuint    max_iter = nlCurrentContext->max_iterations ;
-    NLint     N        = (NLint)(nlCurrentContext->n) ;
-
-    NLdouble* r = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble* d = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble* h = NL_NEW_ARRAY(NLdouble, N) ;
+static NLuint nlSolveSystem_PRE_CG(
+    NLMatrix M, NLMatrix P, NLdouble* b, NLdouble* x,
+    double eps, NLuint max_iter
+) {
+    NLint     N        = (NLint)M->n;
+    NLdouble* r = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble* d = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble* h = NL_NEW_ARRAY(NLdouble, N);
     NLdouble *Ad = h;
     NLuint its=0;
     NLdouble rh, alpha, beta;
     NLdouble b_square = ddot(N,b,1,b,1);
     NLdouble err=eps*eps*b_square;
-    NLint i;
-    NLdouble * Ax=NL_NEW_ARRAY(NLdouble,nlCurrentContext->n);
-    NLdouble accu =0.0;
     NLdouble curr_err;
-    
-    nlCurrentContext->matrix_vector_prod(x,r);
+
+    nlMultMatrixVector(M,x,r);
     daxpy(N,-1.,b,1,r,1);
-    nlCurrentContext->precond_vector_prod(r,d);
+    nlMultMatrixVector(P,r,d);
     dcopy(N,d,1,h,1);
     rh=ddot(N,r,1,h,1);
     curr_err = ddot(N,r,1,r,1);
 
     while ( curr_err >err && its < max_iter) {
-        if(nlCurrentContext->progress_func != NULL) {
-            nlCurrentContext->progress_func(its, max_iter, curr_err, err);
-        }
-        if( nlCurrentContext->verbose && !(its % 100)) {
-           printf ( "%d : %.10e -- %.10e\n", its, curr_err, err ) ;
-        }
-        nlCurrentContext->matrix_vector_prod(d,Ad);
+	if(nlCurrentContext != NULL) {
+	    if(nlCurrentContext->progress_func != NULL) {
+		nlCurrentContext->progress_func(its, max_iter, curr_err, err);
+	    }
+	    if( nlCurrentContext->verbose && !(its % 100)) {
+		printf ( "%d : %.10e -- %.10e\n", its, curr_err, err );
+	    }
+	}
+	nlMultMatrixVector(M,d,Ad);
         alpha=rh/ddot(N,d,1,Ad,1);
         daxpy(N,-alpha,d,1,x,1);
         daxpy(N,-alpha,Ad,1,r,1);
-        nlCurrentContext->precond_vector_prod(r,h);
+	nlMultMatrixVector(P,r,h);
         beta=1./rh; rh=ddot(N,r,1,h,1); beta*=rh;
         dscal(N,beta,d,1);
         daxpy(N,1.,h,1,d,1);
         ++its;
         curr_err = ddot(N,r,1,r,1);
     }
-    nlCurrentContext->matrix_vector_prod(x,Ax);
-    for(i = 0 ; i < N ; ++i) {
-        accu+=(Ax[i]-b[i])*(Ax[i]-b[i]);
-    }
-
-    if(b_square == 0.0) {
-        nlCurrentContext->error = sqrt(accu);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
-        }
-    } else {
-        nlCurrentContext->error = sqrt(accu/b_square);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b||/||b|| = %e\n",nlCurrentContext->error);
-        }
-    }
-    
-    NL_DELETE_ARRAY(Ax);
-    NL_DELETE_ARRAY(r) ;
-    NL_DELETE_ARRAY(d) ;
-    NL_DELETE_ARRAY(h) ;
-
-    nlCurrentContext->used_iterations = its;
-    
+    NL_DELETE_ARRAY(r);
+    NL_DELETE_ARRAY(d);
+    NL_DELETE_ARRAY(h);
     return its;
 }
 
-NLuint nlSolve_BICGSTAB() {
-    NLdouble* b        = nlCurrentContext->b ;
-    NLdouble* x        = nlCurrentContext->x ;
-    NLdouble  eps      = nlCurrentContext->threshold ;
-    NLuint    max_iter = nlCurrentContext->max_iterations ;
-    NLint     N        = (NLint)(nlCurrentContext->n) ;
-    NLint     i ;
-
-    NLdouble *rT  = NL_NEW_ARRAY(NLdouble, N) ; 
-    NLdouble *d   = NL_NEW_ARRAY(NLdouble, N) ; 
-    NLdouble *h   = NL_NEW_ARRAY(NLdouble, N) ; 
-    NLdouble *u   = NL_NEW_ARRAY(NLdouble, N) ; 
-    NLdouble *Ad  = NL_NEW_ARRAY(NLdouble, N) ; 
-    NLdouble *t   = NL_NEW_ARRAY(NLdouble, N) ; 
+static NLuint nlSolveSystem_BICGSTAB(
+    NLMatrix M, NLdouble* b, NLdouble* x,
+    double eps, NLuint max_iter
+) {
+    NLint     N   = (NLint)M->n;
+    NLdouble *rT  = NL_NEW_ARRAY(NLdouble, N); 
+    NLdouble *d   = NL_NEW_ARRAY(NLdouble, N); 
+    NLdouble *h   = NL_NEW_ARRAY(NLdouble, N); 
+    NLdouble *u   = NL_NEW_ARRAY(NLdouble, N); 
+    NLdouble *Ad  = NL_NEW_ARRAY(NLdouble, N); 
+    NLdouble *t   = NL_NEW_ARRAY(NLdouble, N); 
     NLdouble *s   = h;
-    NLdouble rTh, rTAd, rTr, alpha, beta, omega, st, tt ;
+    NLdouble rTh, rTAd, rTr, alpha, beta, omega, st, tt;
     NLuint its=0;
     NLdouble b_square = ddot(N,b,1,b,1);
     NLdouble err=eps*eps*b_square;
-    NLdouble *r = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble * Ax=NL_NEW_ARRAY(NLdouble,nlCurrentContext->n);
-    NLdouble accu =0.0;
-
-    nlCurrentContext->matrix_vector_prod(x,r);
+    NLdouble *r = NL_NEW_ARRAY(NLdouble, N);
+    nlMultMatrixVector(M,x,r);
     daxpy(N,-1.,b,1,r,1);
     dcopy(N,r,1,d,1);
     dcopy(N,d,1,h,1);
@@ -238,20 +187,22 @@ NLuint nlSolve_BICGSTAB() {
     rTr=ddot(N,r,1,r,1);
 
     while ( rTr>err && its < max_iter) {
-        if(nlCurrentContext->progress_func != NULL) {
-            nlCurrentContext->progress_func(its, max_iter, rTr, err);
-        }
-        if( (nlCurrentContext->verbose) && !(its % 100)) {
-            printf ( "%d : %.10e -- %.10e\n", its, rTr, err ) ;
-        }
-        nlCurrentContext->matrix_vector_prod(d,Ad);
+	if(nlCurrentContext != NULL) {
+	    if(nlCurrentContext->progress_func != NULL) {
+		nlCurrentContext->progress_func(its, max_iter, rTr, err);
+	    }
+	    if( (nlCurrentContext->verbose) && !(its % 100)) {
+		printf ( "%d : %.10e -- %.10e\n", its, rTr, err );
+	    }
+	}
+	nlMultMatrixVector(M,d,Ad);
         rTAd=ddot(N,rT,1,Ad,1);
         nl_assert( fabs(rTAd)>1e-40 );
         alpha=rTh/rTAd;
         daxpy(N,-alpha,Ad,1,r,1);
         dcopy(N,h,1,s,1);
         daxpy(N,-alpha,Ad,1,s,1);
-        nlCurrentContext->matrix_vector_prod(s,t);
+	nlMultMatrixVector(M,s,t);
         daxpy(N,1.,t,1,u,1);
         dscal(N,alpha,u,1);
         st=ddot(N,s,1,t,1);
@@ -273,67 +224,38 @@ NLuint nlSolve_BICGSTAB() {
         rTr=ddot(N,r,1,r,1);
         ++its;
     }
-
-    nlCurrentContext->matrix_vector_prod(x,Ax);
-    for(i = 0 ; i < N ; ++i){
-        accu+=(Ax[i]-b[i])*(Ax[i]-b[i]);
-    }
-
-    if(b_square == 0.0) {
-        nlCurrentContext->error = sqrt(accu);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
-        }
-    } else {
-        nlCurrentContext->error = sqrt(accu/b_square);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b||/||b|| = %e\n",nlCurrentContext->error);
-        }
-    }
-
-    NL_DELETE_ARRAY(Ax);
-    NL_DELETE_ARRAY(r) ;
-    NL_DELETE_ARRAY(rT) ;
-    NL_DELETE_ARRAY(d) ;
-    NL_DELETE_ARRAY(h) ;
-    NL_DELETE_ARRAY(u) ;
-    NL_DELETE_ARRAY(Ad) ;
-    NL_DELETE_ARRAY(t) ;
-
-    nlCurrentContext->used_iterations = its;
-    
+    NL_DELETE_ARRAY(r);
+    NL_DELETE_ARRAY(rT);
+    NL_DELETE_ARRAY(d);
+    NL_DELETE_ARRAY(h);
+    NL_DELETE_ARRAY(u);
+    NL_DELETE_ARRAY(Ad);
+    NL_DELETE_ARRAY(t);
     return its;
 }
 
-
-NLuint nlSolve_BICGSTAB_precond() {
-
-    NLdouble* b        = nlCurrentContext->b ;
-    NLdouble* x        = nlCurrentContext->x ;
-    NLdouble  eps      = nlCurrentContext->threshold ;
-    NLuint    max_iter = nlCurrentContext->max_iterations ;
-    NLint     N        = (NLint)(nlCurrentContext->n) ;
-    NLint     i;
-
-    NLdouble *rT  = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *d   = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *h   = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *u   = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *Sd  = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *t   = NL_NEW_ARRAY(NLdouble, N) ;
-    NLdouble *aux = NL_NEW_ARRAY(NLdouble, N) ;
+static NLuint nlSolveSystem_PRE_BICGSTAB(
+    NLMatrix M, NLMatrix P, NLdouble* b, NLdouble* x,
+    double eps, NLuint max_iter
+) {
+    NLint     N   = (NLint)M->n;
+    NLdouble *rT  = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *d   = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *h   = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *u   = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *Sd  = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *t   = NL_NEW_ARRAY(NLdouble, N);
+    NLdouble *aux = NL_NEW_ARRAY(NLdouble, N);
     NLdouble *s   = h;
     NLdouble rTh, rTSd, rTr, alpha, beta, omega, st, tt;
     NLuint its=0;
     NLdouble b_square = ddot(N,b,1,b,1);
     NLdouble err  = eps*eps*b_square;
     NLdouble *r   = NL_NEW_ARRAY(NLdouble, N);
-    NLdouble * Ax = NL_NEW_ARRAY(NLdouble,nlCurrentContext->n);
-    NLdouble accu =0.0;
 
-    nlCurrentContext->matrix_vector_prod(x,r);
+    nlMultMatrixVector(M,x,r);
     daxpy(N,-1.,b,1,r,1);
-    nlCurrentContext->precond_vector_prod(r,d);
+    nlMultMatrixVector(P,r,d);
     dcopy(N,d,1,h,1);
     dcopy(N,h,1,rT,1);
     nl_assert( ddot(N,rT,1,rT,1)>1e-40 );
@@ -341,22 +263,24 @@ NLuint nlSolve_BICGSTAB_precond() {
     rTr=ddot(N,r,1,r,1);
 
     while ( rTr>err && its < max_iter) {
-        if(nlCurrentContext->progress_func != NULL) {
-            nlCurrentContext->progress_func(its, max_iter, rTr, err);
-        }
-        if( (nlCurrentContext->verbose) && !(its % 100)) {
-            printf ( "%d : %.10e -- %.10e\n", its, rTr, err ) ;
-        }
-        nlCurrentContext->matrix_vector_prod(d,aux);
-        nlCurrentContext->precond_vector_prod(aux,Sd);
+	if(nlCurrentContext != NULL) {	
+	    if(nlCurrentContext->progress_func != NULL) {
+		nlCurrentContext->progress_func(its, max_iter, rTr, err);
+	    }
+	    if( (nlCurrentContext->verbose) && !(its % 100)) {
+		printf ( "%d : %.10e -- %.10e\n", its, rTr, err );
+	    }
+	}
+	nlMultMatrixVector(M,d,aux);
+	nlMultMatrixVector(P,aux,Sd);
         rTSd=ddot(N,rT,1,Sd,1);
         nl_assert( fabs(rTSd)>1e-40 );
         alpha=rTh/rTSd;
         daxpy(N,-alpha,aux,1,r,1);
         dcopy(N,h,1,s,1);
         daxpy(N,-alpha,Sd,1,s,1);
-        nlCurrentContext->matrix_vector_prod(s,aux);
-        nlCurrentContext->precond_vector_prod(aux,t);
+	nlMultMatrixVector(M,s,aux);
+	nlMultMatrixVector(P,aux,t);
         daxpy(N,1.,t,1,u,1);
         dscal(N,alpha,u,1);
         st=ddot(N,s,1,t,1);
@@ -378,25 +302,6 @@ NLuint nlSolve_BICGSTAB_precond() {
         rTr=ddot(N,r,1,r,1);
         ++its;
     }
-
-    nlCurrentContext->matrix_vector_prod(x,Ax);
-    for(i = 0 ; i < N ; ++i){
-        accu+=(Ax[i]-b[i])*(Ax[i]-b[i]);
-    }
-
-    if(b_square == 0.0) {
-        nlCurrentContext->error = sqrt(accu);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
-        }
-    } else {
-        nlCurrentContext->error = sqrt(accu/b_square);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b||/||b|| = %e\n",nlCurrentContext->error);
-        }
-    }
-
-    NL_DELETE_ARRAY(Ax);
     NL_DELETE_ARRAY(r);
     NL_DELETE_ARRAY(rT);
     NL_DELETE_ARRAY(d);
@@ -405,37 +310,29 @@ NLuint nlSolve_BICGSTAB_precond() {
     NL_DELETE_ARRAY(Sd);
     NL_DELETE_ARRAY(t);
     NL_DELETE_ARRAY(aux);
-
-    nlCurrentContext->used_iterations = its;
-        
     return its;
 }
 
-NLuint nlSolve_GMRES() {
-
-    NLdouble* b        = nlCurrentContext->b ;
-    NLdouble* x        = nlCurrentContext->x ;
-    NLdouble  eps      = nlCurrentContext->threshold ;
-    NLint    max_iter  = (NLint)(nlCurrentContext->max_iterations) ;
-    NLint    n         = (NLint)(nlCurrentContext->n) ;
-    NLint    m         = (NLint)(nlCurrentContext->inner_iterations) ;
-
-    typedef NLdouble *NLdoubleP;
-    NLdouble *V   = NL_NEW_ARRAY(NLdouble, n*(m+1)   ) ;
-    NLdouble *U   = NL_NEW_ARRAY(NLdouble, m*(m+1)/2 ) ;
-    NLdouble *r   = NL_NEW_ARRAY(NLdouble, n         ) ;
-    NLdouble *y   = NL_NEW_ARRAY(NLdouble, m+1       ) ;
-    NLdouble *c   = NL_NEW_ARRAY(NLdouble, m         ) ;
-    NLdouble *s   = NL_NEW_ARRAY(NLdouble, m         ) ;
-    NLdouble **v  = NL_NEW_ARRAY(NLdoubleP, m+1      ) ;
-    NLdouble * Ax = NL_NEW_ARRAY(NLdouble,nlCurrentContext->n);
-    NLdouble accu =0.0;
-    NLint i, j, io, uij, u0j ; 
-    NLint its = -1 ;
-    NLdouble beta, h, rd, dd, nrm2b ;
+static NLuint nlSolveSystem_GMRES(
+    NLMatrix M, NLdouble* b, NLdouble* x,
+    double eps, NLuint max_iter, NLuint inner_iter
+) {
+    NLint    n    = (NLint)M->n;
+    NLint    m    = (NLint)inner_iter;
+    typedef NLdouble *NLdoubleP;     
+    NLdouble *V   = NL_NEW_ARRAY(NLdouble, n*(m+1)   );
+    NLdouble *U   = NL_NEW_ARRAY(NLdouble, m*(m+1)/2 );
+    NLdouble *r   = NL_NEW_ARRAY(NLdouble, n         );
+    NLdouble *y   = NL_NEW_ARRAY(NLdouble, m+1       );
+    NLdouble *c   = NL_NEW_ARRAY(NLdouble, m         );
+    NLdouble *s   = NL_NEW_ARRAY(NLdouble, m         );
+    NLdouble **v  = NL_NEW_ARRAY(NLdoubleP, m+1      );
+    NLint i, j, io, uij, u0j; 
+    NLint its = -1;
+    NLdouble beta, h, rd, dd, nrm2b;
 
     for ( i=0; i<=m; ++i ){
-        v[i]=V+i*n ;
+        v[i]=V+i*n;
     }
     
     nrm2b=dnrm2(n,b,1);
@@ -443,7 +340,7 @@ NLuint nlSolve_GMRES() {
 
     do  { /* outer loop */
         ++io;
-        nlCurrentContext->matrix_vector_prod(x,r);
+	nlMultMatrixVector(M,x,r);
         daxpy(n,-1.,b,1,r,1);
         beta=dnrm2(n,r,1);
         dcopy(n,r,1,v[0],1);
@@ -454,7 +351,7 @@ NLuint nlSolve_GMRES() {
         uij=0;
         do { /* inner loop: j=0,...,m-1 */
             u0j=uij;
-            nlCurrentContext->matrix_vector_prod(v[j],v[j+1]);
+	    nlMultMatrixVector(M,v[j],v[j+1]);
             dgemv(
                 Transpose,n,j+1,1.,V,n,v[j+1],1,0.,U+u0j,1
             );
@@ -484,7 +381,7 @@ NLuint nlSolve_GMRES() {
             ++j;
         } while ( 
             j<m && fabs(y[j])>=eps*nrm2b 
-        ) ;
+        );
         { /* minimiere bzgl Y */
             dtpsv(
                 UpperTriangle,
@@ -495,43 +392,79 @@ NLuint nlSolve_GMRES() {
             /* correct X */
             dgemv(NoTranspose,n,j,-1.,V,n,y,1,1.,x,1);
         }
-    } while ( fabs(y[j])>=eps*nrm2b && (m*(io-1)+j) < max_iter);
+    } while ( fabs(y[j])>=eps*nrm2b && (m*(io-1)+j) < (NLint)max_iter);
     
     /* Count the inner iterations */
     its = m*(io-1)+j;
-
-    nlCurrentContext->matrix_vector_prod(x,Ax);
-    for(i = 0 ; i < n ; ++i) {
-        accu+=(Ax[i]-b[i])*(Ax[i]-b[i]);
-    }
-
-    if(nrm2b == 0.0) {
-        nlCurrentContext->error = sqrt(accu);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
-        }
-    } else {
-        nlCurrentContext->error = sqrt(accu/nrm2b);
-        if(nlCurrentContext->verbose) {
-            printf("in OpenNL : ||Ax-b||/||b|| = %e\n",nlCurrentContext->error);
-        }
-    }
-
-    NL_DELETE_ARRAY(Ax);
-    NL_DELETE_ARRAY(V) ;
-    NL_DELETE_ARRAY(U) ;
-    NL_DELETE_ARRAY(r) ;
-    NL_DELETE_ARRAY(y) ;
-    NL_DELETE_ARRAY(c) ;
-    NL_DELETE_ARRAY(s) ;
-    NL_DELETE_ARRAY(v) ;
-
-    nlCurrentContext->used_iterations = (NLuint)its;
-    
+    NL_DELETE_ARRAY(V);
+    NL_DELETE_ARRAY(U);
+    NL_DELETE_ARRAY(r);
+    NL_DELETE_ARRAY(y);
+    NL_DELETE_ARRAY(c);
+    NL_DELETE_ARRAY(s);
+    NL_DELETE_ARRAY(v);
     return (NLuint)its;
 }
 
+/************************************************************************/
+/* Main driver routine */
 
+NLuint nlSolveSystemIterative(
+    NLMatrix M, NLMatrix P, NLdouble* b, NLdouble* x,
+    NLenum solver,
+    double eps, NLuint max_iter, NLuint inner_iter
+) {
+    NLuint result=0;
+    NLdouble* Ax;
+    NLdouble accu;
+    NLuint i;
+    NLdouble b_square=ddot((NLint)M->n,b,1,b,1);
+    nl_assert(M->m == M->n);
+    switch(solver) {
+	case NL_CG:
+	    if(P == NULL) {
+		result = nlSolveSystem_CG(M,b,x,eps,max_iter);
+	    } else {
+		result = nlSolveSystem_PRE_CG(M,P,b,x,eps,max_iter);		
+	    }
+	    break;
+	case NL_BICGSTAB:
+	    if(P == NULL) {
+		result = nlSolveSystem_BICGSTAB(M,b,x,eps,max_iter);
+	    } else {
+		result = nlSolveSystem_PRE_BICGSTAB(M,P,b,x,eps,max_iter);
+	    }
+	    break;
+	case NL_GMRES:
+	    result = nlSolveSystem_GMRES(M,b,x,eps,max_iter,inner_iter);
+	    break;
+	default:
+	    nl_assert_not_reached;
+    }
+    if(nlCurrentContext != NULL) {
+	Ax = NL_NEW_ARRAY(NLdouble, M->n);
+	nlMultMatrixVector(M,x,Ax);
+	accu = 0.0;
+	for(i = 0; i < M->n; ++i) {
+	    accu+=(Ax[i]-b[i])*(Ax[i]-b[i]);
+	}
+	if(b_square == 0.0) {
+	    nlCurrentContext->error = sqrt(accu);
+	    if(nlCurrentContext->verbose) {
+		printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
+	    }
+	} else {
+	    nlCurrentContext->error = sqrt(accu/b_square);
+	    if(nlCurrentContext->verbose) {
+		printf("in OpenNL : ||Ax-b||/||b|| = %e\n",
+		       nlCurrentContext->error
+		);
+	    }
+	}
+	NL_DELETE_ARRAY(Ax);
+    }
+    nlCurrentContext->used_iterations = result;
+    return result;
+}
 
-
-
+/************************************************************************/

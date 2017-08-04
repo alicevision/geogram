@@ -47,7 +47,9 @@
 
 namespace GEO {
 
-    
+	inline index_t cell_facet_corner_id(Mesh* m, index_t c, index_t cf, index_t cfc) {
+		return m->cells.corner(c, m->cells.descriptor(c).facet_vertex[cf][cfc]);
+	}
     
     void EXPLORAGRAM_API compute_3D_edge_cot_w(Mesh* m, Attribute<index_t>& v2e, double anisoZ_cotW);
     
@@ -98,21 +100,7 @@ namespace GEO {
     EXPLORAGRAM_API index_t next_cell_around_oriented_edge(Mesh* m, index_t cell_id, index_t v_org, index_t v_dest);
 
 
-    /*     _____ _                 _   _______        _                  __  __           _      
-     *    / ____(_)               | | |__   __|      | |                |  \/  |         | |     
-     *   | (___  _ _ __ ___  _ __ | | ___| | _____  _| |_ _   _ _ __ ___| \  / | ___   __| | ___
-     *    \___ \| | '_ ` _ \| '_ \| |/ _ \ |/ _ \ \/ / __| | | | '__/ _ \ |\/| |/ _ \ / _` |/ _ \
-     *    ____) | | | | | | | |_) | |  __/ |  __/>  <| |_| |_| | | |  __/ |  | | (_) | (_| |  __/
-     *   |_____/|_|_| |_| |_| .__/|_|\___|_|\___/_/\_\\__|\__,_|_|  \___|_|  |_|\___/ \__,_|\___|
-     *                      | |                                                                  
-     *                      |_|                                                                 
-     */
-    
 
-    EXPLORAGRAM_API void set_param_texture_mode();
-    EXPLORAGRAM_API void set_color_map_texture_mode();
-    EXPLORAGRAM_API void quit_texture_mode();
-    
 
     /*    __  __                _     _               _______   _       
      *   |  \/  |              | |   (_)             |__   __| | |      

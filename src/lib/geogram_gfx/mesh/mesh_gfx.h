@@ -836,6 +836,7 @@ namespace GEO {
 
         bool buffer_objects_dirty_;
         bool attributes_buffer_objects_dirty_;
+	bool long_vector_attribute_;
 
         GLuint vertices_VAO_;
         GLuint edges_VAO_;

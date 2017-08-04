@@ -46,6 +46,7 @@
 #define OPENNL_PRECONDITIONERS_H
 
 #include "nl_private.h"
+#include "nl_matrix.h"
 
 /**
  * \file geogram/NL/nl_preconditioners.h
@@ -56,78 +57,22 @@
 /* preconditioners */
 
 /**
- * \brief Computes the product between the Jacobi 
- *  preconditioner and a vector.
- * \details The Jacobi preconditioner corresponds to
- *  the inverse of the diagonal of the matrix stored
- *  in the current OpenNL context.
- * \param[in] x the vector to be multiplied, dimension = nlCurrentContext->n,
- *  remains unchanged
- * \param[out] y where to store the result, dimension = nlCurrentContext->n
+ * \brief Creates a new Jacobi preconditioner
+ * \param[in] M the matrix, needs to be of type NL_MATRIX_SPARSE_DYNAMIC
+ * \details The inverse of the diagonal is stored in the preconditioner. 
+ *  No reference to the input data is kept.
+ * \return the Jacobi preconditioner
  */
-void nlPreconditioner_Jacobi(const NLdouble* x, NLdouble* y) ;
+NLMatrix nlNewJacobiPreconditioner(NLMatrix M);
 
 /**
- * \brief Computes the product between the SSOR
- *  preconditioner and a vector.
- * \details The SSOR preconditioner is computed from the
- *  matrix stored the current OpenNL context and the omega
- *  parameter, also stored in the current OpenNL context.
- * \param[in] x the vector to be multiplied, dimension = nlCurrentContext->n,
- *  remains unchanged
- * \param[out] y where to store the result, dimension = nlCurrentContext->n
+ * \brief Creates a new SSOR preconditioner
+ * \param[in] M the matrix, needs to be of type NL_MATRIX_SPARSE_DYNAMIC and needs
+ *  to have both rows and columns storage, and symmetric storage.
+ * \param[in] omega the relaxation parameter, within range [1.0,2.0].
+ * \details A reference to the input matrix is kept and used in the computations.
+ * \return the SSOR preconditioner.
  */
-void nlPreconditioner_SSOR(const NLdouble* x, NLdouble* y) ;
-
-
-/**
- * \brief Multiplies a vector by the diagonal of the matrix
- *  stored in the current OpenNL context.
- * \details \$ x \leftarrow 1/\omega \mbox{diag}(M) x \$,
- *   used to implement the SSOR preconditioner.
- * \param[in,out] x the vector to be multiplied, 
- *  size = nlCurrentContext->n
- * \param[in] omega all components are divided by omega
- */
-void nlMultDiagonal(NLdouble* x, NLdouble omega) ;
-
-/**
- * \brief Multiplies a vector by the inverse of the
- *  diagonal of the matrix stored in the current OpenNL context.
- * \details \$ x \leftarrow \omega \mbox{diag}(M)^{-1} x \$,
- *   used to implement the SSOR preconditioner.
- * \param[in,out] x the vector to be multiplied,
- *  size = nlCurrentContext->n
- * \param[in] omega all components are multiplied by omega
- */
-void nlMultDiagonalInverse(NLdouble* x, NLdouble omega) ;
-
-/**
- * \brief Multiplies a vector by the inverse of the
- *  lower triangular block of the matrix stored in 
- *  the current OpenNL context.
- * \details \$ x \leftarrow \omega \mbox{trilow}(M)^{-1} x \$,
- *   used to implement the SSOR preconditioner.
- * \param[in] x the vector to be multiplied,
- *  size = nlCurrentContext->n
- * \param[out] y where to store the result,
- *  size = nlCurrentContext->n
- * \param[in] omega all components are multiplied by omega
- */
-void nlMultLowerInverse(const NLdouble* x, NLdouble* y, NLdouble omega) ;
-
-/**
- * \brief Multiplies a vector by the inverse of the
- *  upper triangular block of the matrix stored in 
- *  the current OpenNL context.
- * \details \$ x \leftarrow \omega \mbox{triup}(M)^{-1} x \$,
- *   used to implement the SSOR preconditioner.
- * \param[in] x the vector to be multiplied,
- *  size = nlCurrentContext->n
- * \param[out] y where to store the result,
- *  size = nlCurrentContext->n
- * \param[in] omega all components are multiplied by omega
- */
-void nlMultUpperInverse(const NLdouble* x, NLdouble* y, NLdouble omega) ;
+NLMatrix nlNewSSORPreconditioner(NLMatrix M, double omega);
 
 #endif

@@ -163,7 +163,6 @@ namespace GEO {
 #define check1 GEO::Logger::out("HexDom") <<"checkpoint 1 reached"<< std::endl;
 #define check2 GEO::Logger::out("HexDom") <<"checkpoint 2 reached"<< std::endl;
 #define check3 GEO::Logger::out("HexDom") <<"checkpoint 3 reached"<< std::endl;
-#define STEP(x) {GEO::Logger::out("HexDom") <<"\n=============================================================\n   STEP    ===>    "<<#x<<"\n=============================================================\n"<< std::endl; x;}
 
 
 std::string EXPLORAGRAM_API plop_file(const char* file, int line);

@@ -568,7 +568,7 @@ namespace {
 #endif        
         declare_arg(
             "gfx:GL_version", 0.0,
-            "If non-zero, force GL version detection"
+            "If non-zero, override GL version detection"
         );
         declare_arg(
             "gfx:GL_debug", false,
@@ -580,7 +580,7 @@ namespace {
         );
         declare_arg(
             "gfx:GLSL_version", 0.0,
-            "If non-zero, force GLSL version detection"
+            "If non-zero, overrides GLSL version detection"
         );
         declare_arg(
             "gfx:GLUP_profile", "auto",

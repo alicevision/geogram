@@ -61,6 +61,7 @@ namespace GEO {
             if (lockB[v][2] == 1 && lockB[v][0] == 0 && v > 0 && lockB[v-1][0] != 0) num_l_v = v - 1;
             if (lockB[v][2] == 0 && v > 0 && num_ln_v == 0) num_ln_v = v - 1;
         }
+		if (num_ln_v == 0) num_ln_v = m->vertices.nb();
 
     }
 
@@ -80,8 +81,9 @@ namespace GEO {
         double smooth_coeff = 1.;
         double normal_coeff = 100.;
 
-
-        plop("construct system");
+		plop(num_l_v);
+		plop(num_ln_v);
+		plop("construct system");
         nlNewContext();
         nlSolverParameteri(NL_LEAST_SQUARES, NL_TRUE);
         nlSolverParameteri(NL_NB_VARIABLES, NLint(2 * (num_ln_v - num_l_v) + 9 * m->vertices.nb()));
@@ -123,9 +125,9 @@ namespace GEO {
                 nlRowScaling(normal_coeff);
                 nlBegin(NL_ROW);
                 nlCoefficient(v * 9 + i, 1.);
-                nlCoefficient(m->vertices.nb() * 9 + v - num_l_v, sh0[i]);
-                nlCoefficient(m->vertices.nb() * 9 + (num_ln_v - num_l_v) + v - num_l_v, sh8[i]);
-                nlRightHandSide(sh4[i]);
+				nlCoefficient(m->vertices.nb() * 9 + v - num_l_v, sh0[i]);
+				nlCoefficient(m->vertices.nb() * 9 + (num_ln_v - num_l_v) + v - num_l_v, sh8[i]);
+				nlRightHandSide(sh4[i]);
                 nlEnd(NL_ROW);
             }
         }
@@ -219,7 +221,7 @@ namespace {
 #ifdef GEO_OPENMP
         int max_threads = omp_get_max_threads();
 #else
-        int max_threads = 0;	
+        int max_threads = 1;	
 #endif	
         double *f_chunks = new double[max_threads](); // f_chunks is initialized to be zero
 
@@ -296,8 +298,10 @@ namespace {
 namespace GEO {
 
     void FFopt::FF_smooth() {
+		
         Attribute<mat3> B(m->vertices.attributes(), "B");
 
+		Attribute<SphericalHarmonicL4> sh(m->vertices.attributes(), "sh");
 
         // init global variables that must be visible in callbacks
         FF_LBFGS::ffopt_ptr = this;
@@ -350,7 +354,12 @@ namespace GEO {
                 B[i] = euler_to_mat3(vec3 (x[idx], x[idx + 1], x[idx + 2]));
             }
             else  B[i]  = B[i] * rotz(x[i]);
-        }
+
+			FOR(d, 9)sh[i][d] = 0;
+			sh[i][4] = std::sqrt(7. / 12.);
+			sh[i][8] = std::sqrt(5. / 12.);
+			sh[i].euler_rot(mat3_to_euler(normalize_columns(B[i])));
+	}
         delete[] x;
     }
 

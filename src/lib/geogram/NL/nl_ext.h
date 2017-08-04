@@ -61,6 +61,7 @@ extern "C" {
 #define NL_SYMMETRIC_SUPERLU_EXT 0x212
 #define NL_SOLVER_USER           0x213
 #define NL_CHOLMOD_EXT           0x214
+#define NL_ARPACK_EXT            0x215
     
 #define NL_CNC_FLOAT_CRS_EXT     0x220
 #define NL_CNC_DOUBLE_CRS_EXT    0x222

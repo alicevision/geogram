@@ -50,9 +50,9 @@
 #include <exploragram/hexdom/spherical_harmonics_l4.h>
 
 namespace GEO {
-    void EXPLORAGRAM_API compute_input_constraints(Mesh* m);
-    void EXPLORAGRAM_API reorder_vertices_according_to_constraints(Mesh* m);
-    void EXPLORAGRAM_API produce_hexdom_input(Mesh* m,std::string& error_msg);
+    //void EXPLORAGRAM_API compute_input_constraints(Mesh* m);
+    //void EXPLORAGRAM_API reorder_vertices_according_to_constraints(Mesh* m);
+    void EXPLORAGRAM_API produce_hexdom_input(Mesh* m,std::string& error_msg, bool hilbert_sort = true);
 }
 
 #endif

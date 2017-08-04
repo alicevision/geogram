@@ -1,0 +1,15 @@
+Eigensolver is now functional:
+* fixed incoherency in f2c.h header (integer size was different between 
+   libf2c and the rest -> now it is 32 bits everywhere)
+* test program for eigensolver
+
+--This line, and those below, will be ignored--
+
+M    src/lib/geogram/NL/nl.h
+M    src/lib/geogram/NL/nl_api.c
+M    src/lib/geogram/NL/nl_arpack.c
+M    src/lib/third_party/numerics/LIBF2C/f2c.h
+M    src/test/CMakeLists.txt
+A    src/test/test_MH
+AM   src/test/test_MH/CMakeLists.txt
+A    src/test/test_MH/main.cpp

@@ -38,127 +38,150 @@
  */
 
 #include <exploragram/hexdom/hexdom_pipeline.h>
+
 #include <exploragram/hexdom/preprocessing.h>
 #include <exploragram/hexdom/FF.h>
 #include <exploragram/hexdom/PGP.h>
+#include <exploragram/hexdom/hex_candidates.h> 
+#include <exploragram/hexdom/quad_dominant.h> 
+#include <exploragram/hexdom/hex.h> 
+#include <exploragram/hexdom/cavity.h> 
+#include <exploragram/hexdom/hex_dominant.h>
+
 #include <exploragram/hexdom/PGP_export.h>
 #include <exploragram/hexdom/time_log.h>
 
 namespace GEO {
-    
-    namespace HexdomPipeline {
-	
-	bool SetConstraints(Mesh*m, std::string& msg) {
-            try {
-                produce_hexdom_input(m, msg);
-            }
-            catch (const char* s) {
-                plop(s);
-                msg = std::string(s);
-                logt.add_string("fail", msg);
-                return false;
-            }
-            return true;
-        }
-	
-	void FrameField(Mesh*m, bool smooth, bool brush) {
-            GEO::FFopt ffopt(m);
-            ffopt.FF_init();
-            if (smooth) ffopt.FF_smooth();
-            ffopt.compute_Bid_norm();
-            if (brush)  ffopt.brush_frame();
-        }
 
-        //{algo} = {0: PGP, 1 : PGP with correction, 2 CubeCover}
-	void Parameterization(Mesh*m, int algo, double PGP_max_scale_corr) {
-            {// scope to allows destrction of attributes that are members of pgp
-                PGPopt pgp(m);
-                if (algo < 2) {
-                    pgp.optimize_corr(PGP_max_scale_corr);
-                    logt.add_step("pgp.optimize_PGP");
-                    pgp.optimize_PGP();
-                }
-                else if (algo == 2) {
-                    logt.add_step("cubcover");
-                    pgp.cubcover();
-                }
-                else geo_assert_not_reached;
-            }
-            m->edges.attributes().delete_attribute_store("corr"); // ? can we really do that ?
-            if (algo>0) { // we have launch cubecover
-                m->edges.attributes().delete_attribute_store("ccgrp");
-                m->edges.attributes().delete_attribute_store("ccid");
-            }
-        }
-	
-	void HexCandidates(Mesh*m, Mesh* result) {
-            PGPopt pgp(m);
-            pgp.export_hexes(result);
-        }
+	namespace HexdomPipeline {
 
-	bool QuadDominant(Mesh*m, Mesh* chartmesh) {
-            {
-                PGPopt pgp(m);
-                Attribute<GEO::vec2> uv(chartmesh->facet_corners.attributes(), "uv");
-                Attribute<index_t> singtri(chartmesh->facets.attributes(), "singular");
+#define STEP(funcname,args) { \
+		logt.add_step(#funcname); \
+		funcname args; \
+}
 
-                pgp.export_boundary_with_uv(chartmesh, uv, singtri);
-                get_facet_stats(chartmesh, "export with uv");
+		bool SetConstraints(Mesh*m, std::string& msg,bool hilbert_sort ) {
+			try {
+				STEP(produce_hexdom_input,(m, msg, hilbert_sort ));
+			}
+			catch (const char* s) {
+				plop(s);
+				msg = std::string(s);
+				logt.add_string("fail", msg);
+				return false;
+			}
+			return true;
+		}
 
+		void FrameField(Mesh*m, bool smooth) {
+			GEO::FFopt ffopt(m);
+			STEP(ffopt.FF_init,(true));
+			if (smooth) 
+				STEP(ffopt.FF_smooth,());
+			STEP(ffopt.compute_Bid_norm,());
+			//uncomment may ease debugging...  STEP(ffopt.brush_frame,());
+		}
 
-                STEP(split_edges_by_iso_uvs(chartmesh, uv, singtri));
-                get_facet_stats(chartmesh, "split edges");
+		//{algo} = {0: CubeCover, 1 : PGP with correction, 2 PGP}
+		void Parameterization(Mesh*m, int algo, double PGP_max_scale_corr) {
+			{// scope to allows destruction of attributes that are members of pgp
+				PGPopt pgp(m);
+#ifdef WITH_CUBECOVER				
+				if (algo > 0) {
+					STEP(pgp.optimize_corr,(PGP_max_scale_corr));
+					STEP(pgp.optimize_PGP,());
+				}
+				else if (algo == 0) {
+					STEP(pgp.cubcover,());
+				}
+				else geo_assert_not_reached;
+#else
+				geo_argused(PGP_max_scale_corr);
+				if(algo != 2) {
+				    Logger::warn("PGP")
+					<< "cubecover/scale correction not available in the public version"
+					<< std::endl;
+				    Logger::warn("PGP")
+					<< "falling back with PGP without scale correction"
+					<< std::endl;
+				}
+				algo = 2;
+				STEP(pgp.optimize_corr,(0.0));
+				STEP(pgp.optimize_PGP,());				
+#endif				
+			}
 
-                STEP(facets_split_ca_va(chartmesh, uv, singtri));
-                get_facet_stats(chartmesh, "facets split");
+			m->edges.attributes().delete_attribute_store("corr"); // ? can we really do that ?
+			if (algo <2) { // we have launch cubecover
+				m->edges.attributes().delete_attribute_store("ccgrp");
+				m->edges.attributes().delete_attribute_store("ccid");
+			}
+			m->vertices.attributes().delete_attribute_store("U");
+			m->edges.clear();
+		}
 
-                Attribute<int> chart(chartmesh->facets.attributes(), "chart");
-                STEP(mark_charts(chartmesh, uv, chart, singtri));
-                get_facet_stats(chartmesh, "mark charts");
+		void HexCandidates(Mesh*m, Mesh* result) {
+			STEP(export_hexes,(m,result));
+		}
 
-            } // attention attribute references are invalidated in these steps
+		bool QuadDominant(Mesh*m, Mesh* chartmesh) {
 
-            STEP(simplify_quad_charts(chartmesh));
-            get_facet_stats(chartmesh, "remove vertices");
+			STEP(export_boundary_with_uv,(m, chartmesh, "uv", "singular"));
+			//get_facet_stats(chartmesh, "export with uv");
 
-            STEP(export_quadtri_from_charts(chartmesh));
+			STEP(split_edges_by_iso_uvs, (chartmesh, "uv", "singular"));
 
-            if (!surface_is_tetgenifiable(chartmesh)) {
-                logt.add_string("fail", " tetgen is not able to remesh the quadtri");
-                return false;
-            }
+			STEP(facets_split,(chartmesh, "uv", "singular"));
 
-            chartmesh->facet_corners.attributes().delete_attribute_store("uv");
-            chartmesh->facets.attributes().delete_attribute_store("chart");
-            chartmesh->facets.attributes().delete_attribute_store("quadelement");
-            chartmesh->facets.attributes().delete_attribute_store("singular");
-            return true;
-        }
+			STEP(mark_charts,(chartmesh, "uv", "chart", "singular"));
 
-	void Hexahedrons(Mesh* quaddominant, Mesh* hexcandidates, Mesh* result) {
-            result->copy(*hexcandidates);
-            STEP(hex_set_2_hex_mesh(result, quaddominant));
-        }
-	
-	bool Cavity(Mesh* quaddominant, Mesh* hexahedrons, Mesh* result) {
-            result->copy(*quaddominant);
-            STEP(merge_hex_boundary_and_quadtri(hexahedrons, result));
-            if (result->facets.nb() > 0 && !surface_is_tetgenifiable(result))
-                return false;
-            return true;
-        }
+			STEP(simplify_quad_charts,(chartmesh));
 
-	void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid) {
-            Mesh tets;
-            tets.copy(*cavity);
-            STEP(fill_cavity_with_tetgen(cavity, &tets, true, with_pyramid));
-            result->copy(tets);
-            result->facets.clear();
-            STEP(add_hexes_to_tetmesh(hexahedrons, result));
-            result->cells.connect();
-            result->cells.compute_borders();
-        }
-    }
-    
+			STEP(export_quadtri_from_charts,(chartmesh));
+
+			if (!surface_is_tetgenifiable(chartmesh)) {
+				logt.add_string("fail", " tetgen is not able to remesh the quadtri");
+				return false;
+			}
+
+			chartmesh->facet_corners.attributes().delete_attribute_store("uv");
+			chartmesh->facets.attributes().delete_attribute_store("chart");
+			chartmesh->facets.attributes().delete_attribute_store("quadelement");
+			chartmesh->facets.attributes().delete_attribute_store("singular");
+			chartmesh->vertices.attributes().delete_attribute_store("quadcorners");
+			chartmesh->facets.attributes().delete_attribute_store("orig_tri_fid");
+			chartmesh->facet_corners.attributes().delete_attribute_store("isovalue");
+			return true;
+		}
+
+		void Hexahedrons(Mesh* quaddominant, Mesh* hexcandidates, Mesh* result) {
+			result->copy(*hexcandidates);
+			STEP(hex_set_2_hex_mesh,(result, quaddominant));
+		}
+
+		bool Cavity(Mesh* quaddominant, Mesh* hexahedrons, Mesh* result) {
+			result->copy(*quaddominant);
+			STEP(merge_hex_boundary_and_quadtri,(hexahedrons, result));
+
+			if (result->facets.nb() > 0 && !surface_is_tetgenifiable(result)) {
+				logt.add_string("fail", "empty cavity, is it normal?");
+				return false;
+			}
+
+			return true;
+		}
+
+		void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid) {
+			Mesh tets;
+			tets.copy(*cavity);
+			STEP(fill_cavity_with_tetgen,(cavity, &tets, true, with_pyramid));
+			result->copy(tets);
+			result->facets.clear();
+			STEP(add_hexes_to_tetmesh,(hexahedrons, result));
+			result->cells.connect();
+			result->cells.compute_borders();
+		}
+	}
+
 }
 

@@ -70,6 +70,14 @@
 #define NL_OS_UNIX
 #endif
 
+
+#if defined(WIN32) || defined(_WIN64)
+/**
+ * \brief Defined if compiled on a Windows platform.
+ */
+#define NL_OS_WINDOWS
+#endif
+
 /**
  * \brief Suppresses unsused argument warnings
  * \details Some callbacks do not necessary use all their

@@ -155,21 +155,21 @@ void LogTime::report_py(std::ostream &out, unsigned int timing_depth){
 
 
 void LogTime::add_value(std::string str, double val) {
-    GEO::Logger::out("HexDom")  << "log new value : " << str << " = " << val <<  std::endl;
-    out_values.push_back(std::pair<std::string, double>(str, val));
+    GEO::Logger::out("HexDom")  << "log new value : " << str<< post_fix << " = " << val <<  std::endl;
+    out_values.push_back(std::pair<std::string, double>(str+ post_fix, val));
 }
-void LogTime::add_string(std::string str, std::string val) {
-    GEO::Logger::out("HexDom")  << "log new string  : " << str << " = " << val <<  std::endl;
-    out_strings.push_back(std::pair<std::string, std::string>(str, val));
+void LogTime::add_string(std::string str , std::string val) {
+    GEO::Logger::out("HexDom")  << "log new string  : " << str << post_fix << " = " << val <<  std::endl;
+    out_strings.push_back(std::pair<std::string, std::string>(str+ post_fix, val));
 }
 
 void LogTime::add_step(const std::string& name){
         if (check.empty()){
-	        CheckPoint c(name, (unsigned int)(-1));
+	        CheckPoint c(name + post_fix, (unsigned int)(-1));
                 check.push_back(c);
         }
         else {
-                CheckPoint c(name, check.back().up);
+                CheckPoint c(name + post_fix, check.back().up);
                 check.back().right = (unsigned int)(check.size());
                 check.push_back(c);
         }
@@ -179,8 +179,8 @@ void LogTime::add_step(const std::string& name){
 }
 
 void LogTime::start_section(const std::string& secname, const std::string& name ){
-        add_step(secname);
-        CheckPoint c(name, (unsigned int)(check.size()) - 1);
+        add_step(secname + post_fix);
+        CheckPoint c(name + post_fix, (unsigned int)(check.size()) - 1);
         check.push_back(c);
 }
 void LogTime::end_section(){

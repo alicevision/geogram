@@ -75,7 +75,7 @@ namespace {
 	    Mesh input;
 	    load_mesh("input",input);
 	    HexdomPipeline::FrameField(
-		 &input, CmdLine::get_arg_bool("FrameField:smooth"), CmdLine::get_arg_bool("FrameField:brush")
+		  &input, CmdLine::get_arg_bool("FrameField:smooth")
 	    );
 	    save_mesh(input, "FF");
 	} else if(stage == "Parameterization") {
@@ -205,11 +205,7 @@ QuadDominant,Hexahedrons,Cavity,HexDominant,all");
     );
     
     CmdLine::declare_arg(
-        "hexdom:FrameField:brush", true, "brush frame field"
-    );
-
-    CmdLine::declare_arg(
-	 "hexdom:Parameterization:algo", 0, "one of 0(PGP), 1(PGP with corr.), 2(CubeCover)"
+	 "hexdom:Parameterization:algo", 0, "one of 0(PGP with corr.), 1(CubeCover), 2(PGP without corr.)"
     );
 
     CmdLine::declare_arg(

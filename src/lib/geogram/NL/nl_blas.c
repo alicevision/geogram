@@ -1371,13 +1371,15 @@ static int NL_FORTRAN_WRAP(dtpsv)(
 #endif 
 
 
-/***********************************************************************************/
+/******************************************************************************/
 /* C wrappers for BLAS routines */
 
 /* x <- a*x */
 void dscal( int n, double alpha, double *x, int incx ) {
     NL_FORTRAN_WRAP(dscal)(&n,&alpha,x,&incx);
-    nlCurrentContext->flops += (NLulong)(n);
+    if(nlCurrentContext != NULL) {
+	nlCurrentContext->flops += (NLulong)(n);
+    }
 }
 
 /* y <- x */
@@ -1393,20 +1395,26 @@ void daxpy(
     int incy 
 ) {
     NL_FORTRAN_WRAP(daxpy)(&n,&alpha,(double*)x,&incx,y,&incy);
-    nlCurrentContext->flops += (NLulong)(2*n);    
+    if(nlCurrentContext != NULL) {    
+	nlCurrentContext->flops += (NLulong)(2*n);
+    }
 }
 
 /* returns x^T*y */
 double ddot( 
     int n, const double *x, int incx, const double *y, int incy 
 ) {
-    nlCurrentContext->flops += (NLulong)(2*n);        
+    if(nlCurrentContext != NULL) {    
+	nlCurrentContext->flops += (NLulong)(2*n);
+    }
     return NL_FORTRAN_WRAP(ddot)(&n,(double*)x,&incx,(double*)y,&incy);
 }
 
 /* returns |x|_2 */
 double dnrm2( int n, const double *x, int incx ) {
-    nlCurrentContext->flops += (NLulong)(2*n);        
+    if(nlCurrentContext != NULL) {    
+	nlCurrentContext->flops += (NLulong)(2*n);
+    }
     return NL_FORTRAN_WRAP(dnrm2)(&n,(double*)x,&incx);
 }
 
@@ -1419,8 +1427,10 @@ void dtpsv(
     static char *UL[2] = { "U", "L" };
     static char *T[3]  = { "N", "T", 0 };
     static char *D[2]  = { "U", "N" };
+    NL_FORTRAN_WRAP(dtpsv)(
+	UL[(int)uplo],T[(int)trans],D[(int)diag],&n,(double*)AP,x,&incx
+    );
     /* TODO: update flops */
-    NL_FORTRAN_WRAP(dtpsv)(UL[(int)uplo],T[(int)trans],D[(int)diag],&n,(double*)AP,x,&incx); 
 }
 
 /* y <- alpha*A*x + beta*y,  y <- alpha*A^T*x + beta*y,   A-(m,n) */
@@ -1430,8 +1440,11 @@ void dgemv(
     double beta, double *y, int incy 
 ) {
     static char *T[3] = { "N", "T", 0 };
+    NL_FORTRAN_WRAP(dgemv)(
+	T[(int)trans],&m,&n,&alpha,(double*)A,&ldA,
+	(double*)x,&incx,&beta,y,&incy
+    );
     /* TODO: update flops */    
-    NL_FORTRAN_WRAP(dgemv)(T[(int)trans],&m,&n,&alpha,(double*)A,&ldA,(double*)x,&incx,&beta,y,&incy);
 }
 
 /************************************************************************/

@@ -86,6 +86,7 @@ namespace GEO {
 
         buffer_objects_dirty_ = false;
         attributes_buffer_objects_dirty_ = false;
+	long_vector_attribute_ = false;
         
         vertices_VAO_ = 0;
         edges_VAO_ = 0;
@@ -181,6 +182,9 @@ namespace GEO {
         ) {
             return false;
         }
+	if(long_vector_attribute_) {
+	    return false;
+	}
         return true;
     }
 
@@ -251,7 +255,9 @@ namespace GEO {
         glupSetPointSize(points_size_ * 5.0f);
 
         if(vertices_selection_ == "") {
-            if(can_use_array_mode(GLUP_POINTS) && vertices_VAO_ != 0) {
+            if(
+		can_use_array_mode(GLUP_POINTS) && vertices_VAO_ != 0
+	    ) {
                 draw_vertices_array();
             } else {
                 if(attribute_subelements_ == MESH_VERTICES) {
@@ -1010,6 +1016,7 @@ namespace GEO {
         } else {
             draw_hybrid();
         }
+	glupSetCellsShrink(0.0f);
     }
 
     void MeshGfx::set_mesh(const Mesh* mesh) {
@@ -1281,12 +1288,15 @@ namespace GEO {
             return;
         }
 
+	long_vector_attribute_ = false;
+	
         if(attribute_subelements_ == MESH_VERTICES) {
             attribute_.bind_if_is_defined(
                 mesh_->vertices.attributes(), attribute_name_
             );
             if(attribute_.attribute_store()->dimension() > 4) {
                 attribute_.unbind();
+		long_vector_attribute_ = true;
             }
         }
         
@@ -1442,6 +1452,9 @@ namespace GEO {
             glupDisable(GLUP_TEXTURING);
             attribute_.unbind();
         }
+	glupMatrixMode(GLUP_TEXTURE_MATRIX);
+	glupLoadIdentity();
+	glupMatrixMode(GLUP_MODELVIEW_MATRIX);
     }
 
     

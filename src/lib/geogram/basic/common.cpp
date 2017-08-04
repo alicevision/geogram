@@ -64,7 +64,12 @@
 namespace GEO {
 
     void initialize() {
+	static bool initialized = false;
 
+	if(initialized) {
+	    return;
+	}
+	
         // When locale is set to non-us countries,
         // this may cause some problems when reading
         // floating-point numbers (some locale expect
@@ -121,7 +126,7 @@ namespace GEO {
             }
         );
 #endif        
-        
+	initialized = true;
     }
 
     void terminate() {

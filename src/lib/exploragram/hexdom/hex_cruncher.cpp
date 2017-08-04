@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  OGF/Graphite: Geometry and Graphics Programming Library + Utilities
  *  Copyright (C) 2000-2015 INRIA - Project ALICE
  *

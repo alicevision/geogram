@@ -1426,12 +1426,21 @@ void glup_viewer_main_loop(int argc, char** argv) {
         glup_viewer_H *= 2;
     }
     
-    if(
+    if( 
         glup_viewer_get_arg_bool("gfx:fullscreen") ||
-        glup_viewer_is_enabled(GLUP_VIEWER_FULL_SCREEN)
+        glup_viewer_is_enabled(GLUP_VIEWER_FULL_SCREEN) 
     ) {
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
+        glup_viewer_W = vidmode->width;
+        glup_viewer_H = vidmode->height;
+        /* 
+         * Note: I'd rather not use a fullscreen window because it may change the resolution,
+         * this can be very annoying when doing a presentation, since the beamer may have
+         * difficulties to quickly react to resolution changes.
+         */
         glup_viewer_window = glfwCreateWindow(
-            glup_viewer_W, glup_viewer_H, title, glfwGetPrimaryMonitor(), NULL
+            glup_viewer_W, glup_viewer_H, title, NULL /* glfwGetPrimaryMonitor() */, NULL
         );
     } else {
         glup_viewer_window = glfwCreateWindow(

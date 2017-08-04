@@ -97,8 +97,10 @@ namespace GEO {
                 index_t off_v = render->vertices.create_vertices(SPHERE_MODEL_NB_PTS);
                 FOR(vs, SPHERE_MODEL_NB_PTS) {
                     vec3 q = SPHERE_MODEL_PTS[vs];
-                    val[off_v + vs] = geo_min(1., geo_max(.5 + (sh[v].value(q) - .5) / .64, 0.));
-                    X(render)[off_v + vs] = X(m)[v] + scale * 2 * (geo_max(val[off_v + vs], 0.))*q;
+					//val[off_v + vs] = geo_min(1., geo_max(.5 + (sh[v].value(q) - .5) / .64, 0.));
+					//X(render)[off_v + vs] = X(m)[v] + scale * (2. * (val[off_v + vs]))*q;
+					val[off_v + vs] = .5 + (sh[v].value(q) - .5) / .64;
+					X(render)[off_v + vs] = X(m)[v] + scale * (3.+2. * (val[off_v + vs]))*q;
                 }
 
                 index_t off_f = render->facets.create_triangles(SPHERE_MODEL_NB_TRIANGLES);

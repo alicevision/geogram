@@ -5320,7 +5320,9 @@ bool ImGui::ButtonBehavior(const ImRect& bb, ImGuiID id, bool* out_hovered, bool
                 pressed = true;
                 SetActiveID(0);
             }
-            if ((flags & ImGuiButtonFlags_Repeat) && g.ActiveId == id && ImGui::IsMouseClicked(0, true))
+	    // [Bruno] "backported" bugfix as suggested by P. Anquez (right here, duration test)--v
+	    // This fixes "double press problem" on arrow buttons to enter numeric values.
+            if ((flags & ImGuiButtonFlags_Repeat) && g.ActiveId == id && g.IO.MouseDownDuration[0] > 0.0f && ImGui::IsMouseClicked(0, true))
                 pressed = true;
         }
     }

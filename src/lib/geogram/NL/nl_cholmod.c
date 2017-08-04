@@ -289,123 +289,6 @@ static NLboolean CHOLMOD_is_initialized() {
         return NL_FALSE;                                               \
     }
 
-NLboolean nlSolve_CHOLMOD(void) {
-    /* Get current linear system from context */
-    NLSparseMatrix* M  = &(nlCurrentContext->M);
-    NLdouble* b          = nlCurrentContext->b;
-    NLdouble* x          = nlCurrentContext->x;
-
-    /* Sanity checks */
-    nl_assert(M->storage & NL_MATRIX_STORE_ROWS);
-    nl_assert(M->m == M->n);
-    
-    return nlSolve_system_with_CHOLMOD(
-        M, x, b, nlCurrentContext->solver, NL_TRUE
-    );
-}
-
-NLboolean nlSolve_system_with_CHOLMOD(
-    NLSparseMatrix* M, double* x_out, const double* b_in, NLenum solver,
-    NLboolean clear_M
-) {
-    NLuint n = M->n;
-    NLuint nnz, i, j, jj;
-    NLRowColumn* Ri=NULL;
-    NLCoeff* C=NULL;
-    cholmod_sparse_ptr A=NULL;
-    cholmod_factor_ptr L=NULL;
-    cholmod_dense_ptr b=NULL, x=NULL;
-    
-    int* colptr = NULL;
-    int* rowind = NULL;
-    double* val = NULL;
-    NLuint count;
-    
-    nl_assert(solver == NL_CHOLMOD_EXT);
-
-    /* Step 1: compute required nnz */
-    /********************************/
-    
-    nnz = 0;
-    for(i=0; i<n; ++i) {
-        Ri = &M->row[i];
-        for(jj=0; jj<Ri->size; ++jj) {
-            /* Works even if M is not in symmetric storage */
-            if(Ri->coeff[jj].index <= i) {
-                ++nnz;
-            }
-        }
-    }
-
-    /* Step 2: translate sparse matrix into cholmod format */
-    /*******************************************************/
-
-    A = CHOLMOD()->cholmod_allocate_sparse(
-        n, n, nnz,    /* Dimensions and number of non-zeros */
-        NL_FALSE,     /* Sorted = false */
-        NL_TRUE,      /* Packed = true  */
-        1,            /* stype (-1 = lower triangular, 1 = upper triangular) */
-        CHOLMOD_REAL, /* Entries are real numbers */
-        &CHOLMOD()->cholmod_common
-    );
-
-    colptr = (int*)A->p;
-    rowind = (int*)A->i;
-    val = (double*)A->x;
-    count = 0;
-    for(i=0; i<n; ++i) {
-        colptr[i] = (int)(count);
-        Ri = &M->row[i];
-        for(jj=0; jj<Ri->size; ++jj) {
-            C = &Ri->coeff[jj];
-            j = C->index;
-            if(j <= i) {
-                val[count] = C->value;
-                rowind[count] = (int)(j);
-                ++count;
-            }
-        }
-    }
-    nl_assert(count == nnz);
-    colptr[n] = (int)(nnz);
-
-    /* Save memory for CHOLMOD */
-    if(clear_M) {
-        nlSparseMatrixClear(M);
-    }
-    
-    /* Step 3: factorize */
-    /*********************/
-    L = CHOLMOD()->cholmod_analyze(A, &CHOLMOD()->cholmod_common);
-        
-    if(!CHOLMOD()->cholmod_factorize(A, L, &CHOLMOD()->cholmod_common)) {
-        CHOLMOD()->cholmod_free_sparse(&A, &CHOLMOD()->cholmod_common);
-        CHOLMOD()->cholmod_free_factor(&L, &CHOLMOD()->cholmod_common);
-        nlError("CHOLMOD","could not factorize matrix");  
-        return NL_FALSE;
-    }
-    
-    /* Step 4: construct right-hand side */
-    /*************************************/
-    b = CHOLMOD()->cholmod_allocate_dense(
-        n, 1, n, CHOLMOD_REAL, &CHOLMOD()->cholmod_common
-    );
-    memcpy(b->x, b_in, n*sizeof(double));
-
-
-    /* Step 5: solve*/
-    /****************/
-    x = CHOLMOD()->cholmod_solve(CHOLMOD_A, L, b, &CHOLMOD()->cholmod_common);
-    memcpy(x_out, x->x, n*sizeof(double));
-
-    /* Step 6: cleanup*/
-    /******************/
-    CHOLMOD()->cholmod_free_factor(&L, &CHOLMOD()->cholmod_common);
-    CHOLMOD()->cholmod_free_sparse(&A, &CHOLMOD()->cholmod_common);
-    CHOLMOD()->cholmod_free_dense(&x, &CHOLMOD()->cholmod_common);
-    CHOLMOD()->cholmod_free_dense(&b, &CHOLMOD()->cholmod_common);
-    return NL_TRUE;
-}
 
 static void nlTerminateExtension_CHOLMOD(void) {
     if(CHOLMOD()->DLL_handle != NULL) {
@@ -440,5 +323,162 @@ NLboolean nlInitExtension_CHOLMOD(void) {
 
     atexit(nlTerminateExtension_CHOLMOD);
     return NL_TRUE;
+}
+
+/*************************************************************************/
+
+/**
+ * \brief The class for matrices factorized with Cholmod.
+ */
+typedef struct {
+    /**
+     * \brief number of rows 
+     */    
+    NLuint m;
+
+    /**
+     * \brief number of columns 
+     */    
+    NLuint n;
+
+    /**
+     * \brief Matrix type
+     * \details Set to NL_MATRIX_OTHER
+     */
+    NLenum type;
+
+    /**
+     * \brief Destructor
+     */
+    NLDestroyMatrixFunc destroy_func;
+
+    /**
+     * \brief Matrix x vector product
+     */
+    NLMultMatrixVectorFunc mult_func;
+
+    /**
+     * \brief The Cholesky factor computer by Cholmod
+     */
+    cholmod_factor_ptr L;
+    
+} NLCholmodFactorizedMatrix;
+
+static void nlCholmodFactorizedMatrixDestroy(NLCholmodFactorizedMatrix* M) {
+    CHOLMOD()->cholmod_free_factor(&M->L, &CHOLMOD()->cholmod_common);
+}
+
+static void nlCholmodFactorizedMatrixMult(
+    NLCholmodFactorizedMatrix* M, const double* x, double* y
+) {
+    /* 
+     * TODO: see whether CHOLDMOD can use user-allocated vectors
+     * (and avoid copy)
+     */
+    cholmod_dense_ptr X=CHOLMOD()->cholmod_allocate_dense(
+        M->n, 1, M->n, CHOLMOD_REAL, &CHOLMOD()->cholmod_common
+    );
+    cholmod_dense_ptr Y=NULL;
+
+    memcpy(X->x, x, M->n*sizeof(double));    
+    Y = CHOLMOD()->cholmod_solve(CHOLMOD_A, M->L, X, &CHOLMOD()->cholmod_common);
+    memcpy(y, Y->x, M->n*sizeof(double));    
+    
+    CHOLMOD()->cholmod_free_dense(&X, &CHOLMOD()->cholmod_common);
+    CHOLMOD()->cholmod_free_dense(&Y, &CHOLMOD()->cholmod_common);
+}
+
+NLMatrix nlMatrixFactorize_CHOLMOD(
+    NLMatrix M, NLenum solver
+) {
+    NLCholmodFactorizedMatrix* LLt = NULL;
+    NLCRSMatrix* CRS = NULL;
+    cholmod_sparse_ptr cM= NULL;
+    NLuint nnz, cur, i, j, jj;
+    int* rowptr = NULL;
+    int* colind = NULL;
+    double* val = NULL;
+    NLuint n = M->n;
+
+    nl_assert(solver == NL_CHOLMOD_EXT);
+    nl_assert(M->m == M->n);
+    
+    if(M->type == NL_MATRIX_CRS) {
+        CRS = (NLCRSMatrix*)M;
+    } else if(M->type == NL_MATRIX_SPARSE_DYNAMIC) {
+	/* 
+	 * Note: since we convert once again into symmetric storage,
+	 * we could also directly read the NLSparseMatrix there instead
+	 * of copying once more...
+	 */
+        CRS = (NLCRSMatrix*)nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)M);
+    }
+
+    LLt = NL_NEW(NLCholmodFactorizedMatrix);
+    LLt->m = M->m;
+    LLt->n = M->n;
+    LLt->type = NL_MATRIX_OTHER;
+    LLt->destroy_func = (NLDestroyMatrixFunc)(nlCholmodFactorizedMatrixDestroy);
+    LLt->mult_func = (NLMultMatrixVectorFunc)(nlCholmodFactorizedMatrixMult);
+
+    /*
+     * Compute required nnz, if matrix is not already with symmetric storage,
+     * ignore entries in the upper triangular part.
+     */
+    
+    nnz=0;
+    for(i=0; i<n; ++i) {
+	for(jj=CRS->rowptr[i]; jj<CRS->rowptr[i+1]; ++jj) {
+	    j=CRS->colind[jj];
+	    if(j <= i) {
+		++nnz;
+	    }
+	}
+    }
+
+    /*
+     * Copy CRS matrix into CHOLDMOD matrix (and ignore upper trianglar part)
+     */
+    
+    cM = CHOLMOD()->cholmod_allocate_sparse(
+        n, n, nnz,    /* Dimensions and number of non-zeros */
+        NL_FALSE,     /* Sorted = false */
+        NL_TRUE,      /* Packed = true  */
+        1,            /* stype (-1 = lower triangular, 1 = upper triangular) */
+        CHOLMOD_REAL, /* Entries are real numbers */
+        &CHOLMOD()->cholmod_common
+    );
+
+    rowptr = (int*)cM->p;
+    colind = (int*)cM->i;
+    val = (double*)cM->x;
+    cur = 0;
+    for(i=0; i<n; ++i) {
+        rowptr[i] = (int)cur;
+	for(jj=CRS->rowptr[i]; jj<CRS->rowptr[i+1]; ++jj) {
+            j = CRS->colind[jj];
+            if(j <= i) {
+		val[cur] = CRS->val[jj];
+		colind[cur] = (int)j;
+		++cur;
+            }
+        }
+    }
+    rowptr[n] = (int)cur;
+    nl_assert(cur==nnz);
+
+    LLt->L = CHOLMOD()->cholmod_analyze(cM, &CHOLMOD()->cholmod_common);
+    if(!CHOLMOD()->cholmod_factorize(cM, LLt->L, &CHOLMOD()->cholmod_common)) {
+        CHOLMOD()->cholmod_free_factor(&LLt->L, &CHOLMOD()->cholmod_common);
+	NL_DELETE(LLt);
+    }
+    
+    CHOLMOD()->cholmod_free_sparse(&cM, &CHOLMOD()->cholmod_common);
+    
+    if((NLMatrix)CRS != M) {
+        nlDeleteMatrix((NLMatrix)CRS);
+    }
+
+    return (NLMatrix)(LLt);
 }
 

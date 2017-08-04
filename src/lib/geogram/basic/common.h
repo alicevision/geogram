@@ -68,10 +68,11 @@ namespace GEO {
 
     /**
      * \brief Initialize Geogram
-     * \details This function must be called one at the very beginning of a
+     * \details This function must be called once at the very beginning of a
      * program to initialize the Vorpaline library. It also installs a exit()
      * handler that calls function terminate() when the program exists
-     * normally.
+     * normally. If it is called multiple times, then the supplemental calls
+     * have no effect.
      */
     void GEOGRAM_API initialize();
 

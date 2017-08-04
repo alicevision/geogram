@@ -41,45 +41,100 @@
 #define H_HEXDOM_ALGO_SPHERICALHARMONICSL4_H
 
 #include <exploragram/basic/common.h>
+#include <exploragram/hexdom/basic.h>
 #include <geogram/mesh/mesh.h>
 
 namespace GEO {
     
     struct EXPLORAGRAM_API SphericalHarmonicL4 {
         vecng<9, Numeric::float64> coeff;
+	
+        SphericalHarmonicL4() {
+	    FOR(i, 9)  coeff[i] = 0.;
+	}
+	
+        SphericalHarmonicL4(const SphericalHarmonicL4& rhs) : coeff(rhs.coeff) {
+	}
 
-        // easy manipulations as a 9D vector
-        SphericalHarmonicL4(const SphericalHarmonicL4& ref);
-        SphericalHarmonicL4(const vecng<9, Numeric::float64>& p_coeff);    
-        SphericalHarmonicL4(double *fv);
-        SphericalHarmonicL4(double x0, double x1, double x2, double x3, double x4, double x5, double x6, double x7, double x8);
-        SphericalHarmonicL4();
+	SphericalHarmonicL4& operator=(const SphericalHarmonicL4& rhs) {
+	    if(&rhs != this) {
+		coeff = rhs.coeff;
+	    }
+	    return *this;
+	}
+	
+        SphericalHarmonicL4(const vecng<9, Numeric::float64>& rhs) : coeff(rhs){
+	}
+
+	SphericalHarmonicL4(double *fv) {
+	    FOR(i, 9)  coeff[i] = fv[i];
+	}
+	    
+        SphericalHarmonicL4(
+	    double x0, double x1, double x2,
+	    double x3, double x4, double x5,
+	    double x6, double x7, double x8
+	) {
+	    coeff[0] = x0; coeff[1] = x1; coeff[2] = x2;
+	    coeff[3] = x3; coeff[4] = x4; coeff[5] = x5;
+	    coeff[6] = x6; coeff[7] = x7; coeff[8] = x8;
+	}
+
         double& operator[](index_t i) {
 	    geo_debug_assert(i<9);
 	    return coeff[i];	    
 	}
-        double norm();
-        double operator *(const SphericalHarmonicL4 &other);
-        SphericalHarmonicL4 operator -(const SphericalHarmonicL4 &other);
-        SphericalHarmonicL4 operator *(double s);
-        SphericalHarmonicL4 operator /(double s);
-        SphericalHarmonicL4 operator +(const SphericalHarmonicL4 &v);
+	    
+	double norm() const {
+	    return coeff.length();
+	}
+	    
+	double operator *(const SphericalHarmonicL4 &other) const {
+	    return dot(coeff, other.coeff);
+	}
+	    
+	SphericalHarmonicL4 operator -(const SphericalHarmonicL4 &other) const {
+	    return SphericalHarmonicL4(coeff - other.coeff);
+	}
+	    
+	SphericalHarmonicL4 operator *(double s) const {
+	    return SphericalHarmonicL4(s*coeff);
+	}
+	    
+	SphericalHarmonicL4 operator /(double s) const {
+	    return SphericalHarmonicL4(coeff / s);
+	}
+	    
+	SphericalHarmonicL4 operator +(const SphericalHarmonicL4 &v) const {
+	    return SphericalHarmonicL4(coeff + v.coeff);
+	}
 
-
-
-        double value(vec3 v);
-        static double basis(index_t id, vec3 v);
+	double value(const vec3& v) const {
+	    double res = 0;
+	    FOR(i, 9)res += coeff[i]*basis(i,v);
+	    return res;
+	}
+	    
+        static double basis(index_t id, const vec3& v);
+	    
         void Rz(double alpha);
         void Ry(double alpha);
         void Rx(double alpha);
-        void euler_rot(vec3 rot_vec);
-        SphericalHarmonicL4 Ex();
-        SphericalHarmonicL4 Ey();
-        SphericalHarmonicL4 Ez();
+	    
+	void euler_rot(const vec3& rot_vec) {
+	    Rx(rot_vec[0]);
+	    Ry(rot_vec[1]);
+	    Rz(rot_vec[2]);
+	}
+	    
+        SphericalHarmonicL4 Ex() const;
+        SphericalHarmonicL4 Ey() const;
+        SphericalHarmonicL4 Ez() const;
 
         static SphericalHarmonicL4 rest_frame() {
             return SphericalHarmonicL4(0, 0, 0, 0, std::sqrt(7. / 12.), 0, 0, 0, std::sqrt(5. / 12.));
         }
+	    
         mat3 project_mat3(double grad_threshold = 1e-3, double dot_threshold = 1e-5, vec3* euler_prev = NULL);
 
     };

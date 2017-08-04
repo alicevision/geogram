@@ -54,38 +54,19 @@
  */
 
 /**
- * \brief Solves the system in the current OpenNL 
- *   context using CHOLMOD.
- * \details This function should not be called directly by client code.
- *  To use CHOLMOD, first call nlInitExtension("CHOLMOD")
- *  then specify:
- *   - nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT) 
- * \retval NL_TRUE if solve was successful
- * \retval NL_FALSE otherwise
- */
-NLAPI NLboolean NLAPIENTRY nlSolve_CHOLMOD(void);
-
-/**
- * \brief Solves a linear system using Cholmod.
- * \details This function should not be called directly by client code.
- *  The CHOLMOD extension needs to be initialized, by first calling
- *   nlInitExtension("CHOLMOD")
- * \param[in] M the sparse matrix of the system. It needs to be square. 
- *  It will be compressed (transformed into CRS storage) if not already 
- *  compressed.
- * \param[out] x the solution of the system
- * \param[in] b the right-hand side of the system
+ * \brief Factorizes a matrix using SuperLU.
+ * \details  The SUPERLU extension needs to be initialized, 
+ *   by first calling nlInitExtension("SUPERLU").
+ * \param[in] M the input sparse matrix. Should be a
+ *   either an NLSparseMatrix or an NLCRSMatrix.
+ * \return a factorization P of \p M. Subsequent calls
+ *   to nlMultMatrixVector(P,x,y) solves M y = x (P
+ *   may be thought-of as M^-1)
  * \param[in] solver one of:
  *   - NL_CHOLMOD_EXT 
- * \param[in] clear_M NL_TRUE if M should be destroyed right before
- *   calling CHOLMOD (to leave more RAM to it), NL_FALSE to keep M
- *   unchanged.
- * \retval NL_TRUE if solve was successful
- * \retval NL_FALSE otherwise
- */                        
-NLAPI NLboolean NLAPIENTRY nlSolve_system_with_CHOLMOD(
-    NLSparseMatrix* M, double* x, const double* b, NLenum solver,
-    NLboolean clear_M
+ */  
+NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_CHOLMOD(
+    NLMatrix M, NLenum solver
 );
 
 /**

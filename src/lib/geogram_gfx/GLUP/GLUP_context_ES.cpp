@@ -94,7 +94,7 @@
  *    and Gallium emulation layer, that do not support GLSL 1.5)
  *  Tested with:
  *     - Linux Intel i915
- *     - Linux Gallium CPU emularion
+ *     - Linux Gallium CPU emulation
  *  GLSL 1.5 mode is used under MACOSX and by NVIDIA GPUs
  *  TODO: test whether OpenGL ES mode works with MACOSX (if yes, I may remove
  *    all the GLSL 1.5 code from here)

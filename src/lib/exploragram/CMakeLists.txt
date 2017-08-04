@@ -3,6 +3,7 @@ aux_source_directories(SOURCES "Source Files"                    .)
 aux_source_directories(SOURCES "Source Files\\hexdom"            hexdom)
 aux_source_directories(SOURCES "Source Files\\optimal_transport" optimal_transport)
 
+
 include_directories(${PROJECT_BINARY_DIR}/src/lib)
 
 add_library(exploragram ${SOURCES})
@@ -20,3 +21,4 @@ if(WIN32)
 endif()
 
 target_link_libraries(exploragram geogram)
+

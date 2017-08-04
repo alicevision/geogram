@@ -54,17 +54,17 @@ endif()
 
 
 # GEOGRAM changes: commented-out
-#if (BUILD_SHARED_LIBS AND UNIX)
+if (BUILD_SHARED_LIBS AND UNIX)
 ## On Unix-like systems, shared libraries can use the soname system.
-#    set(GLFW_LIB_NAME glfw)
-#else()
-#    set(GLFW_LIB_NAME glfw3)
-#endif()
+    set(GLFW_LIB_NAME glfw)
+else()
+    set(GLFW_LIB_NAME glfw3)
+endif()
 
 # GEOGRAM changes: 
 # prefixed by geogram_ so that we do not have any conflict with system's
 # installed lib.
-set(GLFW_LIB_NAME geogram_glfw3)
+#set(GLFW_LIB_NAME geogram_glfw3)
 
 if (GLFW_VULKAN_STATIC)
     set(_GLFW_VULKAN_STATIC 1)

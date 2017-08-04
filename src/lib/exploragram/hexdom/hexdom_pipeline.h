@@ -48,11 +48,11 @@ namespace GEO {
     
     namespace HexdomPipeline {
 	
-        bool EXPLORAGRAM_API SetConstraints(Mesh*m, std::string& msg);
+        bool EXPLORAGRAM_API SetConstraints(Mesh*m, std::string& msg, bool hilbert_sort = true);
 	
-        void EXPLORAGRAM_API FrameField(Mesh*m, bool smooth, bool brush = true);
+        void EXPLORAGRAM_API FrameField(Mesh*m, bool smooth);
 
-        //{algo} = {0: PGP, 1 : PGP with correction, 2 CubeCover}
+        //{algo} = {0: CubeCover, 1 : PGP with correction, 2 PGP}
         void EXPLORAGRAM_API Parameterization(Mesh*m, int algo=0, double PGP_max_scale_corr =0.3);
 	
         void EXPLORAGRAM_API HexCandidates(Mesh*m, Mesh* result);

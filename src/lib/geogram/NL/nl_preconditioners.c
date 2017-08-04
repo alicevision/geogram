@@ -48,136 +48,240 @@
 #include "nl_context.h"
 
 /******************************************************************************/
-/* preconditioners */
 
-/* Utilities for preconditioners */
+typedef struct {
+    /**
+     * \brief number of rows 
+     */    
+    NLuint m;
 
-void nlMultDiagonal(NLdouble* xy, NLdouble omega) {
-    NLuint N = nlCurrentContext->n ;
-    NLuint i ;
-    NLdouble* diag = nlCurrentContext->M.diag ;
-    for(i=0; i<N; i++) {
-        xy[i] *= (diag[i] / omega) ;
-    }
-    nlCurrentContext->flops += (NLulong)(N);
+    /**
+     * \brief number of columns 
+     */    
+    NLuint n;
+
+    /**
+     * \brief Matrix type (=NL_MATRIX_OTHER)
+     */
+    NLenum type;
+
+    /**
+     * \brief Destructor
+     */
+    NLDestroyMatrixFunc destroy_func;
+
+    /**
+     * \brief Matrix x vector product
+     */
+    NLMultMatrixVectorFunc mult_func;
+    
+    /**
+     * \brief The inverse of the diagonal
+     */
+    NLdouble* diag_inv;
+    
+} NLJacobiPreconditioner;
+
+
+static void nlJacobiPreconditionerDestroy(NLJacobiPreconditioner* M) {
+    NL_DELETE_ARRAY(M->diag_inv);
 }
 
-void nlMultDiagonalInverse(NLdouble* xy, NLdouble omega) {
-    NLuint N = nlCurrentContext->n ;
-    NLuint i ;
-    NLdouble* diag = nlCurrentContext->M.diag ;
-    for(i=0; i<N; i++) {
-        xy[i] *= ((diag[i] != 0) ? (omega / diag[i]) : omega) ;
+static void nlJacobiPreconditionerMult(NLJacobiPreconditioner* M, const double* x, double* y) {
+    NLuint i;
+    for(i=0; i<M->n; ++i) {
+	y[i] = x[i] * M->diag_inv[i];
     }
-    nlCurrentContext->flops += (NLulong)(N);    
+    nlCurrentContext->flops += (NLulong)(M->n);    
 }
 
-void nlMultLowerInverse(const NLdouble* x, NLdouble* y, double omega) {
-    NLSparseMatrix* A = &(nlCurrentContext->M) ;
-    NLuint n       = A->n ;
-    NLdouble* diag = A->diag ;
-    NLuint i ;
-    NLuint ij ;
-    NLCoeff* c = NULL ;
-    NLdouble S ;
+NLMatrix nlNewJacobiPreconditioner(NLMatrix M_in) {
+    NLSparseMatrix* M = NULL;
+    NLJacobiPreconditioner* result = NULL;
+    NLuint i;
+    nl_assert(M_in->type == NL_MATRIX_SPARSE_DYNAMIC);
+    nl_assert(M_in->m == M_in->n);
+    M = (NLSparseMatrix*)M_in;
+    result = NL_NEW(NLJacobiPreconditioner);
+    result->m = M->m;
+    result->n = M->n;
+    result->type = NL_MATRIX_OTHER;
+    result->destroy_func = (NLDestroyMatrixFunc)nlJacobiPreconditionerDestroy;
+    result->mult_func = (NLMultMatrixVectorFunc)nlJacobiPreconditionerMult;
+    result->diag_inv = NL_NEW_ARRAY(double, M->n);
+    for(i=0; i<M->n; ++i) {
+	result->diag_inv[i] = (M->diag[i] == 0.0) ? 1.0 : 1.0/M->diag[i];
+    }
+    return (NLMatrix)result;
+}
 
-    nl_assert(A->storage & NL_MATRIX_STORE_SYMMETRIC) ;
-    nl_assert(A->storage & NL_MATRIX_STORE_ROWS) ;
+/**************************************************************/
+
+
+typedef struct {
+    /**
+     * \brief number of rows 
+     */    
+    NLuint m;
+
+    /**
+     * \brief number of columns 
+     */    
+    NLuint n;
+
+    /**
+     * \brief Matrix type (=NL_MATRIX_OTHER)
+     */
+    NLenum type;
+
+    /**
+     * \brief Destructor
+     */
+    NLDestroyMatrixFunc destroy_func;
+
+    /**
+     * \brief Matrix x vector product
+     */
+    NLMultMatrixVectorFunc mult_func;
+
+    /**
+     * \brief A pointer to the initial matrix
+     */
+    NLSparseMatrix* M;
+
+    /**
+     * \brief The relaxation parameter
+     */
+    double omega;
+    
+    /**
+     * \brief Workspace for implementing matrix x vector
+     *  product.
+     */
+    NLdouble* work;
+    
+} NLSSORPreconditioner;
+
+
+static void nlSSORPreconditionerDestroy(NLSSORPreconditioner* M) {
+    NL_DELETE_ARRAY(M->work);
+}
+
+
+/**
+ * \brief Multiplies a vector by the inverse of the
+ *  lower triangular block of a sparse matrix.
+ * \details \$ x \leftarrow \omega \mbox{trilow}(M)^{-1} x \$,
+ *   used to implement the SSOR preconditioner.
+ * \param[in] x the vector to be multiplied,
+ *  size = A->n
+ * \param[out] y where to store the result,
+ *  size = A->n
+ * \param[in] omega all components are multiplied by omega
+ */
+
+static void nlSparseMatrixMultLowerInverse(
+    NLSparseMatrix* A, const NLdouble* x, NLdouble* y, double omega
+) {
+    NLuint n       = A->n;
+    NLdouble* diag = A->diag;
+    NLuint i;
+    NLuint ij;
+    NLCoeff* c = NULL;
+    NLdouble S;
+
+    nl_assert(A->storage & NL_MATRIX_STORE_SYMMETRIC);
+    nl_assert(A->storage & NL_MATRIX_STORE_ROWS);
 
     for(i=0; i<n; i++) {
-        NLRowColumn*  Ri = &(A->row[i]) ;       
-        S = 0 ;
+        NLRowColumn*  Ri = &(A->row[i]);       
+        S = 0;
         for(ij=0; ij < Ri->size; ij++) {
-            c = &(Ri->coeff[ij]) ;
-            nl_parano_assert(c->index <= i) ; 
+            c = &(Ri->coeff[ij]);
+            nl_parano_assert(c->index <= i); 
             if(c->index != i) {
-                S += c->value * y[c->index] ; 
+                S += c->value * y[c->index]; 
             }
         }
         nlCurrentContext->flops += (NLulong)(2*Ri->size);                    
-        y[i] = (x[i] - S) * omega / diag[i] ;
+        y[i] = (x[i] - S) * omega / diag[i];
     }
     nlCurrentContext->flops += (NLulong)(n*3);                
 }
+/**
+ * \brief Multiplies a vector by the inverse of the
+ *  upper triangular block of a sparse matrix.
+ * \details \$ x \leftarrow \omega \mbox{triup}(M)^{-1} x \$,
+ *   used to implement the SSOR preconditioner.
+ * \param[in] x the vector to be multiplied,
+ *  size = A->n
+ * \param[out] y where to store the result,
+ *  size = A->n
+ * \param[in] omega all components are multiplied by omega
+ */
+static void nlSparseMatrixMultUpperInverse(
+    NLSparseMatrix* A, const NLdouble* x, NLdouble* y, NLdouble omega
+) {
+    NLuint n       = A->n;
+    NLdouble* diag = A->diag;
+    NLint i;
+    NLuint ij;
+    NLCoeff* c = NULL;
+    NLdouble S;
 
-void nlMultUpperInverse(const NLdouble* x, NLdouble* y, NLdouble omega) {
-    NLSparseMatrix* A = &(nlCurrentContext->M) ;
-    NLuint n       = A->n ;
-    NLdouble* diag = A->diag ;
-    NLint i ;
-    NLuint ij ;
-    NLCoeff* c = NULL ;
-    NLdouble S ;
-
-    nl_assert(A->storage & NL_MATRIX_STORE_SYMMETRIC) ;
-    nl_assert(A->storage & NL_MATRIX_STORE_COLUMNS) ;
+    nl_assert(A->storage & NL_MATRIX_STORE_SYMMETRIC);
+    nl_assert(A->storage & NL_MATRIX_STORE_COLUMNS);
 
     for(i=(NLint)(n-1); i>=0; i--) {
-        NLRowColumn*  Ci = &(A->column[i]) ;       
-        S = 0 ;
+        NLRowColumn*  Ci = &(A->column[i]);       
+        S = 0;
         for(ij=0; ij < Ci->size; ij++) {
-            c = &(Ci->coeff[ij]) ;
-            nl_parano_assert(c->index >= i) ; 
+            c = &(Ci->coeff[ij]);
+            nl_parano_assert(c->index >= i); 
             if((NLint)(c->index) != i) {
-                S += c->value * y[c->index] ; 
+                S += c->value * y[c->index]; 
             }
         }
         nlCurrentContext->flops += (NLulong)(2*Ci->size);                    
-        y[i] = (x[i] - S) * omega / diag[i] ;
+        y[i] = (x[i] - S) * omega / diag[i];
     }
     nlCurrentContext->flops += (NLulong)(n*3);                
 }
 
 
-void nlPreconditioner_Jacobi(const NLdouble* x, NLdouble* y) {
-    if(nlCurrentContext->M.storage & NL_MATRIX_STORE_DIAG_INV) {
-        NLuint i;
-        for(i=0; i<nlCurrentContext->M.diag_size; ++i) {
-            y[i] = x[i]*nlCurrentContext->M.diag_inv[i];
-        }
-        nlCurrentContext->flops += (NLulong)(nlCurrentContext->M.diag_size*3);                        
-    } else {
-        NLint N = (NLint)(nlCurrentContext->n) ;
-        dcopy(N, x, 1, y, 1) ;
-        nlMultDiagonalInverse(y, 1.0) ;
+static void nlSSORPreconditionerMult(NLSSORPreconditioner* P, const double* x, double* y) {
+    NLdouble* diag = P->M->diag;
+    NLuint i;
+    nlSparseMatrixMultLowerInverse(
+        P->M, x, P->work, P->omega
+    );
+    for(i=0; i<P->n; i++) {
+        P->work[i] *= (diag[i] / P->omega);
     }
+    nlCurrentContext->flops += (NLulong)(P->n);
+    nlSparseMatrixMultUpperInverse(
+        P->M, P->work, y, P->omega
+    );
+    dscal((NLint)P->n, 2.0 - P->omega, y, 1);
+    nlCurrentContext->flops += (NLulong)(P->n);    
 }
 
-
-static double* nlPreconditioner_SSOR_work = NULL;
-static NLuint nlPreconditioner_SSOR_work_size = 0;
-
-static void nlPreconditioner_SSOR_terminate(void) {
-    NL_DELETE_ARRAY(nlPreconditioner_SSOR_work);
+NLMatrix nlNewSSORPreconditioner(NLMatrix M_in, double omega) {
+    NLSparseMatrix* M = NULL;
+    NLSSORPreconditioner* result = NULL;
+    nl_assert(M_in->type == NL_MATRIX_SPARSE_DYNAMIC);
+    nl_assert(M_in->m == M_in->n);
+    M = (NLSparseMatrix*)M_in;
+    result = NL_NEW(NLSSORPreconditioner);
+    result->m = M->m;
+    result->n = M->n;
+    result->type = NL_MATRIX_OTHER;
+    result->destroy_func = (NLDestroyMatrixFunc)nlSSORPreconditionerDestroy;
+    result->mult_func = (NLMultMatrixVectorFunc)nlSSORPreconditionerMult;
+    result->M = M;
+    result->work = NL_NEW_ARRAY(NLdouble, result->n);
+    result->omega = omega;
+    return (NLMatrix)result;
 }
 
-void nlPreconditioner_SSOR(const NLdouble* x, NLdouble* y) {
-    NLdouble omega = nlCurrentContext->omega ;
-    NLuint n = nlCurrentContext->n ;
-    static NLboolean init = NL_FALSE;
-    if(!init) {
-        atexit(nlPreconditioner_SSOR_terminate);
-        init = NL_TRUE;
-    }
-    if(n != nlPreconditioner_SSOR_work_size) {
-        nlPreconditioner_SSOR_work = NL_RENEW_ARRAY(
-            NLdouble, nlPreconditioner_SSOR_work, n
-        ) ;
-        nlPreconditioner_SSOR_work_size = n ;
-    }
-    
-    nlMultLowerInverse(
-        x, nlPreconditioner_SSOR_work, omega
-    );
-    nlMultDiagonal(
-        nlPreconditioner_SSOR_work, omega
-    );
-    nlMultUpperInverse(
-        nlPreconditioner_SSOR_work, y, omega
-    );
-
-    dscal((NLint)n, 2.0 - omega, y, 1) ;
-
-    nlCurrentContext->flops += (NLulong)(n);    
-}
 

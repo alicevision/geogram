@@ -2182,7 +2182,7 @@ namespace GEO {
          */
         void set_attribute(const std::string& attribute);
         
-    private:
+    protected:
         Mesh mesh_;
         MeshGfx mesh_gfx_;
         std::string file_extensions_;

@@ -54,61 +54,33 @@
  */
 
 /**
- * \brief Solves the system in the current OpenNL 
- *   context using SUPERLU.
- * \details This function should not be called directly by client code.
- *  To use SUPERLU, first call nlInitExtension("SUPERLU")
- *  then specify:
- *   - nlSolverParameteri(NL_SOLVER, NL_SUPERLU_EXT) 
- *     if no pre-ordering should be used
- *   - nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT) 
- *     to use pre-ordering for general matrices
- *   - nlSolverParameteri(NL_SOLVER, NL_SYMMETRIC_SUPERLU_EXT) 
- *     to use pre-ordering for symmetric matrices
- * \retval NL_TRUE if solve was successful
- * \retval NL_FALSE otherwise
- */
-NLAPI NLboolean NLAPIENTRY nlSolve_SUPERLU(void);
-
-/**
- * \brief Solves a linear system using SuperLU.
- * \details This function should not be called directly by client code.
- *  The SUPERLU extension needs to be initialized, by first calling
- *   nlInitExtension("SUPERLU")
- * \param[in] M the sparse matrix of the system. It needs to be square. 
- *  It will be compressed (transformed into CRS storage) if not already 
- *  compressed.
- * \param[out] x the solution of the system
- * \param[in] b the right-hand side of the system
+ * \brief Factorizes a matrix using SuperLU.
+ * \details  The SUPERLU extension needs to be initialized, 
+ *   by first calling nlInitExtension("SUPERLU").
+ * \param[in] M the input sparse matrix. Should be a
+ *   either an NLSparseMatrix or an NLCRSMatrix.
+ * \return a factorization P of \p M. Subsequent calls
+ *   to nlMultMatrixVector(P,x,y) solves M y = x (P
+ *   may be thought-of as M^-1)
  * \param[in] solver one of:
  *   - NL_SUPERLU_EXT if no pre-ordering should be used
  *   - NL_PERM_SUPERLU_EXT pre-ordering for general matrices
  *   - NL_SYMMETRIC_SUPERLU_EXT pre-ordering for symmetric matrices
- * \param[in] clear_M NL_TRUE if M should be destroyed right before
- *   calling SUPERLU (to leave more RAM to it), NL_FALSE to keep M
- *   unchanged.
- * \retval NL_TRUE if solve was successful
- * \retval NL_FALSE otherwise
- */                        
-NLAPI NLboolean NLAPIENTRY nlSolve_system_with_SUPERLU(
-    NLSparseMatrix* M, double* x, const double* b, NLenum solver,
-    NLboolean clear_M
+ */  
+NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_SUPERLU(
+    NLMatrix M, NLenum solver
 );
 
 /**
  * \brief Initializes the SUPERLU extension
  * \details This dynamically loads the SuperLU 
  *  library available in the system (if available) and
- *  retreives the symbols in there. It supports SuperLU 3.x
- *  and SuperLU 4.x. 
+ *  retreives the symbols in there. It supports SuperLU 5.x.
  * \retval NL_TRUE if SUPERLU could be successfully
  *   dynamically loaded and all functions could be
  *   found in it.
  * \retval NL_FALSE otherwise.
- * \note For now, only implemented under Linux in 
- *  dynamic libraries mode
  */
 NLboolean nlInitExtension_SUPERLU(void);
-
 
 #endif

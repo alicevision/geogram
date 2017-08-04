@@ -11,3 +11,4 @@ do
 		 -e 's|std::cerr\(.*\)std::endl|GEO::Logger::out("HexDom") \1 std::endl|g'
     mv tempfile $i
 done
+
