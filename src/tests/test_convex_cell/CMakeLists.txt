@@ -1,0 +1,5 @@
+aux_source_directories(SOURCES "" .)
+vor_add_executable(test_convex_cell ${SOURCES})
+target_link_libraries(test_convex_cell geogram)
+
+

@@ -376,7 +376,8 @@ namespace {
 	 * \brief SaveRVDCells constructor.
 	 * \param[out] output_mesh a reference to the generated mesh 
 	 */
-	SaveRVDCells(Mesh& output_mesh) : output_mesh_(output_mesh), shrink_(0.0) {
+	SaveRVDCells(Mesh& output_mesh) :
+	    output_mesh_(output_mesh), shrink_(0.0) {
 	    cell_vertex_map_ = nil;
 	    global_vertex_map_ = nil;
 	    current_cell_id_ = 0;
@@ -391,6 +392,7 @@ namespace {
 		cell_id_.unbind();
 		seed_id_.unbind();
 		vertex_id_.unbind();
+		facet_seed_id_.unbind();
 		delete global_vertex_map_;
 		global_vertex_map_ = nil;
 	    }
@@ -404,7 +406,8 @@ namespace {
 	 *  generated and attached to the mesh vertices ("vertex_id" attribute)
 	 *  and mesh facets ("seed_id" and "cell_id" attributes) respectively.
 	 *  There is a cell_id per generated polyhedron, and seed_id refers to
-	 *  the Voronoi seed (the point that the Voronoi cell is associated with).
+	 *  the Voronoi seed (the point that the Voronoi cell is associated 
+	 *  with).
 	 * \param[in] x true if ids should be generated, false
 	 *  otherwise (default)
 	 */
@@ -423,10 +426,15 @@ namespace {
 		vertex_id_.bind(
 		    output_mesh_.vertices.attributes(), "vertex_id"
 		);
+		facet_seed_id_.bind(
+		    output_mesh_.facets.attributes(), "facet_seed_id"
+		);
 		global_vertex_map_ = new RVDVertexMap;
 	    } else {
 		cell_id_.unbind();
+		seed_id_.unbind();
 		vertex_id_.unbind();
+		facet_seed_id_.unbind();
 		delete global_vertex_map_;
 		global_vertex_map_ = nil;
 	    }
@@ -473,7 +481,9 @@ namespace {
 	    geo_argused(seed);
 	    delete cell_vertex_map_;
 	    cell_vertex_map_ = new RVDVertexMap;
-	    cell_vertex_map_->set_first_vertex_index(output_mesh_.vertices.nb());
+	    cell_vertex_map_->set_first_vertex_index(
+		output_mesh_.vertices.nb()
+	    );
 	}
 
 	virtual void begin_facet(index_t facet_seed, index_t facet_tet_facet) {
@@ -489,7 +499,9 @@ namespace {
 	    if(v >= output_mesh_.vertices.nb()) {
 		output_mesh_.vertices.create_vertex(geometry);
 		if(generate_ids_) {
-		    vertex_id_[v] = int(global_vertex_map_->find_or_create_vertex(seed(), symb));
+		    vertex_id_[v] = int(
+			global_vertex_map_->find_or_create_vertex(seed(), symb)
+		    );
 		}
 	    }
 	    current_facet_.push_back(v);
@@ -504,6 +516,7 @@ namespace {
 	    if(generate_ids_) {
 		seed_id_[f] = int(seed());
 		cell_id_[f] = int(current_cell_id_);
+		facet_seed_id_[f] = int(facet_seed());
 	    }
 	}
 
@@ -539,6 +552,7 @@ namespace {
 	Attribute<int> cell_id_;
 	Attribute<int> seed_id_;
 	Attribute<int> vertex_id_;
+	Attribute<int> facet_seed_id_;
 	index_t current_cell_id_;
     };
 
@@ -580,7 +594,9 @@ namespace {
 
 	    Logger::div("Generate random samples");
 	    
-	    CVT.compute_initial_sampling(CmdLine::get_arg_uint("remesh:nb_pts"));
+	    CVT.compute_initial_sampling(
+		CmdLine::get_arg_uint("remesh:nb_pts")
+	    );
 
 	    Logger::div("Optimize sampling");
 
@@ -625,13 +641,16 @@ namespace {
 	    } else if(simplify == "tets") {
 		callback.set_simplify_internal_tet_facets(true);		
 	    } else if(simplify == "none") {
-		callback.set_simplify_internal_tet_facets(false);				
+		callback.set_simplify_internal_tet_facets(false);
 	    } else {
-		Logger::err("Poly") << simplify << " invalid cells simplification mode"
-				    << std::endl;
+		Logger::err("Poly")
+		    << simplify << " invalid cells simplification mode"
+		    << std::endl;
 	    }
 	    callback.set_shrink(CmdLine::get_arg_double("poly:cells_shrink"));
-	    callback.set_generate_ids(CmdLine::get_arg_bool("poly:generate_ids"));
+	    callback.set_generate_ids(
+		CmdLine::get_arg_bool("poly:generate_ids")
+	    );
 	    CVT.RVD()->for_each_polyhedron(callback);				
 	}
 
@@ -639,11 +658,13 @@ namespace {
 	    FileSystem::extension(output_filename) == "mesh" ||
 	    FileSystem::extension(output_filename) == "meshb"
 	) {
-	    Logger::warn("Poly") << "Specified file format does not handle polygons"
-				 << " (falling back to .obj)"
-				 << std::endl;
+	    Logger::warn("Poly")
+		<< "Specified file format does not handle polygons"
+		<< " (falling back to .obj)"
+		<< std::endl;
 	    output_filename =
-		FileSystem::dir_name(output_filename) + "/" + FileSystem::base_name(output_filename) + ".obj";
+		FileSystem::dir_name(output_filename) + "/" +
+		FileSystem::base_name(output_filename) + ".obj";
 	}
 
 	if(

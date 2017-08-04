@@ -162,10 +162,14 @@ namespace {
                     set_assert_mode(ASSERT_THROW);
                     return true;
                 }
-                if(value == "abort") {
+		if(value == "abort") {
                     set_assert_mode(ASSERT_ABORT);
                     return true;
                 }
+		if(value == "breakpoint") {
+                    set_assert_mode(ASSERT_BREAKPOINT);
+                    return true;
+		}
                 Logger::err("Process")
                     << "Invalid value for property sys:abort: "
                     << value

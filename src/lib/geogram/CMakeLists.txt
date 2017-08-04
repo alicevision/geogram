@@ -1,9 +1,6 @@
 # Tetgen (by Hang Si) is currently included by default.
 # Triangle (by Jonathan Shewchuk) is currently included by default.
 
-set(GEOGRAM_WITH_TETGEN TRUE)
-set(GEOGRAM_WITH_TRIANGLE TRUE)
-
 configure_file(geogram.pc.in ${PROJECT_BINARY_DIR}/geogram${VORPALINE_VERSION_MAJOR}.pc @ONLY)
 
 add_subdirectory(third_party)
@@ -18,14 +15,6 @@ aux_source_directories(SOURCES "Source Files\\points"    points)
 aux_source_directories(SOURCES "Source Files\\api"       api)
 aux_source_directories(SOURCES "Source Files\\NL"        NL)
 aux_source_directories(SOURCES "Source Files\\parameterization" parameterization)
-
-if(GEOGRAM_WITH_TETGEN)
-   add_definitions(-DGEOGRAM_WITH_TETGEN)
-endif()
-
-if(GEOGRAM_WITH_TRIANGLE)
-   add_definitions(-DGEOGRAM_WITH_TRIANGLE)
-endif()
 
 # Parallel Delaunay now works on both Windows and Unix !
 add_definitions(-DGEOGRAM_WITH_PDEL)

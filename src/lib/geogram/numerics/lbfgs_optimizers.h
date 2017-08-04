@@ -46,6 +46,8 @@
 #ifndef GEOGRAM_NUMERICS_LBFGS_OPTIMIZERS
 #define GEOGRAM_NUMERICS_LBFGS_OPTIMIZERS
 
+#ifdef GEOGRAM_WITH_HLBFGS
+
 #include <geogram/basic/common.h>
 #include <geogram/numerics/optimizer.h>
 #include <geogram/basic/assert.h>
@@ -175,6 +177,8 @@ namespace GEO {
         index_t T_;
     };
 }
+
+#endif
 
 #endif
 

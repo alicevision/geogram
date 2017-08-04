@@ -90,9 +90,7 @@ namespace GEO {
      * \param[in] radius maximum distance used to connect neighbors with
      *  triangles
      */
-    void GEOGRAM_API Co3Ne_reconstruct(
-        Mesh& M, double radius
-    );
+    void GEOGRAM_API Co3Ne_reconstruct(Mesh& M, double radius);
 
     /**
      * \brief Computes the normals and reconstructs the triangles

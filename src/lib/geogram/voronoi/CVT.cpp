@@ -271,6 +271,15 @@ namespace GEO {
     void CentroidalVoronoiTesselation::Newton_iterations(
         index_t nb_iter, index_t m
     ) {
+        Optimizer_var optimizer = Optimizer::create("HLBFGS");
+	if(optimizer.is_nil()) {
+	    Logger::warn("CVT") << "This geogram was not compiled with HLBFGS"
+				<< " (falling back to Lloyd iterations)"
+				<< std::endl;
+	    Lloyd_iterations(nb_iter);
+	    return;
+	}
+	
         index_t n = index_t(points_.size());
 
         RVD_->set_check_SR(true);
@@ -282,7 +291,6 @@ namespace GEO {
         cur_iter_ = 0;
         nb_iter_ = nb_iter;
 
-        Optimizer_var optimizer = Optimizer::create("HLBFGS");
         optimizer->set_epsg(0.0);
         optimizer->set_epsf(0.0);
         optimizer->set_epsx(0.0);

@@ -35,6 +35,18 @@ else()
    set(GEOGRAM_WITH_VORPALINE FALSE)   
 endif()
 
+if(GEOGRAM_WITH_HLBFGS)
+   add_definitions(-DGEOGRAM_WITH_HLBFGS)
+endif()
+
+if(GEOGRAM_WITH_TETGEN)
+   add_definitions(-DGEOGRAM_WITH_TETGEN)
+endif()
+
+if(GEOGRAM_WITH_TRIANGLE)
+   add_definitions(-DGEOGRAM_WITH_TRIANGLE)
+endif()
+
 # This test is there to keep CMake happy about unused variable CMAKE_BUILD_TYPE
 if(CMAKE_BUILD_TYPE STREQUAL "")
 endif()

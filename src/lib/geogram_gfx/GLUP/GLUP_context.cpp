@@ -1186,11 +1186,14 @@ namespace GLUP {
 
         GLfloat* modelview = matrix_stack_[GLUP_MODELVIEW_MATRIX].top();
         GLfloat* projection = matrix_stack_[GLUP_PROJECTION_MATRIX].top();
-	GLfloat* modelviewproject = uniform_state_.modelviewprojection_matrix.get_pointer();
+	GLfloat* modelviewproject =
+	    uniform_state_.modelviewprojection_matrix.get_pointer();
 	GLfloat* modelviewproject_invert =
 	    uniform_state_.inverse_modelviewprojection_matrix.get_pointer();
-	GLfloat* modelview_invert = uniform_state_.inverse_modelview_matrix.get_pointer();
-	GLfloat* projection_invert = uniform_state_.inverse_projection_matrix.get_pointer();
+	GLfloat* modelview_invert =
+	    uniform_state_.inverse_modelview_matrix.get_pointer();
+	GLfloat* projection_invert =
+	    uniform_state_.inverse_projection_matrix.get_pointer();
 	
         copy_vector(
             uniform_state_.modelview_matrix.get_pointer(), modelview, 16
@@ -1449,7 +1452,9 @@ namespace GLUP {
         glBindAttribLocation(program, GLUP_TEX_COORD_ATTRIBUTE, "tex_coord_in");
         glBindAttribLocation(program, GLUP_NORMAL_ATTRIBUTE, "normal_in");	
         if(vertex_id_VBO_ != 0) {
-            glBindAttribLocation(program, GLUP_VERTEX_ID_ATTRIBUTE, "vertex_id_in");            
+            glBindAttribLocation(
+		program, GLUP_VERTEX_ID_ATTRIBUTE, "vertex_id_in"
+	    );            
         }
         GLSL::link_program(program);
         bind_uniform_state(program);            
@@ -1664,7 +1669,7 @@ namespace GLUP {
             toggles_config_ = 0;
             for(index_t i=0; i<uniform_state_.toggle.size(); ++i) {
                 if(uniform_state_.toggle[i].get()) {
-                    toggles_config_ |= (1u << Numeric::uint16(i));
+                    toggles_config_ |= ((PrimitiveInfo::ShaderKey)(1) << i);
                 }
             }
         }
@@ -1672,7 +1677,9 @@ namespace GLUP {
 
     void Context::create_program_if_needed(GLUPprimitive primitive) {
         primitive_source_ = primitive;
-        if(!primitive_info_[primitive].program_is_initialized(toggles_config_)) {
+        if(
+	    !primitive_info_[primitive].program_is_initialized(toggles_config_)
+	) {
             setup_shaders_source_for_primitive(primitive);
             setup_shaders_source_for_toggles_config(toggles_config_);
             switch(primitive) {

@@ -29,5 +29,5 @@ nl_api.c"
 
 DOC="http://alice.loria.fr/software/geogram/doc/html/nl_8h.html"
 
-EXAMPLE="../../../test/test_opennl/main.c"
+EXAMPLE="../../../examples/geogram/opennl_basic_example/main.c"
 

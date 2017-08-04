@@ -64,8 +64,10 @@ namespace GEO {
     enum AssertMode {
         /** Assertion failures throw an exception */
         ASSERT_THROW,
-        /** Assertion failures throw call abort() */
-        ASSERT_ABORT
+        /** Assertion failures call abort() */
+        ASSERT_ABORT,
+	/** Assertion failures generate a breakpoint in the debugger */
+	ASSERT_BREAKPOINT
     };
 
     /**
@@ -88,6 +90,13 @@ namespace GEO {
      */
     GEO_NORETURN_DECL void GEOGRAM_API geo_abort() GEO_NORETURN;
 
+    /**
+     * \brief Generates a debugger breakpoint programmatically.
+     * \details On Windows, generates a breakpoint using __debugbreak(),
+     *  on other systems, calls geo_abort().
+     */
+    GEO_NORETURN_DECL void GEOGRAM_API geo_breakpoint() GEO_NORETURN;
+    
     /**
      * \brief Prints an assertion failure
      * \details This function is called when a boolean condition is not met.

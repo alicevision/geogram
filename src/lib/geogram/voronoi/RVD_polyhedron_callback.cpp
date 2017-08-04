@@ -72,16 +72,19 @@ namespace {
 	}
 	return result;
     }
-    
+
     /**
      * \brief Splits the regions along hard edges.
      * \param[in,out] mesh a reference to the surface mesh.
      * \param[in,out] facet_region the attribute that defines the regions. 
-     *   The regions with facet_region == index_t(-1) will be split.
-     * \param[in] threshold (in degrees). Edges with two adjacent facets with normals that form an 
-     *   angle larger than \p threshold degrees are considered as hard edges.
+     *  The regions with facet_region == index_t(-1) will be split.
+     * \param[in] threshold (in degrees). Edges with two adjacent facets 
+     *  with normals that form an  angle larger than \p threshold degrees are 
+     *  considered as hard edges.
      */
-    void split_regions_along_hard_edges(Mesh& mesh, Attribute<index_t>& facet_region, double threshold) {
+    void split_regions_along_hard_edges(
+	Mesh& mesh, Attribute<index_t>& facet_region, double threshold
+    ) {
 
 	threshold *= (M_PI / 180.0);
 	
@@ -124,7 +127,10 @@ namespace {
 			    continue;
 			}
 			index_t f3 = mesh.facet_corners.adjacent_facet(c);
-			if(f3 != index_t(-1) && facet_region[f3] == index_t(-1)) {
+			if(
+			    f3 != index_t(-1) &&
+			    facet_region[f3] == index_t(-1)
+			) {
 			    facet_region[f3] = R;
 			    S.push(f3);
 			}
@@ -140,16 +146,25 @@ namespace {
      * \details Groups of connected facets with the same attribute value are
      *  replaced with a single facet.
      * \param[in,out] mesh a reference to the surface mesh to be simplified
-     * \param[in] facet_region a reference to the attribute with the facet region
-     * \param[in] angle_threshold (in degrees). In the outer region (i.e. facet_region == index_t(-1)),
-     *  an edge shared by two adjacent facets is suppressed if the angle between the 
+     * \param[in] facet_region a reference to the attribute with the facet 
+     *  region
+     * \param[in] angle_threshold (in degrees). In the outer region 
+     *  (i.e. facet_region == index_t(-1)), an edge shared by two adjacent 
+     *  facets is suppressed if the angle between the 
      *  two facet normals is smaller than \p angle_threshold.
      */
-    bool simplify(Mesh& mesh, Attribute<index_t>& facet_region, double angle_threshold) {
+    bool simplify(
+	Mesh& mesh,
+	Attribute<index_t>& facet_region,
+	double angle_threshold
+    ) {
 
 	bool keep_outer_region = (angle_threshold == 0.0);
+
+	index_t max_r = 0;
 	
 	if(!keep_outer_region) {
+	    max_r = max_region(mesh, facet_region);
 	    split_regions_along_hard_edges(mesh, facet_region, angle_threshold);
 	}
 	
@@ -177,7 +192,9 @@ namespace {
 		}
 	    }
 
-	    // Keep also the vertices adjacent to region -1 and to another region
+	    // Keep also the vertices adjacent to region -1 and
+	    // to another region
+	    
 	    if(keep_outer_region) {
 		for(index_t v=0; v<mesh.vertices.nb(); ++v) {
 		    if(
@@ -214,14 +231,16 @@ namespace {
 			    c1<mesh.facets.corners_end(f2); ++c1) {
 			    index_t f3 = mesh.facet_corners.adjacent_facet(c1);
 			    if(f3 == index_t(-1) || facet_region[f3] != r) {
-				index_t c2 = mesh.facets.next_corner_around_facet(f2,c1);
+				index_t c2 =
+				    mesh.facets.next_corner_around_facet(f2,c1);
 				index_t v1 = mesh.facet_corners.vertex(c1);
 				index_t v2 = mesh.facet_corners.vertex(c2);
 				if(border_next.find(v1) != border_next.end()) {
-				    Logger::warn("Simplify") << "Region has non-manifold border"
-							     << std::endl;
-				    // Yes, goto!, why not, what's wrong with goto ?
-				    // Why would it be ok to throw() and not goto ?
+				    Logger::warn("Simplify")
+					<< "Region has non-manifold border"
+					<< std::endl;
+			    // Yes, goto!, why not, what's wrong with goto ?
+			    // Why would it be ok to throw() and not goto ?
 				    goto rollback;
 				}
 				border_next[v1] = v2;
@@ -245,14 +264,16 @@ namespace {
 		    } while(v != border_next.begin()->first);
 
 		    if(nb_border_visited != border_next.size()) {
-			Logger::warn("Simplify") << "Region has multiple borders"
-						 << std::endl;
+			Logger::warn("Simplify")
+			    << "Region has multiple borders"
+			    << std::endl;
 			goto rollback;
 		    }
 		    
 		    if(new_facet.size() < 3) {
-			Logger::warn("Simplify") << "Region has border with less than 3 corners"
-						 << std::endl;
+			Logger::warn("Simplify")
+			    << "Region has border with less than 3 corners"
+			    << std::endl;
 			goto rollback;
 		    }
 
@@ -261,13 +282,20 @@ namespace {
 		    for(index_t i=0; i<new_facet.size(); ++i) {
 			mesh.facets.set_vertex(new_f,i,new_facet[i]);
 		    }
-		    // TODO: update facet_region
+		    facet_region[new_f] = r;
 		}
 	    }
 	}
 	
 	facet_status.resize(mesh.facets.nb(), 0);
 	mesh.facets.delete_elements(facet_status);
+	if(!keep_outer_region) {
+	    for(index_t f=0; f<mesh.facets.nb(); ++f) {
+		if(facet_region[f] > max_r) {
+		    facet_region[f] = index_t(-1);
+		}
+	    }
+	}
 	return true;
 
       rollback:
@@ -278,7 +306,14 @@ namespace {
 	for(index_t f=0; f<nf; ++f) {
 	    facet_status[f] = 0;
 	}
-	mesh.facets.delete_elements(facet_status);	
+	mesh.facets.delete_elements(facet_status);
+	if(!keep_outer_region) {
+	    for(index_t f=0; f<mesh.facets.nb(); ++f) {
+		if(facet_region[f] > max_r) {
+		    facet_region[f] = index_t(-1);
+		}
+	    }
+	}
 	return false;
     }
 }
@@ -441,11 +476,17 @@ namespace GEO {
 
     void RVDPolyhedronCallback::process_polyhedron_mesh() {
 	if(simplify_voronoi_facets_) {
-	    simplify(mesh_,mesh_facet_seed_, simplify_boundary_facets_angle_threshold_);
+	    simplify(
+		mesh_,
+		mesh_facet_seed_,
+		simplify_boundary_facets_angle_threshold_
+	    );
 	}
 	begin_polyhedron(seed(), tet());
 	for(index_t f=0; f<mesh_.facets.nb(); ++f) {
-	    begin_facet(mesh_facet_seed_[f], mesh_facet_tet_[f]);
+	    facet_seed_ = mesh_facet_seed_[f];
+	    facet_tet_ = mesh_facet_tet_[f];
+	    begin_facet(facet_seed_, facet_tet_);
 	    for(index_t lv=0; lv<mesh_.facets.nb_vertices(f); ++lv) {
 		index_t v = mesh_.facets.vertex(f,lv);
 		vertex(mesh_.vertices.point_ptr(v), mesh_vertex_sym_[v]);

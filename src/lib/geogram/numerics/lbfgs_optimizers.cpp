@@ -43,6 +43,8 @@
  *
  */
 
+#ifdef GEOGRAM_WITH_HLBFGS
+
 #include <geogram/numerics/lbfgs_optimizers.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/argused.h>
@@ -261,3 +263,4 @@ namespace GEO {
     }
 }
 
+#endif

@@ -16,8 +16,8 @@ expansion_nt.cpp
 "
 
 DOC="http://alice.loria.fr/software/geogram/doc/html/multi__precision_8h.html"
-EXAMPLE="../../../test/test_expansion_nt/main.cpp"
-COPYDIR="../../../test/test_expansion_nt/CGAL"
+EXAMPLE="../../../tests/test_expansion_nt/main.cpp"
+COPYDIR="../../../tests/test_expansion_nt/CGAL"
 
 extract_readme() {
    cat <<EOF

@@ -61,6 +61,12 @@ namespace GEO {
     class RVDVertexMap;
 }
 
+/**
+ * \file geogram/voronoi/RVD_polyhedron_callback.h
+ * \brief Declaration of base types for implementing user-defined
+ *  code that queries the cells of a restricted Voronoi diagram.
+ */
+
 namespace GEO {
 
     /**
@@ -101,8 +107,8 @@ namespace GEO {
 	 * \details This default implementation routes the callback to the 
 	 *  begin_polyhedron_internal(), end_polyhedron_internal(), 
 	 *  begin_facet_internal(), end_facet_internal() and vertex_internal()
-	 *  functions (that in turn route the callbacks to their without "_internal"
-	 *  counterparts).
+	 *  functions (that in turn route the callbacks to their without 
+	 *  "_internal" counterparts).
 	 * \param[in] v index of current Delaunay seed
 	 * \param[in] t index of current mesh tetrahedron
 	 * \param[in] C intersection between current mesh tetrahedron
@@ -213,7 +219,7 @@ namespace GEO {
 	 *  removed.
 	 * \details If set, a single polyhedron is generated for each
 	 *  (connected component) of the restricted Voronoi cells. If not
-	 *  set (degfault), each tetrahedron-Voronoi cell intersection 
+	 *  set (default), each tetrahedron-Voronoi cell intersection 
 	 *  generates a new polyhedron.
 	 * \param[in] x true if internal facets should be removed, false
 	 *  otherwise
@@ -229,7 +235,8 @@ namespace GEO {
 	 *  the tetrahedra of the input volume mesh. They can be simplified
 	 *  and replaced by a single polygon. This implies simplifying the
 	 *  internal tetrahedron facets and using a mesh.
-	 * \param[in] x true if Voronoi facets should be simplified, false otherwise.
+	 * \param[in] x true if Voronoi facets should be simplified, 
+	 *  false otherwise.
 	 */
 	void set_simplify_voronoi_facets(bool x) {
 	    simplify_voronoi_facets_ = x;
@@ -242,13 +249,16 @@ namespace GEO {
 	/**
 	 * \brief Specifies whether boundary facets should be simplified.
 	 * \details By default, the intersection between a Voronoi cell and
-	 *  the boundary is possibly composed of multiple polygons, that correspond
-	 *  to the initial polygons of the boundary. They can be simplified as 
-	 *  a single polygon per Voronoi cell. This implies simplifying the
-	 *  internal tetrahedron facets, simplifying the Voronoi facets and using a mesh.
-	 * \param[in] x true if boundary facets should be simplified, false otherwise.
-	 * \param[in] angle_threshold an edge shared by two adjacent facets is suppressed if 
-	 *  the angle between the facet normals is smaller than \p angle_threshold
+	 *  the boundary is possibly composed of multiple polygons, that 
+	 *  correspond to the initial polygons of the boundary. They can be 
+	 *  simplified as a single polygon per Voronoi cell. This implies 
+	 *  simplifying the internal tetrahedron facets, simplifying the 
+	 *  Voronoi facets and using a mesh.
+	 * \param[in] x true if boundary facets should be simplified, 
+	 *  false otherwise.
+	 * \param[in] angle_threshold an edge shared by two adjacent facets 
+	 *  is suppressed if the angle between the facet normals is smaller 
+	 *  than \p angle_threshold
 	 */
 	void set_simplify_boundary_facets(bool x, double angle_threshold=45.0) {
 	    simplify_boundary_facets_ = x;
