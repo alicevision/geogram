@@ -34,3 +34,4 @@ const int GLUP_INDIRECT_TEXTURING =5;
 const int GLUP_VERTEX_NORMALS     =6;
 const int GLUP_PICKING            =7;
 const int GLUP_ALPHA_DISCARD      =8;
+const int GLUP_NORMAL_MAPPING     =9;

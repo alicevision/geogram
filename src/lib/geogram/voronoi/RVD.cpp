@@ -58,6 +58,7 @@
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/argused.h>
 #include <geogram/basic/algorithm.h>
+#include <geogram/bibliography/bibliography.h>
 
 /*
  * There are three levels of implementation:
@@ -2376,6 +2377,14 @@ namespace GEO {
         Delaunay* delaunay, Mesh* mesh,
         const double* R3_embedding, index_t R3_embedding_stride
     ) {
+
+	geo_cite("DBLP:journals/tog/EdelsbrunnerM90");
+	geo_cite("DBLP:conf/compgeom/Shewchuk96");
+	geo_cite("meyer:inria-00344297");
+	geo_cite("DBLP:conf/gmp/YanWLL10");
+	geo_cite("DBLP:journals/cad/YanWLL13");
+	geo_cite("DBLP:journals/cad/Levy16");
+	
         delaunay->set_stores_neighbors(true);
         RestrictedVoronoiDiagram* result = nil;
         geo_assert(delaunay != nil);

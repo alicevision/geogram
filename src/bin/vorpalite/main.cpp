@@ -122,7 +122,7 @@ namespace {
                     Logger::out("Poisson")
                     << "(result may be not so good, normals may be incoherent)"
                     << std::endl;
-                    Co3Ne_compute_normals(M_in, nb_neigh);
+                    Co3Ne_compute_normals(M_in, nb_neigh, true);
                 }
             }
             

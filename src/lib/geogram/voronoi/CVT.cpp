@@ -50,6 +50,7 @@
 #include <geogram/numerics/optimizer.h>
 #include <geogram/basic/progress.h>
 #include <geogram/basic/argused.h>
+#include <geogram/bibliography/bibliography.h>
 
 /****************************************************************************/
 
@@ -74,6 +75,9 @@ namespace GEO {
         geo_assert(instance_ == nil);
         instance_ = this;
         progress_ = nil;
+	geo_cite("Lloyd82leastsquares");
+	geo_cite("Du:1999:CVT:340312.340319");
+	geo_cite("DBLP:journals/tog/LiuWLSYLY09");
     }
 
     CentroidalVoronoiTesselation::CentroidalVoronoiTesselation(
@@ -99,6 +103,9 @@ namespace GEO {
         geo_assert(instance_ == nil);
         instance_ = this;
         progress_ = nil;
+	geo_cite("Lloyd82leastsquares");
+	geo_cite("Du:1999:CVT:340312.340319");
+	geo_cite("DBLP:journals/tog/LiuWLSYLY09");	
     }
 
     CentroidalVoronoiTesselation::~CentroidalVoronoiTesselation() {

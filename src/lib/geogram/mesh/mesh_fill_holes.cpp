@@ -47,6 +47,7 @@
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_repair.h>
 #include <geogram/mesh/mesh_halfedges.h>
+#include <geogram/mesh/mesh_io.h>
 #include <geogram/mesh/index.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/logger.h>
@@ -573,7 +574,12 @@ namespace {
 
 namespace GEO {
 
-    void fill_holes(Mesh& M, double max_area, index_t max_edges, bool repair) {
+    void fill_holes(
+	Mesh& M, double max_area, index_t max_edges, bool repair
+    ) {
+
+	// mesh_save(M, "before_fill_holes.geogram");
+	
         if(max_area == 0.0 || max_edges == 0) {
             return;
         }
@@ -644,41 +650,41 @@ namespace GEO {
 
         
         for(index_t i = 0; i < holes.size(); i++) {
+	    vector<trindex> triangles;
+	    bool ok = true;
+	    switch(algo) {
+		case LOOP_SPLIT:
+		    ok = triangulate_hole_loop_splitting(
+			MH, holes[i], triangles, false
+		    );
+		    break;
+		case NLOOP_SPLIT:
+		    ok = triangulate_hole_loop_splitting(
+			MH, holes[i], triangles, true
+		    );
+		    break;
+		case EAR_CUT:
+		    triangulate_hole_ear_cutting(MH, holes[i], triangles);
+		    break;
+	    }
 
-            vector<trindex> triangles;
-            bool ok = true;
-            switch(algo) {
-                case LOOP_SPLIT:
-                    ok = triangulate_hole_loop_splitting(
-                        MH, holes[i], triangles, false
-                    );
-                    break;
-                case NLOOP_SPLIT:
-                    ok = triangulate_hole_loop_splitting(
-                        MH, holes[i], triangles, true
-                    );
-                    break;
-                case EAR_CUT:
-                    triangulate_hole_ear_cutting(MH, holes[i], triangles);
-                    break;
-            }
-
-            if(ok) {
-                if(hole_area(M, triangles) < max_area) {
-                    for(index_t j = 0; j < triangles.size(); j++) {
-                        M.facets.create_triangle(
-                            triangles[j].indices[2],
-                            triangles[j].indices[1],
-                            triangles[j].indices[0]
-                        );
-                    }
-                    ++nb_filled_holes;
-                } else {
-                    ++nb_skipped_by_area;
-                }
-            } else {
-                ++nb_could_not_fill;
-            }
+	    if(ok) {
+		if(hole_area(M, triangles) < max_area) {
+		    for(index_t j = 0; j < triangles.size(); j++) {
+			M.facets.create_triangle(
+			    triangles[j].indices[2],
+			    triangles[j].indices[1],
+			    triangles[j].indices[0]
+			);
+		    }
+		    ++nb_filled_holes;
+		} else {
+		    ++nb_skipped_by_area;
+		}
+	    } else {
+		++nb_could_not_fill;
+	    }
+	    
         }
 
         if(nb_skipped_by_area != 0) {
@@ -703,8 +709,50 @@ namespace GEO {
             // Needed because we may generate zero-length edges
             // and zero-area facets that need to be eliminated.
             // Note: this also reconstructs the connections between the facets.
-            mesh_repair(M, MESH_REPAIR_DEFAULT);
+	    MeshRepairMode mode = MESH_REPAIR_DEFAULT;
+            mesh_repair(M, mode); 
         }
     }
+
+    static void tessellate_hole(
+	MeshHalfedges& MH, Hole& H, index_t max_nb_vertices
+    ) {
+	Mesh& M = MH.mesh();
+	if(H.size() <= max_nb_vertices) {
+	    index_t f = M.facets.create_polygon(H.size());
+	    FOR(i,H.size()) {
+		index_t v = M.facet_corners.vertex(H[i].corner);
+		M.facets.set_vertex(f,i,v);
+	    }
+	} else {
+	    Hole H1,H2;
+	    split_hole(MH,H,H1,H2,false);
+	    tessellate_hole(MH,H1,max_nb_vertices);
+	    tessellate_hole(MH,H2,max_nb_vertices);
+	}
+    }
+
+    void tessellate_facets(
+	Mesh& M, index_t max_nb_vertices
+    ) {
+        MeshHalfedges MH(M);
+	vector<index_t> delete_f(M.facets.nb(),0);
+	FOR(f,M.facets.nb()) {
+	    if(M.facets.nb_vertices(f) > max_nb_vertices) {
+		delete_f[f] = 1;
+		Hole h;
+		for(
+		    index_t c=M.facets.corners_begin(f);
+		    c<M.facets.corners_end(f); ++c) {
+		    h.push_back(MeshHalfedges::Halfedge(f,c));
+		}
+		tessellate_hole(MH, h, max_nb_vertices);
+	    }
+	}
+	delete_f.resize(M.facets.nb());
+	M.facets.delete_elements(delete_f);
+	M.facets.connect();
+    }
+    
 }
 

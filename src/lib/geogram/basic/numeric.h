@@ -388,6 +388,13 @@ namespace GEO {
      *  the coordinates of a point.
      */
     typedef geo_coord_index_t coord_index_t;
+
+    /**
+     * \TODOC
+     */
+    inline double round(double x) {
+	return ((x - floor(x)) > 0.5 ? ceil(x) : floor(x));
+    }
 }
 
 #endif

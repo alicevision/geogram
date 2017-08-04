@@ -46,7 +46,8 @@
 
 /**
  * \file geogram/NL/nl_blas.h
- * \brief Abstract interface to the basic linear algebra routines used by OpenNL internally.
+ * \brief Abstract interface to the basic linear algebra routines 
+ *  used by OpenNL internally.
  */
 
 #ifndef OPENNL_BLAS_H
@@ -151,7 +152,9 @@ typedef void (*FUNPTR_memcpy)(
  * \param[in] incy straddle between two consecutive coefficients
  *  of the destination vector
  */
-typedef void (*FUNPTR_dcopy)(NLBlas_t blas, int n, const double *x, int incx, double *y, int incy);
+typedef void (*FUNPTR_dcopy)(
+    NLBlas_t blas, int n, const double *x, int incx, double *y, int incy
+);
 
 /**
  * \brief Scales a vector.
@@ -162,7 +165,9 @@ typedef void (*FUNPTR_dcopy)(NLBlas_t blas, int n, const double *x, int incx, do
  * \param[in,out] x vector to be scaled
  * \param[in] incx straddle between two consecutive coefficients
  */
-typedef void (*FUNPTR_dscal)(NLBlas_t blas, int n, double a, double *x, int incx);
+typedef void (*FUNPTR_dscal)(
+    NLBlas_t blas, int n, double a, double *x, int incx
+);
 
 
 /**
@@ -177,7 +182,9 @@ typedef void (*FUNPTR_dscal)(NLBlas_t blas, int n, double a, double *x, int incx
  *  of the second vector
  * \return the dot product between \p x and \p y
  */
-typedef double (*FUNPTR_ddot)(NLBlas_t blas, int n, const double *x, int incx, const double *y, int incy);
+typedef double (*FUNPTR_ddot)(
+    NLBlas_t blas, int n, const double *x, int incx, const double *y, int incy
+);
 
 /**
  * \brief Computes the norm of a vector
@@ -203,7 +210,10 @@ typedef double (*FUNPTR_dnrm2)(NLBlas_t blas, int n, const double *x, int incx);
  * \param[in] incy straddle between two consecutive coefficients
  *  of the destination vector
  */
-typedef void (*FUNPTR_daxpy)(NLBlas_t blas, int n, double a, const double *x, int incx, double *y, int incy);
+typedef void (*FUNPTR_daxpy)(
+    NLBlas_t blas, int n,
+    double a, const double *x, int incx, double *y, int incy
+);
 
 
 /**

@@ -80,6 +80,17 @@ namespace GEO {
         index_t max_edges = max_index_t(),
         bool repair = true
     );
+
+
+    /**
+     * \brief Subdivides the facets with more than nb_vertices.
+     * \param[in] M a reference to a surface mesh.
+     * \param[in] max_nb_vertices maximum number of vertices in
+     *  a facet.
+     */
+    void GEOGRAM_API tessellate_facets(
+	Mesh& M, index_t max_nb_vertices
+    );
 }
 
 #endif

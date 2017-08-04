@@ -488,6 +488,20 @@ typedef struct {
 
 /**
  * \brief Constructs a new NLSparseMatrix
+ * \param[in] m number of rows
+ * \param[in] n number of columns
+ * \param[in] storage a bitwise or combination of flags that
+ *  indicate what needs to be stored in the matrix.
+ * \return a pointer to a dynamically allocated NLSparseMatrix.
+ *   It can be later deallocated by nlDeleteMatrix().
+ * \relates NLSparseMatrix
+ */
+NLAPI NLMatrix NLAPIENTRY nlSparseMatrixNew(
+    NLuint m, NLuint n, NLenum storage
+);
+
+/**
+ * \brief Constructs a new NLSparseMatrix
  * \param[in,out] M a pointer to an uninitialized NLSparseMatrix
  * \param[in] m number of rows
  * \param[in] n number of columns
@@ -506,7 +520,18 @@ NLAPI void NLAPIENTRY nlSparseMatrixConstruct(
  * \param[in,out] M a pointer to an NLSparseMatrix
  * \relates NLSparseMatrix
  */
-NLAPI void nlSparseMatrixDestroy(NLSparseMatrix* M);
+NLAPI void NLAPIENTRY nlSparseMatrixDestroy(NLSparseMatrix* M);
+
+/**
+ * \brief Computes a matrix-vector product
+ * \param[in] A a pointer to the matrix
+ * \param[in] x the vector to be multiplied, size = A->n
+ * \param[in] y where to store the result, size = A->m
+ * \relates NLSparseMatrix
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixMult(
+    NLSparseMatrix* A, const NLdouble* x, NLdouble* y
+);    
     
 /**
  * \brief Adds a coefficient to an NLSparseMatrix
@@ -579,6 +604,42 @@ NLAPI void NLAPIENTRY nlSparseMatrixAddRow( NLSparseMatrix* M);
  * \param[in,out] M a pointer to the sparse matrix.
  */
 NLAPI void NLAPIENTRY nlSparseMatrixAddColumn( NLSparseMatrix* M);
+
+/**
+ * \brief Adds a row of a sparse matrix to another row.
+ *   (row[i1] += s * row[i2]).
+ * \param[in,out] M a pointer to a sparse matrix.
+ * \param[in] i1 index of the row.
+ * \param[in] s scaling factor.
+ * \param[in] i2 index of the other row.
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixMAddRow(
+    NLSparseMatrix* M, NLuint i1, double s, NLuint i2
+);
+
+/**
+ * \brief Scales a row of a sparse matrix.
+ *   (row[i] *= s).
+ * \param[in,out] M a pointer to a sparse matrix.
+ * \param[in] i index of the row.
+ * \param[in] s scaling factor.
+ * \pre M has row storage and has not column storage.
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixScaleRow(
+    NLSparseMatrix* M, NLuint i, double s
+);
+
+/**
+ * \brief Zeroes a row of a sparse matrix.
+ *   (row[i] = 0).
+ * \param[in,out] M a pointer to a sparse matrix.
+ * \param[in] i index of the row.
+ * \pre M has row storage and has not column storage.
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixZeroRow(
+    NLSparseMatrix* M, NLuint i
+);
+
     
 /******************************************************************************/
 

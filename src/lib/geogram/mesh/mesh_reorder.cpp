@@ -50,6 +50,7 @@
 #include <geogram/basic/permutation.h>
 #include <geogram/basic/process.h>
 #include <geogram/basic/logger.h>
+#include <geogram/bibliography/bibliography.h>
 #include <algorithm>
 
 namespace {
@@ -784,6 +785,12 @@ namespace {
             M_(M)
         {
             geo_debug_assert(e > b);
+	    geo_cite_with_info(
+		"WEB:SpatialSorting",
+		"The implementation of spatial sort in GEOGRAM is inspired by "
+		"the idea of using \\verb|std::nth_element()| in the spatial "
+		"sort package of CGAL"
+	    );
 
             // If the sequence is smaller than the limit, skip it
             if(index_t(e - b) <= limit) {

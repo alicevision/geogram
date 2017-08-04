@@ -47,6 +47,7 @@
 
 
 #include <geogram/delaunay/delaunay_triangle.h>
+#include <geogram/bibliography/bibliography.h>
 
 namespace {
 
@@ -56,7 +57,7 @@ namespace {
      *  structure to be initialized
      */
     void init_triangulateio(struct triangulateio* tri) {
-        memset(tri, 0, sizeof(struct triangulateio)) ;
+        memset(tri, 0, sizeof(struct triangulateio));
     }
 
     /**
@@ -66,21 +67,21 @@ namespace {
      * \param[in] tri a pointer to the triangulateio
      */
     void free_triangulateio(struct triangulateio* tri) {
-        free(tri->pointlist) ;
-        free(tri->pointattributelist) ;
-        free(tri->pointmarkerlist) ;
-        free(tri->trianglelist) ;
-        free(tri->triangleattributelist) ;
-        free(tri->trianglearealist) ;
-        free(tri->neighborlist) ;
-        free(tri->segmentlist) ;
-        free(tri->segmentmarkerlist) ;
-        free(tri->holelist) ;
-        free(tri->regionlist) ;
-        free(tri->edgelist) ;
-        free(tri->edgemarkerlist) ;
-        free(tri->normlist) ;
-        memset(tri, 0, sizeof(struct triangulateio)) ;
+        free(tri->pointlist);
+        free(tri->pointattributelist);
+        free(tri->pointmarkerlist);
+        free(tri->trianglelist);
+        free(tri->triangleattributelist);
+        free(tri->trianglearealist);
+        free(tri->neighborlist);
+        free(tri->segmentlist);
+        free(tri->segmentmarkerlist);
+        free(tri->holelist);
+        free(tri->regionlist);
+        free(tri->edgelist);
+        free(tri->edgemarkerlist);
+        free(tri->normlist);
+        memset(tri, 0, sizeof(struct triangulateio));
     }
     
 }
@@ -93,29 +94,31 @@ namespace GEO {
         if(dimension != 2) {
             throw InvalidDimension(dimension, "DelaunayTriangle", "2");
         }
-        init_triangulateio(&triangle_in_) ;
-        init_triangulateio(&triangle_out_) ;
+        init_triangulateio(&triangle_in_);
+        init_triangulateio(&triangle_out_);
+	
+        geo_cite("DBLP:conf/wacg/Shewchuk96");
     }
 
     void DelaunayTriangle::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
-        Delaunay::set_vertices(nb_vertices, vertices) ;
-        free_triangulateio(&triangle_out_) ;
-        triangle_in_.numberofpoints = int(nb_vertices) ;
-        triangle_in_.pointlist = (double*)vertices ;
+        Delaunay::set_vertices(nb_vertices, vertices);
+        free_triangulateio(&triangle_out_);
+        triangle_in_.numberofpoints = int(nb_vertices);
+        triangle_in_.pointlist = (double*)vertices;
         // Q: quiet
         // z: numbering starts from 0
         // n: output neighbors
-        triangulate((char*)"Qzn", &triangle_in_, &triangle_out_, nil) ;
+        triangulate((char*)"Qzn", &triangle_in_, &triangle_out_, nil);
         set_arrays(
             index_t(triangle_out_.numberoftriangles), 
             triangle_out_.trianglelist, triangle_out_.neighborlist
-        ) ;
+        );
     }
 
     DelaunayTriangle::~DelaunayTriangle() {
-        free_triangulateio(&triangle_out_) ;
+        free_triangulateio(&triangle_out_);
     }
     
 }

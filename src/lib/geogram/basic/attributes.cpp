@@ -463,6 +463,7 @@ namespace GEO {
             store_ = nil;
             element_index_ = index_t(-1);
             element_type_ = ET_NONE;
+	    return;
         }
         
         register_me(const_cast<AttributeStore*>(store_));                

@@ -22,7 +22,8 @@ function GLUP.init_graphics()
     GLUP.SetRegionOfInterest(0,0,0,1,1,1)
 end
 
-
-GLUP.ResetViewer()
+-- Commented-out (I want to keep user's view when
+-- F5 is pushed).
+-- GLUP.ResetViewer()
 
 

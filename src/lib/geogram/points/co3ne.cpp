@@ -60,6 +60,7 @@
 #include <geogram/basic/algorithm.h>
 #include <geogram/basic/stopwatch.h>
 #include <stack>
+#include <queue>
 
 namespace {
     using namespace GEO;
@@ -90,6 +91,36 @@ namespace {
         {-2.44929e-16,1}
     };
 
+    /**
+     * \brief Used by the algorithm that reorients normals.
+     */
+    struct OrientNormal {
+	/**
+	 * \brief OrientNormal constructor.
+	 * \param[in] v_in the index of a point
+	 * \param[in] dot_in the dot product between the (unit)
+	 *  normal vector at \p v_in and the normal vector at 
+	 *  the point that initiated propagation to \p v_in.
+	 */
+	OrientNormal(
+	    index_t v_in, double dot_in
+	) : v(v_in), dot(dot_in) {
+	}
+
+	/**
+	 * \brief Compares two OrientNormal objects
+	 * \retval true if \p rhs should be processed before this
+	 *  OrientObject.
+	 * \retval false otherwise.
+	 */
+	bool operator<(const OrientNormal& rhs) const {
+	    return (::fabs(dot) < ::fabs(rhs.dot));
+	}
+	index_t v;
+	double dot;
+    };
+
+    
     /************************************************************/
 
     /**
@@ -2197,6 +2228,77 @@ namespace {
             run_threads();
         }
 
+	static inline double cos_angle(
+	    Attribute<double>& normal, index_t v1, index_t v2
+	) {
+	    vec3 V1(normal[3*v1],normal[3*v1+1],normal[3*v1+2]);
+	    vec3 V2(normal[3*v2],normal[3*v2+1],normal[3*v2+2]);
+	    return Geom::cos_angle(V1,V2);
+	}
+
+	static inline void flip(Attribute<double>& normal, index_t v) {
+	    normal[3*v]   = -normal[3*v];
+	    normal[3*v+1] = -normal[3*v+1];
+	    normal[3*v+2] = -normal[3*v+2];	    
+	}
+	
+	/**
+	 * \brief Tentatively enforces a coherent orientation of normals
+	 *  using a breadth-first traveral of the K-nearest-neighbor graph.
+	 * \retval true if normals where computed
+	 * \retval false otherwise (when the user pushes the cancel button).
+	 */
+	bool reorient_normals() {
+	    Attribute<double> normal;
+            normal.bind_if_is_defined(mesh_.vertices.attributes(), "normal");
+	    geo_assert(normal.is_bound());
+
+	    //  To resist noisy inputs, propagation is prioritized to the points
+	    // that have smallest normal deviations.
+	    
+	    std::priority_queue<OrientNormal> S;
+	    vector<index_t> neighbors(RVD_.nb_neighbors()); 
+	    vector<double> dist(RVD_.nb_neighbors());
+
+	    index_t nb=0;
+	    ProgressTask progress("Reorient");
+
+	    try {
+		std::vector<bool> visited(mesh_.vertices.nb(), false);
+		for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+		    if(!visited[v]) {
+			S.push(OrientNormal(v,0.0));
+			visited[v] = true;
+			while(!S.empty()) {
+			    OrientNormal top = S.top();
+			    ++nb;
+			    progress.progress(nb*100/mesh_.vertices.nb());
+			    S.pop();
+			    if(top.dot < 0.0) {
+				flip(normal,top.v);
+			    }
+			    RVD_.get_neighbors(
+				top.v,
+				neighbors.data(),dist.data(),RVD_.nb_neighbors()
+			    );
+			    for(index_t i=0; i<RVD_.nb_neighbors(); ++i) {
+				index_t neigh = neighbors[i];
+				if(!visited[neigh]) {
+				    visited[neigh] = true;
+				    double dot =
+					cos_angle(normal, top.v, neigh);
+				    S.push(OrientNormal(neigh,dot));
+				}
+			    }
+			}
+		    }
+		}
+	    } catch(const TaskCanceled&) {
+		return false;
+	    }
+	    return true;
+	} 
+	
         /**
          * \brief Smoothes a point set by projection
          * onto the nearest neighbors best
@@ -2651,11 +2753,10 @@ namespace GEO {
             co3ne.end_smooth();
         }
         catch(const TaskCanceled&) {
-            // TODO_CANCEL
         }
     }
 
-    void Co3Ne_compute_normals(Mesh& M, index_t nb_neighbors) {
+    bool Co3Ne_compute_normals(Mesh& M, index_t nb_neighbors, bool reorient) {
         {
             Attribute<double> normal;
             normal.bind_if_is_defined(M.vertices.attributes(), "normal");
@@ -2666,7 +2767,15 @@ namespace GEO {
             }
         }
         Co3Ne co3ne(M);
+	Logger::out("Co3Ne") << "Computing normals" << std::endl;
         co3ne.compute_normals(nb_neighbors);
+	if(reorient) {
+	    Logger::out("Co3Ne") << "Orienting normals" << std::endl;
+	    if(!co3ne.reorient_normals()) {
+		return false;
+	    }
+	}
+	return true;
     }
 
     void Co3Ne_reconstruct(Mesh& M, double radius) {

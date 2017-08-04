@@ -851,7 +851,6 @@ namespace GEO {
             return corner_adjacent_facet_[c];
         }
 
-
         /**
          * \brief Sets the vertex that a corner is incident to
          * \param[in] c the corner

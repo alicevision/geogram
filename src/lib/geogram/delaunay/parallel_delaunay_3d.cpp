@@ -52,6 +52,7 @@
 #include <geogram/basic/stopwatch.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/permutation.h>
+#include <geogram/bibliography/bibliography.h>
 
 // ParallelDelaunayThread class, declared locally, has
 // no out-of-line virtual functions. It is not a
@@ -2690,6 +2691,43 @@ namespace GEO {
         if(dimension != 3 && dimension != 4) {
             throw InvalidDimension(dimension, "Delaunay3d", "3 or 4");
         }
+
+	geo_cite_with_info(
+	    "DBLP:journals/cj/Bowyer81",
+	    "One of the two initial references to the algorithm, "
+	    "discovered independently and simultaneously by Bowyer and Watson."
+        );
+	geo_cite_with_info(
+	    "journals/cj/Watson81",
+	    "One of the two initial references to the algorithm, "
+	    "discovered independently and simultaneously by Bowyer and Watson."
+	);
+	geo_cite_with_info(
+	    "DBLP:conf/compgeom/AmentaCR03",
+	    "Using spatial sorting has a dramatic impact on the performances."
+	);
+	geo_cite_with_info(
+	    "DBLP:journals/comgeo/FunkeMN05",
+	    "Initializing \\verb|locate()| with a non-exact version "
+	    " (structural filtering) gains (a bit of) performance."
+	);
+	geo_cite_with_info(
+	    "DBLP:journals/comgeo/BoissonnatDPTY02",
+	    "The idea of traversing the cavity from inside "
+	    " used in GEOGRAM is inspired by the implementation of "
+	    " \\verb|Delaunay_triangulation_3| in CGAL."
+	);
+	geo_cite_with_info(
+	    "DBLP:conf/imr/Si06",
+	    "The triangulation data structure used in GEOGRAM is inspired "
+	    "by Tetgen."
+	);
+	geo_cite_with_info(
+	    "DBLP:journals/ijfcs/DevillersPT02",
+	    "Analysis of the different versions of the line walk algorithm "
+	    " used by \\verb|locate()|."
+	);
+	
         weighted_ = (dimension == 4);
         // In weighted mode, vertices are 4d but combinatorics is 3d.
         if(weighted_) {

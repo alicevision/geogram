@@ -175,7 +175,8 @@ namespace {
                 Memory::pointer next = cur + size;
                 *reinterpret_cast<void**>(cur) = next;
             }
-            *reinterpret_cast<void**>(chunk + (size-1)*POOL_CHUNK_SIZE) = pools_[size_in];
+            *reinterpret_cast<void**>(chunk + (size-1)*POOL_CHUNK_SIZE) =
+		pools_[size_in];
             pools_[size_in] = chunk;
             chunks_.push_back(chunk);
         }

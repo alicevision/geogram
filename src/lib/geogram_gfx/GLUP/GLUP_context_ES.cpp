@@ -677,6 +677,14 @@ namespace GLUP {
             );
             glUniform1f(loc, uniform_state_.alpha_threshold.get());
 	}
+
+	// specular
+	{
+            loc = glGetUniformLocation(
+                latest_program_, "GLUP.specular"
+            );
+            glUniform1f(loc, uniform_state_.specular.get());
+	}
     }
 
     void Context_ES2::update_base_picking_id(GLint new_value) {

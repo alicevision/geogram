@@ -78,9 +78,13 @@ namespace GEO {
      * \param[in] M the pointset (facets and tets are ignored if present)
      * \param[in] nb_neighbors number of neighbors used to compute the
      *  best approximating tangent planes
+     * \param[in] reorient if true, try to orient the normals by 
+     *  propagation over the KNN graph.
+     * \retval true if normals where successfully computed.
+     * \retval false otherwise (when the user pushes the cancel button).
      */
-    void GEOGRAM_API Co3Ne_compute_normals(
-        Mesh& M, index_t nb_neighbors
+    bool GEOGRAM_API Co3Ne_compute_normals(
+        Mesh& M, index_t nb_neighbors, bool reorient = false
     );
 
     /**

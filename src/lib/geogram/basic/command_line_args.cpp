@@ -61,7 +61,8 @@ namespace {
     void import_arg_group_global() {
         declare_arg(
             "profile", "scan",
-            "Vorpaline mode (scan, convert, repair, heal, cad, tet, poly)"
+            "Vorpaline mode "
+	    "(scan, convert, repair, heal, cad, tet, poly, hex, quad)"
         );
         declare_arg(
             "debug", false,
@@ -597,6 +598,30 @@ namespace {
     }
 
     /**
+     * \brief Imports the quad-dominant meshing option group
+     */
+    void import_arg_group_quad() {
+        declare_arg_group("quad", "Quad-dominant meshing", ARG_ADVANCED);
+        declare_arg(
+            "quad", false,
+            "Toggles quad-dominant meshing"
+        );
+	declare_arg(
+	    "quad:relative_edge_length",
+	    1.0,
+	    "relative edge length"
+	);
+	declare_arg(
+	    "quad:optimize_parity", false,
+	    "Optimize quads parity when splitting charts (experimental)"
+	);
+	declare_arg(
+	    "quad:max_scaling_correction", 1.0,
+	    "maximum scaling correction factor (use 1.0 to disable)"
+	);
+    }
+    
+    /**
      * \brief Imports the tetrahedral meshing option group
      */
     void import_arg_group_tet() {
@@ -665,6 +690,17 @@ namespace {
 	declare_arg("gfx:geometry", "800x800", "resolution");
     }
     
+    /**
+     * \brief Imports the biblio option group
+     */
+    void import_arg_group_biblio() {
+        declare_arg_group("biblio", "Bibliography options", ARG_ADVANCED);
+	declare_arg("biblio", false, "output bibliography citations");
+	declare_arg(
+	    "biblio:command_line", false,
+	    "dump all command line arguments in biblio. report"
+	);
+    }
     
     /************************************************************************/
 
@@ -739,6 +775,13 @@ namespace {
     }
 
     /**
+     * \brief Sets the quad-dominant meshing profile
+     */
+    void set_profile_quad() {
+        set_arg("quad", true);
+    }
+    
+    /**
      * \brief Sets the tetrahedral meshing profile
      */
     void set_profile_tet() {
@@ -771,6 +814,7 @@ namespace GEO {
                 import_arg_group_sys();
 		import_arg_group_nl();		
                 import_arg_group_log();
+		import_arg_group_biblio();
             } else if(name == "global") {
                 import_arg_group_global();
             } else if(name == "nl") {
@@ -793,6 +837,8 @@ namespace GEO {
                 import_arg_group_co3ne();
             } else if(name == "stat") {
                 import_arg_group_stat();
+            } else if(name == "quad") {
+                import_arg_group_quad();
             } else if(name == "hex") {
                 import_arg_group_hex();
             } else if(name == "tet") {
@@ -828,6 +874,8 @@ namespace GEO {
                 set_profile_reconstruct();
             } else if(name == "tet") {
                 set_profile_tet();
+            } else if(name == "quad") {
+                set_profile_quad();
             } else if(name == "hex") {
                 set_profile_hex();
             } else if(name == "poly") {

@@ -47,6 +47,7 @@
 #include <geogram/lua/lua_wrap.h>
 #include <geogram/basic/file_system.h>
 #include <geogram/basic/logger.h>
+#include <geogram/bibliography/bibliography.h>
 #include <map>
 #include <sstream>
 
@@ -260,6 +261,13 @@ void get_embedded_lua_file(
 }
     
 void init_lua_io(lua_State* L) {
+    
+    geo_cite_with_info(
+	"WEB:lua",
+	"GEOGRAM has an embedded LUA interpreter "
+	"(LUA is worth one thousand times the few kilobytes it uses !)."
+    );
+    
     lua_newtable(L);
 
     lua_bindwrapper(L, FileSystem::is_file);

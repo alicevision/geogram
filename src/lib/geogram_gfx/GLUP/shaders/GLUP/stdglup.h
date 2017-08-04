@@ -31,7 +31,6 @@ int glup_mod(in int x, in int y) {
 
 #define glup_in in
 #define glup_out out
-#define glup_in in
 #define glup_flat flat
 #define glup_id highp int
 

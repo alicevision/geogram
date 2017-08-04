@@ -81,6 +81,7 @@
 #define geo_parano_range_assert(x, min_val, max_val)
 #endif
 
+#define geo_cite(x)
 
 namespace GEO {
     namespace Process {

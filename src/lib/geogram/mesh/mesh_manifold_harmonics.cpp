@@ -48,6 +48,7 @@
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/NL/nl.h>
+#include <geogram/bibliography/bibliography.h>
 
 namespace {
     using namespace GEO;
@@ -207,6 +208,9 @@ namespace GEO {
 	double shift
     ) {
 
+	geo_cite("DBLP:conf/smi/Levy06");
+	geo_cite("DBLP:journals/cgf/ValletL08");
+	
 	if(M.vertices.attributes().is_defined(attribute_name)) {
 	    M.vertices.attributes().delete_attribute_store(attribute_name);
 	}

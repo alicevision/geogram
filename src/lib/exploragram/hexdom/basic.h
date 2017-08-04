@@ -48,8 +48,6 @@
 #include <assert.h>
 #include <time.h>
 
-#define FOR(i,max) for (index_t i = 0; i<index_t(max); i++)
-
 namespace GEO {
 
     inline index_t next_mod(index_t i, index_t imax) {
@@ -127,10 +125,6 @@ namespace GEO {
 	return vec2(M(0, 0)*v[0] + M(0, 1)*v[1], M(1, 0)*v[0] + M(1, 1)*v[1]) ;
     }
 
-    inline double round(double x) {
-	return ((x - floor(x)) > 0.5 ? ceil(x) : floor(x));
-    }
-    
     inline vec3i snap_to_integer(const vec3& f) {
 	return vec3i(int(round(f[0])), int(round(f[1])), int(round(f[2])));
     }

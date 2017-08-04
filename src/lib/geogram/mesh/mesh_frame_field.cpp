@@ -51,6 +51,7 @@
 #include <geogram/basic/logger.h>
 #include <geogram/basic/line_stream.h>
 #include <geogram/basic/progress.h>
+#include <geogram/bibliography/bibliography.h>
 
 // Some member functions of NormalCycle are not used here.
 // note: NormalCycle will be exported sometime, so for now
@@ -714,6 +715,9 @@ namespace GEO {
         const Mesh& M, bool volumetric, double sharp_angle_threshold
     ) {
 
+	geo_cite("DBLP:journals/tog/RayVLL08");
+	geo_cite("DBLP:journals/tog/RayVAL09");
+	
         sharp_angle_threshold *= M_PI/180.0 ;
 
         vector<double> alpha_sincos(2*M.facets.nb(),0.0);
@@ -804,8 +808,10 @@ namespace GEO {
             centers_[3*f+2] = g.z;
         }
 
-        NN_ = NearestNeighborSearch::create(3, "default");
-        NN_->set_points(centers_.size()/3, centers_.data());
+	if(use_NN_ || volumetric) {
+	    NN_ = NearestNeighborSearch::create(3, "default");
+	    NN_->set_points(centers_.size()/3, centers_.data());
+	}
 
         // Step 4: In volumetric mode, for each tet we find the nearest
         // facet and lookup the frame field from it.

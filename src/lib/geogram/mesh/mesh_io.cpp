@@ -54,6 +54,7 @@
 #include <geogram/basic/argused.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/geometry.h>
+#include <geogram/bibliography/bibliography.h>
 
 #include <fstream>
 
@@ -212,7 +213,11 @@ namespace GEO {
                                 unbind_attributes();
                                 return false;
 			    }
-			    tex_vertices.push_back(vec2(in.field_as_double(1), in.field_as_double(2)));
+			    tex_vertices.push_back(
+				vec2(
+				    in.field_as_double(1),
+				    in.field_as_double(2))
+				);
 			}
 		    } else if(
                         ioflags.has_element(MESH_FACETS) &&
@@ -235,7 +240,8 @@ namespace GEO {
 			    char* tex_vertex_str = nil;
                             for(char* ptr = in.field(i); *ptr != '\0'; ptr++) {
                                 if(*ptr == '/') {
-				    if(!ignore_tex_coords && tex_vertex_str == nil) {
+				    if(!ignore_tex_coords &&
+				       tex_vertex_str == nil) {
 					tex_vertex_str = ptr+1;
 				    }
                                     *ptr = '\0';
@@ -270,15 +276,21 @@ namespace GEO {
                             }
                             facet_vertices.push_back(vertex_index-1);
 
-			    if(tex_vertex_str != nil) {
+			    if(tex_vertex_str != nil &&
+			       tex_vertex_str[0] != '\0' &&
+			       tex_vertex_str[0] != '/' 
+			    ) {
 				int s_tex_vertex_index = atoi(tex_vertex_str);
 				index_t tex_vertex_index = 0;
 				if(s_tex_vertex_index < 0) {
 				    tex_vertex_index = index_t(
-					1+int(tex_vertices.size()) + s_tex_vertex_index
+					1+int(tex_vertices.size()) +
+					s_tex_vertex_index
 				    );
 				} else {
-				    tex_vertex_index = index_t(s_tex_vertex_index);
+				    tex_vertex_index = index_t(
+					s_tex_vertex_index
+				    );
 				}
 				if(
 				    (tex_vertex_index < 1) ||
@@ -294,20 +306,23 @@ namespace GEO {
 				    return false;
 				}
 				if(!ignore_tex_coords) {
-				    facet_tex_vertices.push_back(tex_vertex_index-1);
+				    facet_tex_vertices.push_back(
+					tex_vertex_index-1
+				    );
 				}
 			    }
 			}
 			    
 			if(
 			    facet_tex_vertices.size() != 0 &&
-			    facet_tex_vertices.size() != facet_vertices.size()) {
-                                Logger::err("I/O")
-                                    << "Line " << in.line_number()
-				    << ": some facet vertices do not have tex vertices"
-				    << std::endl;
-				unbind_attributes();
-				return false;
+			    facet_tex_vertices.size() != facet_vertices.size()
+			) {
+			    Logger::err("I/O")
+			    << "Line " << in.line_number()
+			    << ": some facet vertices do not have tex vertices"
+			    << std::endl;
+			    unbind_attributes();
+			    return false;
 			}
 			
                         index_t f = M.facets.create_polygon(
@@ -319,7 +334,8 @@ namespace GEO {
 			if(facet_tex_vertices.size() != 0) {
 			    for(index_t lv=0; lv<facet_vertices.size(); ++lv) {
 				index_t c = M.facets.corners_begin(f) + lv;
-				const vec2 vt = tex_vertices[facet_tex_vertices[lv]];
+				const vec2 vt =
+				    tex_vertices[facet_tex_vertices[lv]];
 				tex_coord_[2*c] = vt.x;
 				tex_coord_[2*c+1] = vt.y;
 			    }
@@ -424,7 +440,8 @@ namespace GEO {
 		index_t cur_vt=0;
 		for(index_t c=0; c<M.facet_corners.nb(); ++c) {
 		    if(vt_old2new[c] == c) {
-			out << "vt " << tex_coord_[2*c] << " " << tex_coord_[2*c+1] << std::endl;
+			out << "vt " << tex_coord_[2*c] << " "
+			    << tex_coord_[2*c+1] << std::endl;
 			vt_index[c] = cur_vt;
 			++cur_vt;
 		    }
@@ -432,7 +449,8 @@ namespace GEO {
 		geo_assert(cur_vt == nb_vt);
 	    } else if(vertex_tex_coord_.is_bound()) {
 		for(index_t v=0; v<M.vertices.nb(); ++v) {
-		    out << "vt " << vertex_tex_coord_[2*v] << " " << vertex_tex_coord_[2*v+1] << std::endl;
+		    out << "vt " << vertex_tex_coord_[2*v] << " "
+			<< vertex_tex_coord_[2*v+1] << std::endl;
 		}
 	    }
 	    
@@ -488,7 +506,10 @@ namespace GEO {
 	    vertex_tex_coord_.bind_if_is_defined(
 		M.vertices.attributes(), "tex_coord"
 	    );
-	    if(vertex_tex_coord_.is_bound() && vertex_tex_coord_.dimension() != 2) {
+	    if(
+		vertex_tex_coord_.is_bound() &&
+		vertex_tex_coord_.dimension() != 2
+	    ) {
 		vertex_tex_coord_.unbind();
 	    }
 	    
@@ -535,6 +556,9 @@ namespace GEO {
     public:
 
         LMIOHandler() {
+	    
+	    geo_cite("WEB:libMeshb");
+	    
             keyword2name_[GmfTriangles] = "triangle";
             keyword2name_[GmfQuadrilaterals] = "quad";
             keyword2name_[GmfTetrahedra] = "tet";
@@ -1193,6 +1217,14 @@ namespace GEO {
      */
     class GEOGRAM_API PLYIOHandler : public MeshIOHandler {
     public:
+
+	/**
+	 * \brief PLYIOHandler constructor.
+	 */
+	PLYIOHandler() {
+	    geo_cite("WEB:rply");
+	}
+	
         /**
          * \brief Helper class to read files in PLY format
          */
@@ -1892,7 +1924,9 @@ namespace GEO {
                 set_mesh_point(M, i, xyz, 3);
             }
 
-            if(ioflags.has_element(MESH_FACETS) || ioflags.has_element(MESH_EDGES)) {
+            if(
+		ioflags.has_element(MESH_FACETS) ||
+		ioflags.has_element(MESH_EDGES)) {
                 while(!in.eof() && in.get_line()) {
                     in.get_fields();
                    /* if(in.nb_fields() < 4) {
@@ -1941,7 +1975,10 @@ namespace GEO {
                         index_t vertex_index0=in.field_as_uint(1);
                         index_t vertex_index1=in.field_as_uint(2);
                         
-                        if(vertex_index0 >= M.vertices.nb() || vertex_index1 >= M.vertices.nb()) {
+                        if(
+			    vertex_index0 >= M.vertices.nb() ||
+			    vertex_index1 >= M.vertices.nb()
+			) {
                                 Logger::err("I/O")
                                     << "Line " << in.line_number()
                                     << ": edge"
@@ -2009,7 +2046,9 @@ namespace GEO {
                 // Output edges
                 for(index_t e = 0; e < M.edges.nb(); ++e) 
                 {
-                    output << "2 "<< M.edges.vertex(e, 0)<<" "<<M.edges.vertex(e, 1)<< std::endl;
+                    output << "2 " << M.edges.vertex(e, 0)
+			   << " " << M.edges.vertex(e, 1)
+			   << std::endl;
                 }
             }
             return true;

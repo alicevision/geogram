@@ -12,8 +12,10 @@ uniform GLUPStateBlock {
                                                               
     bool lighting_enabled;
     bool vertex_normals_enabled;
+    bool normal_mapping_enabled;
     vec3 light_vector;                       
-    vec3 light_half_vector;                  
+    vec3 light_half_vector;
+    float specular;
                                                               
     bool texturing_enabled;                  
     bool indirect_texturing_enabled;                      

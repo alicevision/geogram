@@ -46,6 +46,7 @@
 #include <geogram/parameterization/mesh_LSCM.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_geometry.h>
+#include <geogram/bibliography/bibliography.h>
 #include <geogram/NL/nl.h>
 #include <algorithm>
 
@@ -115,6 +116,12 @@ namespace {
 	 */
 	
 	void apply() {
+
+	    geo_cite("DBLP:journals/tog/LevyPRM02");
+	    if(spectral_) {
+		geo_cite("DBLP:journals/cgf/MullenTAD08");
+	    }
+	    
 	    const int nb_eigens = 10;
 	    nlNewContext();
 	    if(spectral_) {

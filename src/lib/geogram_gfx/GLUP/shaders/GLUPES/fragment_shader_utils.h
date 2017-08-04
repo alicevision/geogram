@@ -81,7 +81,7 @@ vec4 glup_shading(
     } else {
         result = gl_FrontFacing ? GLUP.front_color : GLUP.back_color;
     }
-    if(glupIsEnabled(GLUP_TEXTURING)) {
+    if(glupIsEnabled(GLUP_TEXTURING) && !glupIsEnabled(GLUP_NORMAL_MAPPING)) {
         result = glup_texturing(result, tex_coord);
     }
     if(glupIsEnabled(GLUP_LIGHTING)) {

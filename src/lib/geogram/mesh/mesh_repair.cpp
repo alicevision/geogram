@@ -1142,10 +1142,14 @@ namespace GEO {
             repair_split_non_manifold_vertices(M);
 
         }
-
-        if(M.vertices.nb() != nb_vertices_in ||
-           M.facets.nb() != nb_facets_in) {
-            M.show_stats("Validate");
+	
+        if((mode & MESH_REPAIR_QUIET) == 0) {
+	    if(
+		M.vertices.nb() != nb_vertices_in ||
+		M.facets.nb() != nb_facets_in
+	    ) {
+		M.show_stats("Validate");
+	    }
         }
     }
 

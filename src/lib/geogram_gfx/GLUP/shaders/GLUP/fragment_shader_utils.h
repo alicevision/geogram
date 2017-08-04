@@ -155,16 +155,16 @@ vec4 glup_texturing(in vec4 color, in vec4 tex_coord) {
 vec4 glup_lighting(in vec4 color, in vec3 normal) {
     vec4 result = color;
     float diff = dot(normal,GLUP.light_vector);                   
-    float spec = dot(normal,GLUP.light_half_vector);              
-    spec = pow(spec,30.0);
-    if(diff > 0.0) {                                            
-        vec3 vspec = spec*vec3(1.0,1.0,1.0);                        
-        result.rgb = diff*result.rgb + vspec +         
-	                vec3(0.2, 0.2, 0.2);                  
+    if(diff > 0.0) {
+        result.rgb = diff*result.rgb + vec3(0.2, 0.2, 0.2);
+	if(GLUP.specular > 0.0) {
+	    float spec = dot(normal,GLUP.light_half_vector);
+	    spec = pow(spec, 30.0);
+	    result.rgb += GLUP.specular*spec*vec3(1.0, 1.0, 1.0);
+	}
     } else {                                                        
         result.rgb = vec3(0.2, 0.2, 0.2);
     }
-    result.w = color.w;
     return result;
 }
 

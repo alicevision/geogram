@@ -258,13 +258,29 @@ namespace GLUP {
             GL_BACK, GL_DIFFUSE,
             uniform_state_.color[GLUP_BACK_COLOR].get_pointer()
         );
-        static GLfloat specular[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
         static GLfloat ambient[4]  = { 0.2f, 0.2f, 0.2f, 1.0f };
+        static GLfloat zero[4]     = { 0.0f, 0.0f, 0.0f, 0.0f };
+	
         glMaterialfv(
             GL_FRONT_AND_BACK, GL_AMBIENT, ambient
         );
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);        
-        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 30);
+	if(uniform_state_.specular.get() != 0.0f) {
+	    GLfloat specular[4];
+	    specular[0] = uniform_state_.specular.get();
+	    specular[1] = uniform_state_.specular.get();
+	    specular[2] = uniform_state_.specular.get();
+	    specular[3] = uniform_state_.specular.get();	    
+	    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);        
+	    glMaterialf(
+		GL_FRONT_AND_BACK, GL_SHININESS, 30.0
+	    );
+	} else {
+	    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, zero);
+	    glMaterialf(
+		GL_FRONT_AND_BACK, GL_SHININESS, 0.0
+	    );
+	}
         glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR);
     }
 
@@ -839,7 +855,8 @@ namespace GLUP {
                     element_ptr(v)
                 );
             }
-	    const float* p = immediate_state_.buffer[GLUP_VERTEX_ATTRIBUTE].element_ptr(v);
+	    const float* p =
+		immediate_state_.buffer[GLUP_VERTEX_ATTRIBUTE].element_ptr(v);
 	    glPushMatrix();
 	    glTranslatef(p[0], p[1], p[2]);
 	    glScalef(p[3], p[3], p[3]);	    	    

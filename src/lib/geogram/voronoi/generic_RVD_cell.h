@@ -253,7 +253,8 @@ namespace GEOGen {
          *   to the facets. The value of id[f] is either 1 + the index of
          *   the Voronoi vertex that generated with \p i the bisector that
          *   created the facet, or -1-g if the facet was an original facet
-         *   of mesh \p mesh, where g is the index of the original facet in \p mesh.
+         *   of mesh \p mesh, where g is the index of the original 
+	 *   facet in \p mesh.
          */
         void convert_to_mesh(Mesh* mesh, bool copy_symbolic_info = false);
         

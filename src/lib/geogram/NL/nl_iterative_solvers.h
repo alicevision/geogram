@@ -65,6 +65,8 @@
  *     A taxonomy for conjugate gradient methods
  *     SIAM J Numer Anal 27, 1542-1568 (1990)
  *
+ * \param[in] blas opaque handle to BLAS library, can be either host blas or
+ *  CUDA blas. If it is CUDA blas, then matrices should be CUDA matrices.
  * \param[in] M the matrix of the system
  * \param[in] P a preconditionner or NULL if not using a preconditioner
  * \param[in] b the right-hand side of the system

@@ -1099,7 +1099,15 @@ namespace GEO {
             geo_assert(typed_store != nil);
             return typed_store->get_vector();
         }
-        
+
+	/**
+	 * \brief Gets the AttributeManager this Attribute is bound to.
+	 * \return a pointer to the attributes manager.
+	 */
+	AttributesManager* manager() const {
+	    return manager_;
+	}
+	
     protected:
         AttributesManager* manager_;
         AttributeStore* store_;

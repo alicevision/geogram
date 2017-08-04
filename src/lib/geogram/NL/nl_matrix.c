@@ -277,17 +277,17 @@ static void nlCRSMatrixMult(
                 }
             }
         }
-    }
-
+    } else {
     
 #if defined(_OPENMP)
 #pragma omp parallel for private(slice)
 #endif
     
-    for(slice=0; slice<nslices; ++slice) {
-        nlCRSMatrixMultSlice(
-            M,x,y,M->sliceptr[slice],M->sliceptr[slice+1]
-        );
+	for(slice=0; slice<nslices; ++slice) {
+	    nlCRSMatrixMultSlice(
+		M,x,y,M->sliceptr[slice],M->sliceptr[slice+1]
+	    );
+	}
     }
 
     nlHostBlas()->flops += (NLulong)(2*nlCRSMatrixNNZ(M));
@@ -507,6 +507,56 @@ void nlSparseMatrixSort( NLSparseMatrix* M) {
     } 
 }
 
+void nlSparseMatrixMAddRow(
+    NLSparseMatrix* M, NLuint i1, double s, NLuint i2
+) {
+    NLuint jj;
+    NLRowColumn* Ri2 = &(M->row[i2]);
+    NLCoeff* c = NULL;
+
+    nl_debug_assert(i1 < M->m);
+    nl_debug_assert(i2 < M->m);
+    
+    for(jj=0; jj<Ri2->size; ++jj) {
+	c = &(Ri2->coeff[jj]);
+	nlSparseMatrixAdd(M, i1, c->index, s*c->value);
+    }
+}
+
+void nlSparseMatrixScaleRow(
+    NLSparseMatrix* M, NLuint i, double s
+) {
+    NLuint jj;
+    NLRowColumn* Ri = &(M->row[i]);
+    NLCoeff* c = NULL;
+
+    nl_assert(M->storage & NL_MATRIX_STORE_ROWS);
+    nl_assert(!(M->storage & NL_MATRIX_STORE_COLUMNS));    
+    nl_debug_assert(i < M->m);
+    
+    for(jj=0; jj<Ri->size; ++jj) {
+	c = &(Ri->coeff[jj]);
+	c->value *= s;
+    }
+    if(i < M->diag_size) {
+	M->diag[i] *= s;
+    }
+}
+
+void nlSparseMatrixZeroRow(
+    NLSparseMatrix* M, NLuint i
+) {
+    NLRowColumn* Ri = &(M->row[i]);
+
+    nl_debug_assert(i < M->m);
+    
+    Ri->size = 0;
+    if(i < M->diag_size) {
+	M->diag[i] = 0.0;
+    }
+}
+
+
 /*****************************************************************************/
 /* SparseMatrix x Vector routines, internal helper routines */
 
@@ -521,7 +571,7 @@ static void nlSparseMatrix_mult_rows_symmetric(
     for(i=0; i<m; i++) {
         NLRowColumn* Ri = &(A->row[i]);
         y[i] = 0;
-        for(ij=0; ij<Ri->size; ij++) {
+        for(ij=0; ij<Ri->size; ++ij) {
             c = &(Ri->coeff[ij]);
             y[i] += c->value * x[c->index];
             if(i != c->index) {
@@ -601,14 +651,7 @@ static void nlSparseMatrix_mult_cols(
     }
 }
 
-/**
- * \brief Computes a matrix-vector product
- * \param[in] A a pointer to the matrix
- * \param[in] x the vector to be multiplied, size = A->n
- * \param[in] y where to store the result, size = A->m
- * \relates NLSparseMatrix
- */
-static void nlSparseMatrixMult(
+void nlSparseMatrixMult(
     NLSparseMatrix* A, const NLdouble* x, NLdouble* y
 ) {
     nl_assert(A->type == NL_MATRIX_SPARSE_DYNAMIC);
@@ -626,6 +669,14 @@ static void nlSparseMatrixMult(
         }
     }
     nlHostBlas()->flops += (NLulong)(2*nlSparseMatrixNNZ(A));
+}
+
+NLMatrix nlSparseMatrixNew(
+    NLuint m, NLuint n, NLenum storage
+) {
+    NLSparseMatrix* result = NL_NEW(NLSparseMatrix);
+    nlSparseMatrixConstruct(result, m, n, storage);
+    return (NLMatrix)result;
 }
 
 void nlSparseMatrixConstruct(
@@ -882,7 +933,8 @@ typedef struct {
      * \brief Matrix type
      * \details One of NL_MATRIX_SPARSE_DYNAMIC, 
      *  NL_MATRIX_CRS, NL_MATRIX_SUPERLU_EXT,
-     *  NL_CHOLDMOD_MATRIX_EXT
+     *  NL_MATRIX_CHOLDMOD_EXT, NL_MATRIX_FUNCTION,
+     *  NL_MATRIX_OTHER
      */
     NLenum type;
 

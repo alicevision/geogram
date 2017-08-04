@@ -506,7 +506,17 @@ void glupSetAlphaThreshold(GLUPfloat x) {
 
 GLUPfloat glupGetAlphaThreshold() {
     GEO_CHECK_GLUP();
-    return GLUP::current_context_->uniform_state().alpha_threshold.get();        
+    return GLUP::current_context_->uniform_state().alpha_threshold.get();
+}
+
+void glupSetSpecular(GLUPfloat x) {
+    GEO_CHECK_GLUP();
+    GLUP::current_context_->uniform_state().specular.set(x);    
+}
+
+GLUPfloat glupGetSpecular() {
+    GEO_CHECK_GLUP();
+    return GLUP::current_context_->uniform_state().specular.get();
 }
 
 

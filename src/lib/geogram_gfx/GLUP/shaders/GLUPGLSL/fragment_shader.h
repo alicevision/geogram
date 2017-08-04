@@ -75,30 +75,43 @@ void main() {
     } else {
         result = gl_FrontFacing ? GLUP.front_color : GLUP.back_color;        
     }
-    if(glupIsEnabled(GLUP_TEXTURING)) {
+
+    if(glupIsEnabled(GLUP_TEXTURING) && !glupIsEnabled(GLUP_NORMAL_MAPPING)) {
         result = glup_texturing(result, FragmentIn.tex_coord);
     }
     if(glupIsEnabled(GLUP_LIGHTING)) {
 	vec3 N;
-#if GLUP_PRIMITIVE_DIMENSION==2    	
-	if(glupIsEnabled(GLUP_VERTEX_NORMALS)) {
-	    N = normalize(FragmentIn.normal);
+	if(
+	    glupIsEnabled(GLUP_TEXTURING) &&
+	    glupIsEnabled(GLUP_NORMAL_MAPPING)
+	){
+	    N = glup_texturing(vec4(1.0,1.0,1.0,1.0), FragmentIn.tex_coord).xyz;
+	    N = N-vec3(0.5,0.5,0.5);
+	    N = normalize(GLUP.normal_matrix*N);
 	    if(!gl_FrontFacing) {
 		N = -N;
 	    }
-	} else
+	} else {
+#if GLUP_PRIMITIVE_DIMENSION==2    	
+	    if(glupIsEnabled(GLUP_VERTEX_NORMALS)) {
+		N = normalize(FragmentIn.normal);
+		if(!gl_FrontFacing) {
+		    N = -N;
+		}
+	    } else
 #endif
-	{
-	    vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);
-	    vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);
-	    mat3 M = transpose(
-		mat3(
-		    GLUP.projection_matrix[0].xyz,
-		    GLUP.projection_matrix[1].xyz,
-		    GLUP.projection_matrix[2].xyz
-		)
-	    );
-	    N = -normalize(M*cross(U,V));
+	    {
+		vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);
+		vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);
+		mat3 M = transpose(
+		    mat3(
+			GLUP.projection_matrix[0].xyz,
+			GLUP.projection_matrix[1].xyz,
+			GLUP.projection_matrix[2].xyz
+		    )
+		);
+		N = -normalize(M*cross(U,V));
+	    }
 	}
 	result = glup_lighting(result, N);
     }

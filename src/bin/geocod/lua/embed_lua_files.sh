@@ -11,7 +11,11 @@ examples/flake.lua
 examples/sierpinski.lua
 examples/sponge.lua
 examples/creeper.lua
+examples/plotter.lua
+examples/maison.lua
 games/hackman.lua
+games/labyrinthe.lua
+games/asteroids.lua
 book/S01E01.lua
 book/S01E02.lua
 "
@@ -31,10 +35,10 @@ EOF
 for header in $headers
 do
     echo "     register_embedded_lua_file(\"$header\","
-    cat $header | sed -e 's|"|\\\"|g' \
+    cat $header | sed -e 's|\\n|\\\\n|' \
+                      -e 's|"|\\\"|g' \
 		      -e 's|^|        \"|' \
-		      -e 's| *$| \\n\"|' \
-
+		      -e 's| *$| \\n\"|' 
     echo "     );"
     echo
 done

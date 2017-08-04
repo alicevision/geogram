@@ -916,6 +916,7 @@ namespace GLUP {
         StateVariable<GLint>               texture_mode;
         StateVariable<GLint>               texture_type;
         StateVariable<GLfloat>             alpha_threshold;
+	StateVariable<GLfloat>             specular;
         VectorStateVariable                clip_plane;
         VectorStateVariable                world_clip_plane;
         VectorStateVariable                clip_clip_plane;	

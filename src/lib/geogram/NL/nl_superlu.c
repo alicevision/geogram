@@ -611,6 +611,8 @@ NLMatrix nlMatrixFactorize_SUPERLU(
         CRS = (NLCRSMatrix*)nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)M);
     }
 
+    nl_assert(!(CRS->symmetric_storage));
+    
     LU = NL_NEW(NLSuperLUFactorizedMatrix);
     LU->m = M->m;
     LU->n = M->n;

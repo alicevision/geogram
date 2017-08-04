@@ -710,7 +710,10 @@ namespace GEO {
 
         glupSetCellsShrink(0.0f);
 
-        if(attribute_subelements_ != MESH_NONE) {
+        if(
+	    attribute_subelements_ != MESH_NONE &&
+	    !glupIsEnabled(GLUP_NORMAL_MAPPING) 
+	) {
             glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 1.0f, 1.0f, 1.0f);
         } else {
             glupSetColor4fv(GLUP_FRONT_COLOR, surface_color_);
@@ -1308,15 +1311,19 @@ namespace GEO {
         const MeshSubElementsStore& mesh_subelements =
             mesh_->get_subelements_by_type(attribute_subelements_);
 
-	tex_coord_attribute_.bind_if_is_defined(
-	    mesh_subelements.attributes(), attribute_name_
-	);
-	
-        if(!tex_coord_attribute_.is_bound()) {
-            attribute_subelements_ = MESH_NONE;
-        } else {
-	    attribute_dim_ = tex_coord_attribute_.dimension();
-	    tex_coord_attribute_.unbind();
+	attribute_dim_ = 0;
+	FOR(i,3) {
+	    tex_coord_attribute_[i].bind_if_is_defined(
+		mesh_subelements.attributes(),
+		attribute_name_ + "[" + String::to_string(i) + "]"
+	    );
+	    if(tex_coord_attribute_[i].is_bound()) {
+		attribute_dim_ = i+1;
+		tex_coord_attribute_[i].unbind();
+	    }
+	}
+	if(attribute_dim_ == 0) {
+	    attribute_subelements_ = MESH_NONE;
 	}
     }
     
@@ -1476,10 +1483,13 @@ namespace GEO {
 		return;
 	    }
 	} else {
-	    tex_coord_attribute_.bind_if_is_defined(
-		subelements.attributes(), attribute_name_		
-	    );
-	    if(!tex_coord_attribute_.is_bound()) {
+	    FOR(i,3) {
+		tex_coord_attribute_[i].bind_if_is_defined(
+		    subelements.attributes(),
+		    attribute_name_+"["+String::to_string(i)+"]"
+		);
+	    }
+	    if(!tex_coord_attribute_[0].is_bound()) {
 		return;
 	    }
 	}
@@ -1529,8 +1539,10 @@ namespace GEO {
 	    }
 	    glupMatrixMode(GLUP_MODELVIEW_MATRIX);
 	}
-        
-        glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 1.0f, 1.0f, 1.0f);
+
+	if(!glupIsEnabled(GLUP_NORMAL_MAPPING)) {
+	    glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 1.0f, 1.0f, 1.0f);
+	}
     }
 
     void MeshGfx::end_attributes() {
@@ -1538,9 +1550,13 @@ namespace GEO {
             glupDisable(GLUP_TEXTURING);
             scalar_attribute_.unbind();
         }
-	if(tex_coord_attribute_.is_bound()) {
-	    glupDisable(GLUP_TEXTURING);
-	    tex_coord_attribute_.unbind();
+	FOR(i,3) {
+	    if(tex_coord_attribute_[i].is_bound()) {
+		if(i==0) {
+		    glupDisable(GLUP_TEXTURING);
+		}
+		tex_coord_attribute_[i].unbind();
+	    }
 	}
 	glupMatrixMode(GLUP_TEXTURE_MATRIX);
 	glupLoadIdentity();

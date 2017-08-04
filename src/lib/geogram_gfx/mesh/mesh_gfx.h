@@ -666,10 +666,17 @@ namespace GEO {
 			glupTexCoord1d(scalar_attribute_[element]);
 			break;
 		    case 2:
-			glupTexCoord2dv(&tex_coord_attribute_[2*element]);
+			glupTexCoord2d(
+			    tex_coord_attribute_[0][element],
+			    tex_coord_attribute_[1][element]
+			);
 			break;
 		    case 3:
-			glupTexCoord3dv(&tex_coord_attribute_[3*element]);
+			glupTexCoord3d(
+			    tex_coord_attribute_[0][element],
+			    tex_coord_attribute_[1][element],
+			    tex_coord_attribute_[2][element]			    
+			);
 			break;
 		}
 	    }
@@ -899,7 +906,7 @@ namespace GEO {
 	index_t attribute_texture_dim_;
         index_t attribute_repeat_;
         ReadOnlyScalarAttributeAdapter scalar_attribute_;
-	Attribute<double> tex_coord_attribute_;
+	ReadOnlyScalarAttributeAdapter tex_coord_attribute_[3];
 
         //   If true, copies OpenGL state automatically
         // at each rendering operation.

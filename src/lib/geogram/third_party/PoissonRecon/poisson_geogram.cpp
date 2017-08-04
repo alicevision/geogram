@@ -44,6 +44,7 @@
  */
 
 #include "poisson_geogram.h"
+#include <geogram/bibliography/bibliography.h>
 
 // Poisson Reconstruction code triggers many warnings,
 // for now we ignore them...
@@ -177,6 +178,8 @@ namespace GEO {
         keep_voxel_ = false;
         voxel_res_ = 0;
         voxel_values_ = nil;
+
+	geo_cite("DBLP:journals/tog/KazhdanH13");
     }
 
     PoissonReconstruction::~PoissonReconstruction() {

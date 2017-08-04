@@ -250,6 +250,9 @@ static NLboolean nlSolveIterative() {
        (nlCurrentContext->preconditioner == NL_PRECOND_NONE ||
 	nlCurrentContext->preconditioner == NL_PRECOND_JACOBI)
     ) {
+	if(nlCurrentContext->verbose) { 
+	    printf("Using CUDA\n");
+	} 
 	use_CUDA = NL_TRUE;
 	blas = nlCUDABlas();
 	if(nlCurrentContext->preconditioner == NL_PRECOND_JACOBI) {

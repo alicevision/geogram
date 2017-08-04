@@ -8,10 +8,12 @@ struct UniformState {
     vec4  mesh_color;                
     float mesh_width;                
     
-    bool  lighting_enabled;          
+    bool  lighting_enabled;
+    bool  normal_mapping_enabled;
     vec3  light_vector;              
     vec3  light_half_vector;         
-
+    float specular;
+    
     bool texturing_enabled;          
     bool indirect_texturing_enabled;              
     int  texture_mode;               

@@ -47,6 +47,7 @@
 #include <geogram/parameterization/mesh_LSCM.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_geometry.h>
+#include <geogram/bibliography/bibliography.h>
 #include <geogram/basic/memory.h>
 
 // Uses OpenNL internal data structures and routines
@@ -100,6 +101,7 @@ namespace {
 	}
 	
 	bool parameterize() {
+	    geo_cite("DBLP:journals/tog/ShefferLMB05");	    
 	    allocate_variables();
 	    compute_beta();
 	    angle_.bind(mesh_.facet_corners.attributes(),"angle");

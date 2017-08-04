@@ -467,11 +467,15 @@ NLuint nlSolveSystemIterative(
     if(!nlBlasHasUnifiedMemory(blas)) {
 	b = NL_NEW_VECTOR(blas, NL_DEVICE_MEMORY, (int)M->n);
 	blas->Memcpy(
-	    blas, b, NL_DEVICE_MEMORY, b_in, NL_HOST_MEMORY, (size_t)N*sizeof(double)
+	    blas,
+	    b, NL_DEVICE_MEMORY,
+	    b_in, NL_HOST_MEMORY, (size_t)N*sizeof(double)
 	);
 	x = NL_NEW_VECTOR(blas, NL_DEVICE_MEMORY, (int)M->n);
 	blas->Memcpy(
-	    blas, x, NL_DEVICE_MEMORY, x_in, NL_HOST_MEMORY, (size_t)N*sizeof(double)
+	    blas,
+	    x, NL_DEVICE_MEMORY,
+	    x_in, NL_HOST_MEMORY, (size_t)N*sizeof(double)
 	);	
     }
 
@@ -480,7 +484,7 @@ NLuint nlSolveSystemIterative(
 	    if(P == NULL) {
 		result = nlSolveSystem_CG(blas,M,b,x,eps,max_iter);
 	    } else {
-		result = nlSolveSystem_PRE_CG(blas,M,P,b,x,eps,max_iter);		
+		result = nlSolveSystem_PRE_CG(blas,M,P,b,x,eps,max_iter);
 	    }
 	    break;
 	case NL_BICGSTAB:
@@ -520,7 +524,8 @@ NLuint nlSolveSystemIterative(
 
     if(!nlBlasHasUnifiedMemory(blas)) {
 	blas->Memcpy(
-	    blas, x_in, NL_HOST_MEMORY, x, NL_DEVICE_MEMORY, (size_t)N*sizeof(double)
+	    blas,
+	    x_in, NL_HOST_MEMORY, x, NL_DEVICE_MEMORY, (size_t)N*sizeof(double)
 	);	
 	NL_DELETE_VECTOR(blas, NL_DEVICE_MEMORY, (int)M->n, x);
 	NL_DELETE_VECTOR(blas, NL_DEVICE_MEMORY, (int)M->n, b);

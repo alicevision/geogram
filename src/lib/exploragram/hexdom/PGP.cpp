@@ -46,6 +46,7 @@
 
 
 #include <geogram/NL/nl.h>
+#include <geogram/bibliography/bibliography.h>
 
 #include <algorithm>
 #include <cmath>
@@ -54,6 +55,7 @@
 namespace GEO {
 
     PGPopt::PGPopt(Mesh* p_m) : m(p_m) {
+        geo_cite("DBLP:journals/tog/SokolovRUL16");
         // init fast acces to edges from vertices
         if (m->edges.nb() == 0) compute_tet_edge_graph(m, v2e,false);
         else restore_v2e(m, v2e);        

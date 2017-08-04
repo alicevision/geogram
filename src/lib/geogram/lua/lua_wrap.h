@@ -463,6 +463,8 @@ namespace GEO {
      * \brief Converts and pushes a C++ variable onto the LUA stack.
      * \details This version is a placeholder. The actual implementation
      *  is done in the specializations.
+     * \note Just using function overloading (instead of template partializations)
+     *  works with gcc, but does not work with clang and MSVC.
      * \param[in] L a pointer to the LUA state.
      * \param[in] x the variable to be pushed.
      */

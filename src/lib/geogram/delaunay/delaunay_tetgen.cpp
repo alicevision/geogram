@@ -47,6 +47,7 @@
 #include <geogram/mesh/mesh.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/command_line.h>
+#include <geogram/bibliography/bibliography.h>
 
 #ifdef GEOGRAM_WITH_TETGEN
 
@@ -58,6 +59,9 @@ namespace GEO {
         if(dimension != 3) {
             throw InvalidDimension(dimension, "DelaunayTetgen", "3");
         }
+
+	geo_cite("DBLP:journals/toms/Si15");
+	
         tetgen_in_.firstnumber = 0;
         tetgen_out_.firstnumber = 0;
     }

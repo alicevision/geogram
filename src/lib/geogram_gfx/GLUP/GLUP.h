@@ -196,7 +196,8 @@ extern "C" {
         GLUP_INDIRECT_TEXTURING =5,
 	GLUP_VERTEX_NORMALS     =6,	
         GLUP_PICKING            =7,
-	GLUP_ALPHA_DISCARD      =8
+	GLUP_ALPHA_DISCARD      =8,
+	GLUP_NORMAL_MAPPING     =9
     } GLUPtoggle;
 
     void GLUP_API glupEnable(GLUPtoggle toggle);
@@ -315,6 +316,9 @@ extern "C" {
 
     void GLUP_API glupSetAlphaThreshold(GLUPfloat x);
     GLUPfloat GLUP_API glupGetAlphaThreshold();
+
+    void GLUP_API glupSetSpecular(GLUPfloat x);
+    GLUPfloat GLUP_API glupGetSpecular();
     
     /**
      * @}

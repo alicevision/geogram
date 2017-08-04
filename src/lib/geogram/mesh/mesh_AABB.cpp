@@ -327,7 +327,12 @@ namespace GEO {
     ) :
         mesh_(M) {
         if(!M.facets.are_simplices()) {
-            mesh_repair(M, MESH_REPAIR_TRIANGULATE);
+            mesh_repair(
+		M,
+		MeshRepairMode(
+		    MESH_REPAIR_TRIANGULATE | MESH_REPAIR_QUIET
+		 )
+	    );
         }
         if(reorder) {
             mesh_reorder(mesh_, MESH_ORDER_MORTON);

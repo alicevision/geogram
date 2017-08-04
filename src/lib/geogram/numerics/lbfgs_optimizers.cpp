@@ -49,6 +49,7 @@
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/argused.h>
 #include <geogram/third_party/HLBFGS/HLBFGS.h>
+#include <geogram/bibliography/bibliography.h>
 
 #include <setjmp.h>
 #include <iostream>
@@ -155,6 +156,7 @@ namespace GEO {
     HLBFGSOptimizer::HLBFGSOptimizer() :
         b_m1qn3_(false),
         b_cg_(false) {
+	geo_cite("WEB:HLBFGS");
     }
 
     HLBFGSOptimizer::~HLBFGSOptimizer() {

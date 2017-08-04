@@ -55,6 +55,7 @@
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/stopwatch.h>
 #include <geogram/basic/progress.h>
+#include <geogram/bibliography/bibliography.h>
 
 /****************************************************************************/
 
@@ -69,6 +70,9 @@ namespace GEO {
         index_t Newton_m
     ) {
 
+        geo_cite("DBLP:journals/cgf/YanLLSW09");
+        geo_cite("DBLP:conf/imr/LevyB12");
+	
         if(dim == 0) {
             dim = coord_index_t(M_in.vertices.dimension());
         }

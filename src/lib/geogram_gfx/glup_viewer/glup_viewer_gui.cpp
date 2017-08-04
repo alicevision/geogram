@@ -62,6 +62,8 @@
 #include <geogram/basic/command_line_args.h>
 #include <geogram/basic/stopwatch.h>
 
+#include <geogram/bibliography/bibliography.h>
+
 #ifdef GEO_OS_EMSCRIPTEN
 #include <emscripten.h>
 #endif
@@ -1379,6 +1381,7 @@ namespace GEO {
 	text_editor_visible_(false),
 	text_editor_(&text_editor_visible_)
     {
+
         name_ = (argc == 0) ? "" : FileSystem::base_name(argv[0]);
         geo_assert(instance_ == nil);
         instance_ = this;
@@ -1436,7 +1439,11 @@ namespace GEO {
 	init_lua_io(lua_state_);
 	init_lua_glup(lua_state_);
 	init_lua_glup_viewer(lua_state_);		
-	init_lua_imgui(lua_state_);	
+	init_lua_imgui(lua_state_);
+
+	geo_cite_with_info(
+	    "WEB:ImGUI","Used to create the GUI of GEOGRAM utilities (vorpaview, geobox, geocod)."
+	);
     }
 
     Application::~Application() {

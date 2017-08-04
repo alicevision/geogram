@@ -180,7 +180,9 @@ namespace GEO {
 
         bool set_current_working_directory(const std::string& path_in) {
             std::string path = path_in;
-            if(path.at(path.size() - 1) != '/' && path.at(path.size() - 1) != '\\') {
+            if(
+		path.at(path.size() - 1) != '/' &&
+		path.at(path.size() - 1) != '\\') {
                 path += "/";
             }
             return SetCurrentDirectory(path.c_str()) != -1;
@@ -196,7 +198,9 @@ namespace GEO {
             const std::string& path
         ) {
             WIN32_FILE_ATTRIBUTE_DATA infos;
-            if(!GetFileAttributesEx(path.c_str(), GetFileExInfoStandard, &infos)) {
+            if(!GetFileAttributesEx(
+		   path.c_str(), GetFileExInfoStandard, &infos)
+	    ) {
                 return 0;
             }
             return infos.ftLastWriteTime.dwLowDateTime;
@@ -419,12 +423,14 @@ namespace GEO {
         bool copy_file(const std::string& from, const std::string& to) {
             FILE* fromf = fopen(from.c_str(), "rb");
             if(fromf == nil) {
-                Logger::err("FileSyst") << "Could not open source file:" << from << std::endl;
+                Logger::err("FileSyst")
+		    << "Could not open source file:" << from << std::endl;
                 return false;
             }
             FILE* tof = fopen(to.c_str(),"wb");
             if(tof == nil) {
-                Logger::err("FileSyst") << "Could not create file:" << to << std::endl;
+                Logger::err("FileSyst")
+		    << "Could not create file:" << to << std::endl;
                 fclose(fromf);
                 return false;
             }

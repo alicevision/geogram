@@ -2173,6 +2173,24 @@ namespace {
 		}
 		result += prefix + "." + attribute_names[i];
 	    }
+	    if(
+		store->elements_type_matches(typeid(vec2).name()) &&
+		(max_dim == 0 || 2 <= max_dim)
+	    ) {
+		if(result != "") {
+		    result += ";";
+		}
+		result += prefix + "." + attribute_names[i];		
+	    }
+	    if(
+		store->elements_type_matches(typeid(vec3).name()) &&
+		(max_dim == 0 || 2 <= max_dim)
+	    ) {
+		if(result != "") {
+		    result += ";";
+		}
+		result += prefix + "." + attribute_names[i];		
+	    }
         }
         return result;
     }

@@ -49,6 +49,7 @@
 #include <geogram/basic/file_system.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/process.h>
+#include <geogram/bibliography/bibliography.h>
 #include <geogram/NL/nl.h>
 #include <iostream>
 #include <iomanip>
@@ -588,6 +589,14 @@ namespace GEO {
             }
 
 	    nlInitialize(argc, argv);
+
+	    if(
+		CmdLine::arg_is_declared("nl:CUDA") &&
+		CmdLine::get_arg_bool("nl:CUDA")
+	    ) {
+		geo_cite("DBLP:journals/paapp/BuatoisCL09");
+	    }
+	    
             return true;
         }
 

@@ -54,6 +54,7 @@
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/version.h>
+#include <geogram/bibliography/bibliography.h>
 #include <sstream>
 #include <iomanip>
 
@@ -91,6 +92,7 @@ namespace GEO {
         CmdLine::initialize();
         PCK::initialize();
         Delaunay::initialize();
+	Biblio::initialize();
 
         atexit(GEO::terminate);
 
@@ -140,6 +142,7 @@ namespace GEO {
         }
 
         PCK::terminate();
+	Biblio::terminate();
         Progress::terminate();
         Process::terminate();
         CmdLine::terminate();

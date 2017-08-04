@@ -104,9 +104,10 @@ namespace GEO {
      *  idea is used in both CGAL and tetgen, and the second one is used
      *  in CGAL.
      *  - Walking in a triangulation, O Devillers, S Pion, M Teillaud
-     *   17th Annual Symposium on Computational geometry, 106-114
+     *    17th Annual Symposium on Computational geometry, 106-114
      *  - Stefan Funke , Kurt Mehlhorn and Stefan Naher, "Structural filtering,
-     *  a paradigm for efficient and exact geometric programs", 1999
+     *    a paradigm for efficient and exact geometric programs", 
+     *    Comput. Geom., 1999
      */
     class GEOGRAM_API Delaunay3d : public Delaunay {
     public:

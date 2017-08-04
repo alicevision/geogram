@@ -51,6 +51,7 @@
 #include <geogram/basic/progress.h>
 #include <geogram/basic/logger.h>
 
+#include <geogram/bibliography/bibliography.h>
 
 
 // TODO: for points and spheres: early fragment tests, depth greater
@@ -394,6 +395,9 @@ namespace GLUP {
         marching_prism_(GLUP_PRISMS),
         marching_pyramid_(GLUP_PYRAMIDS),
         marching_connector_(GLUP_CONNECTORS) {
+
+	geo_cite("DBLP:conf/isvc/ToledoLP07");
+	
         matrices_dirty_=true;        
         default_program_ = 0;
         uniform_buffer_=0;
@@ -626,6 +630,9 @@ namespace GLUP {
         uniform_state_.toggle.push_back(
             StateVariable<GLboolean>(this,"alpha_discard_enabled",GL_FALSE)
         );
+        uniform_state_.toggle.push_back(
+            StateVariable<GLboolean>(this,"normal_mapping_enabled",GL_FALSE)
+        );
 	
         uniform_state_.color.push_back(
             VectorStateVariable(this, "front_color", 4)
@@ -672,6 +679,10 @@ namespace GLUP {
 
 	uniform_state_.alpha_threshold.initialize(
 	    this, "alpha_threshold", 0.5f
+	);
+
+	uniform_state_.specular.initialize(
+	    this, "specular", 1.0f
 	);
 	
         uniform_state_.modelview_matrix.initialize(this, "modelview_matrix");
@@ -1043,7 +1054,7 @@ namespace GLUP {
                 primitive_info_[immediate_state_.primitive()].GL_primitive;
             n /= nb_vertices_per_GL_primitive(GL_primitive);
             for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
-                if(immediate_state_.buffer[i].is_enabled()) {                		
+                if(immediate_state_.buffer[i].is_enabled()) {
 		    for(index_t j=0; j<n; ++j) {
 			GEO_CHECK_GLUP();
 			glDisableVertexAttribArray(i*n+j);
@@ -1493,7 +1504,7 @@ namespace GLUP {
         index_t n = nb_vertices_per_primitive[glup_primitive];
         n /= nb_vertices_per_GL_primitive(GL_primitive);
         
-        // Attribute location are bound here, programatically,
+        // Attribute location are bound here, programmatically,
         // since their index depends on the number of vertices,
         // and GLSL does not like to have that in the declaration
         // (when saying layout(binding = nb_vertices), the GLSL
@@ -1531,7 +1542,7 @@ namespace GLUP {
         //   We need a special VAO: memory layout is different since
         // we use a single vertex with an array of n attributes...
         //   Note: since the function can be called several times (one
-        // per toggles configuration), make sute the VAO does not already
+        // per toggles configuration), make sure the VAO does not already
         // exists.
         GEO_CHECK_GLUP();    			
         if(primitive_info_[glup_primitive].VAO == 0) {

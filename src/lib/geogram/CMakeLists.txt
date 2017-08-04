@@ -5,17 +5,18 @@ configure_file(geogram.pc.in ${PROJECT_BINARY_DIR}/geogram${VORPALINE_VERSION_MA
 
 add_subdirectory(third_party)
 
-aux_source_directories(SOURCES "Source Files"            .)
-aux_source_directories(SOURCES "Source Files\\basic"     basic)
-aux_source_directories(SOURCES "Source Files\\numerics"  numerics)
-aux_source_directories(SOURCES "Source Files\\mesh"      mesh)
-aux_source_directories(SOURCES "Source Files\\delaunay"  delaunay)
-aux_source_directories(SOURCES "Source Files\\voronoi"   voronoi)
-aux_source_directories(SOURCES "Source Files\\points"    points)
-aux_source_directories(SOURCES "Source Files\\api"       api)
-aux_source_directories(SOURCES "Source Files\\NL"        NL)
+aux_source_directories(SOURCES "Source Files"           .)
+aux_source_directories(SOURCES "Source Files\\basic"    basic)
+aux_source_directories(SOURCES "Source Files\\numerics" numerics)
+aux_source_directories(SOURCES "Source Files\\mesh"     mesh)
+aux_source_directories(SOURCES "Source Files\\delaunay" delaunay)
+aux_source_directories(SOURCES "Source Files\\voronoi"  voronoi)
+aux_source_directories(SOURCES "Source Files\\points"   points)
+aux_source_directories(SOURCES "Source Files\\api"      api)
+aux_source_directories(SOURCES "Source Files\\NL"       NL)
 aux_source_directories(SOURCES "Source Files\\lua"      lua)
 aux_source_directories(SOURCES "Source Files\\parameterization" parameterization)
+aux_source_directories(SOURCES "Source Files\\bibliography" bibliography)
 
 # Parallel Delaunay now works on both Windows and Unix !
 add_definitions(-DGEOGRAM_WITH_PDEL)

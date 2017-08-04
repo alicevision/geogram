@@ -62,6 +62,8 @@
 
 #include <geogram/NL/nl.h>
 
+#include <geogram/bibliography/bibliography.h>
+
 #include <stack>
 #include <iterator>
 
@@ -613,6 +615,11 @@ namespace GEO {
     OptimalTransportMap::OptimalTransportMap(
         Mesh* mesh, const std::string& delaunay, bool BRIO
     ) : mesh_(mesh) {
+
+	geo_cite("DBLP:conf/compgeom/AurenhammerHA92");
+	geo_cite("DBLP:journals/cgf/Merigot11");
+	geo_cite("journals/M2AN/LevyNAL15");
+	
         epsilon_regularization_ = 0.0;
 
         // Mesh is supposed to be embedded in 4 dim (with
@@ -1464,9 +1471,9 @@ namespace GEO {
     /*************************************************************************/
     /* // Linear Solver V1.0: using OpenNL */
 
-// #define OLD_LINSOLVE
+#define LINSOLVE_USES_OPENNL
     
-#ifdef OLD_LINSOLVE    
+#ifdef LINSOLVE_USES_OPENNL
     
     void OptimalTransportMap::update_sparsity_pattern() {
         // Does nothing for now,
@@ -1481,7 +1488,9 @@ namespace GEO {
         if(use_SUPERLU) {
             nlInitExtension("SUPERLU");
         }
-            
+
+	nlEnable(NL_VERBOSE);
+	
         nlSolverParameteri(NL_NB_VARIABLES, NLint(n));
         if(use_SUPERLU) {
             nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);

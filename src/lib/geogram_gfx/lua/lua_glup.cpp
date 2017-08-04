@@ -694,7 +694,10 @@ void init_lua_glup(lua_State* L) {
     DECLARE_GLUP_COLOR("yellow", 1.0, 1.0, 0.0);
     DECLARE_GLUP_COLOR("pink", 1.0, 0.75, 0.793);            
     DECLARE_GLUP_COLOR("brown",0.6445,0.164,0.164);
-  
+
+    DECLARE_GLUP_FUNC(SetSpecular);
+    DECLARE_GLUP_FUNC(GetSpecular);    
+    
     lua_setglobal(L, "GLUP");
 
     

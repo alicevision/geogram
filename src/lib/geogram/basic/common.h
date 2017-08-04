@@ -320,5 +320,7 @@ namespace GEO {
 #define GEO_NOEXCEPT throw()
 #endif
 
+#define FOR(I,UPPERBND) for(index_t I = 0; I<index_t(UPPERBND); ++I)
+
 #endif
 

@@ -48,38 +48,11 @@
 #include <geogram/basic/argused.h>
 #include <geogram/basic/logger.h>
 #include <geogram/numerics/predicates.h>
+#include <geogram/basic/algorithm.h>
 
 namespace {
 
     using namespace GEO;
-
-    index_t nb_ET2 = 0;
-    index_t nb_TT2 = 0;
-
-    /**
-     * \brief Displays some statistics at program exit.
-     * \details Used to display number of calls to functions
-     *  that are not implemented yet.
-     */
-    struct Stats {
-        /**
-         * \brief Stats destructor.
-         * \details Displays the number of calls to functions
-         *  that are not implemented yet.
-         */
-        ~Stats() {
-            if(nb_ET2 > 0) {
-                Logger::warn("Isect")
-                    << nb_ET2 << " calls to ET2() (not implemented yet)"
-                    << std::endl;
-            }
-            if(nb_TT2 > 0) {
-                Logger::warn("Isect")
-                    << nb_TT2 << " calls to TT2() (not implemented yet)"
-                    << std::endl;
-            }
-        }
-    } stats;
     
     /**
      * \brief Number of possible values of TriangleRegion
@@ -133,7 +106,8 @@ namespace {
     }
 
     /**
-     * \brief Encodes the sign of a double value
+     * \brief Encodes a sign as an hexadecimal digit used as a 
+     *  mnemonic code.
      * \param[in] s the sign
      * \return a 1-byte mnemonic code that represents the sign
      *  of the argument:
@@ -159,6 +133,7 @@ namespace {
     inline index_t icode(Sign s1, Sign s2, Sign s3) {
         return (icode(s1) << 8) | (icode(s2) << 4) | icode(s3);
     }
+
 
     /**
      * \brief Edge-triangle intersection in 3D
@@ -316,6 +291,21 @@ namespace {
         N.x = ::fabs(N.x);
         N.y = ::fabs(N.y);
         N.z = ::fabs(N.z);
+
+	// Particular case: the triangle is degenerate and has
+	// zero area. 
+	if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+	    N = (p2 - p1);
+	    if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+		N = (p3 - p1);
+	    }
+	    if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+		N = vec3(0.0, 0.0, 1.0);
+	    } else {
+		N = Geom::perpendicular(N);
+	    }
+	}
+	
         if((N.x > N.y) && (N.x > N.z)) {
             return 0;
         }
@@ -329,6 +319,7 @@ namespace {
      * \brief Point-triangle intersection in 2d
      * \details Input points are in 3d. The two most varying
      * coordinates are used.
+     * \param[in] dom_axis the dominant axis of triangle \p q0, \p q1, \p q2
      * \param[in] p0 the point
      * \param[in] P the TriangleRegion encoding of p0 within the
      *  triangle it comes from, should be one of (T_RGN_P0, T_RGN_P1, T_RGN_P2)
@@ -340,13 +331,13 @@ namespace {
      * \pre p0 , q0 , q1 , q2 are in the same 3d plane.
      */
     bool PT2(
+	coord_index_t dom_axis,
         const vec3& p0, TriangleRegion P,
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& out, bool swp
     ) {
         geo_debug_assert(PCK::orient_3d(q0, q1, q2, p0) == 0.0);
         geo_debug_assert(region_dim(P) == 0);
-        coord_index_t dom_axis = dominant_axis(q0, q1, q2);
         Sign s0 = orient2d_3d(p0, q1, q2, dom_axis);
         Sign s1 = orient2d_3d(p0, q2, q0, dom_axis);
         Sign s2 = orient2d_3d(p0, q0, q1, dom_axis);
@@ -415,6 +406,64 @@ namespace {
         geo_assert_not_reached;
     }
 
+
+    /**
+     * \brief Point-triangle intersection in 2d
+     * \details Input points are in 3d. The two most varying
+     *  coordinates are used. This version determines the dominant
+     *  axis of q0,q1,q2 and calls the other variant of PT2().
+     * \param[in] p0 the point
+     * \param[in] P the TriangleRegion encoding of p0 within the
+     *  triangle it comes from, should be one of (T_RGN_P0, T_RGN_P1, T_RGN_P2)
+     * \param[in] q0 , q1 , q2 the triangle
+     * \param[out] out where to append the result (in symbolic form)
+     * \param[in] swp if set, the TriangleRegion codes of the
+     *  intersection are swapped in the result.
+     * \return true if an intersection point was detected, false otherwise
+     * \pre p0 , q0 , q1 , q2 are in the same 3d plane.
+     */
+    bool PT2(
+        const vec3& p0, TriangleRegion P,
+        const vec3& q0, const vec3& q1, const vec3& q2,
+        vector<TriangleIsect>& out, bool swp
+    ) {
+	coord_index_t dom_axis = dominant_axis(q0,q1,q2);
+	return PT2(dom_axis, p0, P, q0, q1, q2, out, swp);
+    }
+    
+    /**
+     * \brief Edge_edge intersection in 2d
+     * \details Input points are in 3d. The most varying 
+     *   coordinates are used. 
+     * \param[in] dom_axis the dominant axis
+     * \param[in] p0 , p1 the first edge
+     * \param[in] E1 the TriangleRegion encoding of (p0,p1) within the triangle
+     *  it comes from, should be one of (T_RGN_E0, T_RGN_E1, T_RGN_E2)
+     * \param[in] q0 , q1 the second edge
+     * \param[in] E2 the TriangleRegion encoding of (q0,q1) within the triangle
+     *  it comes from, should be one of (T_RGN_E0, T_RGN_E1, T_RGN_E2)
+     */
+    bool EE2_strict(
+	coord_index_t dom_axis,
+        const vec3& p0, const vec3& p1, TriangleRegion E1,
+        const vec3& q0, const vec3& q1, TriangleRegion E2,
+        vector<TriangleIsect>& out, bool swp
+    ) {
+	geo_debug_assert(region_dim(E1) == 1);
+	geo_debug_assert(region_dim(E2) == 1);
+
+        Sign s0 = orient2d_3d(p0, q0, q1, dom_axis);
+        Sign s1 = orient2d_3d(p1, q0, q1, dom_axis);
+        Sign s2 = orient2d_3d(q0, p0, p1, dom_axis);
+        Sign s3 = orient2d_3d(q1, p0, p1, dom_axis);	
+
+	bool result = (s0*s1 == -1 && s2*s3 == -1);
+	if(result) {
+	    add_intersection(out, E1, E2, swp);
+	}
+	return result;
+    }
+    
     /**
      * \brief Edge-triangle intersection in 2d
      * \details Input points are in 3d. The two most varying
@@ -439,6 +488,8 @@ namespace {
         geo_debug_assert(PCK::orient_3d(q0, q1, q2, p1) == ZERO);
         geo_debug_assert(region_dim(E) == 1);
 
+        coord_index_t dom_axis = dominant_axis(q0, q1, q2);
+	
         TriangleRegion P0_rgn = T_RGN_T;
         TriangleRegion P1_rgn = T_RGN_T;
         switch(E) {
@@ -461,17 +512,18 @@ namespace {
                 geo_assert_not_reached;
         }
 
-        if(
-            PT2(p0, P0_rgn, q0, q1, q2, out, swp) &&
-            PT2(p1, P1_rgn, q0, q1, q2, out, swp)
-        ) {
+	bool p0t = PT2(dom_axis, p0, P0_rgn, q0, q1, q2, out, swp);
+	bool p1t = PT2(dom_axis, p1, P1_rgn, q0, q1, q2, out, swp);
+	
+        if( p0t && p1t) {
             return true;
         }
 
-        // TODO: NOT IMPLEMENTED YET
-        // geo_assert_not_reached ;
-        ++nb_ET2;
-        return false;
+	bool ee0 = EE2_strict(dom_axis, p0, p1, E, q1, q2, T_RGN_E0, out, swp);
+	bool ee1 = EE2_strict(dom_axis, p0, p1, E, q2, q0, T_RGN_E1, out, swp);
+	bool ee2 = EE2_strict(dom_axis, p0, p1, E, q0, q1, T_RGN_E2, out, swp);
+	
+        return (ee0 || ee1 || ee2) ;
     }
 
     /**
@@ -591,26 +643,40 @@ namespace {
      * \param[in] p0 , p1 , p2 first triangle
      * \param[in] q0 , q1 , q2 second triangle
      * \param[out] result where to append the result (in symbolic form)
-     * \return true if an intersection point was detected, false otherwise
      * \pre p0,p1,p2,q0,q1,q2 are in the same 3d plane.
      */
-    bool triangles_intersections_2d(
+    /*
+    void TT2(
         const vec3& p0, const vec3& p1, const vec3& p2,
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     ) {
-        geo_argused(p0);
-        geo_argused(p1);
-        geo_argused(p2);
-        geo_argused(q0);
-        geo_argused(q1);
-        geo_argused(q2);
-        geo_argused(result);
-        // TODO: NOT IMPLEMENTED YET
-        //      geo_assert_not_reached;
-        ++nb_TT2;
-        return false;
+	// Brute force for now: test all point-triangle and
+	// edge-edge intersections.
+	
+	coord_index_t dom_axis = dominant_axis(q0, q1, q2);
+
+	PT2(dom_axis, p0, T_RGN_P0, q0, q1, q2, result, false);
+	PT2(dom_axis, p1, T_RGN_P1, q0, q1, q2, result, false);
+	PT2(dom_axis, p2, T_RGN_P2, q0, q1, q2, result, false);
+
+	PT2(dom_axis, q0, T_RGN_P0, p0, p1, p2, result, true);
+	PT2(dom_axis, q1, T_RGN_P1, p0, p1, p2, result, true);
+	PT2(dom_axis, q2, T_RGN_P2, p0, p1, p2, result, true);	
+
+	EE2_strict(dom_axis, p1, p2, T_RGN_E0, q1, q2, T_RGN_E0, result, false);
+	EE2_strict(dom_axis, p2, p0, T_RGN_E1, q1, q2, T_RGN_E0, result, false);
+	EE2_strict(dom_axis, p0, p1, T_RGN_E2, q1, q2, T_RGN_E0, result, false);
+
+	EE2_strict(dom_axis, p1, p2, T_RGN_E0, q2, q0, T_RGN_E1, result, false);
+	EE2_strict(dom_axis, p2, p0, T_RGN_E1, q2, q0, T_RGN_E1, result, false);
+	EE2_strict(dom_axis, p0, p1, T_RGN_E2, q2, q0, T_RGN_E1, result, false);
+	
+	EE2_strict(dom_axis, p1, p2, T_RGN_E0, q0, q1, T_RGN_E2, result, false);
+	EE2_strict(dom_axis, p2, p0, T_RGN_E1, q0, q1, T_RGN_E2, result, false);
+	EE2_strict(dom_axis, p0, p1, T_RGN_E2, q0, q1, T_RGN_E2, result, false);
     }
+    */
 }
 
 /****************************************************************************/
@@ -633,16 +699,24 @@ namespace GEO {
                     q0, q1, q2, p0, p1, p2, result, true
                 );
                 break;
-            case PLANAR:
-                triangles_intersections_2d(
+            case PLANAR:  
+                /* TT2(
                     p0, p1, p2, q0, q1, q2, result
-                );
-                break;
+		    ); */
+		break;
             case NO_ISECT:
             case TANGENT:
                 break;
         }
         coord_index_t max_dim = 0;
+
+	//   The same intersection can appear several times,
+	// remove the duplicates
+	sort_unique(result);
+
+	//   Determine whether there is a strict intersection, i.e.
+	// at least one of the objects that determine intersection
+	// vertices is of dimension >= 1.
         for(index_t i = 0; i < result.size(); i++) {
             max_dim = geo_max(max_dim, region_dim(result[i].first));
             max_dim = geo_max(max_dim, region_dim(result[i].second));
