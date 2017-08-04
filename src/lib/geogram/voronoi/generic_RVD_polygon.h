@@ -183,7 +183,7 @@ namespace GEOGen {
          * \param[in] symbolic if true, symbolic representation
          *   of vertices is computed
          */
-        template <int DIM>
+        template <index_t DIM>
         void clip_by_plane(
             Polygon& target, PointAllocator& target_intersections,
             const Mesh* mesh, const Delaunay* delaunay,
@@ -226,7 +226,7 @@ namespace GEOGen {
          * the system spends the largest amount of time
          * (no big surprise...).
          */
-        template <int DIM>
+        template <index_t DIM>
         void clip_by_plane_fast(
             Polygon& target, PointAllocator& target_intersections,
             const Delaunay* delaunay, index_t i, index_t j,
@@ -369,7 +369,7 @@ namespace GEOGen {
          * \param[in] j index of the other extremity of
          *  the bisector in \p delaunay
          */
-        template <int DIM>
+        template <index_t DIM>
         void clip_by_plane_exact(
             Polygon& target, PointAllocator& target_intersections,
             const Mesh* mesh, const Delaunay* delaunay,

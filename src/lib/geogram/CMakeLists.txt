@@ -14,9 +14,12 @@ aux_source_directories(SOURCES "Source Files\\voronoi"  voronoi)
 aux_source_directories(SOURCES "Source Files\\points"   points)
 aux_source_directories(SOURCES "Source Files\\api"      api)
 aux_source_directories(SOURCES "Source Files\\NL"       NL)
-aux_source_directories(SOURCES "Source Files\\lua"      lua)
 aux_source_directories(SOURCES "Source Files\\parameterization" parameterization)
 aux_source_directories(SOURCES "Source Files\\bibliography" bibliography)
+
+if(GEOGRAM_WITH_LUA)
+   aux_source_directories(SOURCES "Source Files\\lua"      lua)
+endif()
 
 # Parallel Delaunay now works on both Windows and Unix !
 add_definitions(-DGEOGRAM_WITH_PDEL)

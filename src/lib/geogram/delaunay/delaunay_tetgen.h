@@ -76,14 +76,25 @@ namespace GEO {
          */
         DelaunayTetgen(coord_index_t dimension = 3);
 
+	/**
+	 * \copydoc Delaunay::set_vertices()
+	 */
         virtual void set_vertices(
             index_t nb_vertices, const double* vertices
         );
 
+	/**
+	 * \copydoc Delaunay::supports_constraints()
+	 */
         virtual bool supports_constraints() const;
 
-    protected:
 
+	/**
+	 * \copydoc Delaunay::region()
+	 */
+        virtual index_t region(index_t t) const;
+       
+    protected:
 
         /**
          * \brief Implementation of set_vertices() used when

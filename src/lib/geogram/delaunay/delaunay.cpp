@@ -46,6 +46,7 @@
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/delaunay/delaunay_nn.h>
 #include <geogram/delaunay/delaunay_3d.h>
+#include <geogram/delaunay/delaunay_2d.h>
 
 #ifdef GEOGRAM_WITH_PDEL
 #include <geogram/delaunay/parallel_delaunay_3d.h>
@@ -145,6 +146,10 @@ namespace GEO {
         geo_register_Delaunay_creator(ParallelDelaunay3d, "PDEL");
 #endif
         geo_register_Delaunay_creator(RegularWeightedDelaunay3d, "BPOW");
+
+	geo_register_Delaunay_creator(Delaunay2d, "BDEL2d");
+	geo_register_Delaunay_creator(RegularWeightedDelaunay2d, "BPOW2d");
+	
         geo_register_Delaunay_creator(Delaunay_NearestNeighbors, "NN");
     }
 
@@ -195,6 +200,7 @@ namespace GEO {
         store_cicl_ = false;
         keep_infinite_ = false;
         nb_finite_cells_ = 0;
+	keep_regions_ = false;
     }
 
     Delaunay::~Delaunay() {
@@ -383,6 +389,11 @@ namespace GEO {
         }
         return false;
     }
-    
+
+    index_t Delaunay::region(index_t t) const {
+	geo_argused(t);
+	geo_debug_assert(t < nb_cells());
+	return index_t(-1);
+    }
 }
 

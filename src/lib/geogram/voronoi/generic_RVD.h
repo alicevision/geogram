@@ -80,7 +80,7 @@ namespace GEOGen {
      * \note This is an internal implementation class, not meant to
      *  be used directly, use GEO::RestrictedVoronoiDiagram instead.
      */
-    template <int DIM>
+    template <index_t DIM>
     class RestrictedVoronoiDiagram {
 
         /** \brief This class type */
@@ -163,6 +163,21 @@ namespace GEOGen {
             connected_components_priority_ = x;
         }
 
+
+	/**
+	 * \brief Tests whether connected components priority is
+	 *  set.
+         * \details If connected_components_priority is set,
+         *  then the connected components of the
+         *  restricted Voronoi cells will be traversed
+         *  one by one.
+	 * \retval true if connected components priority is used.
+	 * \retval false otherwise.
+	 */
+	bool connected_components_priority() const {
+	    return connected_components_priority_;
+	}
+	
         /**
          * \brief Gets the input mesh.
          */

@@ -192,9 +192,14 @@ namespace {
         glup_viewer_disable(GLUP_VIEWER_BACKGROUND);
         glup_viewer_disable(GLUP_VIEWER_3D);
         
-        
-        delaunay = Delaunay::create(2,"triangle");
-        create_random_points(5);
+
+	if(true) {
+	    delaunay = Delaunay::create(2,"BDEL2d");
+	    create_random_points(3);
+	} else {
+	    delaunay = Delaunay::create(2,"triangle");
+	    create_random_points(5);
+	}
     }
 
     /**

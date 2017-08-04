@@ -63,7 +63,7 @@ DIM ) {
   begin_sos5(p0,p1,p2,p3,p4)
      sos(p0, Sign(Delta4_sign*sign((Delta2-Delta1)+(Delta4-Delta3))))
      sos(p1, Sign(Delta4_sign*sign(Delta1)))
-     sos(p2, Sign(Delta4_sign*sign(Delta2)))
+     sos(p2, Sign(-Delta4_sign*sign(Delta2)))
      sos(p3, Sign(Delta4_sign*sign(Delta3)))
      sos(p4, NEGATIVE)
   end_sos

@@ -71,7 +71,7 @@ namespace GEO {
      *  it is bound, it is used to weight the vertices.
      * \return the mass of facet \p f in \p mesh
      */
-    template <int DIM>
+    template <index_t DIM>
     inline double mesh_facet_mass(
         const Mesh& mesh,
         index_t f,
@@ -122,7 +122,7 @@ namespace GEO {
      *  points land in the same facet, the function returns false to notify
      *  a potential numerical problem.
      */
-    template <int DIM>
+    template <index_t DIM>
     inline bool mesh_generate_random_samples_on_surface(
         const Mesh& mesh,
         double* p,
@@ -214,7 +214,7 @@ namespace GEO {
      * \param[in] t a tetrahedron index in \p mesh
      * \return the mass of tetrahedron \p t in \p mesh
      */
-    template <int DIM>
+    template <index_t DIM>
     inline double mesh_tetra_mass(
         const Mesh& mesh,
         index_t t
@@ -247,7 +247,7 @@ namespace GEO {
      *  is bound, it is taken into account in mass computation
      * \return the mass of tetrahedron \p t in \p mesh
      */
-    template <int DIM>
+    template <index_t DIM>
     inline double mesh_tetra_mass(
         const Mesh& mesh,
         index_t t,
@@ -290,7 +290,7 @@ namespace GEO {
      *  points land in the same tetrahedron, the function returns false
      *  to notify potential numerical problem.
      */
-    template <int DIM>
+    template <index_t DIM>
     inline bool mesh_generate_random_samples_in_volume(
         const Mesh& mesh,
         double* p,

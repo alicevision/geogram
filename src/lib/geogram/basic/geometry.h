@@ -265,15 +265,35 @@ namespace GEO {
 
         /**
          * \brief Computes the area of a 3d triangle
-         * \param[in] p1 first vertex of the triangle
-         * \param[in] p2 second vertex of the triangle
-         * \param[in] p3 third vertex of the triangle
+         * \param[in] p1 , p2 , p3 the three vertices of the triangle
+         * \return the area of the triangle (\p p1, \p p2, \p p3).
+         */
+	inline double triangle_area_3d(
+	    const double* p1, const double* p2, const double* p3
+	) {
+	    double Ux = p2[0] - p1[0];
+	    double Uy = p2[1] - p1[1];
+	    double Uz = p2[2] - p1[2];
+	    
+	    double Vx = p3[0] - p1[0];
+	    double Vy = p3[1] - p1[1];
+	    double Vz = p3[2] - p1[2];
+	    
+	    double Nx = Uy*Vz - Uz*Vy;
+	    double Ny = Uz*Vx - Ux*Vz;
+	    double Nz = Ux*Vy - Uy*Vx;
+	    return 0.5 * ::sqrt(Nx*Nx+Ny*Ny+Nz*Nz);
+	}
+	
+        /**
+         * \brief Computes the area of a 3d triangle
+         * \param[in] p1 , p2 , p3 the three vertices of the triangle
          * \return the area of the triangle (\p p1, \p p2, \p p3).
          */
         inline double triangle_area(
             const vec3& p1, const vec3& p2, const vec3& p3
         ) {
-            return 0.5 * length(cross(p2 - p1, p3 - p1));
+	    return triangle_area_3d(p1.data(), p2.data(), p3.data());
         }
 
         /**

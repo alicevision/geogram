@@ -49,10 +49,12 @@
 #include <geogram_gfx/glup_viewer/geogram_logo_256.xpm>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 
+#ifdef GEOGRAM_WITH_LUA
 #include <geogram_gfx/lua/lua_glup.h>
 #include <geogram_gfx/lua/lua_glup_viewer.h>
 #include <geogram_gfx/lua/lua_imgui.h>
 #include <geogram/lua/lua_io.h>
+#endif
 
 #include <geogram/mesh/mesh_io.h>
 
@@ -87,10 +89,12 @@ extern "C" {
 }
 
 
+#ifdef GEOGRAM_WITH_LUA
 extern "C" {
 #include <geogram/third_party/lua/lauxlib.h>
 #include <geogram/third_party/lua/lualib.h>
 }
+#endif
 
 namespace {
     /**
@@ -1433,6 +1437,7 @@ namespace GEO {
 	    "gfx:keypress", "", "initial simulated sequence of pressed keys"
 	);
 
+#ifdef GEOGRAM_WITH_LUA	
 	lua_error_occured_ = false;	
 	lua_state_ = luaL_newstate();
 	luaL_openlibs(lua_state_);
@@ -1440,7 +1445,7 @@ namespace GEO {
 	init_lua_glup(lua_state_);
 	init_lua_glup_viewer(lua_state_);		
 	init_lua_imgui(lua_state_);
-
+#endif
 	geo_cite_with_info(
 	    "WEB:ImGUI","Used to create the GUI of GEOGRAM utilities (vorpaview, geobox, geocod)."
 	);
@@ -1455,7 +1460,9 @@ namespace GEO {
                 glDeleteTextures(1, &colormaps_[i].texture);                
             }
         }
+#ifdef GEOGRAM_WITH_LUA	
 	lua_close(lua_state_);
+#endif	
         geo_assert(instance_ == this);        
         instance_ = nil;
     }
@@ -2110,6 +2117,7 @@ namespace GEO {
     /**********************************************************************/
 
     bool Application::exec_command(const char* command) {
+#ifdef GEOGRAM_WITH_LUA	
 	if(luaL_dostring(lua_state_,command)) {
 	    adjust_lua_glup_state(lua_state_);
 	    const char* msg = lua_tostring(lua_state_,-1);
@@ -2123,6 +2131,12 @@ namespace GEO {
 	    lua_error_occured_ = false;
 	}
 	return !lua_error_occured_;
+#else
+	geo_argused(command);
+	Logger::err("LUA") << "Compiled without LUA support"
+			   << std::endl;
+	return false;
+#endif	
     }
 
     bool Application::on_key_pressed(const char* q) {

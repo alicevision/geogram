@@ -173,7 +173,7 @@ namespace GEOGen {
         };
 
         /**
-         * Creates a new empty ConvexCell.
+         * \brief ConvexCell constructor.
          * \param[in] dim dimension of the ConvexCell, e.g. 3 for 3d
          */
         ConvexCell(coord_index_t dim) :
@@ -184,6 +184,15 @@ namespace GEOGen {
             cell_id_(-1) {
         }
 
+        /**
+	 * \brief Copies a ConvexCell.
+	 * \details The allocated vertices are shared with \p rhs, thus
+	 *  \p rhs should not be deleted before this ConvexCell.
+	 * \param[in] rhs a const reference to the ConvexCell to be
+	 *  copied.
+	 */
+	void copy(const ConvexCell& rhs);    
+	    
         /**
          * \brief Gets the dimension of this ConvexCell.
          * \return the dimension of this ConvexCell, e.g. 3 for 3d
@@ -275,7 +284,7 @@ namespace GEOGen {
          *   efficiency reasons).
          * \pre DIM == dimension()
          */
-        template <int DIM>
+        template <index_t DIM>
         signed_index_t clip_by_plane(
             const Mesh* mesh, const Delaunay* delaunay,
             index_t i, index_t j,
@@ -298,23 +307,29 @@ namespace GEOGen {
                 return signed_index_t(new_v);
             }
 
-            // Phase II: Find an halfedge on the border
+            // Phase II: Find a triangle on the border of the conflict zone
             // (by traversing the conflict list).
-            Halfedge first_h;
-            bool found_h = find_halfedge_on_border(
-                conflict_begin, conflict_end, first_h
+	    index_t first_conflict_t;
+	    index_t first_conflict_e;
+            bool found_h = find_triangle_on_border(
+                conflict_begin, conflict_end,
+		first_conflict_t, first_conflict_e
             );
 
             // The clipping plane removed everything !
+	    // (note: cannot be empty conflict list, since this
+	    //  case was detected by previous test at the end of
+	    //  phase I)
             if(!found_h) {
                 clear();
                 return -1;
             }
 
-
             // Phase III: Triangulate hole.
             triangulate_hole<DIM>(
-                delaunay, i, j, symbolic, first_h, new_v
+                delaunay, i, j, symbolic,
+		first_conflict_t, first_conflict_e,
+		new_v
             );
 
             // Phase IV: Merge the conflict zone into the free list.
@@ -620,132 +635,7 @@ namespace GEOGen {
             geo_debug_assert(v < max_v());
             vertices_[v].id_ = id;
         }
-
-        /**
-         * \brief A Halfedge corresponds to an edge seen from a triangle.
-         * \details Halfedge has helper functions that facilitate traversing
-         * the border of the conflict zone.
-         */
-        class Halfedge {
-        public:
-            /**
-             * \brief Creates an uninitialized Halfedge.
-             */
-            Halfedge() :
-                t(NO_TRIANGLE),
-                e(3) {
-            }
-
-            /**
-             * \brief Creates a Halfedge.
-             * \param[in] t_in index of the triangle.
-             * \param[in] e_in local index of one edge of triangle \p t_in.
-             */
-            Halfedge(index_t t_in, index_t e_in) :
-                t(t_in),
-                e(e_in) {
-            }
-
-            /**
-             * \brief Compares two Halfedges
-             * \param[in] rhs the right hand side
-             * \retval true if \p rhs and this Halfedge correspond to the
-             *   same triangle and the same edge
-             * \retval false otherwise
-             */
-            bool operator== (const Halfedge& rhs) const {
-                return t == rhs.t && e == rhs.e;
-            }
-
-            /**
-             * \brief Compares two Halfedges
-             * \param[in] rhs the right hand side
-             * \retval true if \p rhs and this Halfedge correspond to different
-             *   triangles or different edges
-             * \retval false otherwise
-             */
-            bool operator!= (const Halfedge& rhs) const {
-                return t != rhs.t || e != rhs.e;
-            }
-
-            index_t t;
-            index_t e;
-        };
-
-        /**
-         * \brief Tests whether a Halfedge is valid.
-         * \details A Halfedge is valid if it corresponds
-         *  to a used or conflict triangle, and if
-         *  the local edge index is one of (0,1 or 2).
-         */
-        bool halfedge_is_valid(const Halfedge& h) const {
-            return h.t != NO_TRIANGLE && h.t < max_t() &&
-                   h.e < 3 && !triangle_is_free(h.t);
-        }
-
-        /**
-         * \brief Tests whether a Halfedge is on the border
-         *  of the conflict zone.
-         */
-        bool halfedge_is_on_border(const Halfedge& h) const {
-            return triangle_is_conflict(triangle_adjacent(h.t, h.e));
-        }
-
-        /**
-         * \brief Turns around a triangle.
-         * \details Replaces \p h with the halfedge next to \p h around
-         *  the triangle incident to \p h.
-         */
-        void move_to_next_halfedge(Halfedge& h) const {
-            geo_debug_assert(halfedge_is_valid(h));
-            h.e = plus1mod3(h.e);
-            geo_debug_assert(halfedge_is_valid(h));
-        }
-
-        /**
-         * \brief Moves to adjacent triangle.
-         * \details Replaces \p h with the halfedge opposite to \p h
-         *  in the adjacent triangle.
-         */
-        void move_to_opposite_halfedge(Halfedge& h) const {
-            geo_debug_assert(halfedge_is_valid(h));
-            index_t t2 = triangle_adjacent(h.t, h.e);
-            h.e = triangle_adjacent_index(t2, h.t);
-            h.t = t2;
-            geo_debug_assert(halfedge_is_valid(h));
-        }
-
-        /**
-         * \brief Traverses the border of the conflict zone.
-         * \details Replaces \p h with the next halfedge
-         *  around the border of the conflict zone.
-         * \pre halfedge_is_on_border(h)
-         */
-        void move_to_next_along_border(Halfedge& h) const {
-            geo_debug_assert(halfedge_is_valid(h));
-            for(;;) {
-                move_to_next_halfedge(h);
-                if(halfedge_is_on_border(h)) {
-                    break;
-                }
-                move_to_opposite_halfedge(h);
-            }
-        }
-
-        /**
-         * \brief Gets the index of the vertex at the origin of a Halfedge.
-         */
-        index_t halfedge_vertex_from(Halfedge& h) const {
-            return triangle_vertex(h.t, plus1mod3_[h.e]);
-        }
-
-        /**
-         * \brief Gets the index of the vertex pointed to by a Halfedge.
-         */
-        index_t halfedge_vertex_to(Halfedge& h) const {
-            return triangle_vertex(h.t, minus1mod3_[h.e]);
-        }
-
+	
         /**
          * \brief A Corner corresponds to a vertex seen from a triangle.
          * \details Corner has helper functions that facilitate traversing
@@ -984,82 +874,97 @@ namespace GEOGen {
         /**
          * \brief Triangulates the conflict zone.
          * \details Creates the triangles radiating from \p new_v and
-         * attached to the border of the conflict zone, indicated by \p first_h.
+         * attached to the border of the conflict zone, indicated by \p t and \p e.
          * \param[in] delaunay the Delaunay triangulation
          * \param[in] i index of the first extremity of
-         *     the bisector in \p delaunay
+         *     the bisector in \p delaunay.
          * \param[in] j index of the first extremity of
-         *     the bisector in \p delaunay
+         *     the bisector in \p delaunay.
          * \param[in] symbolic if true, symbolic representation of the
-         *     vertices is generated
-         * \param[in] first_h a Halfedge on the border of the conflict zone
-         * \param[in] new_v index of the new vertex
+         *    vertices is generated.
+         * \param[in] t1 a triangle adjacent to the border of the conflict zone from
+	 *    inside.
+	 * \param[in] t1ebord the edge along which t is adjacent to the border of the conflict
+	 *    zone.
+         * \param[in] v_in index of the new vertex
+	 * \return one of the created triangles
          */
-        template <int DIM>
-        void triangulate_hole(
+        template <index_t DIM>
+	index_t triangulate_hole(
             const Delaunay* delaunay,
             index_t i, index_t j, bool symbolic,
-            const Halfedge& first_h, index_t new_v
+	    index_t t1, index_t t1ebord,
+            index_t v_in
         ) {
-            // Phase I: Triangulate the conflict zone by traversing its border
-            // Each edge (v0,v1) on the border generates a
-            // triangle (new_v, v1, v0)
-            index_t first_t = NO_TRIANGLE;
-            index_t prev_t = NO_TRIANGLE;
-            index_t t = NO_TRIANGLE;
+	    index_t t = t1;
+	    index_t e = t1ebord;
+	    index_t t_adj = triangle_adjacent(t,e);
+	    geo_debug_assert(t_adj != index_t(-1));
 
-            Halfedge h = first_h;
-            index_t v0 = halfedge_vertex_from(h);
-            index_t v1 = halfedge_vertex_to(h);
-            do {
-                t = create_triangle(new_v, v1, v0);
-                triangle_dual(t).intersect_geom<DIM>(
+	    geo_debug_assert(triangle_is_conflict(t));
+	    geo_debug_assert(!triangle_is_conflict(t_adj));
+
+	    index_t new_t_first = index_t(-1);
+	    index_t new_t_prev  = index_t(-1);
+
+	    do {
+		
+		index_t v1 = triangle_vertex(t, plus1mod3(e));
+		index_t v2 = triangle_vertex(t, minus1mod3(e));	    
+		
+		// Create new triangle
+		index_t new_t = create_triangle(v_in, v1, v2);
+
+                triangle_dual(new_t).intersect_geom<DIM>(
                     intersections_,
-                    triangle_dual(h.t),
-                    triangle_dual(triangle_adjacent(h.t, h.e)),
+                    triangle_dual(t),
+                    triangle_dual(triangle_adjacent(t, e)),
                     delaunay->vertex_ptr(i), delaunay->vertex_ptr(j)
                 );
+		
                 if(symbolic) {
-                    triangle_dual(t).sym().intersect_symbolic(
-                        triangle_dual(h.t).sym(),
-                        triangle_dual(triangle_adjacent(h.t, h.e)).sym(),
+                    triangle_dual(new_t).sym().intersect_symbolic(
+                        triangle_dual(t).sym(),
+                        triangle_dual(triangle_adjacent(t, e)).sym(),
                         j
                     );
                 }
-                set_triangle_adjacent(t, 0, h.t);
-                if(prev_t != NO_TRIANGLE) {
-                    set_triangle_adjacent(prev_t, 2, t);
-                    set_triangle_adjacent(t, 1, prev_t);
-                }
-                if(first_t == NO_TRIANGLE) {
-                    first_t = t;
-                }
-                prev_t = t;
-                move_to_next_along_border(h);
-                v0 = v1;
-                v1 = halfedge_vertex_to(h);
-            } while(h != first_h);
-            set_triangle_adjacent(t, 2, first_t);
-            set_triangle_adjacent(first_t, 1, t);
 
-            // Phase II:
-            // Now we need to connect the triangles outside the conflict zone
-            // to the new triangles. We traverse each 'new triangle' t, and
-            // find t's mate t2 through adjacent(t,0). Then the right edge
-            // (along which t2 is adjacent to t) is retreived by finding
-            // the index of t's vertex #2 in t2.
+		//   Connect new triangle to triangle on the other
+		// side of the conflict zone.
+		set_triangle_adjacent(new_t, 0, t_adj);
+		index_t adj_e = triangle_adjacent_index(t_adj, t);
+		set_triangle_adjacent(t_adj, adj_e, new_t);
+		
+	    
+		// Move to next triangle
+		e = plus1mod3(e);
+		t_adj = index_t(triangle_adjacent(t,e));
+		while(triangle_is_conflict(t_adj)) {
+		    t = t_adj;
+		    e = minus1mod3(find_triangle_vertex(t,v2));		
+		    t_adj = index_t(triangle_adjacent(t,e));
+		    geo_debug_assert(t_adj != index_t(-1));		
+		}
+		
+		if(new_t_prev == index_t(-1)) {
+		    new_t_first = new_t;
+		} else {
+		    set_triangle_adjacent(new_t_prev, 1, new_t);
+		    set_triangle_adjacent(new_t, 2, new_t_prev);
+		}
+		
+		new_t_prev = new_t;
+		
+	    } while((t != t1) || (e != t1ebord));
 
-            t = first_t;
-            do {
-                unsigned int t2 = triangle_adjacent(t, 0);
-                unsigned int v = triangle_vertex(t, 2);
-                unsigned int iv = find_triangle_vertex(t2, v);
-                unsigned int e = minus1mod3_[iv];
-                set_triangle_adjacent(t2, e, t);
-                t = triangle_adjacent(t, 2);
-            } while(t != first_t);
-        }
-
+	    // Connect last triangle to first triangle
+	    set_triangle_adjacent(new_t_prev, 1, new_t_first);
+	    set_triangle_adjacent(new_t_first, 2, new_t_prev);
+	    
+	    return new_t_prev;
+	}
+	
         /**
          * \brief Determines the conflict zone.
          * \details The conflict zone corresponds to the set of triangles
@@ -1077,7 +982,7 @@ namespace GEOGen {
          * \param[out] conflict_end one position past index of the
          *    last triangle in conflict list
          */
-        template <int DIM>
+        template <index_t DIM>
         void get_conflict_list(
             const Mesh* mesh, const Delaunay* delaunay,
             index_t i, index_t j, bool exact,
@@ -1141,7 +1046,7 @@ namespace GEOGen {
          * \return the index of the vertex furthest away on \p j%'s side,
          *   or -1 if all the vertices are on \p i%'s side.
          */
-        template <int DIM>
+        template <index_t DIM>
         index_t find_furthest_point_linear_scan(
             const Delaunay* delaunay, index_t i, index_t j
         ) const {
@@ -1172,7 +1077,7 @@ namespace GEOGen {
          *    in \p delaunay
          * \param[in] q the query point
          */
-        template <int DIM>
+        template <index_t DIM>
         static double signed_bisector_distance(
             const Delaunay* delaunay, index_t i, index_t j, const double* q
         ) {
@@ -1202,7 +1107,7 @@ namespace GEOGen {
          * \param[out] conflict_end one position past index of the
          *    last triangle in conflict list
          */
-        template <int DIM>
+        template <index_t DIM>
         void propagate_conflict_list(
             const Mesh* mesh, const Delaunay* delaunay,
             index_t first_t,
@@ -1262,7 +1167,7 @@ namespace GEOGen {
          * \tparam DIM dimension, specified as a template
          *  parameter for efficiency considerations.
          */
-        template <int DIM>
+        template <index_t DIM>
         Sign side(
             const Mesh* mesh, const Delaunay* delaunay,
             const GEOGen::Vertex& v,
@@ -1313,33 +1218,35 @@ namespace GEOGen {
         ) const;
 
         /**
-         * \brief Gets a Halfedge on the border of the conflict zone.
+         * \brief Gets a triangle and an edge on the internal border of the conflict zone.
+	 * \details The returned triangle touches the conflict zone from inside.
          * \param[in] conflict_begin first triangle of the conflict zone
          * \param[in] conflict_end one element past the last triangle of
          *   the conflict zone
-         * \param[out] first_h a halfedge on the border of the conflict zone
-         * \return true if a Halfedge on the border was found, false otherwise.
+         * \param[out] t a triangle in the conflict zone adjacent to the border of the
+	 *   conflict zone.
+	 * \param[out] e the edge along which \p t is adjacent to the border of the
+	 *   conflict zone.
+         * \return true if a triangle on the border was found, false otherwise.
          */
-        bool find_halfedge_on_border(
-            index_t conflict_begin, index_t conflict_end, Halfedge& first_h
-        ) const {
+	bool find_triangle_on_border(
+            index_t conflict_begin, index_t conflict_end,
+	    index_t& t, index_t& e
+	) const {
             GEO::geo_argused(conflict_end);
-            index_t t = conflict_begin;
+            t = conflict_begin;
             do {
-                for(index_t e = 0; e < 3; e++) {
+                for(e = 0; e < 3; ++e) {
                     index_t nt = triangle_adjacent(t, e);
                     if(triangle_is_used(nt)) {
-                        first_h.t = nt;
-                        first_h.e = triangle_adjacent_index(nt, t);
-                        geo_debug_assert(halfedge_is_valid(first_h));
                         return true;
                     }
                 }
                 t = next_triangle(t);
             } while(t != END_OF_LIST);
             return false;
-        }
-
+	}
+	
         /**
          * \brief Gets the successor of a triangle.
          * \details Triangles are linked, for instance to represent
@@ -1477,7 +1384,7 @@ namespace GEOGen {
             return 4 * t + lf;
         }
 
-    private:
+      private:
         GEO::vector<Triangle> triangles_;
         GEO::vector<Vertex> vertices_;
         index_t first_free_;

@@ -339,7 +339,8 @@ namespace GEO {
 	simplify_boundary_facets_angle_threshold_(0.0),
 	use_mesh_(false),	
 	facet_is_skipped_(false),
-	vertex_map_(nil)
+	vertex_map_(nil),
+	spinlocks_(nil)
     {
     }
 

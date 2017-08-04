@@ -49,7 +49,7 @@
 #include <geogram/basic/common.h>
 #include <geogram/basic/numeric.h>
 #include <geogram/basic/argused.h>
-#include <algorithm>
+#include <geogram/basic/algorithm.h>
 #include <iostream>
 
 /**
@@ -286,7 +286,7 @@ namespace GEO {
             indices[0] = i;
             indices[1] = j;
             indices[2] = k;
-            std::sort(indices, indices + 3);
+	    GEO::sort_3(indices);
         }
 
         /**
@@ -517,7 +517,7 @@ namespace GEO {
             indices[1] = j;
             indices[2] = k;
             indices[3] = l;
-            std::sort(indices, indices + 4);
+	    GEO::sort_4(indices);
         }
 
         /**
@@ -598,7 +598,8 @@ namespace GEO {
 
         /**
          * \brief Constructs a basic_quadindex from another one.
-         * \param[in] rhs the basic_quadindex this basic_quadindex should be copied from
+         * \param[in] rhs the basic_quadindex this basic_quadindex 
+	 *  should be copied from
          */
         basic_quadindex(const basic_quadindex<IndexType>& rhs) {
             indices[0] = rhs.indices[0];
@@ -609,10 +610,13 @@ namespace GEO {
 
         /**
          * \brief Assigns a basic_quadindex to this one.
-         * \param[in] rhs the basic_quadindex this basic_quadindex should be assigned from
+         * \param[in] rhs the basic_quadindex this basic_quadindex 
+	 *  should be assigned from
          * \return a reference to this basic_quadindex
          */
-        basic_quadindex<IndexType>& operator= (const basic_quadindex<IndexType>& rhs) {
+        basic_quadindex<IndexType>& operator= (
+	    const basic_quadindex<IndexType>& rhs
+	) {
             indices[0] = rhs.indices[0];
             indices[1] = rhs.indices[1];
             indices[2] = rhs.indices[2];

@@ -30,6 +30,9 @@
 #Uncomment to compile FPG (Meyer and Pion's Floating Point Filter Generator)
 #set(GEOGRAM_WITH_FPG ON)
 
+#Uncomment to disable built-in LUA interpreter
+#set(GEOGRAM_WITH_LUA OFF)
+
 #Uncomment to only compile geogram libraries (if set, vorpalite,
 # vorpaview, demo and example programs will not be compiled)
 #set(GEOGRAM_LIB_ONLY ON)

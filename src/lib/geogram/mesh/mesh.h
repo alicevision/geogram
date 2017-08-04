@@ -1002,6 +1002,22 @@ namespace GEO {
             facet_corners_.set_vertex(corner(f,lv),v);
         }
 
+	/**
+	 * \brief Gets the local index of a vertex in a facet.
+	 * \param[in] f a facet
+	 * \param[in] v a vertex
+	 * \return lv such that vertex(f,lv) == v or NO_VERTE if f is
+	 *  not incident to v
+	 */
+	index_t find_vertex(index_t f, index_t v) const {
+	    for(index_t lv=0; lv<nb_vertices(f); ++lv) {
+		if(vertex(f,lv) == v) {
+		    return lv;
+		}
+	    }
+	    return NO_VERTEX;
+	}
+	
         /**
          * \brief Gets an adjacent facet by facet and local edge index
          * \param[in] f the facet

@@ -51,7 +51,6 @@
 #include <geogram/mesh/mesh.h>
 #include <geogram/basic/numeric.h>
 
-
 namespace GEOGen {
     class SymbolicVertex;
     class ConvexCell;
@@ -59,6 +58,10 @@ namespace GEOGen {
 
 namespace GEO {
     class RVDVertexMap;
+
+    namespace Process {
+        class SpinLockArray;
+    }
 }
 
 /**
@@ -291,6 +294,17 @@ namespace GEO {
 		mesh_.vertices.set_dimension(dim);
 	    }
 	}
+
+	/**
+	 * \brief Sets the spinlocks array.
+	 * \details In multithreading mode, a spinlocks array can
+	 *  be used to manage concurrent accesses.
+	 * \param[in] spinlocks a pointer to the Process::SpinLockArray
+	 *  or nil if no spinlocks are used.
+	 */
+	void set_spinlocks(Process::SpinLockArray* spinlocks) {
+	    spinlocks_ = spinlocks;
+	}
 	
       protected:
 	/**
@@ -372,6 +386,8 @@ namespace GEO {
 	Attribute<index_t> mesh_facet_tet_;
 	RVDVertexMap* vertex_map_;
 	vector<index_t> current_facet_;
+
+        Process::SpinLockArray* spinlocks_;
     };
 
 }

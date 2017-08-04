@@ -18,6 +18,7 @@ predicates/side1.h \
 predicates/side2.h \
 predicates/side3.h \
 predicates/side3h.h \
+predicates/side3_2dlifted.h \
 predicates/side4.h \
 predicates/side4h.h \
 predicates/orient2d.h \

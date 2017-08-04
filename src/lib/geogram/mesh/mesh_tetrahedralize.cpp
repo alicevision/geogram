@@ -50,13 +50,14 @@
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/delaunay/delaunay.h>
+#include <geogram/delaunay/delaunay_tetgen.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/command_line.h>
 
 namespace GEO {
 
     bool mesh_tetrahedralize(
-        Mesh& M, bool preprocess, bool refine, double quality
+        Mesh& M, bool preprocess, bool refine, double quality, bool keep_regions
     ) {
         if(!DelaunayFactory::has_creator("tetgen")) {
             Logger::err("TetMeshing")
@@ -98,6 +99,7 @@ namespace GEO {
         delaunay->set_refine(refine);
         delaunay->set_quality(quality);
         delaunay->set_constraints(&M);
+	delaunay->set_keep_regions(keep_regions);
 	
         try {
             delaunay->set_vertices(0,nil); // No additional vertex
@@ -134,6 +136,14 @@ namespace GEO {
         }
         
         M.cells.assign_tet_mesh(3, pts, tet2v, true);
+
+	if(keep_regions) {
+	    Attribute<index_t> region(M.cells.attributes(), "region");
+	    FOR(t,M.cells.nb()) {
+		region[t] = delaunay->region(t);
+	    }
+	}
+	
         M.cells.connect();
         M.show_stats("TetMeshing");
 

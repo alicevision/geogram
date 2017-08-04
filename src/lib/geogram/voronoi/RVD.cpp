@@ -1067,12 +1067,21 @@ namespace {
             if(nb_parts() == 0) {
 		RVD_.for_each_polyhedron(polyhedron_callback);
             } else {
+                for(index_t t = 0; t < nb_parts(); t++) {
+                    part(t).RVD_.set_symbolic(RVD_.symbolic());
+                    part(t).RVD_.set_connected_components_priority(
+			RVD_.connected_components_priority()
+		    );
+                }
+                spinlocks_.resize(delaunay_->nb_vertices());		
                 thread_mode_ = MT_POLYH;
 		polyhedron_callback_ = &polyhedron_callback;
+		polyhedron_callback_->set_spinlocks(&spinlocks_);
                 parallel_for(
                     parallel_for_member_callback(this, &thisclass::run_thread),
                     0, nb_parts()
                 );
+		polyhedron_callback_->set_spinlocks(nil);
             }
         } 
 
@@ -1497,13 +1506,16 @@ namespace {
 	    bool connected_comp_priority,
 	    bool parallel
 	) {
-	    geo_argused(parallel);
 	    bool sym_backup = RVD_.symbolic();
 	    RVD_.set_symbolic(symbolic);
 	    RVD_.set_connected_components_priority(connected_comp_priority);
 	    callback.set_dimension(RVD_.mesh()->vertices.dimension());
 	    callback.begin();
-	    RVD_.for_each_polyhedron(callback);
+	    if(parallel) {
+		compute_with_polyhedron_callback(callback);
+	    } else {
+		RVD_.for_each_polyhedron(callback); 
+	    }
 	    callback.end();
 	    RVD_.set_symbolic(sym_backup);
 	    RVD_.set_connected_components_priority(false);
@@ -2291,6 +2303,7 @@ namespace {
                         );
                         part(i).set_exact_predicates(RVD_.exact_predicates());
                         part(i).set_volumetric(volumetric());
+			part(i).set_check_SR(RVD_.check_SR());
                     }
                     if(mesh_->cells.nb() != 0) {
                         for(index_t i = 0; i < nb_parts(); ++i) {

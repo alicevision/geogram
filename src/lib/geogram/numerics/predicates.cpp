@@ -66,6 +66,7 @@
 #include <geogram/numerics/predicates/side2.h>
 #include <geogram/numerics/predicates/side3.h>
 #include <geogram/numerics/predicates/side3h.h>
+#include <geogram/numerics/predicates/side3_2dlifted.h>
 #include <geogram/numerics/predicates/side4.h>
 #include <geogram/numerics/predicates/side4h.h>
 #include <geogram/numerics/predicates/orient2d.h>
@@ -1361,6 +1362,84 @@ namespace {
         return Sign(Delta4_sign * r_sign);
     }
 
+
+    Sign side3h_2d_exact_SOS(
+        const double* p0, const double* p1,
+	const double* p2, const double* p3, 
+        double h0, double h1, double h2, double h3,
+        bool sos = true
+    ) {
+
+        const expansion& a11 = expansion_diff(p1[0], p0[0]);
+        const expansion& a12 = expansion_diff(p1[1], p0[1]);
+        const expansion& a13 = expansion_diff(h0,h1);
+
+        const expansion& a21 = expansion_diff(p2[0], p0[0]);
+        const expansion& a22 = expansion_diff(p2[1], p0[1]);
+        const expansion& a23 = expansion_diff(h0,h2);
+
+        const expansion& a31 = expansion_diff(p3[0], p0[0]);
+        const expansion& a32 = expansion_diff(p3[1], p0[1]);
+        const expansion& a33 = expansion_diff(h0,h3);
+
+        const expansion& Delta1 = expansion_det2x2(
+            a21, a22, 
+            a31, a32
+        );
+        const expansion& Delta2 = expansion_det2x2(
+            a11, a12,
+            a31, a32
+        );
+        const expansion& Delta3 = expansion_det2x2(
+            a11, a12,
+            a21, a22
+        );
+
+        Sign Delta3_sign = Delta3.sign();
+        geo_assert(Delta3_sign != ZERO);
+
+        const expansion& r_1 = expansion_product(Delta1, a13);
+        const expansion& r_2 = expansion_product(Delta2, a23).negate();
+        const expansion& r_3 = expansion_product(Delta3, a33);
+        const expansion& r = expansion_sum3(r_1, r_2, r_3);
+
+        Sign r_sign = r.sign();
+
+        // Simulation of Simplicity (symbolic perturbation)
+        if(sos && r_sign == ZERO) {
+            const double* p_sort[4];
+            p_sort[0] = p0;
+            p_sort[1] = p1;
+            p_sort[2] = p2;
+            p_sort[3] = p3;
+            std::sort(p_sort, p_sort + 4);
+            for(index_t i = 0; i < 4; ++i) {
+                if(p_sort[i] == p0) {
+                    const expansion& z1 = expansion_diff(Delta2, Delta1);
+                    const expansion& z = expansion_sum(z1, Delta3);
+                    Sign z_sign = z.sign();
+                    if(z_sign != ZERO) {
+                        return Sign(Delta3_sign * z_sign);
+                    }
+                } else if(p_sort[i] == p1) {
+                    Sign Delta1_sign = Delta1.sign();
+                    if(Delta1_sign != ZERO) {
+                        return Sign(Delta3_sign * Delta1_sign);
+                    }
+                } else if(p_sort[i] == p2) {
+                    Sign Delta2_sign = Delta2.sign();
+                    if(Delta2_sign != ZERO) {
+                        return Sign(-Delta3_sign * Delta2_sign);
+                    }
+                } else if(p_sort[i] == p3) {
+		    return NEGATIVE;
+                } 
+            }
+        }
+        return Sign(Delta3_sign * r_sign);
+    }
+
+    
     // ================================ det and dot =======================
 
     /**
@@ -1727,6 +1806,31 @@ namespace GEO {
             return Sign(-result);
         }
 
+        Sign GEOGRAM_API in_circle_2d_SOS(
+            const double* p0, const double* p1, const double* p2,
+            const double* p3
+        ) {
+            // in_circle_2d is simply implemented using side3_2d.
+            // Both predicates are equivalent through duality as can
+            // be easily seen:
+            // side3_2d(p0,p1,p2,p3,p0,p1,p2) returns POSITIVE if
+            //    d(q,p0) < d(q,p3)
+            //    where q denotes the circumcenter of (p0,p1,p2)
+            // Note that d(q,p0) = R  (radius of circumscribed circle)
+            // In other words, side3_2d(p0,p1,p2,p3,p4) returns POSITIVE if
+            //   d(q,p3) > R which means whenever p3 is not in the
+            //   circumscribed circle of (p0,p1,p2).
+            // Therefore:
+            // in_circle_2d(p0,p1,p2,p3) = -side3_2d(p0,p1,p2,p3)
+
+	    // TODO: implement specialized filter like the one used
+	    // by "in-sphere".
+	    Sign s = Sign(-side3_2d_filter(p0, p1, p2, p3, p0, p1, p2));
+	    if(s != ZERO) {
+		return s;
+	    }
+	    return Sign(-side3_exact_SOS(p0, p1, p2, p3, p0, p1, p2, 3));
+        }
 
         Sign GEOGRAM_API in_circle_3d_SOS(
             const double* p0, const double* p1, const double* p2,
@@ -1752,8 +1856,8 @@ namespace GEO {
             const double* p3,
             double h0, double h1, double h2, double h3
         ) {
-//            std::cerr << "calling in_circle_3dlifted_SOS()"
-//                      << std::endl;
+            std::cerr << "calling in_circle_3dlifted_SOS()"
+                      << std::endl;
             // in_circle_3dlifted is simply implemented using side3_3dlifted.
             // Both predicates are equivalent through duality
             // (see comment in in_circle_3d_SOS(), the same
@@ -1773,6 +1877,29 @@ namespace GEO {
             return result;
         }
 
+
+        Sign orient_2dlifted_SOS(
+            const double* p0, const double* p1,
+            const double* p2, const double* p3, 
+            double h0, double h1, double h2, double h3
+	) {
+	    geo_assert_not_reached; // Not implemented yet.
+            Sign result = Sign(
+                side3_2dlifted_2d_filter(
+                    p0, p1, p2, p3, h0, h1, h2, h3
+                    )
+                );
+            if(result == 0) {
+                result = side3h_2d_exact_SOS(
+                    p0, p1, p2, p3, h0, h1, h2, h3
+                );
+            }
+            // orient_3d() is opposite to side3h()
+            // (like in_sphere() that is opposite to side3())
+	    return result;
+	}
+
+	
         Sign orient_3d(
             const double* p0, const double* p1,
             const double* p2, const double* p3

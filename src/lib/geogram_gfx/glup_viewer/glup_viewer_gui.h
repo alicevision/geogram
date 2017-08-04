@@ -59,9 +59,11 @@
 
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 
+#ifdef GEOGRAM_WITH_LUA
 extern "C" {
 #include <geogram/third_party/lua/lua.h>
 }
+#endif
 
 /**
  * \file geogram_gfx/glup_viewer/glup_viewer_gui.h
@@ -2070,8 +2072,10 @@ namespace GEO {
         float scaling_;
         bool retina_mode_;
 
+#ifdef GEOGRAM_WITH_LUA	
 	lua_State* lua_state_;
 	bool lua_error_occured_;
+#endif	
     };
 
     /*****************************************************************/

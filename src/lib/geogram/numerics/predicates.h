@@ -297,6 +297,27 @@ namespace GEO {
 
 
         /**
+         * \brief Tests whether a 2d point is inside the 
+         *  circumscribed circle of a 3d triangle.
+         * \param[in] p0 , p1 , p2 vertices of the triangle
+         * \param[in] p3 the point to be tested
+         * \retval POSITIVE whenever \p p3 is inside the circumscribed circle
+         *  of the triangle \p p0, \p p1, \p p2
+         * \retval NEGATIVE whenever \p p2 is outside the circumscribed circle
+         *  of the triangle \p p0, \p p1, \p p2
+         * \retval perturb() if \p p3 is exactly on the circumscribed circle
+         *  of the triangle \p p0, \p p1, \p p2, where \c perturb()
+         *  denotes a globally consistent perturbation, that returns
+         *  either POSITIVE or NEGATIVE
+         * \pre \p p3 belongs to the plane yielded by \p p0, \p p1 and \p p2
+         */
+         Sign GEOGRAM_API in_circle_2d_SOS(
+             const double* p0, const double* p1, const double* p2,
+             const double* p3
+         );
+
+	 
+        /**
          * \brief Tests whether a 3d point is inside the 
          *  circumscribed circle of a 3d triangle.
          * \param[in] p0 , p1 , p2 vertices of the triangle
@@ -378,6 +399,32 @@ namespace GEO {
             return orient_2d(p0.data(),p1.data(),p2.data());
         }
 #endif
+
+	
+        /**
+         * \brief Computes the 3d orientation test with lifted points.
+         * \details Given three lifted points p0', p1', p2' in 
+         *  R^3, tests if the lifted point p3' in R^3 lies below or above 
+         *  the plane passing through the three points 
+         *  p0', p1', p2'.
+         *  The first two coordinates and the
+         *  third one are specified in separate arguments for each vertex.
+         * \param[in] p0 , p1 , p2 , p3 first 2 coordinates 
+         *   of the vertices of the 3-simplex
+         * \param[in] h0 , h1 , h2 , h3 heights of the vertices of 
+         *  the 3-simplex
+         * \retval POSITIVE if p3' lies below the plane
+         * \retval NEGATIVE if p3' lies above the plane
+         * \retval perturb() if p3' lies exactly on the hyperplane
+         *  where \c perturb() denotes a globally
+         *  consistent perturbation, that returns either POSITIVE or NEGATIVE
+         */
+        Sign GEOGRAM_API orient_2dlifted_SOS(
+            const double* p0, const double* p1,
+            const double* p2, const double* p3, 
+            double h0, double h1, double h2, double h3
+        );
+	
         
         /**
          * \brief Computes the orientation predicate in 3d.

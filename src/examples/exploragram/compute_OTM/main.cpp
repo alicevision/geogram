@@ -56,7 +56,7 @@
 #include <geogram/mesh/mesh_tetrahedralize.h>
 #include <geogram/voronoi/CVT.h>
 
-#include <exploragram/optimal_transport/optimal_transport.h>
+#include <exploragram/optimal_transport/optimal_transport_3d.h>
 #include <exploragram/optimal_transport/sampling.h>
 
 namespace {
@@ -287,7 +287,7 @@ int main(int argc, char** argv) {
         // as Voronoi diagram in dimension 4), therefore the dimension
         // of M1 needs to be changed as well (even if it is not used).
         M1.vertices.set_dimension(4);
-        OptimalTransportMap OTM(&M1);
+        OptimalTransportMap3d OTM(&M1);
         OTM.set_points(
             M2_samples.vertices.nb(), M2_samples.vertices.point_ptr(0)
         );

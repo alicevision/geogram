@@ -73,13 +73,16 @@ namespace GEO {
      * \param[in] quality typically in [1.0, 2.0], specifies
      *  the desired quality of mesh elements (1.0 means maximum
      *  quality, and generates a higher number of elements).
+     * \param[in] keep_regions if set, then all internal regions are kept, and
+     *  a region cell attribute is created, else only tetrahedra in the outermost
+     *  region are kept.
      * \retval true if the mesh was sucessfuly tetrahedralized
      * \retval false otherwise
      * \note needs a constrained Delaunay algorithm to work (geogram needs
      *  to be compiled with mg-tetra or tetgen).
      */
     bool GEOGRAM_API mesh_tetrahedralize(
-        Mesh& M, bool preprocess=true, bool refine=false, double quality=2.0
+        Mesh& M, bool preprocess=true, bool refine=false, double quality=2.0, bool keep_regions=false
     );
     
 }

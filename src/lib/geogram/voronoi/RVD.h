@@ -586,8 +586,7 @@ namespace GEO {
 	 * \param[in] symbolic if true, generate symbolic information in the
 	 *  vertices
 	 * \param[in] connected_comp_priority if true, generate polyhedron 
-	 *  intersections associated with the same Vornoi seed in order
-	 * \param[in] parallel if true, use parallel implementation
+	 *  intersections associated with the same Voronoi seed in order.
 	 */
 	virtual void for_each_polyhedron(
 	    RVDPolyhedronCallback& callback,

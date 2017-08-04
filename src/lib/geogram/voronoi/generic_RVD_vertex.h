@@ -80,7 +80,7 @@ namespace GEOGen {
      * \note This is an internal implementation class, not meant to be
      *  used by client code.
      */
-    template <class T, int DIM>
+    template <class T, index_t DIM>
     class small_set {
 
         /** \brief This class type */
@@ -341,7 +341,7 @@ namespace GEOGen {
     /**
      * \brief Displays the contents of a small_set to a std::ostream.
      */
-    template <class T, int DIM>
+    template <class T, index_t DIM>
     inline std::ostream& operator<< (
         std::ostream& out,
         const small_set<T, DIM>& S) {
@@ -355,7 +355,7 @@ namespace GEOGen {
      * \param[in] S2 the second set
      * \param[out] I where to store the intersection
      */
-    template <class T, int DIM1, int DIM2, int DIM3>
+    template <class T, index_t DIM1, index_t DIM2, index_t DIM3>
     inline void sets_intersect(
         const small_set<T, DIM1>& S1,
         const small_set<T, DIM2>& S2,
@@ -999,7 +999,7 @@ namespace GEOGen {
          * \tparam DIM dimension, specified as a template
          *  argument for efficiency considerations
          */
-        template <int DIM>
+        template <index_t DIM>
         void intersect_geom(
             PointAllocator& target_intersections,
             const Vertex& vq1, const Vertex& vq2,
@@ -1043,7 +1043,7 @@ namespace GEOGen {
          *  NEGATIVE if this vertex is on p2's side, and ZERO
          *  if this vertex is on the bisector of [p1,p2].
          */
-        template <int DIM>
+        template <index_t DIM>
         Sign side_fast(
             const double* p1, const double* p2
         ) const {

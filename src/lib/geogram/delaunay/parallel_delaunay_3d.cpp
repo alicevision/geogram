@@ -203,6 +203,7 @@ namespace {
     ) {
         // Colinearity is tested by using four coplanarity
         // tests with four points that are not coplanar.
+	// TODO: use PCK::aligned_3d() instead (to be tested)
         static const double q000[3] = {0.0, 0.0, 0.0};
         static const double q001[3] = {0.0, 0.0, 1.0};
         static const double q010[3] = {0.0, 1.0, 0.0};
@@ -2578,7 +2579,7 @@ namespace GEO {
                                           << std::endl;
                                 
                                 std::cerr << "  offending tet: ";
-                                show_tet(v);
+                                show_tet(t);
                             }
                         }
                     }

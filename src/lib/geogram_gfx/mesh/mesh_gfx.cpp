@@ -259,7 +259,7 @@ namespace GEO {
         set_GLUP_picking(MESH_VERTICES);
         update_buffer_objects_if_needed();
         
-        glupEnable(GLUP_LIGHTING);
+        //glupEnable(GLUP_LIGHTING);
         glupSetColor4fv(GLUP_FRONT_COLOR, points_color_);
         glupSetPointSize(points_size_ * 5.0f);
 

@@ -12,7 +12,10 @@ aux_source_directories(SOURCES "Source Files\\basic"         basic)
 aux_source_directories(SOURCES "Source Files\\mesh"          mesh)
 aux_source_directories(SOURCES "Source Files\\GLUP"          GLUP)
 aux_source_directories(SOURCES "Source Files\\GLUP\\shaders" GLUP/shaders)
-aux_source_directories(SOURCES "Source Files\\lua"           lua)
+
+if(GEOGRAM_WITH_LUA)
+   aux_source_directories(SOURCES "Source Files\\lua"           lua)
+endif()
 
 add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)
 
