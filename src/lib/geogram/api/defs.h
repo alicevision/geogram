@@ -82,17 +82,6 @@
    #define GEO_EXPORT
 #endif
 
-/*
- * Under Windows, stack size is by default 1Mb,
- * this pragma makes it 8Mb as in Linux. This is
- * used by Delaunay triangulation that has a 
- * recursive function that may use many nested 
- * contexts for some datasets.
- */
-#if defined(_MSC_VER)
-#pragma comment(linker, "/STACK:reserve=8388608")
-#endif
-
 #ifdef geogram_EXPORTS
 #define GEOGRAM_API GEO_EXPORT
 #else

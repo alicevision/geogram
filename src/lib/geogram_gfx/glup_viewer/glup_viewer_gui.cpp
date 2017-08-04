@@ -1441,8 +1441,10 @@ namespace GEO {
                 attribute_min_ = Numeric::max_float32();
                 attribute_max_ = Numeric::min_float32();
                 for(index_t i=0; i<subelements.nb(); ++i) {
-                    attribute_min_ = geo_min(attribute_min_, float(attribute[i]));
-                    attribute_max_ = geo_max(attribute_max_, float(attribute[i]));
+                    attribute_min_ =
+                        geo_min(attribute_min_, float(attribute[i]));
+                    attribute_max_ =
+                        geo_max(attribute_max_, float(attribute[i]));
                 }
             } 
         }
@@ -1473,7 +1475,9 @@ namespace GEO {
             if(attribute_min_ == 0.0f && attribute_max_ == 0.0f) {
                 autorange();
             } 
-            if(ImGui::Button((attribute_ + "##Attribute").c_str(), ImVec2(-1,0))) {
+            if(ImGui::Button(
+                   (attribute_ + "##Attribute").c_str(), ImVec2(-1,0))
+            ) {
                 ImGui::OpenPopup("##Attributes");                
             }
             if(ImGui::BeginPopup("##Attributes")) {

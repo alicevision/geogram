@@ -232,7 +232,7 @@ namespace GEO {
             Mesh_OrientedPointStream pointStream(*points);
             tree.SetTree<
                 double , NORMAL_DEGREE , WEIGHT_DEGREE , DATA_DEGREE ,
-                Point3D< unsigned char >
+                Point3D<unsigned char>, Point3D<double>
             >(
                 &pointStream , min_depth_ , depth_ , full_depth_ ,
                 kernel_depth_ ,

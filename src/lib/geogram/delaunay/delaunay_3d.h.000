@@ -279,90 +279,15 @@ namespace GEO {
           * \param[in] f_bndry index of the facet along which \p t_bndry
           *  is incident to the border of the conflict zone
           * \param[in] prev_f the facet of \p t_bndry connected to the
-          *  tetrahedron that \p t_bndry was reached from, or index_t(-1)
-          *  if it is the first tetrahedron.
+          *  tetrahedron that \p t_bndry was reached from
           * \return the index of one the newly created tetrahedron
           */
-         index_t stellate_conflict_zone_iterative(
+         index_t stellate_conflict_zone(
              index_t v, 
              index_t t_bndry, index_t f_bndry, 
-             index_t prev_f=index_t(-1)
+             index_t prev_f=index_t(~0)
          );
-         
-         /**
-          * \brief Finds the neighbor of a tetrahedron on the border of the 
-          *  conflict zone.
-          * \details This function is used by stellate_conflict_zone_iterative()
-          * \param[in] t1 a tetrahedron on the border of the conflict zone
-          * \param[in] t1fborder the local facet index of \p t1 along which it
-          *  is on the border of the conflict zone
-          * \param[in] t1ft2 the local facet index of \p t1 that will be 
-          *  traversed
-          * \param[out] t2 a tetrahedron on the border of the conflict zone,
-          *  with an edge common to facets \p t1fborder and \p t1ft2 of 
-          *  tetrahedron \p t1
-          * \param[out] t2fborder the local facet index of \p t2 along which it
-          *  is on the border of the conflict zone
-          * \param[out] t2ft1 the local index of the facet of \p t2 that has a
-          *  common edge with facets \p t1fborder and \p t1ft2 of tetrahedron
-          *  \p t1
-          * \retval true if \p t2 is a newly created tetrahedron
-          * \retval false if \p t2 is an old tetrahedron in conflict
-          */
-         bool get_neighbor_along_conflict_zone_border(
-             index_t t1,
-             index_t t1fborder,
-             index_t t1ft2,
-             index_t& t2,
-             index_t& t2fborder,
-             index_t& t2ft1
-         ) const {
-             
-             // Note: this function is a bit long for an inline function,
-             // but I observed a (modest) performance gain doing so.
-             
-             //   Find two vertices that are both on facets new_f and f1
-             //  (the edge around which we are turning)
-             //  This uses duality as follows:
-             //  Primal form (not used here): 
-             //    halfedge_facet_[v1][v2] returns a facet that is incident
-             //    to both v1 and v2.
-             //  Dual form (used here):
-             //    halfedge_facet_[f1][f2] returns a vertex that both 
-             //    f1 and f2 are incident to.
-             signed_index_t ev1 = 
-                 tet_vertex(t1, index_t(halfedge_facet_[t1ft2][t1fborder]));
-             signed_index_t ev2 = 
-                 tet_vertex(t1, index_t(halfedge_facet_[t1fborder][t1ft2]));
 
-             //   Turn around edge [ev1,ev2] inside the conflict zone
-             // until we reach again the boundary of the conflict zone.
-             // Traversing inside the conflict zone is faster (as compared
-             // to outside) since it traverses a smaller number of tets.
-             index_t cur_t = t1;
-             index_t cur_f = t1ft2;
-             index_t next_t = index_t(tet_adjacent(cur_t,cur_f));
-             while(tet_is_in_list(next_t)) {
-                 geo_debug_assert(next_t != t1);
-                 cur_t = next_t;
-                 cur_f = get_facet_by_halfedge(cur_t,ev1,ev2);
-                 next_t = index_t(tet_adjacent(cur_t, cur_f));
-             }
-             
-             //  At this point, cur_t is in conflict zone and
-             // next_t is outside the conflict zone.
-             index_t f12,f21;
-             get_facets_by_halfedge(next_t, ev1, ev2, f12, f21);
-             t2 = index_t(tet_adjacent(next_t,f21));
-             signed_index_t v_neigh_opposite = tet_vertex(next_t,f12);
-             t2ft1 = find_tet_vertex(t2, v_neigh_opposite);
-             t2fborder = cur_f;
-        
-             //  Test whether the found neighboring tet was created
-             //  (then return true) or is an old tet in conflict
-             //  (then return false).
-             return(t2 != cur_t);
-         }
          
          // _________ Combinatorics - new and delete _________________________
 
@@ -1119,147 +1044,10 @@ namespace GEO {
         static char halfedge_facet_[4][4];
 
         /**
-         * \brief Used by the (de-recursified)
+         * \brief Used by the (de-recursived)
          *  find_conflict_zone_iterative() function.
          */
         std::stack<index_t> S_;
-
-        /**
-         * \brief Used to represent the stack in the
-         *  (de-recursified) stellate_conflict_zone_iterative()
-         *  function.
-         */
-        class StellateConflictStack {
-        public:
-
-            /**
-             * \brief Pushes a new frame onto the stack.
-             * \param[in] t1 index of a tetrahedron on the border of
-             *  the conflict zone
-             * \param[in] t1fbord index of the facet of \p t1 that is
-             *  on the border of the conflict zone
-             * \param[in] t1fprev index of the facet of \p t1 that we
-             *  come from, or index_t(-1) if \p t1 is the first tetrahedron
-             */
-            void push(index_t t1, index_t t1fbord, index_t t1fprev) {
-                store_.resize(store_.size()+1);
-                top().t1 = t1;
-                top().t1fbord = Numeric::uint8(t1fbord);
-                top().t1fprev = Numeric::uint8(t1fprev);
-            }
-
-            /**
-             * \brief Saves local variables into the current stack frame.
-             * \param[in] new_t the index of the newly created tetrahedron
-             * \param[in] t1ft2 the facet of t1 that is adjacent to t2
-             * \param[in] t2ft1 the facet of t2 that is adjacent to t1
-             */
-            void save_locals(index_t new_t, index_t t1ft2, index_t t2ft1) {
-                geo_debug_assert(!empty());
-                top().new_t = new_t;
-                top().t1ft2 = Numeric::uint8(t1ft2);
-                top().t2ft1 = Numeric::uint8(t2ft1);
-            }
-
-            /**
-             * \brief Gets the parameters from the current stack frame.
-             * \param[out] t1 index of a tetrahedron on the border of
-             *  the conflict zone
-             * \param[out] t1fbord index of the facet of \p t1 that is
-             *  on the border of the conflict zone
-             * \param[out] t1fprev index of the facet of \p t1 that we
-             *  come from, or index_t(-1) if \p t1 is the first tetrahedron
-             */
-            void get_parameters(
-                index_t& t1, index_t& t1fbord, index_t& t1fprev
-            ) const {
-                geo_debug_assert(!empty());
-                t1      = top().t1;
-                t1fbord = index_t(top().t1fbord);
-                t1fprev = index_t(top().t1fprev);
-            }
-
-
-            /**
-             * \brief Gets the local variables from the current stack frame.
-             * \param[out] new_t the index of the newly created tetrahedron
-             * \param[out] t1ft2 the facet of t1 that is adjacent to t2
-             * \param[out] t2ft1 the facet of t2 that is adjacent to t1
-             */
-            void get_locals(
-                index_t& new_t, index_t& t1ft2, index_t& t2ft1
-            ) const {
-                geo_debug_assert(!empty());
-                new_t = top().new_t;
-                t1ft2 = index_t(top().t1ft2);
-                t2ft1 = index_t(top().t2ft1);
-            }
-            
-            /**
-             * \brief Pops a stack frame.
-             */
-            void pop() {
-                geo_debug_assert(!empty());
-                store_.pop_back();
-            }
-            
-            /**
-             * \brief Tests whether the stack is empty.
-             * \retval true if the stack is empty
-             * \retval false otherwise
-             */
-            bool empty() const {
-                return store_.empty();
-            }
-            
-        private:
-
-            /**
-             * \brief The parameters and local
-             *  variables stored in a stack frame.
-             */
-            struct Frame {
-                // Parameters
-                index_t t1;
-                index_t new_t;                
-                Numeric::uint8 t1fbord ;
-                
-                // Local variables
-                Numeric::uint8 t1fprev ;
-                Numeric::uint8 t1ft2   ;
-                Numeric::uint8 t2ft1   ;
-            };
-
-            /**
-             * \brief Gets the top of the stack.
-             * \return a modifiable reference to the Frame on
-             *  the top of the stack
-             * \pre !empty()
-             */
-            Frame& top() {
-                geo_debug_assert(!empty());
-                return *store_.rbegin();
-            }
-
-            /**
-             * \brief Gets the top of the stack.
-             * \return a const reference to the Frame on
-             *  the top of the stack
-             * \pre !empty()
-             */
-            const Frame& top() const {
-                geo_debug_assert(!empty());
-                return *store_.rbegin();
-            }
-            
-            std::vector<Frame> store_;
-        };
-
-        /**
-         * \brief Used by the (de-recursified)
-         *   stellate_conflict_zone_iterative() function.
-         */
-        StellateConflictStack S2_;
     };
 
     /************************************************************************/

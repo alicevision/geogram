@@ -176,7 +176,7 @@ void Octree< Real >::GetMCIsoSurface( const SparseNodeData< Real , WeightDegree 
                 // Copy edges from finer
                 if( d<maxDepth ) CopyFinerSliceIsoEdgeKeys( d , 0 , slabValues , threads );
                 SetSliceIsoCorners( solution , coarseSolution , isoValue , d , 0 , slabValues , evaluators[d] , threads );
-                SetSliceIsoVertices< WeightDegree , ColorDegree >( colorBSData , densityWeights , colorData , isoValue , d , 0 , vertexOffset , mesh , slabValues , threads );
+                SetSliceIsoVertices< WeightDegree , ColorDegree, Vertex >( colorBSData , densityWeights , colorData , isoValue , d , 0 , vertexOffset , mesh , slabValues , threads );
                 SetSliceIsoEdges( d , 0 , slabValues , threads );
         }
         // Iterate over the slices at the finest level
@@ -194,11 +194,11 @@ void Octree< Real >::GetMCIsoSurface( const SparseNodeData< Real , WeightDegree 
 
                         // Set the slice values/vertices
                         SetSliceIsoCorners( solution , coarseSolution , isoValue , d , o , slabValues , evaluators[d] , threads );
-                        SetSliceIsoVertices< WeightDegree , ColorDegree >( colorBSData , densityWeights , colorData , isoValue , d , o , vertexOffset , mesh , slabValues , threads );
+                        SetSliceIsoVertices< WeightDegree , ColorDegree, Vertex >( colorBSData , densityWeights , colorData , isoValue , d , o , vertexOffset , mesh , slabValues , threads );
                         SetSliceIsoEdges( d , o , slabValues , threads );
 
                         // Set the cross-slice edges
-                        SetXSliceIsoVertices< WeightDegree , ColorDegree >( colorBSData , densityWeights , colorData , isoValue , d , o-1 , vertexOffset , mesh , slabValues , threads );
+                        SetXSliceIsoVertices< WeightDegree , ColorDegree, Vertex >( colorBSData , densityWeights , colorData , isoValue , d , o-1 , vertexOffset , mesh , slabValues , threads );
                         SetXSliceIsoEdges( d , o-1 , slabValues , threads );
 
                         // Add the triangles
@@ -354,8 +354,8 @@ template< class Real >
 template< int WeightDegree , int ColorDegree , class Vertex >
 void Octree< Real >::SetSliceIsoVertices( const BSplineData< ColorDegree >* colorBSData , const SparseNodeData< Real , WeightDegree >* densityWeights , const SparseNodeData< ProjectiveData< Point3D< Real > > , ColorDegree >* colorData , Real isoValue , int depth , int slice , int& vOffset , CoredMeshData< Vertex >& mesh , std::vector< SlabValues< Vertex > >& slabValues , int threads )
 {
-        if( slice>0          ) SetSliceIsoVertices< WeightDegree , ColorDegree >( colorBSData , densityWeights , colorData , isoValue , depth , slice , 1 , vOffset , mesh , slabValues , threads );
-        if( slice<(1<<depth) ) SetSliceIsoVertices< WeightDegree , ColorDegree >( colorBSData , densityWeights , colorData , isoValue , depth , slice , 0 , vOffset , mesh , slabValues , threads );
+        if( slice>0          ) SetSliceIsoVertices< WeightDegree , ColorDegree, Vertex >( colorBSData , densityWeights , colorData , isoValue , depth , slice , 1 , vOffset , mesh , slabValues , threads );
+        if( slice<(1<<depth) ) SetSliceIsoVertices< WeightDegree , ColorDegree, Vertex >( colorBSData , densityWeights , colorData , isoValue , depth , slice , 0 , vOffset , mesh , slabValues , threads );
 }
 template< class Real >
 template< int WeightDegree , int ColorDegree , class Vertex >

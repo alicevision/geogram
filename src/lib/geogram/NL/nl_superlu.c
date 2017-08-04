@@ -45,14 +45,12 @@
 #include "nl_superlu.h"
 #include "nl_context.h"
 
-#ifdef __EMSCRIPTEN__
-#pragma GCC diagnostic ignored "-Wunused-macros"
-#endif
-
 /**
  * \file Weak-coupling adapter to call SuperLU from OpenNL, 
  *  works with both SuperLU 3.x and SuperLU 4.x.
  */
+
+#ifdef GEO_DYNAMIC_LIBS
 
 #if defined(__APPLE__) && defined(__MACH__)
 #define unix
@@ -61,7 +59,6 @@
 #define SUPERLU_LIB_NAME "libsuperlu.so"
 #endif
 
-#ifdef GEO_DYNAMIC_LIBS
 #  ifdef unix
 #include <dlfcn.h>
 
@@ -274,11 +271,11 @@ typedef void (*FUNPTR_StatInit)(SuperLUStat_t *);
 typedef void (*FUNPTR_StatFree)(SuperLUStat_t *);
 
 typedef void (*FUNPTR_dCreate_CompCol_Matrix)(
-    SuperMatrix *, int, int, int, double *,
-    int *, int *, Stype_t, Dtype_t, Mtype_t);
+    SuperMatrix *, int, int, int, const double *,
+    const int *, const int *, Stype_t, Dtype_t, Mtype_t);
 
 typedef void (*FUNPTR_dCreate_Dense_Matrix)(
-    SuperMatrix *, int, int, double *, int,
+    SuperMatrix *, int, int, const double *, int,
     Stype_t, Dtype_t, Mtype_t);
 
 typedef void (*FUNPTR_Destroy_SuperNode_Matrix)(SuperMatrix *);
@@ -367,6 +364,8 @@ static NLboolean SuperLU_is_initialized() {
         SuperLU()->dgssv != NULL;
 }
 
+#ifdef GEO_DYNAMIC_LIBS
+
 /**
  * \brief Finds and initializes a function pointer to
  *  one of the functions in SuperLU.
@@ -385,6 +384,8 @@ static NLboolean SuperLU_is_initialized() {
         nlError("nlInitExtension_SUPERLU/dlsym",dlerror());   \
         return NL_FALSE;                                          \
     }
+
+#endif
 
 /**
  * \brief Version-independent constant for SLU_NR 
@@ -489,7 +490,7 @@ NLboolean nlSolve_system_with_SUPERLU(
 
     /* Step 2: create vector */
     SuperLU()->dCreate_Dense_Matrix(
-        &B, (int)n, 1, (double*)b, (int)n, 
+        &B, (int)n, 1, b, (int)n, 
         SLU_DN, /* Fortran-type column-wise storage */
         SLU_D,  /* doubles                          */
         SLU_GE  /* general                          */

@@ -1,0 +1,40 @@
+
+         void get_cavity_neighbor(
+             index_t t1,
+             index_t t1fborder,
+             index_t t1ft2,
+             index_t& t2,
+             index_t& t2ft1
+         ) {
+            //   Find two vertices that are both on facets new_f and f1
+            //  (the edge around which we are turning)
+            //  This uses duality as follows:
+            //  Primal form (not used here): 
+            //    halfedge_facet_[v1][v2] returns a facet that is incident
+            //    to both v1 and v2.
+            //  Dual form (used here):
+            //    halfedge_facet_[f1][f2] returns a vertex that both 
+            //    f1 and f2 are incident to.
+            signed_index_t ev1 = 
+                tet_vertex(t1, index_t(halfedge_facet_[t1ft2][t1fborder]));
+            signed_index_t ev2 = 
+                tet_vertex(t1, index_t(halfedge_facet_[t1fborder][t1ft2]));
+
+
+            //   Turn around edge [ev1,ev2] inside the conflict zone
+            // until we reach again the boundary of the conflict zone.
+            // Traversing inside the conflict zone is faster (as compared
+            // to outside) since it traverses a smaller number of tets.
+            index_t cur_t = t1;
+            index_t cur_f = new_f;
+            index_t next_t = index_t(tet_adjacent(t1,new_f));
+            while(tet_is_in_list(next_t)) {
+                geo_debug_assert(next_t != t1);
+                cur_t = next_t;
+                cur_f = get_facet_by_halfedge(cur_t,ev1,ev2);
+                next_t = index_t(tet_adjacent(cur_t, cur_f));
+            }
+            
+            
+         }
+
