@@ -421,6 +421,16 @@ namespace {
         );
     }
 
+    /**
+     * \brief Imports the polyhedral meshing option group
+     */
+    void import_arg_group_poly() {
+        declare_arg_group("poly", "Polyhedral meshing", ARG_ADVANCED);
+        declare_arg(
+            "poly", false,
+            "Toggles polyhedral meshing"
+        );
+    }    
 
     /**
      * \brief Imports the hex-dominant meshing option group
@@ -654,6 +664,13 @@ namespace {
     void set_profile_tet() {
         set_arg("tet", true);
     }
+
+    /**
+     * \brief Sets the polyhedral meshing profile
+     */
+    void set_profile_poly() {
+        set_arg("poly", true);
+    }
 }
 
 namespace GEO {
@@ -691,6 +708,8 @@ namespace GEO {
                 import_arg_group_hex();
             } else if(name == "tet") {
                 import_arg_group_tet();
+            } else if(name == "poly") {
+                import_arg_group_poly();
             } else if(name == "gfx") {
                 import_arg_group_gfx();
             } else {
@@ -722,6 +741,8 @@ namespace GEO {
                 set_profile_tet();
             } else if(name == "hex") {
                 set_profile_hex();
+            } else if(name == "poly") {
+                set_profile_poly();
             } else {
                 Logger::instance()->set_quiet(false);
                 Logger::err("CmdLine")

@@ -30,7 +30,7 @@ include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 3)
-set(VORPALINE_VERSION_PATCH 6)
+set(VORPALINE_VERSION_PATCH 7)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
@@ -67,10 +67,12 @@ endif()
 # - Makes RPATH of dynamic libraries and executable point to the directory
 #   where libraries are installed.
 
-set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+if(VORPALINE_BUILD_DYNAMIC)
+   set(CMAKE_MACOSX_RPATH 1)
+   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
 
+set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 # uninstall target
 # Needs to be created before add_subdirectory() because GLFw has

@@ -66,11 +66,6 @@
 #include <dlfcn.h>
 
 /**
- * \brief A generic type for function pointers.
- */
-typedef void (*FUNPTR)();
-
-/**
  * \brief A version of dlsym() that returns a function pointer
  * \param[in] handle an opaque handle to a shared object
  *  previously returned by dlopen()
@@ -82,10 +77,10 @@ typedef void (*FUNPTR)();
  *  pointer into a function pointer, thus requiring this
  *  (quite dirty) function that uses a union.
  */
-static FUNPTR fun_dlsym(void* handle, const char* name) {
+static NLfunc fun_dlsym(void* handle, const char* name) {
     union {
         void* ptr;
-        FUNPTR fptr;
+        NLfunc fptr;
     } u;
     u.ptr = dlsym(handle, name);
     return u.fptr;
@@ -544,7 +539,7 @@ NLboolean nlSolve_system_with_SUPERLU(
     /* Step 4: call SuperLU main routine
      * ---------------------------------
      */
-
+    
     if(SuperLU_version() >= 4.0) {
         SuperLU()->dgssv(
             &options4, &A, perm, perm_r, &L, &U, &B, &stat, &info

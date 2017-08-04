@@ -12,8 +12,8 @@
 #        --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions \
 #        --disable-multilib
 
-set(CMAKE_CXX_COMPILER /opt/gcc464/bin/g++464)
-set(CMAKE_C_COMPILER /opt/gcc464/bin/gcc464)
+set(CMAKE_CXX_COMPILER:FILEPATH /opt/gcc464/bin/g++464)
+set(CMAKE_C_COMPILER:FILEPATH /opt/gcc464/bin/gcc464)
 
 include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux-gcc.cmake)
 

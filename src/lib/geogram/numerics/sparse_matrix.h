@@ -47,7 +47,10 @@
 #define GEOGRAM_NUMERICS_SPARSE_MATRIX
 
 #include <geogram/basic/common.h>
+
+extern "C" {
 #include <geogram/NL/nl_matrix.h>
+}
 
 /**
  * \file geogram/numerics/sparse_matrix.h
@@ -111,7 +114,7 @@ namespace GEO {
          */
         void clear() {
             if(initialized()) {
-                sparseMatrixDestroy(&impl_);
+                nlSparseMatrixDestroy(&impl_);
                 impl_.m = 0;
                 impl_.n = 0;
             }
@@ -126,7 +129,7 @@ namespace GEO {
             index_t m, index_t n, NLenum storage = NL_MATRIX_STORE_ROWS
         ) {
             clear();
-            sparseMatrixConstruct(&impl_, m, n, storage);
+            nlSparseMatrixConstruct(&impl_, m, n, storage);
         }
 
 
@@ -135,7 +138,7 @@ namespace GEO {
          * \details A locked SparseMatrix can no longer be modified.
          */  
         bool locked() const {
-            return (impl_.storage & NL_MATRIX_STORE_COMPRESSED != 0);
+            return ((impl_.storage & NL_MATRIX_STORE_COMPRESSED) != 0);
         }
 
         /**
@@ -187,7 +190,25 @@ namespace GEO {
          *  the result vector
          */
         void mult(const double* x, double* y) const {
-            nlSparseMatrixMult(&impl_, x, y);
+            nlSparseMatrixMult((NLSparseMatrix*)&impl_, x, y);
+        }
+
+        /**
+         * \brief Gets a pointer to the internal OpenNL representation.
+         * \details For experts only / interfacing with legacy APIs.
+         * \return a pointer to the NLSparseMatrix.
+         */
+        NLSparseMatrix* implementation() {
+            return &impl_;
+        }
+
+        /**
+         * \brief Gets a pointer to the internal OpenNL representation.
+         * \details For experts only / interfacing with legacy APIs.
+         * \return a pointer to the NLSparseMatrix.
+         */
+        const NLSparseMatrix* implementation() const {
+            return &impl_;
         }
         
     private:

@@ -66,7 +66,7 @@
  * 2) picking, en utilisant 
  *  glup_primitiveID = gl_VertexID / nb_vertices_per_glup_primitive.
  * Si on fait \c{c}a, attention au code d'emulation de VAO, la fonction
- *  qui recuperer l'etat d'un attribut sous WebGL est en general buggee,
+ *  qui recupere l'etat d'un attribut sous WebGL est en general buggee,
  *  il faudra memoriser l'etat soi-meme...
  *
  * Slice cells:

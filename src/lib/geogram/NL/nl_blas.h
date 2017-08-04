@@ -57,7 +57,7 @@
 #endif
 
 
-/***********************************************************************************/
+/******************************************************************************/
 /* C wrappers for BLAS routines */
 
 /**
@@ -204,8 +204,8 @@ void dtpsv(
  * \details performs one of the matrix-vector operations   
  * \f$ y = \alpha A x + \beta y \f$   or 
  * \f$ y = \alpha A^t x + \beta y \f$,
- * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, x and y are vectors and A is an   
- * m by n matrix.   
+ * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, 
+ *  x and y are vectors and A is an m by n matrix.   
  * \param[in] trans one of (NoTranspose, Transpose, ConjugateTranspose), 
  *  specifies the operation to be performed as follows:
  *  - NoTranspose: \f$ y = \alpha A x + \beta y \f$

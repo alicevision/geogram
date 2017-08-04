@@ -68,7 +68,7 @@
  * \retval NL_TRUE if solve was successful
  * \retval NL_FALSE otherwise
  */
-NLboolean nlSolve_SUPERLU(void);
+NLAPI NLboolean NLAPIENTRY nlSolve_SUPERLU(void);
 
 /**
  * \brief Solves a linear system using SuperLU.
@@ -89,8 +89,8 @@ NLboolean nlSolve_SUPERLU(void);
  *   unchanged.
  * \retval NL_TRUE if solve was successful
  * \retval NL_FALSE otherwise
- */
-NLboolean nlSolve_system_with_SUPERLU(
+ */                        
+NLAPI NLboolean NLAPIENTRY nlSolve_system_with_SUPERLU(
     NLSparseMatrix* M, double* x, const double* b, NLenum solver,
     NLboolean clear_M
 );

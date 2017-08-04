@@ -1333,6 +1333,10 @@ void glupUseProgram(GLUPuint program) {
 // (.name) that is inserted in the generated VertexBuffer
 // objects, thus avoiding the need to call
 // GL.buffers.indexOf(buffer) (replaced with buffer.name).
+//
+// Note: I filed a bug report with the fix, was taken into
+// account by Emscripten devs, normally this workaround is
+// no longer needed with the latest version (to be checked).
 
 static void my_glGetVertexAttribiv(GLuint index, GLenum pname, GLint* params) {
     *params = EM_ASM_INT( {

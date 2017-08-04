@@ -1105,13 +1105,13 @@ typedef void* NLContext ;
 
 
 /**
- * \brief Appends a coefficient to the current matrix.
+ * \brief Adds a coefficient to the current matrix.
  * \details This function should be called between a
  *   nlBegin(NL_MATRIX) / nlEnd(NL_MATRIX) pair (else an assertion failure
  *   is triggered). This function should not be called in least squares mode.
  *   There should not be any locked variable when using this function.
  * \param[in] i , j indices
- * \param[in] value value of the coefficient
+ * \param[in] value value to be added to the coefficient
  */    
     NLAPI void NLAPIENTRY nlAddIJCoefficient(
         NLuint i, NLuint j, NLdouble value
@@ -1126,7 +1126,7 @@ typedef void* NLContext ;
  *   is triggered). This function should not be called in least squares mode.
  *   There should not be any locked variable when using this function.
  * \param[in] i index of the component
- * \param[in] value value of the component
+ * \param[in] value value to be added to the component
  */    
     NLAPI void NLAPIENTRY nlAddIRightHandSide(NLuint i, NLdouble value);
 

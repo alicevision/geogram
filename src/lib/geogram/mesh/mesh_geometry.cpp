@@ -166,7 +166,7 @@ namespace GEO {
                 if(normals_only) {
                     double l = length(p[v]);
                     if(l > 1e-30) {
-                        Geom::mesh_vertex_normal_ref(M, v) = (1.0 / l) * p[v];
+                        Geom::mesh_vertex_normal_ref(M,v) = (1.0 / l) * p[v];
                     }
                 } else {
                     Geom::mesh_vertex_ref(M, v) = 1.0 / c[v] * p[v];

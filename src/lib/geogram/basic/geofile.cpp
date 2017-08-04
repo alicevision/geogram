@@ -120,7 +120,7 @@ namespace GEO {
         if(check == 0 && gzeof(file_)) {
             result = Numeric::uint32(-1);
         } else {
-            if(check != sizeof(Numeric::uint32)) {
+            if(size_t(check) != sizeof(Numeric::uint32)) {
                 throw GeoFileException("Could not read integer from file");
             }
         }
@@ -130,7 +130,7 @@ namespace GEO {
     void GeoFile::write_int(index_t x_in) {
         Numeric::uint32 x = Numeric::uint32(x_in);
         int check = gzwrite(file_, &x, sizeof(Numeric::uint32));
-        if(check != sizeof(Numeric::uint32)) {
+        if(size_t(check) != sizeof(Numeric::uint32)) {
             throw GeoFileException("Could not write integer to file");
         }
     }
@@ -165,7 +165,7 @@ namespace GEO {
         if(check == 0 && gzeof(file_)) {
             result = size_t(-1);
         } else {
-            if(check != sizeof(Numeric::uint64)) {
+            if(size_t(check) != sizeof(Numeric::uint64)) {
                 throw GeoFileException("Could not read size from file");
             }
         }
@@ -175,7 +175,7 @@ namespace GEO {
     void GeoFile::write_size(size_t x_in) {
         Numeric::uint64 x = Numeric::uint64(x_in);
         int check = gzwrite(file_, &x, sizeof(Numeric::uint64));
-        if(check != sizeof(Numeric::uint64)) {
+        if(size_t(check) != sizeof(Numeric::uint64)) {
             throw GeoFileException("Could not write size to file");
         }
     }

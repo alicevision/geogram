@@ -50,6 +50,8 @@
 #include "nl_cnc_gpu_cuda.h"
 #include "nl_superlu.h"
 
+/*****************************************************************************/
+
 NLboolean nlInitExtension(const char* extension) {
 
     nl_arg_used(extension);
@@ -301,18 +303,18 @@ NLboolean nlIsEnabled(NLenum pname) {
 void  nlSetFunction(NLenum pname, NLfunc param) {
     switch(pname) {
     case NL_FUNC_SOLVER:
-        nlCurrentContext->solver_func = nl_cast(NLSolverFunc,param);
+        nlCurrentContext->solver_func = (NLSolverFunc)(param);
         break ;
     case NL_FUNC_MATRIX:
-        nlCurrentContext->matrix_vector_prod = nl_cast(NLMatrixFunc,param) ;
+        nlCurrentContext->matrix_vector_prod = (NLMatrixFunc)(param) ;
         nlCurrentContext->solver = NL_SOLVER_USER ;
         break ;
     case NL_FUNC_PRECONDITIONER:
-        nlCurrentContext->precond_vector_prod = nl_cast(NLMatrixFunc,param) ;
+        nlCurrentContext->precond_vector_prod = (NLMatrixFunc)(param) ;
         nlCurrentContext->preconditioner = NL_PRECOND_USER ;
         break ;
     case NL_FUNC_PROGRESS:
-        nlCurrentContext->progress_func = nl_cast(NLProgressFunc,param) ;
+        nlCurrentContext->progress_func = (NLProgressFunc)(param) ;
         break ;
     default:
         nlError("nlSetFunction","Invalid parameter");        
@@ -323,13 +325,13 @@ void  nlSetFunction(NLenum pname, NLfunc param) {
 void nlGetFunction(NLenum pname, NLfunc* param) {
     switch(pname) {
     case NL_FUNC_SOLVER:
-        *param = nl_cast(NLfunc,nlCurrentContext->solver_func) ;
+        *param = (NLfunc)(nlCurrentContext->solver_func) ;
         break ;
     case NL_FUNC_MATRIX:
-        *param = nl_cast(NLfunc,nlCurrentContext->matrix_vector_prod) ;
+        *param = (NLfunc)(nlCurrentContext->matrix_vector_prod) ;
         break ;
     case NL_FUNC_PRECONDITIONER:
-        *param = nl_cast(NLfunc,nlCurrentContext->precond_vector_prod) ;
+        *param = (NLfunc)(nlCurrentContext->precond_vector_prod) ;
         break ;
     default:
         nlError("nlGetFunction","Invalid parameter");                

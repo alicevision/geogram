@@ -66,16 +66,6 @@
 #define nl_arg_used(x) (void)x
 
 /**
- * \brief A "brute force" cast operator
- * \note Use only if you know exactly what you are doing
- * \param[in] T the new type 
- * \param[in] x the variable to be casted
- */
-#define nl_cast(T,x)   (*(T*)&(x))
-
-
-
-/**
  * \name Assertion checks
  * @{ 
  */

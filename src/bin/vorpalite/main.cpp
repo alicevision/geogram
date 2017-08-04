@@ -65,7 +65,7 @@
 #include <geogram/mesh/mesh_remesh.h>
 
 #include <geogram/delaunay/LFS.h>
-
+#include <geogram/voronoi/CVT.h>
 #include <geogram/points/co3ne.h>
 
 #include <geogram/third_party/PoissonRecon/poisson_geogram.h>
@@ -434,7 +434,79 @@ namespace {
         }
         return 0;
     }
-    
+
+
+    /**
+     * \brief Generates a polyhedral mesh.
+     * \param[in] input_filename name of the input file, can be
+     *   either a closed surfacic mesh or a tetrahedral mesh
+     * \param[in] output_filename name of the output file
+     * \retval 0 on success
+     * \retval non-zero value otherwise
+     */
+    int polyhedral_mesher(
+        const std::string& input_filename, const std::string& output_filename
+    ) {
+        Mesh M_in;
+        Mesh M_out;
+
+        MeshIOFlags flags;
+        flags.set_element(MESH_CELLS);
+
+        Logger::div("Polyhedral meshing");
+
+        if(!mesh_load(input_filename, M_in, flags)) {
+            return 1;
+        }
+        
+        if(M_in.cells.nb() == 0) {
+            Logger::out("Poly") << "Mesh is not a volume" << std::endl;
+            Logger::out("Poly") << "Trying to tetrahedralize" << std::endl;
+            double quality = 2.0;
+            if(!mesh_tetrahedralize(M_in, true, true, quality)) {
+                return 1;
+            }
+            M_in.cells.compute_borders();
+        }
+
+        CentroidalVoronoiTesselation CVT(&M_in, 3);
+        CVT.set_volumetric(true);
+        
+        Logger::div("Generate random samples");
+
+        CVT.compute_initial_sampling(CmdLine::get_arg_uint("remesh:nb_pts"));
+
+        Logger::div("Optimize sampling");
+
+        try {
+            ProgressTask progress("Lloyd", 10);
+            CVT.set_progress_logger(&progress);
+            CVT.Lloyd_iterations(CmdLine::get_arg_uint("opt:nb_Lloyd_iter"));
+        }
+        catch(const TaskCanceled&) {
+        }
+
+        try {
+            ProgressTask progress("Newton", 30);
+            CVT.set_progress_logger(&progress);
+            CVT.Newton_iterations(30);
+        }
+        catch(const TaskCanceled&) {
+        }
+        
+        CVT.set_progress_logger(nil);
+        
+        CVT.RVD()->compute_RVD(M_out, 0, false, false);
+        
+        MeshIOFlags RVDflags;
+        RVDflags.set_elements(MESH_CELLS);
+        RVDflags.set_attribute(MESH_FACET_REGION);
+        RVDflags.set_attributes(MESH_CELL_REGION);
+        mesh_save(M_out, output_filename, RVDflags);
+        
+        return 0;
+    }
+
 }
 
 int main(int argc, char** argv) {
@@ -454,6 +526,7 @@ int main(int argc, char** argv) {
         CmdLine::import_arg_group("opt");
         CmdLine::import_arg_group("co3ne");        
         CmdLine::import_arg_group("tet");
+        CmdLine::import_arg_group("poly");        
         
         std::vector<std::string> filenames;
 
@@ -481,6 +554,10 @@ int main(int argc, char** argv) {
 
         if(CmdLine::get_arg_bool("tet")) {
             return tetrahedral_mesher(input_filename, output_filename);
+        }
+
+        if(CmdLine::get_arg_bool("poly")) {
+            return polyhedral_mesher(input_filename, output_filename);
         }
         
         Mesh M_in, M_out;

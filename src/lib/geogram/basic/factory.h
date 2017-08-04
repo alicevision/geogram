@@ -329,14 +329,14 @@ namespace GEO {
         /**
          * \brief Type of the creation function
          */
-        typedef Type* (* CreatorType)(Param1);
+        typedef Type* (* CreatorType)(const Param1&);
 
         /**
          * \brief Creation function
          * \tparam ConcreteType actual type of the object to create.
          */
         template <class ConcreteType>
-        static Type* create(Param1 param1) {
+        static Type* create(const Param1& param1) {
             return new ConcreteType(param1);
         }
     };
