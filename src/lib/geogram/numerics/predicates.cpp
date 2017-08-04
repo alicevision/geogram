@@ -309,6 +309,19 @@ namespace {
         return result;
     }
 
+    /**
+     * \brief Implements side1() in 8d.
+     */
+    Sign side1_8d_SOS(
+        const double* p0, const double* p1, const double* q0
+    ) {
+        Sign result = Sign(side1_8d_filter(p0, p1, q0));
+        if(result == ZERO) {
+            result = side1_exact_SOS(p0, p1, q0, 8);
+        }
+        return result;
+    }
+    
     // ================= side2 =========================================
 
     /**
@@ -449,6 +462,20 @@ namespace {
         return result;
     }
 
+    /**
+     * \brief Implements side2() in 8d.
+     */
+    Sign side2_8d_SOS(
+        const double* p0, const double* p1, const double* p2,
+        const double* q0, const double* q1
+    ) {
+        Sign result = Sign(side2_8d_filter(p0, p1, p2, q0, q1));
+        if(result == ZERO) {
+            result = side2_exact_SOS(p0, p1, p2, q0, q1, 8);
+        }
+        return result;
+    }
+    
     // ================= side3 =========================================
 
     /**
@@ -764,6 +791,20 @@ namespace {
         return result;
     }
 
+    /**
+     * \brief Implements side3() in 7d.
+     */
+    Sign side3_8d_SOS(
+        const double* p0, const double* p1, const double* p2, const double* p3,
+        const double* q0, const double* q1, const double* q2
+    ) {
+        Sign result = Sign(side3_8d_filter(p0, p1, p2, p3, q0, q1, q2));
+        if(result == ZERO) {
+            result = side3_exact_SOS(p0, p1, p2, p3, q0, q1, q2, 8);
+        }
+        return result;
+    }
+    
     // ================= side4 =========================================
 
     /**
@@ -1139,6 +1180,21 @@ namespace {
         return result;
     }
 
+    /**
+     * \brief Implements side4() in 7d.
+     */
+    Sign side4_8d_SOS(
+        const double* p0,
+        const double* p1, const double* p2, const double* p3, const double* p4,
+        const double* q0, const double* q1, const double* q2, const double* q3
+    ) {
+        Sign result = Sign(side4_8d_filter(p0, p1, p2, p3, p4, q0, q1, q2, q3));
+        if(result == ZERO) {
+            result = side4_exact_SOS(p0, p1, p2, p3, p4, q0, q1, q2, q3, 8);
+        }
+        return result;
+    }
+    
     // ============ orient2d ==============================================
 
     Sign orient_2d_exact(
@@ -1433,6 +1489,8 @@ namespace GEO {
                 return side1_6d_SOS(p0, p1, q0);
             case 7:
                 return side1_7d_SOS(p0, p1, q0);
+            case 8:
+                return side1_8d_SOS(p0, p1, q0);
             }
             geo_assert_not_reached;
         }
@@ -1452,6 +1510,8 @@ namespace GEO {
                 return side2_6d_SOS(p0, p1, p2, q0, q1);
             case 7:
                 return side2_7d_SOS(p0, p1, p2, q0, q1);
+            case 8:
+                return side2_8d_SOS(p0, p1, p2, q0, q1);
             }
             geo_assert_not_reached;
         }
@@ -1471,6 +1531,8 @@ namespace GEO {
                 return side3_6d_SOS(p0, p1, p2, p3, q0, q1, q2);
             case 7:
                 return side3_7d_SOS(p0, p1, p2, p3, q0, q1, q2);
+            case 8:
+                return side3_8d_SOS(p0, p1, p2, p3, q0, q1, q2);
             }
             geo_assert_not_reached;
         }
@@ -1513,6 +1575,9 @@ namespace GEO {
             case 7:
                 cnt_side4_total++;
                 return side4_7d_SOS(p0, p1, p2, p3, p4, q0, q1, q2, q3);
+            case 8:
+                cnt_side4_total++;
+                return side4_8d_SOS(p0, p1, p2, p3, p4, q0, q1, q2, q3);
             }
             geo_assert_not_reached;
         }

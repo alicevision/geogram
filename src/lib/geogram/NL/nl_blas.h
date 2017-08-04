@@ -343,6 +343,7 @@ void nlBlasResetStats(NLBlas_t blas);
  * \brief Gets the number of floating point operations per
  *  seconds computed since creation of the BLAS abstaction
  *  layer or since the latest call to nlBlasResetStats().
+ * \return the number of GFlops.
  */
 double nlBlasGFlops(NLBlas_t blas);
 

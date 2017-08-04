@@ -358,7 +358,8 @@ void nlEigenSolve_ARPACK(void) {
 
     iparam[1-1] = 1; /* ARPACK chooses the shifts */
     iparam[3-1] = (int)nlCurrentContext->max_iterations;
-    iparam[7-1] = 1; /* Normal mode, use 3 dor shift-invert */
+    iparam[7-1] = 1; /* Normal mode (we do not use 
+         shift-invert (3) since we do our own shift-invert */
 
     workev = NL_NEW_ARRAY(NLdouble, 3*ncv);
     workd = NL_NEW_ARRAY(NLdouble, 3*n);

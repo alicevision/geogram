@@ -101,6 +101,34 @@
       (p1##_6 - ref##_6) * (p2##_6 - ref##_6) )
 #endif
 
+
+/* ================= DIM8 ================ */
+
+#ifdef DIM8
+
+#define predicate(name) name##_8d_filter
+
+#define point(p) \
+     double p##_0, \
+     double p##_1, \
+     double p##_2, \
+     double p##_3, \
+     double p##_4, \
+     double p##_5, \
+     double p##_6, \
+     double p##_7
+
+#define dot_at(p1, p2, ref)               \
+    ( (p1##_0 - ref##_0) * (p2##_0 - ref##_0) + \
+      (p1##_1 - ref##_1) * (p2##_1 - ref##_1) + \
+      (p1##_2 - ref##_2) * (p2##_2 - ref##_2) + \
+      (p1##_3 - ref##_3) * (p2##_3 - ref##_3) + \
+      (p1##_4 - ref##_4) * (p2##_4 - ref##_4) + \
+      (p1##_5 - ref##_5) * (p2##_5 - ref##_5) + \
+      (p1##_6 - ref##_6) * (p2##_6 - ref##_6) + \
+      (p1##_7 - ref##_7) * (p2##_7 - ref##_7) )
+#endif
+
 /* ================= EXACT ================ */
 
 #ifdef DIMN_EXACT

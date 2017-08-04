@@ -504,6 +504,10 @@ namespace {
 	    "poly:generate_ids", false,
 	    "generate unique ids for vertices and cells (saved in geogram and geogram_ascii file formats only)"
 	);
+	declare_arg(
+	    "poly:embedding_dim", 0,
+	    "force embedding dimension (0 = use input dim.)"
+	);
     }    
 
     /**

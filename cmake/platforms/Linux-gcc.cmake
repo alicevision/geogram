@@ -39,24 +39,18 @@ if (GCC_VERSION VERSION_GREATER 4.0)
    add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 endif()
 
-# Enable SSE3 instruction set
-add_flags(CMAKE_CXX_FLAGS -msse3)
-add_flags(CMAKE_C_FLAGS -msse3)
+# Enable setting FPU rounding mode (needed by FPG) and 
+# disable automatic generation of FMAs (would break exact
+# predicates)
+add_flags(CMAKE_CXX_FLAGS -frounding-math -ffp-contract=off)
+add_flags(CMAKE_C_FLAGS -frounding-math -ffp-contract=off)
 
 # Enable glibc parallel mode
 #add_flags(CMAKE_CXX_FLAGS -D_GLIBCXX_PARALLEL)
 
-# Enable some algebraic transforms
-# (necessary for vectorizing certain reductions and dot products)
-#!!! -- deactivated, because it breaks Shewchuck's predicates --
-#add_flags(CMAKE_CXX_FLAGS -ffast-math -fassociative-math)
-#add_flags(CMAKE_C_FLAGS -ffast-math -fassociative-math)
-#-ftree-vectorizer-verbose=2 
-
 # Generate debug information even in release mode
 #add_flags(CMAKE_CXX_FLAGS_RELEASE -g)
 #add_flags(CMAKE_C_FLAGS_RELEASE -g)
-
 
 # Additional debug flags
 # deactivated for now: I added bound checking in VOR::vector<>.

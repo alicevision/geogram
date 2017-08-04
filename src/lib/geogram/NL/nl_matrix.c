@@ -640,25 +640,89 @@ void nlSparseMatrixConstruct(
     M->storage = storage;
     if(storage & NL_MATRIX_STORE_ROWS) {
         M->row = NL_NEW_ARRAY(NLRowColumn, m);
+	M->row_capacity = m;
         for(i=0; i<n; i++) {
             nlRowColumnConstruct(&(M->row[i]));
         }
     } else {
         M->row = NULL;
+	M->row_capacity = 0;
     }
 
     if(storage & NL_MATRIX_STORE_COLUMNS) {
         M->column = NL_NEW_ARRAY(NLRowColumn, n);
+	M->column_capacity = n;
         for(i=0; i<n; i++) {
             nlRowColumnConstruct(&(M->column[i]));
         }
     } else {
         M->column = NULL;
+	M->column_capacity = 0;
     }
 
     M->diag_size = MIN(m,n);
+    M->diag_capacity = M->diag_size;
     M->diag = NL_NEW_ARRAY(NLdouble, M->diag_size);
 }
+
+/**
+ * \brief Adjusts the size of the diagonal of 
+ *  an NLSparseMatrix after the number of rows or c
+ *  olumns have changed.
+ * \param[in,out] M a pointer to the sparse matrix.
+ */
+static void adjust_diag(NLSparseMatrix* M) {
+    NLuint new_diag_size = MIN(M->m, M->n);
+    NLuint i;
+    if(new_diag_size > M->diag_size) {
+	if(new_diag_size > M->diag_capacity) {
+	    M->diag_capacity *= 2;
+	    if(M->diag_capacity == 0) {
+		M->diag_capacity = 16;
+	    }
+	    M->diag = NL_RENEW_ARRAY(double, M->diag, M->diag_capacity);
+	    for(i=M->diag_size; i<new_diag_size; ++i) {
+		M->diag[i] = 0.0;
+	    }
+	}
+	M->diag_size= new_diag_size;
+    }
+}
+
+void nlSparseMatrixAddRow( NLSparseMatrix* M) {
+    ++M->m;
+    if(M->storage & NL_MATRIX_STORE_ROWS) {
+	if(M->m > M->row_capacity) {
+	    M->row_capacity *= 2;
+	    if(M->row_capacity == 0) {
+		M->row_capacity = 16;
+	    }
+	    M->row = NL_RENEW_ARRAY(
+		NLRowColumn, M->row, M->row_capacity
+	    );
+	}
+	nlRowColumnConstruct(&(M->row[M->m-1]));
+    }
+    adjust_diag(M);
+}
+
+void nlSparseMatrixAddColumn( NLSparseMatrix* M) {
+    ++M->n;
+    if(M->storage & NL_MATRIX_STORE_COLUMNS) {
+	if(M->n > M->column_capacity) {
+	    M->column_capacity *= 2;
+	    if(M->column_capacity == 0) {
+		M->column_capacity = 16;
+	    }
+	    M->column = NL_RENEW_ARRAY(
+		NLRowColumn, M->column, M->column_capacity
+	    );
+	}
+	nlRowColumnConstruct(&(M->column[M->n-1]));
+    }
+    adjust_diag(M);
+}
+
 
 /*****************************************************************/
 

@@ -7,7 +7,7 @@ OUTFILENAME=`basename $1 .pck`.h
 echo Generating $OUTFILENAME ...
 echo "/* Automatically generated code, do not edit */" > $OUTFILENAME
 echo "/* Generated from source file:" $1 "*/" >> $OUTFILENAME
-for i in DIM3 DIM4 DIM6 DIM7
+for i in DIM3 DIM4 DIM6 DIM7 DIM8
 do
    echo instancing $i
    cp $1 /tmp/pck_input.c

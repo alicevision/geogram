@@ -2401,6 +2401,11 @@ namespace GEO {
                     delaunay, mesh, R3_embedding, R3_embedding_stride
                 );
                 break;
+            case 8:
+                result = new RVD_Nd_Impl<8>(
+                    delaunay, mesh, R3_embedding, R3_embedding_stride
+                );
+                break;
             default:
                 geo_assert_not_reached;
         }

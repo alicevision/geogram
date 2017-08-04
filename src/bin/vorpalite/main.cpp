@@ -587,7 +587,13 @@ namespace {
             M_in.cells.compute_borders();
         }
 
-        CentroidalVoronoiTesselation CVT(&M_in, 3);
+	index_t dim = M_in.vertices.dimension();
+	index_t spec_dim = CmdLine::get_arg_uint("poly:embedding_dim");
+	if(spec_dim != 0 && spec_dim <= dim) {
+	    dim = spec_dim;
+	}
+	
+        CentroidalVoronoiTesselation CVT(&M_in, coord_index_t(dim));
         CVT.set_volumetric(true);
 
 	if(CmdLine::get_arg("poly:points_file") == "") {

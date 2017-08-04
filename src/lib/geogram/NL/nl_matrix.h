@@ -445,6 +445,11 @@ typedef struct {
     NLuint diag_size;
 
     /**
+     * \brief Number of elements allocated to store the diagonal
+     */
+    NLuint diag_capacity;
+    
+    /**
      * \brief indicates what is stored in this matrix 
      */    
     NLenum storage;
@@ -466,6 +471,18 @@ typedef struct {
      */     
     NLdouble*    diag;
 
+    /**
+     * \brief Number of row descriptors allocated in the row
+     *  array.
+     */
+    NLuint row_capacity;
+
+    /**
+     * \brief Number of column descriptors allocated in the 
+     *  column array.
+     */
+    NLuint column_capacity;
+    
 } NLSparseMatrix;
 
 
@@ -551,6 +568,18 @@ NLAPI NLuint NLAPIENTRY nlSparseMatrixNNZ( NLSparseMatrix* M);
  */
 NLAPI void NLAPIENTRY nlSparseMatrixSort( NLSparseMatrix* M);
 
+/**
+ * \brief Adds a new empty row to a sparse matrix.
+ * \param[in,out] M a pointer to the sparse matrix.
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixAddRow( NLSparseMatrix* M);
+
+/**
+ * \brief Adds a new empty column to a sparse matrix.
+ * \param[in,out] M a pointer to the sparse matrix.
+ */
+NLAPI void NLAPIENTRY nlSparseMatrixAddColumn( NLSparseMatrix* M);
+    
 /******************************************************************************/
 
 /**

@@ -2690,6 +2690,17 @@ namespace GEO {
         }
     };
 
+    /**
+     * \brief IO handler for the TET8 file format
+     * \see TETIOHandler
+     */
+    class GEOGRAM_API TET8IOHandler : public TETIOHandler {
+    public:
+        TET8IOHandler() : TETIOHandler(8) {
+        }
+    };
+
+    
     /************************************************************************/
 
     /**
@@ -3580,6 +3591,7 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(PTSIOHandler,  "pts");
         geo_register_MeshIOHandler_creator(TETIOHandler,  "tet");
         geo_register_MeshIOHandler_creator(TET6IOHandler, "tet6");
+        geo_register_MeshIOHandler_creator(TET8IOHandler, "tet8");	
         geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram");
         geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram_ascii");
         geo_register_MeshIOHandler_creator(GraphiteIOHandler, "graphite");

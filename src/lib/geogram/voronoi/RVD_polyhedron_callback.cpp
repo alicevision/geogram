@@ -261,6 +261,12 @@ namespace {
 			}
 			++nb_border_visited;
 			v = border_next[v];
+			if(nb_border_visited > mesh.vertices.nb()) {
+			    Logger::warn("Simplify")
+				<< "Region has singular border topology"
+				<< std::endl;
+			    goto rollback;
+			}
 		    } while(v != border_next.begin()->first);
 
 		    if(nb_border_visited != border_next.size()) {
