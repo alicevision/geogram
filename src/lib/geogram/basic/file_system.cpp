@@ -417,12 +417,12 @@ namespace GEO {
         }
 
         bool copy_file(const std::string& from, const std::string& to) {
-            FILE* fromf = fopen(from.c_str(), "r");
+            FILE* fromf = fopen(from.c_str(), "rb");
             if(fromf == nil) {
                 Logger::err("FileSyst") << "Could not open source file:" << from << std::endl;
                 return false;
             }
-            FILE* tof = fopen(to.c_str(),"w");
+            FILE* tof = fopen(to.c_str(),"wb");
             if(tof == nil) {
                 Logger::err("FileSyst") << "Could not create file:" << to << std::endl;
                 fclose(fromf);

@@ -57,9 +57,6 @@ extern "C" {
 #include <geogram/third_party/lua/lualib.h>
 }
 
-// We cast function pointers to void* and conversely,
-// (I know this is bad), we ignore the warnings.
-
 /**
  * \file geogram/lua/lua_wrap.h
  * \brief Utilities to write lua bindings.

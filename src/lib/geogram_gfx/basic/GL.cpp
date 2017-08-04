@@ -414,25 +414,31 @@ namespace GEO {
         }
     }
 
-    void check_gl(const char* file, int line) {
+    void check_gl(const char* file, int line, bool warning_only) {
+       // TODO: implement some form of gluErrorString(error_code) 		
+	
         GLenum error_code = glGetError() ;
         bool has_opengl_errors = false ;
         while(error_code != GL_NO_ERROR) {
             has_opengl_errors = true ;
-            Logger::err("OpenGL")
-                << file << ":" << line << " "
-// TODO: implement some form of gluErrorString() 		
-//              << (char*)(gluErrorString(error_code)) << std::endl ;
-                << std::endl;
-            error_code = glGetError() ;
-        }
+	    if(warning_only) {
+		Logger::warn("OpenGL")
+		    << file << ":" << line << " "
+		    << "(ignored)"
+		    << std::endl;
+	    } else {
+		Logger::err("OpenGL")
+		    << file << ":" << line << " "
+		    << std::endl;
+	    }
+	    error_code = glGetError() ;
+	}
         geo_argused(has_opengl_errors);
-        // geo_debug_assert(!has_opengl_errors);
     }
 
     void clear_gl_error_flags(const char* file, int line) {
 #ifdef GEO_DEBUG
-	check_gl(file,line);
+	check_gl(file,line,true);
 #else
 	geo_argused(file);
 	geo_argused(line);

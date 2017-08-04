@@ -290,8 +290,11 @@ namespace GEO {
      *  OpenGL errors were encountered.
      * \param[in] file current sourcefile, as given by __FILE__
      * \param[in] line current line, as given by __LINE__
+     * \param[in] warning_only if true, then errors are reported as warnings.
      */
-    void GEOGRAM_GFX_API check_gl(const char* file, int line);
+    void GEOGRAM_GFX_API check_gl(
+	const char* file, int line, bool warning_only=false
+    );
 
     /**
      * \brief Clears all error flags set by previous OpenGL calls.

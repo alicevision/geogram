@@ -86,10 +86,12 @@ namespace {
 		L, "'require()' invalid number of arguments"
 	    );
 	}
-	std::string k =
-	    std::string("lib/") + std::string(lua_tostring(L,1)) + ".lua";
-	std::map<std::string, const char*>::iterator it =
-	    embedded_files.find(k);
+	std::map<std::string, const char*>::iterator it;
+	{
+	    std::string k =
+		std::string("lib/") + std::string(lua_tostring(L,1)) + ".lua";
+	    it = embedded_files.find(k);
+	}
 	if(it == embedded_files.end()) {
 	    return call_lua_require(L);
 	}
@@ -220,7 +222,9 @@ namespace {
 	    return result;
 	}
 
-	static std::vector<std::string> get_subdirectories(const std::string& path) {
+	static std::vector<std::string> get_subdirectories(
+	    const std::string& path
+	) {
 	    std::vector<std::string> result;
 	    FileSystem::get_subdirectories(path,result);
 	    return result;
