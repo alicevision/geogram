@@ -10,7 +10,7 @@
 #include "imgui_impl_glfw_gl3.h"
 
 // GL3W/GLFW
-// [Bruno 05/16/2016] Modified references to GL and GLfw includes
+// [Bruno Levy 05/16/2016] Modified references to GL and GLfw includes
 //  for interfacing with geogram_gfx
 
 #include <geogram_gfx/basic/GL.h> 
@@ -56,24 +56,24 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
 
     // Backup GL state
+    GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
+    glActiveTexture(GL_TEXTURE0);
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    GLint last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, &last_active_texture);
     GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
     GLint last_element_array_buffer; glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
-
+    
     // [Bruno Levy] use GLUP vertex arrays
     GLuint last_vertex_array=glupGetVertexArrayBinding();
 
-    // [Bruno Levy] does not work with emscripten
-#ifndef __EMSCRIPTEN__    
-    GLint last_blend_src; glGetIntegerv(GL_BLEND_SRC, &last_blend_src);
-    GLint last_blend_dst; glGetIntegerv(GL_BLEND_DST, &last_blend_dst);
-#endif    
-    GLint last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, &last_blend_equation_rgb);
-    GLint last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &last_blend_equation_alpha);
     GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box); 
+    GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
+    GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
+    GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
+    GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
+    GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
+    GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
+    GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
     GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
@@ -86,7 +86,6 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_SCISSOR_TEST);
-    glActiveTexture(GL_TEXTURE0);
 
     // Setup viewport, orthographic projection matrix
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
@@ -133,19 +132,14 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
 
     // Restore modified GL state
     glUseProgram(last_program);
-    glActiveTexture(last_active_texture);
     glBindTexture(GL_TEXTURE_2D, last_texture);
+    glActiveTexture(last_active_texture);
     // [Bruno Levy] use GLUP vertex array
     glupBindVertexArray(last_vertex_array);
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_element_array_buffer);
- 
-    // [Bruno Levy] does not work with Emscripten    
-#ifndef __EMSCRIPTEN__    
     glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
-    glBlendFunc(last_blend_src, last_blend_dst);
-#endif
-    
+    glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
     if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
     if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
@@ -239,15 +233,11 @@ bool ImGui_ImplGlfwGL3_CreateFontsTexture()
 bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
 {
     // Backup GL state
-    // [Bruno Levy] using GLUP vertex arrays
-    GLint last_texture;
+    GLint last_texture, last_array_buffer, last_vertex_array;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    GLint last_vertex_array = glupGetVertexArrayBinding();
-    // [Bruno Levy] not implemented in Emscripten    
-#ifndef __EMSCRIPTEN__
-    GLint last_array_buffer;
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-#endif
+    // [Bruno Levy] use GLUP vertex array
+    last_vertex_array = glupGetVertexArrayBinding();    
 
     // [Bruno] 05/16/2016 Ported shaders to WebGL compatible GLSL,
     // so that it works in Emscripten. We keep the original shaders
@@ -346,10 +336,8 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
 
     // Restore modified GL state
     glBindTexture(GL_TEXTURE_2D, last_texture);
-    // [Bruno Levy] does not work under Emscripten
-#ifndef __EMSCRIPTEN__    
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-#endif
+
     // [Bruno Levy] use GLUP vertex arrays
     glupBindVertexArray(last_vertex_array);
 

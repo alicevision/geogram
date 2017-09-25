@@ -97,7 +97,7 @@ extern "C" {
      * \details Can be used by client-code shaders that need to
      *  have access to the GLUP uniform state.
      */
-    GLUP_API const char* glupUniformStateDeclaration();
+    GLUP_API const char* glupUniformStateDeclaration(void);
     
     /**
      * \brief Opaque identifier of a GLUP context.
@@ -110,7 +110,7 @@ extern "C" {
      *  is called (there needs to be a valid active OpenGL context).
      * \return the newly created GLUPcontext
      */
-    GLUPcontext GLUP_API glupCreateContext();
+    GLUPcontext GLUP_API glupCreateContext(void);
 
     /**
      * \brief Deletes a GLUP context.
@@ -122,7 +122,7 @@ extern "C" {
      * \brief Gets the current GLUP context.
      * \return the current GLUP context
      */
-    GLUPcontext GLUP_API glupCurrentContext();
+    GLUPcontext GLUP_API glupCurrentContext(void);
 
     /**
      * \brief The name of the profile implemented by the
@@ -130,7 +130,7 @@ extern "C" {
      * \return a const pointer to the string with the name
      *  of the current profile.
      */
-    GLUP_API const char* glupCurrentProfileName();
+    GLUP_API const char* glupCurrentProfileName(void);
     
     /**
      * \brief Makes a GLUP context the current one.
@@ -252,7 +252,7 @@ extern "C" {
     } GLUPtextureType;
 
     void GLUP_API glupTextureType(GLUPtextureType type);
-    GLUPtextureType GLUP_API glupGetTextureType();
+    GLUPtextureType GLUP_API glupGetTextureType(void);
     
     typedef enum {
         GLUP_TEXTURE_REPLACE=0,
@@ -261,7 +261,7 @@ extern "C" {
     } GLUPtextureMode;
 
     void GLUP_API glupTextureMode(GLUPtextureMode mode);
-    GLUPtextureMode GLUP_API glupGetTextureMode();
+    GLUPtextureMode GLUP_API glupGetTextureMode(void);
     
     /**
      * @}
@@ -306,19 +306,19 @@ extern "C" {
     void GLUP_API glupLightVector3fv(GLUPfloat* xyz);
 
     void GLUP_API glupSetPointSize(GLUPfloat size);
-    GLUPfloat GLUP_API glupGetPointSize();
+    GLUPfloat GLUP_API glupGetPointSize(void);
     
     void GLUP_API glupSetMeshWidth(GLUPint width);
-    GLUPint GLUP_API glupGetMeshWidth();
+    GLUPint GLUP_API glupGetMeshWidth(void);
 
     void GLUP_API glupSetCellsShrink(GLUPfloat x);
-    GLUPfloat GLUP_API glupGetCellsShrink();
+    GLUPfloat GLUP_API glupGetCellsShrink(void);
 
     void GLUP_API glupSetAlphaThreshold(GLUPfloat x);
-    GLUPfloat GLUP_API glupGetAlphaThreshold();
+    GLUPfloat GLUP_API glupGetAlphaThreshold(void);
 
     void GLUP_API glupSetSpecular(GLUPfloat x);
-    GLUPfloat GLUP_API glupGetSpecular();
+    GLUPfloat GLUP_API glupGetSpecular(void);
     
     /**
      * @}
@@ -337,13 +337,13 @@ extern "C" {
     } GLUPpickingMode;
 
     void GLUP_API glupPickingMode(GLUPpickingMode mode);
-    GLUPpickingMode GLUP_API glupGetPickingMode();
+    GLUPpickingMode GLUP_API glupGetPickingMode(void);
 
     void GLUP_API glupPickingId(GLUPuint64 id);
-    GLUPuint64 GLUP_API glupGetPickingId();
+    GLUPuint64 GLUP_API glupGetPickingId(void);
 
     void GLUP_API glupBasePickingId(GLUPuint64 id);
-    GLUPuint64 GLUP_API glupGetBasePickingId();
+    GLUPuint64 GLUP_API glupGetBasePickingId(void);
     
     /**
      * @}
@@ -375,7 +375,7 @@ extern "C" {
      * \brief Gets the clipping mode.
      * \return the current clipping mode
      */
-    GLUPclipMode GLUP_API glupGetClipMode();
+    GLUPclipMode GLUP_API glupGetClipMode(void);
 
     /**
      * \brief Defines the plane used by GLUP clipping.
@@ -413,9 +413,9 @@ extern "C" {
     } GLUPmatrix;
 
     void GLUP_API glupMatrixMode(GLUPmatrix matrix);
-    GLUPmatrix GLUP_API glupGetMatrixMode();
-    void GLUP_API glupPushMatrix();
-    void GLUP_API glupPopMatrix();
+    GLUPmatrix GLUP_API glupGetMatrixMode(void);
+    void GLUP_API glupPushMatrix(void);
+    void GLUP_API glupPopMatrix(void);
 
     /**
      * \brief Queries a GLUP matrix.
@@ -435,7 +435,7 @@ extern "C" {
      */
     void GLUP_API glupGetMatrixfv(GLUPmatrix matrix, GLUPfloat* ptr);
     
-    void GLUP_API glupLoadIdentity();
+    void GLUP_API glupLoadIdentity(void);
     void GLUP_API glupLoadMatrixf(const GLUPfloat* M);
     void GLUP_API glupLoadMatrixd(const GLUPdouble* M);    
     void GLUP_API glupMultMatrixf(const GLUPfloat* M);
@@ -544,7 +544,7 @@ extern "C" {
     );
 
     void GLUP_API glupBegin(GLUPprimitive primitive);
-    void GLUP_API glupEnd();
+    void GLUP_API glupEnd(void);
     
     void GLUP_API glupVertex2fv(const GLUPfloat* xy);
     void GLUP_API glupVertex3fv(const GLUPfloat* xyz);
@@ -671,7 +671,7 @@ extern "C" {
      * \return the name of the bound vertex array object or 0
      *  if no vertex array object is bound.
      */
-    GLUPuint GLUP_API glupGetVertexArrayBinding();
+    GLUPuint GLUP_API glupGetVertexArrayBinding(void);
 
     /**
      * @}

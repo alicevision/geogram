@@ -1,3 +1,0 @@
-add_subdirectory(demo_Delaunay2d)
-add_subdirectory(demo_GLUP)
-add_subdirectory(demo_Evert)

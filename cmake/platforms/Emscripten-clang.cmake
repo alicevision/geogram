@@ -51,8 +51,10 @@ endif()
 #https://kripken.github.io/emscripten-site/docs/optimizing/Optimizing-Code.html
 # Note: they are added to CMAKE CXX and C flags later on, because the
 # way add_flags() works may remove the second "-s" argument.
-set(EM_FLAGS_RELEASE -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=256000000 )
-set(EM_FLAGS_DEBUG -O2 -g -s USE_GLFW=3 -s TOTAL_MEMORY=256000000 )
+# Note: TOTAL_MEMORY needs to be a multiple of 16M
+set(EM_FLAGS_RELEASE -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 )
+set(EM_FLAGS_DEBUG -O2 -s ASSERTIONS=2 -s SAFE_HEAP=1 -g -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 )
+#set(EM_FLAGS_DEBUG -s ASSERTIONS=2 -s SAFE_HEAP=1 -g -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 )
 
 
 # Profiler compilation flags

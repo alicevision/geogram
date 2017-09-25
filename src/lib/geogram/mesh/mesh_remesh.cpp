@@ -77,6 +77,8 @@ namespace GEO {
             dim = coord_index_t(M_in.vertices.dimension());
         }
 
+	geo_argused(dim); // See TODO later.
+	
         Stopwatch W("Remesh");
 
         CentroidalVoronoiTesselation CVT(&M_in);

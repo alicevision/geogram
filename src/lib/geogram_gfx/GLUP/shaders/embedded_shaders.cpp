@@ -1142,6 +1142,7 @@ namespace GLUP {
         "    if(glupIsEnabled(GLUP_LIGHTING)) { \n"
         "        result = glup_lighting(result, N); \n"
         "    } \n"
+        "//  result.a = 0.01; \n"
         "    glup_FragColor = result; \n"
         "    glup_alpha_discard(); \n"
         "} \n"

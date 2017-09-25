@@ -76,6 +76,27 @@ namespace GEO {
      */
     typedef vecng<4, Numeric::float64> vec4;
 
+    /**
+     * \brief Represents points and vectors in 2d with
+     *  single-precision coordinates.
+     * \details Syntax is (mostly) compatible with GLSL.
+     */
+    typedef vecng<2, Numeric::float32> vec2f;
+
+    /**
+     * \brief Represents points and vectors in 3d with
+     *  single-precision coordinates.
+     * \details Syntax is (mostly) compatible with GLSL.
+     */
+    typedef vecng<3, Numeric::float32> vec3f;
+
+    /**
+     * \brief Represents points and vectors in 4d with
+     *  single-precision coordinates.
+     * \details Syntax is (mostly) compatible with GLSL.
+     */
+    typedef vecng<4, Numeric::float32> vec4f;
+
    
     /**
      * \brief Represents points and vectors in 2d with

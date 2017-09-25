@@ -775,6 +775,7 @@ namespace {
                 }
             }
         }
+	geo_argused(nb_plus);
         if(nb_minus != 0) {
             M.facets.flip(f);
         }

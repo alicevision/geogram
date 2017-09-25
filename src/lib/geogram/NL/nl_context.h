@@ -61,7 +61,7 @@
  * \brief The callback type for solver routines.
  * \details Used by nlSetFunction(NL_FUNC_SOLVER,f)
  */
-typedef NLboolean(*NLSolverFunc)();
+typedef NLboolean(*NLSolverFunc)(void);
 
 /**
  * \brief The callback type for displaying progress.

@@ -1856,8 +1856,8 @@ namespace GEO {
             const double* p3,
             double h0, double h1, double h2, double h3
         ) {
-            std::cerr << "calling in_circle_3dlifted_SOS()"
-                      << std::endl;
+//            std::cerr << "calling in_circle_3dlifted_SOS()"
+//                      << std::endl;
             // in_circle_3dlifted is simply implemented using side3_3dlifted.
             // Both predicates are equivalent through duality
             // (see comment in in_circle_3d_SOS(), the same

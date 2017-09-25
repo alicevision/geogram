@@ -94,12 +94,22 @@ const char * RunString(const char* szLua) {
 }
 
 
+#define IMGUI_FUNCTION_DRAW_LIST(name) \
+static int impl_draw_list_##name(lua_State *L) { \
+  int max_args = lua_gettop(L); \
+  int arg = 1; \
+  int stackval = 0;
 
 #define IMGUI_FUNCTION(name) \
 static int impl_##name(lua_State *L) { \
   int max_args = lua_gettop(L); \
   int arg = 1; \
   int stackval = 0;
+
+// I use OpenGL so this is a GLuint
+// Using unsigned int cause im lazy don't copy me
+#define IM_TEXTURE_ID_ARG(name) \
+  const ImTextureID name = (ImTextureID)luaL_checkinteger(L, arg++);
 
 #define OPTIONAL_LABEL_ARG(name) \
   const char* name; \
@@ -126,6 +136,26 @@ static int impl_##name(lua_State *L) { \
     i_##name##_y = luaL_checknumber(L, arg++); \
   } \
   const ImVec2 name((double)i_##name##_x, (double)i_##name##_y);
+
+#define IM_VEC_4_ARG(name) \
+  const lua_Number i_##name##_x = luaL_checknumber(L, arg++); \
+  const lua_Number i_##name##_y = luaL_checknumber(L, arg++); \
+  const lua_Number i_##name##_z = luaL_checknumber(L, arg++); \
+  const lua_Number i_##name##_w = luaL_checknumber(L, arg++); \
+  const ImVec4 name((double)i_##name##_x, (double)i_##name##_y, (double)i_##name##_z, (double)i_##name##_w);
+
+#define OPTIONAL_IM_VEC_4_ARG(name, x, y, z, w) \
+  lua_Number i_##name##_x = x; \
+  lua_Number i_##name##_y = y; \
+  lua_Number i_##name##_z = z; \
+  lua_Number i_##name##_w = w; \
+  if (arg <= max_args - 1) { \
+    i_##name##_x = luaL_checknumber(L, arg++); \
+    i_##name##_y = luaL_checknumber(L, arg++); \
+    i_##name##_z = luaL_checknumber(L, arg++); \
+    i_##name##_w = luaL_checknumber(L, arg++); \
+  } \
+  const ImVec4 name((double)i_##name##_x, (double)i_##name##_y, (double)i_##name##_z, (double)i_##name##_w);
 
 #define NUMBER_ARG(name)\
   lua_Number name = luaL_checknumber(L, arg++);
@@ -208,8 +238,14 @@ static int impl_##name(lua_State *L) { \
 #define CALL_FUNCTION(name, retType,...) \
   retType ret = ImGui::name(__VA_ARGS__);
 
+#define DRAW_LIST_CALL_FUNCTION(name, retType,...) \
+  retType ret = ImGui::GetWindowDrawList()->name(__VA_ARGS__);
+
 #define CALL_FUNCTION_NO_RET(name, ...) \
   ImGui::name(__VA_ARGS__);
+
+#define DRAW_LIST_CALL_FUNCTION_NO_RET(name, ...) \
+  ImGui::GetWindowDrawList()->name(__VA_ARGS__);
 
 #define PUSH_NUMBER(name) \
   lua_pushnumber(L, name); \
@@ -268,8 +304,12 @@ static void ImEndStack(int type) { \
 static const struct luaL_Reg imguilib [] = {
 #undef IMGUI_FUNCTION
 #define IMGUI_FUNCTION(name) {#name, impl_##name},
+#undef IMGUI_FUNCTION_DRAW_LIST
+#define IMGUI_FUNCTION_DRAW_LIST(name) {"DrawList_" #name, impl_draw_list_##name},
 // These defines are just redefining everything to nothing so
 // we can get the function names
+#undef IM_TEXTURE_ID_ARG
+#define IM_TEXTURE_ID_ARG(name)
 #undef OPTIONAL_LABEL_ARG
 #define OPTIONAL_LABEL_ARG(name)
 #undef LABEL_ARG
@@ -278,6 +318,10 @@ static const struct luaL_Reg imguilib [] = {
 #define IM_VEC_2_ARG(name)
 #undef OPTIONAL_IM_VEC_2_ARG
 #define OPTIONAL_IM_VEC_2_ARG(name, x, y)
+#undef IM_VEC_4_ARG
+#define IM_VEC_4_ARG(name)
+#undef OPTIONAL_IM_VEC_4_ARG
+#define OPTIONAL_IM_VEC_4_ARG(name, x, y, z, w)
 #undef NUMBER_ARG
 #define NUMBER_ARG(name)
 #undef OPTIONAL_NUMBER_ARG
@@ -312,8 +356,12 @@ static const struct luaL_Reg imguilib [] = {
 #define BOOL_ARG(name)
 #undef CALL_FUNCTION
 #define CALL_FUNCTION(name, retType, ...)
+#undef DRAW_LIST_CALL_FUNCTION
+#define DRAW_LIST_CALL_FUNCTION(name, retType, ...)
 #undef CALL_FUNCTION_NO_RET
 #define CALL_FUNCTION_NO_RET(name, ...)
+#undef DRAW_LIST_CALL_FUNCTION_NO_RET
+#define DRAW_LIST_CALL_FUNCTION_NO_RET(name, ...)
 #undef PUSH_NUMBER
 #define PUSH_NUMBER(name)
 #undef PUSH_BOOL
@@ -379,10 +427,12 @@ void LoadImguiBindings() {
   lua_setglobal(lState, "ImGuiWindowFlags_NoBringToFrontOnFocus");
   lua_pushnumber(lState, ImGuiWindowFlags_ChildWindow);
   lua_setglobal(lState, "ImGuiWindowFlags_ChildWindow");
+/* [Bruno Levy] Fri Aug 25 07:43:24 CEST 2017 Not defined in ImGUI 1.51
   lua_pushnumber(lState, ImGuiWindowFlags_ChildWindowAutoFitX);
   lua_setglobal(lState, "ImGuiWindowFlags_ChildWindowAutoFitX");
   lua_pushnumber(lState, ImGuiWindowFlags_ChildWindowAutoFitY);
   lua_setglobal(lState, "ImGuiWindowFlags_ChildWindowAutoFitY");
+*/ 
   lua_pushnumber(lState, ImGuiWindowFlags_ComboBox);
   lua_setglobal(lState, "ImGuiWindowFlags_ComboBox");
   lua_pushnumber(lState, ImGuiWindowFlags_Tooltip);

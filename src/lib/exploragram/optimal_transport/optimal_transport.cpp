@@ -126,6 +126,12 @@ namespace GEO {
         measure_of_smallest_cell_ = 0.0;
 	callback_ = nil;
 	Laguerre_centroids_ = nil;
+
+	linsolve_epsilon_ = 0.001;
+	linsolve_maxiter_ = 1000;
+
+	linesearch_maxiter_ = 100;
+	linesearch_init_iter_ = 0;
     }
 
     OptimalTransportMap::~OptimalTransportMap() {
@@ -168,14 +174,23 @@ namespace GEO {
 
         double epsilon0 = 0.0;
         w_did_not_change_ = false;
-        
+
+	if(max_iterations == 0) {
+	    funcgrad(n,weights_.data(),fk,gk.data());
+	}
+
+	// Inner iteration control for linesearch
+	index_t first_inner_iter = linesearch_init_iter_;
+	index_t inner_iter = first_inner_iter;
+	bool use_inner_iter_prediction = (first_inner_iter != 0);
+	
         for(index_t k=0; k<max_iterations; ++k) {
 	    if(verbose_) {
 		std::cerr << "======= k = " << k << std::endl;
 	    }
             xk=weights_;
 
-            new_linear_system(n);
+            new_linear_system(n,pk.data());
             eval_func_grad_Hessian(n,xk.data(),fk,gk.data());
             
             if(k == 0) {
@@ -190,7 +205,7 @@ namespace GEO {
 		Logger::out("OTM") << "   Solving linear system" << std::endl;
 	    }
 
-            solve_linear_system(pk.data());
+            solve_linear_system();
 
 	    if(verbose_) {
 		std::cerr << "Line search ..." << std::endl;
@@ -200,8 +215,12 @@ namespace GEO {
             
             double alphak = 1.0;
             double gknorm = g_norm_;
-            
-            for(index_t inner_iter=0; inner_iter < 100; ++inner_iter) {
+
+	    if(first_inner_iter != 0) {
+		alphak /= pow(2.0, double(first_inner_iter));
+	    }
+	    
+            for(inner_iter=first_inner_iter; inner_iter < linesearch_maxiter_; ++inner_iter) {
 		if(verbose_) {
 		    std::cerr << "      inner iter = " << inner_iter << std::endl;
 		}
@@ -230,10 +249,13 @@ namespace GEO {
 			      << g_norm_ << "(<=?)"
 			      << (1.0 - 0.5*alphak) * gknorm << std::endl;
 		}
+		
+		// Condition to exit linesearch loop
                 if(
                     (measure_of_smallest_cell_ >= epsilon0) &&
-                    (g_norm_ <= (1.0 - 0.5*alphak) * gknorm) 
+  		    (g_norm_ <= (1.0 - 0.5*alphak) * gknorm) 
                 ) {
+		    // Condition for global convergence
                     if(g_norm_ < gradient_threshold(n)) {
                         converged = true;
                     }
@@ -242,6 +264,17 @@ namespace GEO {
                 // Else we halve the step.
                 alphak /= 2.0;
             }
+
+	    if(use_inner_iter_prediction) {
+		if(inner_iter <= 2) {
+		    first_inner_iter = 0;
+		} else {
+		    first_inner_iter = inner_iter / 2;
+		}
+	    } else {
+		first_inner_iter = 0;
+	    }
+	    
             newiteration();
             if(converged) {
                 break;
@@ -264,7 +297,9 @@ namespace GEO {
             optimize_full_Newton(max_iterations);
             return;
         }
-        
+
+
+	
         index_t n = index_t(points_dimp1_.size() / dimp1_);
         index_t m = 7;
         
@@ -283,7 +318,11 @@ namespace GEO {
         instance_ = this;
         current_call_iter_ = 0;
         current_iter_ = 0;
+	
+	callback_->set_eval_F(true);	
         optimizer->optimize(weights_.data());
+	callback_->set_eval_F(false);
+	
         instance_ = nil;
         // To make sure everything is reset properly
         double dummy = 0;
@@ -375,7 +414,9 @@ namespace GEO {
         optimizer->set_max_iter(max_iterations);
         instance_ = this;
         current_call_iter_ = 0;
+	callback_->set_eval_F(true);		
         optimizer->optimize(weights_.data());
+	callback_->set_eval_F(false);			
         instance_ = nil;
         
         // To make sure everything is reset properly
@@ -537,12 +578,16 @@ namespace GEO {
 		}
 	    }
 	}
-	
+
+        index_t nb_empty_cells = 0;       
         if(update_fg) {
             measure_of_smallest_cell_ = Numeric::max_float64();
             for(index_t i=0; i<n; ++i) {
                 measure_of_smallest_cell_ =
                     geo_min(measure_of_smallest_cell_, g[i]);
+	        if(g[i] == 0.0) {
+		    ++nb_empty_cells;
+		}
             }
         }
         
@@ -568,18 +613,11 @@ namespace GEO {
 
         double max_diff = 0.0;
         double avg_diff = 0.0;
-        index_t nb_empty_cells = 0;
+
         for(index_t p = 0; p < n; ++p) {
             double cur_diff = ::fabs(g[p]);
             max_diff = geo_max(max_diff, cur_diff);
             avg_diff += cur_diff / double(n);
-            // At this step, g[p] = mu(Lag(p)) - lambda_p
-            // We add lambda_p to retreive mu(Lag(p)) and to
-            // count empty cells if mu(Lap(p)) is smaller than
-            // a threshold.
-            if(::fabs(g[p] + lambda_p_) < 1e-10) {
-                nb_empty_cells++;
-            }
         }
 
         
@@ -630,14 +668,16 @@ namespace GEO {
                 str << "   OTM Lvl." << level_ << ": " ;
             }
         }
-        
+
+	double scl = 100.0 / lambda_p_;
+	
         str << "iter=" << current_call_iter_
             << " nbZ=" << nb_empty_cells
             //                << " f=" << f
-            //                << " avg_diff=" << avg_diff
-            //                << " max_diff=" << max_diff
+	    << " avg_diff=" << (avg_diff * scl) << "%"
+	    << " max_diff=" << (max_diff * scl) << "%"
             << " g=" << gNorm
-            << " f=" << f 
+//          << " f=" << f 
             << " threshold=" << gradient_threshold(n);
         last_stats_ = str.str();
 
@@ -652,7 +692,7 @@ namespace GEO {
 		}
 		CmdLine::ui_message(str.str());
 	    } else {
-		str << " f=" << f;
+//		str << " f=" << f;
 		CmdLine::ui_message(str.str() + "\n");
 	    }
 	}
@@ -669,10 +709,12 @@ namespace GEO {
     
 /************************************************************/
 
-    // TODO: use OpenNL buffers to avoid data copy and allocation.
     // TODO: in the Euler code, see if we do not have duplicated computations, i.e.
     //    - Power diagrams when leaving and entering iteration ?
     //    - Centroids: do we restart a RVD computation ?
+    // TODO: are we obliged to create/destroy OpenNL context for each system ?
+    // TODO: we could have an OpenNL buffer for the RHS of the Newton solve ?
+    //   Not really, because this is *minus* the gradient.
     
     void OptimalTransportMap::update_sparsity_pattern() {
         // Does nothing for now,
@@ -680,7 +722,7 @@ namespace GEO {
 	// Tryed smarter things, but was not faster...
     }
 
-    void OptimalTransportMap::new_linear_system(index_t n) {
+    void OptimalTransportMap::new_linear_system(index_t n, double* x) {
         nlNewContext();
             
         bool use_SUPERLU = false;
@@ -700,21 +742,21 @@ namespace GEO {
             nlSolverParameteri(NL_SOLVER, NL_CG);
             nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
             nlSolverParameteri(NL_SYMMETRIC, NL_TRUE);
-            nlSolverParameterd(NL_THRESHOLD, 0.001);
-            nlSolverParameteri(NL_MAX_ITERATIONS, 1000);                
+            nlSolverParameterd(NL_THRESHOLD, linsolve_epsilon_);
+            nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));                
         }
+
+	nlEnable(NL_VARIABLES_BUFFER);
         nlBegin(NL_SYSTEM);
+	nlBindBuffer(NL_VARIABLES_BUFFER, 0, x, NLuint(sizeof(double)));
         nlBegin(NL_MATRIX);
     }
 
-    void OptimalTransportMap::solve_linear_system(double* x) {
+    void OptimalTransportMap::solve_linear_system() {
         nlEnd(NL_MATRIX);
         nlEnd(NL_SYSTEM);
         nlSolve();
-        // Query and display OpenNL stats.
-        NLint n;
-        nlGetIntegerv(NL_NB_VARIABLES, &n);
-        {
+        if(verbose_) {
             int used_iters;
             double elapsed_time;
             double gflops;
@@ -723,19 +765,14 @@ namespace GEO {
             nlGetDoublev(NL_ELAPSED_TIME, &elapsed_time);
             nlGetDoublev(NL_GFLOPS, &gflops);
             nlGetDoublev(NL_ERROR, &error);
-	    if(verbose_) {
-		std::cerr << "   "
-			  << used_iters << " iters in "
-			  << elapsed_time << " seconds "
-			  << gflops << " GFlop/s"
-			  << "  ||Ax-b||/||b||="
-			  << error
-			  << std::endl;
-	    }
-        }
-        for(NLint i=0; i<n; ++i) {
-            x[i] = nlGetVariable(NLuint(i));
-        }
+	    std::cerr << "   "
+		      << used_iters << " iters in "
+		      << elapsed_time << " seconds "
+		      << gflops << " GFlop/s"
+		      << "  ||Ax-b||/||b||="
+		      << error
+		      << std::endl;
+	}
         nlDeleteContext(nlGetCurrent());
     }
     

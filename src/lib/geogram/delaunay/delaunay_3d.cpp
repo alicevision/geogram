@@ -953,9 +953,10 @@ namespace GEO {
     }
 
     index_t Delaunay3d::insert(index_t v, index_t hint) {
-       index_t t_bndry;
-       index_t f_bndry;
-       index_t first_conflict, last_conflict;
+       index_t t_bndry = NO_TETRAHEDRON;
+       index_t f_bndry = index_t(-1);
+       index_t first_conflict = NO_TETRAHEDRON;
+       index_t last_conflict = NO_TETRAHEDRON;
 
        const double* p = vertex_ptr(v);
 

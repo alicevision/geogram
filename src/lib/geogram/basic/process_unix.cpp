@@ -391,7 +391,9 @@ namespace GEO {
             int nb_cores = android_get_number_of_cores();
             geo_assert(nb_cores > 0);
             return index_t(nb_cores);
-#else
+#elif defined GEO_OS_EMSCRIPTEN
+	    return 1;
+#else	    
             return index_t(sysconf(_SC_NPROCESSORS_ONLN));
 #endif
         }

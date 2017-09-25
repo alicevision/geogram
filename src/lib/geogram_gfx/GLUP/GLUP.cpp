@@ -1349,47 +1349,6 @@ void glupUseProgram(GLUPuint program) {
 
 /****************************************************************************/
 
-#ifdef GEO_OS_EMSCRIPTEN
-
-// There is a bug in Emscripten OpenGL library: WebGL
-// has a special class for VertexBuffer objects instead
-// of integer Ids. Emscripten OpenGL runtime uses an array
-// of such objects and refers to them using indices. The
-// glGetVertexAttribiv function forgets to convert 
-// the WebGL VertexBuffer object into the corresponding
-// index in the array. Using Emscripten macros to directly
-// embed JavaScript source, it is possible to reimplement
-// this functionality.
-// Note: Emscripten OpenGL runtime uses a custom attribute
-// (.name) that is inserted in the generated VertexBuffer
-// objects, thus avoiding the need to call
-// GL.buffers.indexOf(buffer) (replaced with buffer.name).
-//
-// Note: I filed a bug report with the fix, was taken into
-// account by Emscripten devs, normally this workaround is
-// no longer needed with the latest version.
-//   Fri Sep 23 13:33:53 CEST 2016: bug seems to be still there
-// in emscripten -> I keep this code for now.
-
-static void my_glGetVertexAttribiv(GLuint index, GLenum pname, GLint* params) {
-    *params = EM_ASM_INT( {
-            var value = Module.ctx.getVertexAttrib(
-                $0, $1
-            );
-            if(typeof value == 'number') {
-                return value;
-            } else if(typeof value == 'boolean') {
-                return value ? 1 : 0;
-            } else {
-                return value == null ? 0 : value.name;
-            }
-     },index,pname); 
-}
-
-#define glGetVertexAttribiv my_glGetVertexAttribiv
-
-#endif
-
 namespace GLUP {
     
     static GLUPuint vertex_array_binding = 0;

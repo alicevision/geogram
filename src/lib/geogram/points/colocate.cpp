@@ -97,9 +97,11 @@ namespace {
             // int neighbors[nb] where nb is a variable)
             index_t* neighbors = (index_t*) alloca(sizeof(index_t) * nb);
             double* dist = (double*) alloca(sizeof(double) * nb);
+
             NN_->get_nearest_neighbors(
                 nb, NN_->point_ptr(i), neighbors, dist
             );
+
             index_t smallest = i;
             for(index_t jj = 0; jj < nb; jj++) {
                 if(dist[jj] > sq_tolerance_) {
@@ -238,7 +240,7 @@ namespace GEO {
             NN->set_points(nb_points, points, stride);
             old2new.resize(nb_points, index_t(-1));
             Colocate colocate_obj(NN, old2new, tolerance);
-
+	    
             if(CmdLine::get_arg_bool("sys:multithread")) {
                 parallel_for(colocate_obj, 0, nb_points, 1, true);
             } else {

@@ -1328,6 +1328,8 @@ namespace GEO {
 
                 mesh_.vertices.create_vertices(index_t(nvertices));
 
+		geo_argused(nfaces);
+		geo_argused(ntstrips);
                 // TODO: here we could create / reserve facets
                 
                 if(!ply_read(ply)) {

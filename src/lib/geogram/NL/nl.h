@@ -293,7 +293,7 @@ typedef double          NLdouble;
  *  NL_FUNC_PRECONDITIONER,
  *  NL_FUNC_PROGRESS      
  */
-typedef void(*NLfunc)();
+typedef void(*NLfunc)(void);
 
 /**
  * \brief An OpenNL context.
@@ -1277,6 +1277,8 @@ typedef void* NLContext;
  * \param[in] k the index of the buffer. If type = NL_VARIABLES_BUFFER, this
  *   corresponds to the index of the linear system (0 if there is a single
  *   linear system).
+ * \param[in] addr the address of the array to be bound.
+ * \param[in] stride number of bytes between two consecutive elements.
  */
     NLAPI void NLAPIENTRY nlBindBuffer(
 	NLenum buffer, NLuint k, void* addr, NLuint stride

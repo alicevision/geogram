@@ -80,7 +80,12 @@ namespace {
 	    glup_viewer_disable(GLUP_VIEWER_ROTATE_LIGHT);
 	    glup_viewer_enable(GLUP_VIEWER_BACKGROUND);    
 	    GEO::Application::instance()->set_lighting(true);
-	    GEO::Application::instance()->set_white_bg(true);
+	    GEO::Application::instance()->set_background_color_1(
+		1.0f, 1.0f, 1.0f
+	    );
+	    GEO::Application::instance()->set_background_color_2(
+		0.0f, 0.0f, 0.7f
+	    );	    
 	    t0 = GEO::SystemStopwatch::now();
 	    return 0;
 	}
@@ -98,14 +103,16 @@ namespace {
 	    glup_viewer_disable(GLUP_VIEWER_ROTATE_LIGHT);
 	    glup_viewer_disable(GLUP_VIEWER_BACKGROUND);    
 	    GEO::Application::instance()->set_lighting(false);
-	    GEO::Application::instance()->set_white_bg(false);
+	    GEO::Application::instance()->set_background_color_1(0,0,0);
+	    GEO::Application::instance()->set_background_color_2(0,0,0);
 	    return 0;    
 	}
 
 	static int SetRegionOfInterest(lua_State* L) {
 	    if(lua_gettop(L) != 6) {
 		return luaL_error(
-		    L, "'GLUP.SetRegionOfInterest()' invalid number of arguments"
+		    L,
+		    "'GLUP.SetRegionOfInterest()' invalid number of arguments"
 		);
 	    }
 	    if(

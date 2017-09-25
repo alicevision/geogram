@@ -50,17 +50,17 @@ extern "C" {
      * \brief Deletes all the variables allocated for the GUI.
      * \details Called at application shutdown.
      */
-    void GLUP_VIEWER_API glup_viewer_gui_cleanup();
+    void GLUP_VIEWER_API glup_viewer_gui_cleanup(void);
 
     /**
      * \brief Starts a new frame.
      */
-    void GLUP_VIEWER_API glup_viewer_gui_begin_frame();
+    void GLUP_VIEWER_API glup_viewer_gui_begin_frame(void);
 
     /**
      * \brief Ends a frame.
      */
-    void GLUP_VIEWER_API glup_viewer_gui_end_frame();
+    void GLUP_VIEWER_API glup_viewer_gui_end_frame(void);
 
     /**
      * \brief Tests whether callbacks are directed towards
@@ -69,7 +69,7 @@ extern "C" {
      * \retval zero if callbacks should be taken into account
      *  by the application.
      */
-    int GLUP_VIEWER_API glup_viewer_gui_takes_input();
+    int GLUP_VIEWER_API glup_viewer_gui_takes_input(void);
 
     /**
      * \brief Callback for mouse button events.
@@ -110,7 +110,9 @@ extern "C" {
      * \param[in] c the character that corresponds to the
      *  pushed key
      */
-    void GLUP_VIEWER_API glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c);
+    void GLUP_VIEWER_API glup_viewer_gui_char_callback(
+	GLFWwindow* window, unsigned int c
+    );
 
     /**
      * \brief Callback for window resize events.
@@ -142,18 +144,20 @@ extern "C" {
      * \retval GLtrue if command line argument \p param has value \p arg
      * \retval GLfalse otherwise
      */
-    GLboolean GLUP_VIEWER_API glup_viewer_test_arg_string(const char* param, const char* arg);
+    GLboolean GLUP_VIEWER_API glup_viewer_test_arg_string(
+	const char* param, const char* arg
+    );
 
 
     /**
      * \brief Gets the screen size from the arglist and sends it to GLUP.
      */
-    void GLUP_VIEWER_API glup_viewer_set_screen_size_from_args();
+    void GLUP_VIEWER_API glup_viewer_set_screen_size_from_args(void);
 
 
-    void GLUP_VIEWER_API glup_viewer_effect_begin_frame();
+    void GLUP_VIEWER_API glup_viewer_effect_begin_frame(void);
     
-    void GLUP_VIEWER_API glup_viewer_effect_end_frame();
+    void GLUP_VIEWER_API glup_viewer_effect_end_frame(void);
     
 #ifdef __cplusplus
 }

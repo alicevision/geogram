@@ -26,7 +26,7 @@
 #include <stdarg.h>
 
 /* 
- *Lots of documentation tags in GLFW that are
+ * Many documentation tags in GLFW that are
  * not understood by CLANG.
  */
 #ifdef __clang__
@@ -1120,7 +1120,7 @@ static void display() {
     }
 }
 
-static void copy_image_to_clipboard();
+static void copy_image_to_clipboard(void);
 
 void glup_viewer_char_callback(GLFWwindow* w, unsigned int c);
 
@@ -1244,17 +1244,17 @@ static void glup_viewer_key_callback(
 	    } else if(key == GLFW_KEY_F12) {
 		handled = keyboard_func_ext("F12",ev);				
 	    } else if(key == GLFW_KEY_LEFT_CONTROL) {
-		handled = keyboard_func_ext("left_control",ev);						
+		handled = keyboard_func_ext("left_control",ev);
 	    } else if(key == GLFW_KEY_RIGHT_CONTROL) {
-		handled = keyboard_func_ext("right_control",ev);						
+		handled = keyboard_func_ext("right_control",ev);
 	    } else if(key == GLFW_KEY_LEFT_ALT) {
-		handled = keyboard_func_ext("left_alt",ev);						
+		handled = keyboard_func_ext("left_alt",ev);
 	    } else if(key == GLFW_KEY_RIGHT_ALT) {
-		handled = keyboard_func_ext("right_alt",ev);						
+		handled = keyboard_func_ext("right_alt",ev);
 	    } else if(key == GLFW_KEY_LEFT_SHIFT) {
-		handled = keyboard_func_ext("left_shift",ev);						
+		handled = keyboard_func_ext("left_shift",ev);
 	    } else if(key == GLFW_KEY_RIGHT_SHIFT) {
-		handled = keyboard_func_ext("right_shift",ev);						
+		handled = keyboard_func_ext("right_shift",ev);
 	    } else if(key == GLFW_KEY_ESCAPE) {
 		handled = keyboard_func_ext("escape",ev);		
 	    } else if(key == GLFW_KEY_TAB) {
@@ -1493,7 +1493,8 @@ void glup_viewer_one_frame() {
         if(
             glup_viewer_is_enabled(GLUP_VIEWER_IDLE_REDRAW) ||
             glup_viewer_needs_redraw > 0 ||
-            (now()-glup_viewer_start_time) < 1.0  /* overcomes missing update at startup */
+            (now()-glup_viewer_start_time) < 1.0
+            /* overcomes missing update at startup */
         ) {
             if(glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)) {
                 glup_viewer_gui_begin_frame();
@@ -1508,6 +1509,16 @@ void glup_viewer_one_frame() {
         } else {
             glup_viewer_pause();
         }
+#ifdef __EMSCRIPTEN__
+	/* 
+	 * Set alpha channel to 1 else the image is composited 
+	 * with the background 
+	 */
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+#endif	
         glfwSwapBuffers(glup_viewer_window);
     } 
 }

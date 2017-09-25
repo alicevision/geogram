@@ -63,6 +63,8 @@
 extern "C" {
 #include <geogram/third_party/lua/lua.h>
 }
+#else
+typedef int lua_State;
 #endif
 
 /**
@@ -70,6 +72,22 @@ extern "C" {
  * \brief Utilities and C++ classes for easily creating 
  *  applications with glup_viewer and ImGui.
  */
+
+namespace ImGui {
+    
+    /**
+     * \brief Manages the GUI of a color editor.
+     * \details This creates a custom dialog with the color editor and
+     *  a default palette, as in ImGUI example.
+     * \param[in] label the label of the widget, passed to ImGUI
+     * \param[in,out] color a pointer to an array of 3 floats
+     * \retval true if the color was changed
+     * \retval false otherwise
+     */
+    bool GEOGRAM_GFX_API ColorEdit3WithPalette(
+	const char* label, float* color
+    );
+}
 
 namespace GEO {
 
@@ -1731,9 +1749,14 @@ namespace GEO {
          * \brief Application constructor.
          * \param[in] argc , argv command line arguments copied from main()
          * \param[in] usage the usage string
+	 * \param[in] lua_state an optional pointer to a LUA state or nil. If
+	 *  nil, then a LUA state is created.
          * \see CmdLine::parse()
          */
-        Application(int argc, char** argv, const std::string& usage);
+        Application(
+	    int argc, char** argv, const std::string& usage,
+	    lua_State* lua_state = nil
+	);
 
         /**
          * \brief Application destructor.
@@ -1745,6 +1768,12 @@ namespace GEO {
          */
         void start();
 
+
+	/**
+	 * \brief Stops the application.
+	 */
+	void quit();
+	
         /**
          * \brief Gets the instance.
          * \return A pointer to the instance.
@@ -1831,8 +1860,17 @@ namespace GEO {
 	    lighting_ = x;
 	}
 
-	void set_white_bg(bool x) {
-	    white_bg_ = x;
+
+	void set_background_color_1(float r, float g, float b) {
+	    background_color_1_.x = r;
+	    background_color_1_.y = g;
+	    background_color_1_.z = b;	    
+	}
+
+	void set_background_color_2(float r, float g, float b) {
+	    background_color_2_.x = r;
+	    background_color_2_.y = g;
+	    background_color_2_.z = b;	    
 	}
 	
     protected:
@@ -2048,7 +2086,6 @@ namespace GEO {
         SmartPointer<StatusBar> status_bar_;
 
         bool lighting_;
-        bool white_bg_;
 	GLenum effect_;
 
         GLUPclipMode clip_mode_;
@@ -2076,7 +2113,11 @@ namespace GEO {
 #ifdef GEOGRAM_WITH_LUA	
 	lua_State* lua_state_;
 	bool lua_error_occured_;
-#endif	
+	bool owns_lua_state_;
+#endif
+
+	vec4f background_color_1_;
+	vec4f background_color_2_;
     };
 
     /*****************************************************************/
@@ -2283,14 +2324,21 @@ namespace GEO {
         bool show_vertices_;
         bool show_vertices_selection_;
         float vertices_size_;
+	vec4f vertices_color_;
 
         bool show_surface_;
-        bool show_surface_colors_;        
+        bool show_surface_sides_;        
         bool show_mesh_;
+	float mesh_width_;
+	vec4f mesh_color_;
+	
         bool show_surface_borders_;
+	vec4f surface_color_;
+	vec4f surface_color_2_;
 
         bool show_volume_;
         float cells_shrink_;
+	vec4f volume_color_;
         bool show_colored_cells_;
         bool show_hexes_;
 	bool show_connectors_;

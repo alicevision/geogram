@@ -51,6 +51,7 @@ void main() {
     if(glupIsEnabled(GLUP_LIGHTING)) {
         result = glup_lighting(result, N);
     }
+
     glup_FragColor = result;
     glup_alpha_discard();        
 }                                                                  

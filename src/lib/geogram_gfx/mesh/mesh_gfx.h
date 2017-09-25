@@ -738,13 +738,25 @@ namespace GEO {
                 }
             } else {
                 if(mesh_->vertices.single_precision()) {
-                    glupVertex3fv(
-                        mesh_->vertices.single_precision_point_ptr(v)
-                    );
+		    if(mesh_->vertices.dimension() < 3) {
+			glupVertex2fv(
+			    mesh_->vertices.single_precision_point_ptr(v)
+			);
+		    } else {
+			glupVertex3fv(
+			    mesh_->vertices.single_precision_point_ptr(v)
+			);
+		    }
                 } else {
-                    glupVertex3dv(
-                        mesh_->vertices.point_ptr(v)
-                    );
+		    if(mesh_->vertices.dimension() < 3) {
+			glupVertex2dv(
+			    mesh_->vertices.point_ptr(v)
+			);
+		    } else {
+			glupVertex3dv(
+			    mesh_->vertices.point_ptr(v)
+			);
+		    }
                 }
             }
         }

@@ -53,7 +53,7 @@ namespace GEO {
 
     /**
      * \brief Computes the centroids of the Laguerre cells that
-     *  correspond to optimal transport.
+     *  correspond to optimal transport in 2D.
      * \param[in] omega a reference to the mesh that represents the
      *  domain
      * \param[in] nb_points number of points
@@ -76,9 +76,9 @@ namespace GEO {
     /**
      * \brief Computes semi-discrete optimal transport maps.
      * \details Computes an optimal transport map between two
-     *  distributions in 3D. The first distribution is represented
-     *  by a 3D tetrahedral mesh. The second distribution is a sum
-     *  of Diracs.
+     *  distributions in 2D. The first distribution is represented
+     *  by a 2D triangulated mesh. The second distribution is a sum
+     *  of Diracs with 2D coordinates.
      *  The algorithm is described in the following references:
      *   - 3D algorithm: http://arxiv.org/abs/1409.1279
      *   - Earlier 2D version by Quentin M\'erigot: 
@@ -91,8 +91,9 @@ namespace GEO {
     class EXPLORAGRAM_API OptimalTransportMap2d : public OptimalTransportMap {
     public:
         /**
-         * \brief OptimalTransportMap3d constructor.
-         * \param[in] mesh the source distribution, represented as a 3d mesh
+         * \brief OptimalTransportMap2d constructor.
+         * \param[in] mesh the source distribution, represented as a 2d mesh.
+	 *  It can be also a 3D mesh with the Z coordinate set to 0.
          * \param[in] delaunay factory name of the Delaunay triangulation.
          * \param[in] BRIO true if vertices are already ordered using BRIO
          */
@@ -130,6 +131,68 @@ namespace GEO {
 	 */
  	virtual void call_callback_on_RVD();
     };
+
+    /*********************************************************************/
+
+    /**
+     * \brief Computes semi-discrete optimal transport maps.
+     * \details Computes an optimal transport map between two
+     *  distributions in 3D. The first distribution is represented
+     *  by a 3D surfacic triangulated mesh. The second distribution is a sum
+     *  of Diracs with 3D coordinates.
+     *  The algorithm is described in the following references:
+     *   - 3D algorithm: http://arxiv.org/abs/1409.1279
+     *   - Earlier 2D version by Quentin M\'erigot: 
+     *    Q. Merigot. A multiscale approach to optimal transport.
+     *    Computer Graphics Forum 30 (5) 1583--1592, 2011 (Proc SGP 2011).
+     *   - Earlier article on OT and power diagrams: 
+     *    F. Aurenhammer, F. Hoffmann, and B. Aronov. Minkowski-type theorems 
+     *    and least-squares clustering. Algorithmica, 20:61-76, 1998.
+     */
+    class EXPLORAGRAM_API OptimalTransportMapOnSurface : public OptimalTransportMap {
+    public:
+        /**
+         * \brief OptimalTransportOnSurface constructor.
+         * \param[in] mesh the source distribution, represented as a 3d mesh
+         * \param[in] delaunay factory name of the Delaunay triangulation.
+         * \param[in] BRIO true if vertices are already ordered using BRIO
+         */
+        OptimalTransportMapOnSurface(
+            Mesh* mesh,
+            const std::string& delaunay = "BPOW",
+	    bool BRIO=false
+        );
+
+	/**
+	 * \brief OptimalTransportMap destructor.
+	 */
+	virtual ~OptimalTransportMapOnSurface();
+
+	/**
+	 * \copydoc OptimalTransportMap::get_RVD()
+	 */
+        virtual void get_RVD(Mesh& M);
+
+	/**
+	 * \copydoc OptimalTransportMap::compute_Laguerre_centroids()
+	 */
+        virtual void compute_Laguerre_centroids(double* centroids);
+
+	/**
+	 * \brief Gets the total mass of the mesh.
+	 * \details Take the weights into account if they are present.
+	 * \return the total mass of the mesh.
+	 */
+	double total_mesh_mass() const;
+	
+      protected:
+	/**
+	 * \copydoc OptimalTransportMap::call_callback_on_RVD()
+	 */
+ 	virtual void call_callback_on_RVD();
+    };
+
+    /*********************************************************************/    
 }
 
 #endif

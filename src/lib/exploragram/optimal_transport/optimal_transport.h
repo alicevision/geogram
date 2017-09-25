@@ -145,6 +145,46 @@ namespace GEO {
             epsilon_ = eps;
         }
 
+
+	/**
+	 * \brief Sets the tolerance for linear solve.
+	 * \param[in] eps the maximum value of 
+	 *   \f$ \| Ax - b \| / \| b \| \f$b
+	 */
+	void set_linsolve_epsilon(double eps) {
+	    linsolve_epsilon_ = eps;
+	}
+
+	/**
+	 * \brief Sets the maximum number of iterations
+	 *  for linear solve.
+	 * \param[in] maxiter the maximum number of iterations.
+	 */
+	void set_linsolve_maxiter(index_t maxiter) {
+	    linsolve_maxiter_ = maxiter;
+	}
+
+	/**
+	 * \brief Sets the maximum number of line search iterations.
+	 * \param[in] maxiter the maximum number of step length reduction
+	 *  for line search.
+	 */
+	void set_linesearch_maxiter(index_t maxiter) {
+	    linesearch_maxiter_ = maxiter;
+	}
+
+	/**
+	 * \brief Sets the number of steplength reductions to be
+	 *  done at the first iteration.
+	 * \param[in] init_iter the number of steplength reductions to
+	 *  be apllied at the first iteration. If left 0, start with
+	 *  Newton step at each iteration, else do tentative steplength
+	 *  prediction.
+	 */
+	void set_linesearch_init_iter(index_t init_iter) {
+	    linesearch_init_iter_ = init_iter;
+	}
+	
         /**
          * \brief Sets the weight of the regularization term.
          * \details The regularization term (norm of the weight vector) cancels
@@ -338,8 +378,10 @@ namespace GEO {
         /**
          * \brief Starts a new linear system.
          * \param[in] n the dimension of the system
+	 * \param[in] x pointer to a contiguous array of \p n doubles,
+	 *  where the solution will be stored.
          */
-        void new_linear_system(index_t n);
+        void new_linear_system(index_t n, double* x);
 
         /**
          * \brief Adds a coefficient to the matrix of the system.
@@ -361,9 +403,10 @@ namespace GEO {
         
         /**
          * \brief Solves a linear system.
-         * \param[out] x a pointer to the solution of the linear system.
+         * \details The solution is stored in the vector that 
+	 *  was previously specified to new_linear_system().
          */
-        void solve_linear_system(double* x);
+        void solve_linear_system();
 
     protected:
 
@@ -439,6 +482,7 @@ namespace GEO {
 	      OptimalTransportMap* OTM
 	     ) : OTM_(OTM),
 	        Newton_step_(false),
+		eval_F_(false),
 	        n_(0),
 	        w_(nil),
 	        g_(nil),
@@ -528,7 +572,19 @@ namespace GEO {
 	    void set_g(double* g) {
 		g_ = g;
 	    }
-	
+
+	    /**
+	     * \brief Specifies whether the objective function should 
+	     *  be evaluated.
+	     * \details The Newton solver does not need evaluating the
+	     *  objective function, only the BFGS solver needs it.
+	     * \param[in] x true if the objective function should be
+	     *  evaluated, false otherwise. Default is false.
+	     */
+	    void set_eval_F(bool x) {
+		eval_F_ = x;
+	    }
+	    
 	    /**
 	     * \brief Gets the computed value of the objective function.
 	     * \details This sums the contributions of all threads.
@@ -546,6 +602,7 @@ namespace GEO {
 	    OptimalTransportMap* OTM_;
 	    bool weighted_;
 	    bool Newton_step_;
+	    bool eval_F_;
 	    vector<double> funcval_;
 	    index_t n_;
 	    const double* w_;
@@ -611,6 +668,18 @@ namespace GEO {
 
 	/** \brief If user-specified, then Laguerre centroids are output here */
 	double* Laguerre_centroids_;
+
+	/** \brief maximum value of \f$ \| Ax - b \| / \| b \| \f$ */
+	double linsolve_epsilon_;
+	
+	/** \brief maximum number of iterations for linear solve */
+	index_t linsolve_maxiter_;
+
+	/** \brief maximum number of steplength divisions */
+	index_t linesearch_maxiter_;
+
+	/** \brief starting number of steplength divisions */
+	index_t linesearch_init_iter_;
     };
 
 }

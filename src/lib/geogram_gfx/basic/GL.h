@@ -74,7 +74,7 @@
 #include <GLFW/glfw3.h>
 #define GL_GLEXT_PROTOTYPES
 #include <GLES2/gl2ext.h>
-typedef GLint GLint64;
+//typedef GLint GLint64; // Was missing in Emscripten 1.36.0. OK in 1.37.19.
 #define GL_INVALID_INDEX GLuint(-1)
 typedef double GLdouble;
 #define glGenVertexArrays glGenVertexArraysOES

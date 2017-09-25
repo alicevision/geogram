@@ -878,9 +878,10 @@ namespace GEO {
     }
 
     index_t Delaunay2d::insert(index_t v, index_t hint) {
-       index_t t_bndry;
-       index_t e_bndry;
-       index_t first_conflict, last_conflict;
+       index_t t_bndry = NO_TRIANGLE;
+       index_t e_bndry = index_t(-1);
+       index_t first_conflict = NO_TRIANGLE;
+       index_t last_conflict  = NO_TRIANGLE;
 
        const double* p = vertex_ptr(v);
 

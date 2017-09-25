@@ -80,7 +80,7 @@ enum GlupViewerEvent {
  * \brief Callback function to be called to display each frame.
  * \see glup_viewer_set_display_func()
  */
-typedef void (* GlupViewerDisplayFunc)();
+typedef void (* GlupViewerDisplayFunc)(void);
 
 /**
  * \brief Callback function to be called when a key is pressed.
@@ -109,14 +109,14 @@ typedef GLboolean (* GlupViewerKeyboardFuncExt)(
  * \brief Callback function associated to an individual key.
  * \see glup_viewer_set_key_func()
  */
-typedef void (* GlupViewerKeyFunc)();
+typedef void (* GlupViewerKeyFunc)(void);
 
 /**
  * \brief Callback function called when the first frame is displayed.
  * \details Can be used to setup OpenGL objects, create textures etc...
  * \see glup_viewer_set_init_func()
  */
-typedef void (* GlupViewerInitFunc)();
+typedef void (* GlupViewerInitFunc)(void);
 
 /**
  * \brief Callback function called when a file is dropped in the window.

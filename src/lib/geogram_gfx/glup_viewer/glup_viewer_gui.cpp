@@ -176,13 +176,126 @@ namespace {
      *  the source string + null terminator was greater than max_dest_size,
      *  then it is cropped. On exit, dest is always null-terminated (in 
      *  contrast with strncpy()).
-     */
+     */ 
     size_t safe_strncpy(
         char* dest, const char* source, size_t max_dest_size
     ) {
         strncpy(dest, source, max_dest_size);
         dest[max_dest_size-1] = '\0';
         return strlen(dest);
+    }
+}
+
+namespace ImGui {
+
+    bool ColorEdit3WithPalette(const char* label, float* color_in) {
+	bool result = false;
+	static bool saved_palette_inited = false;
+	static ImVec4 saved_palette[40];
+	static ImVec4 backup_color;
+	ImGui::PushID(label);
+	int flags =
+	    ImGuiColorEditFlags_PickerHueWheel |
+	    ImGuiColorEditFlags_NoAlpha |
+	    ImGuiColorEditFlags_Float;
+	
+	ImVec4& color = *(ImVec4*)color_in;
+
+	if (!saved_palette_inited) {
+
+	    for (int n = 0; n < 8; n++) {
+		saved_palette[n].x = 0.0f;
+		saved_palette[n].y = 0.0f;
+		saved_palette[n].z = 0.0f;
+	    }
+
+	    saved_palette[0] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+	    saved_palette[1] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+	    saved_palette[2] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+	    saved_palette[3] = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+	    saved_palette[4] = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+	    saved_palette[5] = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
+	    saved_palette[6] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+	    saved_palette[7] = ImVec4(0.0f, 1.0f, 1.0f, 1.0f);	    
+	    
+	    for (int n = 0; n < 32; n++) {
+		ImGui::ColorConvertHSVtoRGB(
+		    float(n) / 31.0f, 0.8f, 0.8f,
+		    saved_palette[n+8].x,
+		    saved_palette[n+8].y,
+		    saved_palette[n+8].z
+		);
+	    }
+	    saved_palette_inited = true;
+	}
+	
+	bool open_popup = ImGui::ColorButton(label, color, flags);
+	
+	ImGui::SameLine();
+	ImGui::Text("%s",label);
+	if (open_popup) {
+	    ImGui::OpenPopup("##PickerPopup");
+	    backup_color = color;
+	}
+	if (ImGui::BeginPopup("##PickerPopup")) {
+	    ImGui::Text("%s",label);
+	    ImGui::Separator();
+	    if(ImGui::ColorPicker4(
+		"##picker", (float*)&color,
+		flags | ImGuiColorEditFlags_NoSidePreview
+		      | ImGuiColorEditFlags_NoSmallPreview
+		   )
+	    ) {
+		result = true;
+	    }
+	    ImGui::SameLine();
+	    ImGui::BeginGroup();
+	    ImGui::Text("Current");
+	    ImGui::ColorButton(
+		"##current", color,
+		ImGuiColorEditFlags_NoPicker |
+		ImGuiColorEditFlags_AlphaPreviewHalf,
+		ImVec2(60,40)
+	    );
+	    ImGui::Text("Previous");
+	    if (ImGui::ColorButton(
+		    "##previous", backup_color,
+		    ImGuiColorEditFlags_NoPicker |
+		    ImGuiColorEditFlags_AlphaPreviewHalf,
+		    ImVec2(60,40))
+		) {
+		color = backup_color;
+		result = true;
+	    }
+	    ImGui::Separator();
+	    ImGui::Text("Palette");
+	    for (int n = 0; n < 40; n++) {
+		ImGui::PushID(n);
+		if ( (n % 8) != 0 ) {
+		    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.y);
+		}
+		if (ImGui::ColorButton(
+			"##palette",
+			saved_palette[n],
+			ImGuiColorEditFlags_NoPicker |
+			ImGuiColorEditFlags_NoTooltip,
+			ImVec2(20,20))
+		    ) {
+		    color = ImVec4(
+			saved_palette[n].x,
+			saved_palette[n].y,
+			saved_palette[n].z,
+			color.w
+		    ); // Preserve alpha!
+		    result = true;
+		}
+		ImGui::PopID();
+	    }
+	    ImGui::EndGroup();
+	    ImGui::EndPopup();
+	}
+	ImGui::PopID();
+	return result;
     }
 }
 
@@ -1375,7 +1488,7 @@ namespace GEO {
     Application* Application::instance_ = nil;
     
     Application::Application(
-        int argc, char** argv, const std::string& usage
+        int argc, char** argv, const std::string& usage, lua_State* lua_state
     ) :
         argc_(argc),
         argv_(argv),
@@ -1407,7 +1520,6 @@ namespace GEO {
         status_bar_ = new StatusBar;
 
         lighting_ = true;
-        white_bg_ = true;
 	effect_ = GLUP_VIEWER_NO_EFFECT;
 
         clip_mode_ = GLUP_CLIP_WHOLE_CELLS;
@@ -1439,17 +1551,28 @@ namespace GEO {
 	);
 
 #ifdef GEOGRAM_WITH_LUA	
-	lua_error_occured_ = false;	
-	lua_state_ = luaL_newstate();
-	luaL_openlibs(lua_state_);
-	init_lua_io(lua_state_);
+	lua_error_occured_ = false;
+	if(lua_state != nil) {
+	    lua_state_ = lua_state;
+	    owns_lua_state_ = false;
+	} else {
+	    lua_state_ = luaL_newstate();
+	    owns_lua_state_ = true;
+	    luaL_openlibs(lua_state_);
+	    init_lua_io(lua_state_);
+	}
 	init_lua_glup(lua_state_);
 	init_lua_glup_viewer(lua_state_);		
 	init_lua_imgui(lua_state_);
 #endif
 	geo_cite_with_info(
-	    "WEB:ImGUI","Used to create the GUI of GEOGRAM utilities (vorpaview, geobox, geocod)."
+	    "WEB:ImGUI",
+	    "Used to create the GUI of GEOGRAM utilities "
+	    "(vorpaview, geobox, geocod)."
 	);
+
+	background_color_1_ = vec4f(1.0f, 1.0f, 1.0f, 1.0f);	
+	background_color_2_ = vec4f(0.0f, 0.0f, 0.7f, 1.0f);
     }
 
     Application::~Application() {
@@ -1461,8 +1584,11 @@ namespace GEO {
                 glDeleteTextures(1, &colormaps_[i].texture);                
             }
         }
-#ifdef GEOGRAM_WITH_LUA	
-	lua_close(lua_state_);
+#ifdef GEOGRAM_WITH_LUA
+	if(owns_lua_state_) {
+	    lua_close(lua_state_);
+	    lua_state_ = nil;
+	}
 #endif	
         geo_assert(instance_ == this);        
         instance_ = nil;
@@ -1528,6 +1654,10 @@ namespace GEO {
         glup_viewer_main_loop(argc_, argv_);
     }
 
+    void Application::quit() {
+	glup_viewer_exit_main_loop();
+    }
+    
     bool Application::save(const std::string& filename) {
         Logger::warn("GLUP") << "Could not save " << filename << std::endl;
         Logger::warn("GLUP") << "Application::save() needs to be overloaded"
@@ -1616,7 +1746,6 @@ namespace GEO {
 
         glup_viewer_add_key_func('z', zoom_in, "Zoom in");
         glup_viewer_add_key_func('Z', zoom_out, "Zoom out");
-        glup_viewer_add_toggle('b', &white_bg_, "white background");
         glup_viewer_add_toggle('L', &lighting_, "lighting");        
         
 #ifdef GEO_OS_EMSCRIPTEN
@@ -1670,11 +1799,19 @@ namespace GEO {
 
     void Application::draw_scene_callback() {
         if(instance() != nil) {
-            if(instance()->white_bg_) {
-                glup_viewer_set_background_color(1.0, 1.0, 1.0);
-            } else {
-                glup_viewer_set_background_color(0.0, 0.0, 0.0);
-            }
+	    
+	    glup_viewer_set_background_color(
+		instance()->background_color_1_.x,
+		instance()->background_color_1_.y,
+		instance()->background_color_1_.z		
+	    );
+	
+	    glup_viewer_set_background_color2(
+		instance()->background_color_2_.x,
+		instance()->background_color_2_.y,
+		instance()->background_color_2_.z		
+	    );
+	    
             if(instance()->lighting_) {
                 glupEnable(GLUP_LIGHTING);
             } else {
@@ -1848,11 +1985,16 @@ namespace GEO {
     
         ImGui::Separator();
         ImGui::Text("Style");
-        ImGui::Checkbox("white bkgnd [b]", &white_bg_);
-        ImGui::Checkbox(
-            "fancy bkgnd",
-            (bool*)glup_viewer_is_enabled_ptr(GLUP_VIEWER_BACKGROUND)
-        );
+	if(ImGui::ColorEdit3WithPalette(
+	       "Background 1", background_color_1_.data())
+	) {
+	    glup_viewer_enable(GLUP_VIEWER_BACKGROUND);
+	}
+	if(ImGui::ColorEdit3WithPalette(
+	       "Background 2", background_color_2_.data())
+	) {
+	    glup_viewer_enable(GLUP_VIEWER_BACKGROUND);	    
+	}
 	if(
 	  ImGui::Combo(
 	    "sfx",
@@ -2179,13 +2321,20 @@ namespace GEO {
         show_vertices_ = false;
         show_vertices_selection_ = true;
         vertices_size_ = 1.0f;
-        
+	vertices_color_ = vec4f(0.0f, 1.0f, 0.0f, 1.0f);
+	
         show_surface_ = true;
-        show_surface_colors_ = true;
+        show_surface_sides_ = false;
         show_mesh_ = true;
+	mesh_color_ = vec4f(0.0f, 0.0f, 0.0f, 1.0f);
+	mesh_width_ = 0.1f;
+	
         show_surface_borders_ = false;
-        
+	surface_color_ =   vec4f(0.0f, 0.5f, 1.0f, 1.0f);
+	surface_color_2_ = vec4f(1.0f, 0.5f, 0.0f, 1.0f); 
+	
         show_volume_ = false;
+	volume_color_ = vec4f(0.9f, 0.9f, 0.9f, 1.0f);	
         cells_shrink_ = 0.0f;
         show_colored_cells_ = false;
         show_hexes_ = true;
@@ -2315,7 +2464,10 @@ namespace GEO {
         }
     
         ImGui::Separator();    
-        ImGui::Checkbox("Vertices [p]", &show_vertices_);
+        ImGui::Checkbox("##VertOnOff", &show_vertices_);
+	ImGui::SameLine();
+	ImGui::ColorEdit3WithPalette("Vert. [p]", vertices_color_.data());
+
         if(show_vertices_) {
             ImGui::Checkbox("selection", &show_vertices_selection_);            
             ImGui::SliderFloat("sz.", &vertices_size_, 0.1f, 5.0f, "%.1f");
@@ -2323,17 +2475,37 @@ namespace GEO {
 
         if(mesh_.facets.nb() != 0) {
             ImGui::Separator();
-            ImGui::Checkbox("Surface [S]", &show_surface_);
+            ImGui::Checkbox("##SurfOnOff", &show_surface_);
+	    ImGui::SameLine();
+	    ImGui::ColorEdit3WithPalette(
+		"Surf. [S]", surface_color_.data()
+	    );
             if(show_surface_) {
-                ImGui::Checkbox("colors [c]", &show_surface_colors_);
-                ImGui::Checkbox("mesh [m]", &show_mesh_);
+		ImGui::Checkbox("##SidesOnOff", &show_surface_sides_);
+		ImGui::SameLine();
+		ImGui::ColorEdit3WithPalette(
+		    "2sided [c]", surface_color_2_.data()
+		);
+		
+                ImGui::Checkbox("##MeshOnOff", &show_mesh_);
+		ImGui::SameLine();
+		ImGui::ColorEdit3WithPalette("mesh [m]", mesh_color_.data());
+
+		if(show_mesh_) {
+		    ImGui::SliderFloat(
+			"wid.", &mesh_width_, 0.1f, 2.0f, "%.1f"
+		    );
+		}
+		
                 ImGui::Checkbox("borders [B]", &show_surface_borders_);
             }
         }
 
         if(mesh_.cells.nb() != 0) {
             ImGui::Separator();
-            ImGui::Checkbox("Volume [V]", &show_volume_);
+            ImGui::Checkbox("##VolumeOnOff", &show_volume_);
+	    ImGui::SameLine();
+	    ImGui::ColorEdit3WithPalette("Volume [V]", volume_color_.data());
             if(show_volume_) {
                 ImGui::SliderFloat(
                     "shrk.", &cells_shrink_, 0.0f, 1.0f, "%.2f"
@@ -2373,8 +2545,8 @@ namespace GEO {
     void SimpleMeshApplication::init_graphics() {
         glup_viewer_add_toggle('p', &show_vertices_, "vertices");
         glup_viewer_add_toggle('S', &show_surface_, "surface");
-        glup_viewer_add_toggle('c', &show_surface_colors_, "surface_colors_");
-        glup_viewer_add_toggle('B', &show_surface_borders_, "borders");
+        glup_viewer_add_toggle('c', &show_surface_sides_, "2sided");
+        glup_viewer_add_toggle('B', &show_surface_borders_,"borders");
         glup_viewer_add_toggle('m', &show_mesh_, "mesh");
         glup_viewer_add_toggle('V', &show_volume_, "volume");
         glup_viewer_add_toggle('j', &show_hexes_, "hexes");
@@ -2429,7 +2601,9 @@ namespace GEO {
         }
         
         if(show_vertices_) {
-            mesh_gfx_.set_points_color(0.0, 1.0, 0.0);
+            mesh_gfx_.set_points_color(
+		vertices_color_.x, vertices_color_.y, vertices_color_.z
+	    );
             mesh_gfx_.set_points_size(vertices_size_);
             mesh_gfx_.draw_vertices();
         }
@@ -2442,32 +2616,26 @@ namespace GEO {
             mesh_gfx_.set_vertices_selection("");            
         }
 
-        if(white_bg_) {
-            mesh_gfx_.set_mesh_color(0.0, 0.0, 0.0);
-        } else {
-            mesh_gfx_.set_mesh_color(1.0, 1.0, 1.0);
-        }
+	mesh_gfx_.set_mesh_color(0.0, 0.0, 0.0);
 
-        if(show_surface_colors_) {
-            if(mesh_.cells.nb() == 0) {
-                mesh_gfx_.set_surface_color(0.5f, 0.75f, 1.0f);
-                mesh_gfx_.set_backface_surface_color(1.0f, 0.0f, 0.0f);
-            } else {
-                mesh_gfx_.set_surface_color(0.7f, 0.0f, 0.0f);
-                mesh_gfx_.set_backface_surface_color(1.0f, 1.0f, 0.0f);
-            }
-        } else {
-            if(white_bg_) {
-                mesh_gfx_.set_surface_color(0.9f, 0.9f, 0.9f);
-            } else {
-                mesh_gfx_.set_surface_color(0.1f, 0.1f, 0.1f);
-            }
+	mesh_gfx_.set_surface_color(
+	    surface_color_.x, surface_color_.y, surface_color_.z
+	);
+        if(show_surface_sides_) {
+	    mesh_gfx_.set_backface_surface_color(
+		surface_color_2_.x, surface_color_2_.y, surface_color_2_.z
+	    );
         }
-
+	
         mesh_gfx_.set_show_mesh(show_mesh_);
-
+	mesh_gfx_.set_mesh_color(mesh_color_.x, mesh_color_.y, mesh_color_.z);
+	mesh_gfx_.set_mesh_width(index_t(mesh_width_*10.0f));
+	
         if(show_surface_) {
+	    float specular_backup = glupGetSpecular();
+	    glupSetSpecular(0.4f);
             mesh_gfx_.draw_surface();
+	    glupSetSpecular(specular_backup);	    
         }
         
         if(show_surface_borders_) {
@@ -2489,11 +2657,14 @@ namespace GEO {
             
             mesh_gfx_.set_shrink(double(cells_shrink_));
             mesh_gfx_.set_draw_cells(GEO::MESH_HEX, show_hexes_);
-            mesh_gfx_.set_draw_cells(GEO::MESH_CONNECTOR, show_connectors_);	    
+            mesh_gfx_.set_draw_cells(GEO::MESH_CONNECTOR, show_connectors_);
+	    
             if(show_colored_cells_) {
                 mesh_gfx_.set_cells_colors_by_type();
             } else {
-                mesh_gfx_.set_cells_color(0.9f, 0.9f, 0.9f);
+                mesh_gfx_.set_cells_color(
+		    volume_color_.x, volume_color_.y, volume_color_.z
+		);
             }
             mesh_gfx_.draw_volume();
 

@@ -318,6 +318,7 @@ namespace GEO {
         double box_dist = 0.0;
         double* bbox_min = (double*) (alloca(dimension() * sizeof(double)));
         double* bbox_max = (double*) (alloca(dimension() * sizeof(double)));
+	
         for(coord_index_t c = 0; c < dimension(); ++c) {
             bbox_min[c] = bbox_min_[c];
             bbox_max[c] = bbox_max_[c];
