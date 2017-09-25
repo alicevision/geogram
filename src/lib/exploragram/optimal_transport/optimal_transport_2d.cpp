@@ -358,7 +358,8 @@ namespace GEO {
         const double* points,
         double* centroids,
 	bool parallel_pow,
-	Mesh* RVD
+	Mesh* RVD,
+	bool verbose
     ) {
 	geo_argused(parallel_pow); // Not implemented yet.
 
@@ -381,6 +382,7 @@ namespace GEO {
         OTM.set_points(nb_points, points);
         OTM.set_epsilon(0.01);
 	OTM.set_Laguerre_centroids(centroids);
+	OTM.set_verbose(verbose);
         OTM.optimize(1000);
 
 	if(RVD != nil) {

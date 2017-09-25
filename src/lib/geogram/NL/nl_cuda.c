@@ -726,7 +726,23 @@ NLboolean nlInitExtension_CUDA(void) {
 	ConvertSMVer2Cores(deviceProp.major, deviceProp.minor),
 	deviceProp.major, deviceProp.minor
     );
-       
+
+    printf(
+	"OpenNL CUDA: %d kB shared mem. per block, %d per MP\n",
+	(int)(deviceProp.sharedMemPerBlock / 1024),
+	(int)(deviceProp.sharedMemPerMultiprocessor / 1024)
+    );
+    
+    printf(
+	"OpenNL CUDA: %d regs. per block, %d per MP\n",
+	deviceProp.regsPerBlock,
+	deviceProp.regsPerMultiprocessor	
+    );
+
+    printf(
+	"OpenNL CUDA: warpsize=%d\n",
+	deviceProp.warpSize
+    );
     
     if ((deviceProp.major * 0x10 + deviceProp.minor) < 0x11) {
         printf("OpenNL CUDA requires a minimum CUDA compute 1.1 capability\n");

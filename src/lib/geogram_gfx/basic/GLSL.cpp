@@ -1053,7 +1053,7 @@ namespace GEO {
             
             for(size_t dep=0; dep<F.depends.size(); ++dep) {
                 if(F.depends[dep]->pseudo_file != nil) {
-                    (provider->*F.depends[dep]->pseudo_file)(sources);
+		    F.depends[dep]->pseudo_file(provider,sources);
                 } else {
                     sources.push_back(F.depends[dep]->text);
                 }

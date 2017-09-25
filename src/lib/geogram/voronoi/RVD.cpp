@@ -2392,9 +2392,6 @@ namespace {
                 } else {
                     vector<index_t> facet_ptr;
                     vector<index_t> tet_ptr;
-                    Logger::out("RVD")
-                        << "Creating "
-                        << nb_parts_in << " parts" << std::endl;
                     mesh_partition(
                         *mesh_, MESH_PARTITION_HILBERT,
                         facet_ptr, tet_ptr, nb_parts_in

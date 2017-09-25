@@ -178,7 +178,7 @@ namespace GEO {
          * \details The GLSL pseudo file system manages the
          *  include directives.
          */
-        class PseudoFileProvider {
+        class GEOGRAM_GFX_API PseudoFileProvider {
         public:
             /**
              * \brief PseudoFileProvider destructor.
@@ -195,8 +195,8 @@ namespace GEO {
          *  of Source objects, that can be either constant string litterals
          *  or dynamically created strings.
          */
-        typedef void (PseudoFileProvider::*PseudoFile)(
-            std::vector<Source>& sources
+        typedef void (*PseudoFile)(
+            PseudoFileProvider* provider, std::vector<Source>& sources
         );
 
 
@@ -529,6 +529,19 @@ namespace GEO {
             return true;
         }
 
+        inline bool set_program_uniform_by_name(
+            GLuint shader_id, const char* name, float x, float y
+        ) {
+            GLint location = glGetUniformLocation(shader_id, name) ;
+            if(location < 0) {
+                return false ;
+            }
+            glUseProgram(shader_id);
+            glUniform2f(location, x, y);
+            glUseProgram(0);
+            return true;
+        }
+	
         /**
          * \brief Gets the offset of a uniform variable relative
          *  to the uniform block it is declared in.

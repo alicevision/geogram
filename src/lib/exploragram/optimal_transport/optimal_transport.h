@@ -164,10 +164,21 @@ namespace GEO {
          */
         void optimize(index_t max_iterations);
 
+	/**
+	 * \brief Enable/disable messages during optimization.
+	 * \param[in] x true if messages should be displayed, false
+	 *  otherwise.
+	 */
+	void set_verbose(bool x) {
+	    verbose_ = x;
+	}
+	
         /**
          * \brief Computes the weights that realize the optimal
          *  transport map between the source mesh and the target
          *  pointset.
+	 * \details The algorithm is described in http://arxiv.org/abs/1603.05579
+	 *   Kitawaga, Merigot, Thibert, A Newton Algorithm for semi-discrete OT.
          * \param[in] max_iterations maximum number of solver iterations.
          * \param[in] n number of weights to optimize, used in hierarchical
          *  mode. If zero, optimizes all the weights.

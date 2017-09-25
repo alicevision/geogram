@@ -52,16 +52,6 @@
 #include <geogram_gfx/basic/GLSL.h>
 #include <map>
 
-// Uncomment to activate OpenGL error reporting for
-// each call to GLUP functions.
-// #define GLUP_DEBUG
-
-#ifdef GLUP_DEBUG
-#define GEO_CHECK_GLUP() ::GEO::check_gl(__FILE__,__LINE__)
-#else
-#define GEO_CHECK_GLUP() 
-#endif
-
 /**
  * \file geogram_gfx/GLUP/GLUP_context.h
  * \brief Internal implementation of GLUP context.

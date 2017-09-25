@@ -1,8 +1,0 @@
-Eigensolver with right-hand√-sidematrix is now functional (tested with
-FEM manifold harmonics)
-
---This line, and those below, will be ignored--
-
-M    src/lib/geogram/NL/nl_api.c
-M    src/lib/geogram/NL/nl_arpack.c
-M    src/test/test_MH/main.cpp

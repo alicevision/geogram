@@ -202,6 +202,7 @@ namespace {
 	    if(!lua_error_occured_ && init_graphics_called_) {
 		exec_command("GLUP.init_graphics()");
 	    }
+	    glup_viewer_enable(GLUP_VIEWER_IDLE_REDRAW);
 	}
 	
         /**

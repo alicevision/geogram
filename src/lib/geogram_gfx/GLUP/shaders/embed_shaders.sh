@@ -1,7 +1,8 @@
 #!/bin/sh
 
-headers="
+headers_GLUP="
 GLUP/constants.h
+GLUP/defs.h
 GLUP/stdglup.h
 GLUP/fragment_shader_utils.h
 GLUP/fragment_ray_tracing.h
@@ -29,6 +30,14 @@ GLUPGLSL/spheres_vertex_shader.h
 GLUPGLSL/spheres_fragment_shader.h
 "
 
+headers_fullscreen="
+fullscreen/ambient_occlusion_fragment_shader.h
+fullscreen/blur_fragment_shader.h
+fullscreen/depth_dependent_blur_fragment_shader.h
+fullscreen/unsharp_masking_fragment_shader.h
+fullscreen/vertex_shader.h
+"
+
 cat <<EOF
 /*
  * This file was automatically generated, do not edit.
@@ -39,16 +48,26 @@ cat <<EOF
 #include <geogram_gfx/basic/GLSL.h>
 
 namespace GLUP {
-   void register_embedded_shaders() {
+   void register_embedded_shaders_GLUP() {
 EOF
-
-for header in $headers
+for header in $headers_GLUP
 do
     echo "     GEO::GLSL::register_GLSL_include_file(\"$header\","
     cat $header | sed -e 's|^|        \"|' -e 's| *$| \\n\"|'
     echo "     );"
     echo
 done
-
 echo "   }"
+
+
+echo "   void register_embedded_shaders_fullscreen() {"
+for header in $headers_fullscreen
+do
+    echo "     GEO::GLSL::register_GLSL_include_file(\"$header\","
+    cat $header | sed -e 's|^|        \"|' -e 's| *$| \\n\"|'
+    echo "     );"
+    echo
+done
+echo "   }"
+
 echo "}"

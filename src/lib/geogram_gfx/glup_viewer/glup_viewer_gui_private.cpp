@@ -25,6 +25,8 @@
 #include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
 #include <geogram_gfx/glup_viewer/glup_viewer_gui.h>
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/full_screen_effects/ambient_occlusion.h>
+#include <geogram_gfx/full_screen_effects/unsharp_masking.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl3.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
@@ -60,6 +62,9 @@ static bool vanillaGL = false;
 #endif
 
 /***************************************************************************/
+
+static GEO::FullScreenEffectImpl_var effect_;
+
 
 // Commands may need to update the GUI (when using
 // the console or the progressbar). The Command class
@@ -237,6 +242,39 @@ void glup_viewer_set_screen_size_from_args() {
     glup_viewer_set_screen_size(w,h);
 }
 
+GLboolean glup_viewer_set_effect(GLenum effect) {
+    switch(effect) {
+	case GLUP_VIEWER_NO_EFFECT:
+	    effect_.reset();
+	    break;
+	case GLUP_VIEWER_AMBIENT_OCCLUSION:
+	    effect_ = new GEO::AmbientOcclusionImpl();
+	    break;
+	case GLUP_VIEWER_UNSHARP_MASKING:
+	    effect_ = new GEO::UnsharpMaskingImpl();
+	    break;
+    }
+    GLboolean result = (effect_.is_nil() || effect_->OK()) ? GL_TRUE : GL_FALSE;
+    if(!effect_.is_nil() && !effect_->OK()) {
+	effect_.reset();
+    }
+    return result;
+}
+
+void glup_viewer_effect_begin_frame() {
+    if(!effect_.is_nil()) {
+	int w,h;
+	glup_viewer_get_screen_size(&w,&h);
+	effect_->pre_render(GEO::index_t(w), GEO::index_t(h));
+    }
+}
+    
+void glup_viewer_effect_end_frame() {
+    if(!effect_.is_nil()) {
+//	glup_viewer_snapshot("frame.ppm");
+	effect_->post_render();
+    }
+}
 
 #ifdef GEO_OS_EMSCRIPTEN
 

@@ -55,7 +55,8 @@
 #ifdef WIN32
 #include <windows.h>
 #else
-#include <time.h>
+#include <sys/types.h>
+#include <sys/times.h>
 #endif
 
 #ifdef WITH_PNG
@@ -94,6 +95,7 @@ static void glup_viewer_pause() {
 #endif
 
 static int glup_viewer_needs_redraw = 1;
+static double glup_viewer_start_time = 0.0;
 
 void glup_viewer_post_redisplay() {
     /* 
@@ -221,7 +223,9 @@ static double now() {
 #ifdef WIN32
     return (double)(GetTickCount()) / 1000.0;
 #else
-    return (double)(clock()) / (double) (CLOCKS_PER_SEC);
+   struct tms now_tms;
+   return (double)(times(&now_tms)) / 100.0;
+/*    return (double)(clock()) / (double) (CLOCKS_PER_SEC); */
 #endif
 }
 
@@ -920,6 +924,8 @@ static void actually_render_display(double offset) {
     
     double clip_eqn[4];
 
+    glup_viewer_effect_begin_frame();
+    
     if(glup_viewer_is_enabled(GLUP_VIEWER_BACKGROUND)) {
         draw_background();
     } else {
@@ -997,7 +1003,7 @@ static void actually_render_display(double offset) {
 
 
         if(glup_viewer_is_enabled(GLUP_VIEWER_SHOW_CLIP)) {
-            
+
             float sq_w = 1.25f / params[GLUP_VIEWER_ZOOM];
 
             GLboolean vertex_colors_save = glupIsEnabled(GLUP_VERTEX_COLORS);
@@ -1027,7 +1033,6 @@ static void actually_render_display(double offset) {
             
             glupEnd();
             
-
             if(vertex_colors_save) {
                 glupEnable(GLUP_VERTEX_COLORS);
             }
@@ -1080,6 +1085,8 @@ static void actually_render_display(double offset) {
         display_func();
     }
 
+    glup_viewer_effect_end_frame();
+    
     draw_foreground();
 }
 
@@ -1469,16 +1476,14 @@ void glup_viewer_one_frame(void);
 void glup_viewer_one_frame() {
     int cur_width;
     int cur_height;
-    double start;
     GlupViewerInitFunc init = init_func;
     
     if(init != NULL) {
 	init_func = NULL;
         init();
+        glup_viewer_start_time = now();
     }
 
-    start = now();
-    
     if(!glfwWindowShouldClose(glup_viewer_window) && in_main_loop_) {
         glfwGetFramebufferSize(glup_viewer_window, &cur_width, &cur_height);
         if(glup_viewer_W != cur_width || glup_viewer_H != cur_height) {
@@ -1488,7 +1493,7 @@ void glup_viewer_one_frame() {
         if(
             glup_viewer_is_enabled(GLUP_VIEWER_IDLE_REDRAW) ||
             glup_viewer_needs_redraw > 0 ||
-            (now()-start) < 1.0 /* overcomes missing update at startup */
+            (now()-glup_viewer_start_time) < 1.0  /* overcomes missing update at startup */
         ) {
             if(glup_viewer_is_enabled(GLUP_VIEWER_TWEAKBARS)) {
                 glup_viewer_gui_begin_frame();
@@ -1585,6 +1590,8 @@ void glup_viewer_main_loop(int argc, char** argv) {
 
     atexit(cleanup);
 
+    glup_viewer_start_time = now();
+   
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(glup_viewer_one_frame, 0, 1);
 #else

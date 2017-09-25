@@ -46,6 +46,8 @@
 #ifndef GEOGRAM_GFX_BASIC_GL
 #define GEOGRAM_GFX_BASIC_GL
 
+// #define GEO_DEBUG_GL
+
 #include <geogram_gfx/basic/common.h>
 #include <geogram_gfx/api/defs.h>
 
@@ -323,7 +325,11 @@ namespace GEO {
      * \details If an OpenGL error was flagged, display it together
      *  with current file and line number.
      */
-    #define GEO_CHECK_GL() ::GEO::check_gl(__FILE__,__LINE__)
+#ifdef GEO_DEBUG_GL    
+#   define GEO_CHECK_GL() ::GEO::check_gl(__FILE__,__LINE__)
+#else
+#   define GEO_CHECK_GL()
+#endif    
 
     /***********************************************************/
 

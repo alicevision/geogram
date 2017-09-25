@@ -63,7 +63,7 @@
  *
  *  This version is completely abstract, the same code can be used for 
  * CPU/GPU, dense matrix / sparse matrix etc...
- *  Abstraction is realize through:
+ *  Abstraction is realized through:
  *   - Abstract blas interface (NLBlas_t), that can implement BLAS 
  *     operations on the CPU or on the GPU.
  *   - Abstract matrix interface (NLMatrix), that can implement different

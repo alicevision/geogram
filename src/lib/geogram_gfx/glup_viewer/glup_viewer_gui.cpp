@@ -1408,6 +1408,7 @@ namespace GEO {
 
         lighting_ = true;
         white_bg_ = true;
+	effect_ = GLUP_VIEWER_NO_EFFECT;
 
         clip_mode_ = GLUP_CLIP_WHOLE_CELLS;
 
@@ -1846,12 +1847,24 @@ namespace GEO {
         }
     
         ImGui::Separator();
-        ImGui::Text("Colors");
+        ImGui::Text("Style");
         ImGui::Checkbox("white bkgnd [b]", &white_bg_);
         ImGui::Checkbox(
             "fancy bkgnd",
             (bool*)glup_viewer_is_enabled_ptr(GLUP_VIEWER_BACKGROUND)
-        );        
+        );
+	if(
+	  ImGui::Combo(
+	    "sfx",
+	    (int*)&effect_,
+	    "none\0SSAO\0cartoon\0\0"
+	  )
+	) {
+	    if(!glup_viewer_set_effect(effect_)) {
+		Logger::err("GLUP") << "Could not activate effect"
+				    << std::endl;
+	    }
+	}
     }
     
     void Application::draw_object_properties_window() {

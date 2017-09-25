@@ -69,7 +69,8 @@ namespace GEO {
         const double* points,
         double* centroids,
 	bool parallel_pow=true,
-	Mesh* RVD=nil
+	Mesh* RVD=nil,
+	bool verbose=false
     );
     
     /**

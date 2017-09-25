@@ -73,7 +73,8 @@ namespace GEO {
         const double* points,
         double* centroids,
 	bool parallel_pow=true,
-	RVDPolyhedronCallback* cb=nil
+	RVDPolyhedronCallback* cb=nil,
+	bool verbose=false
     );
     
     /**

@@ -630,7 +630,8 @@ namespace GEO {
         const double* points,
         double* centroids,
 	bool parallel_pow,
-	RVDPolyhedronCallback* cb	
+	RVDPolyhedronCallback* cb,
+	bool verbose
     ) {
         omega->vertices.set_dimension(4);
 
@@ -648,6 +649,7 @@ namespace GEO {
         OTM.set_points(nb_points, points);
         OTM.set_epsilon(0.01);
 	OTM.set_Laguerre_centroids(centroids);
+	OTM.set_verbose(verbose);
         OTM.optimize(1000);
 
 	if(cb != nil) {

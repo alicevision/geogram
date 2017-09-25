@@ -390,35 +390,35 @@ namespace GLUP {
     }
 
     void Context_ES2::do_update_uniform_buffer() {
-        GEO_CHECK_GLUP();
+        GEO_CHECK_GL();
         
         if(!uniform_buffer_dirty_) {
             return;
         }
 
-        GEO_CHECK_GLUP();
+        GEO_CHECK_GL();
         
         if(matrices_dirty_) {
             update_matrices();
         }
 
-        GEO_CHECK_GLUP();
+        GEO_CHECK_GL();
         
         if(lighting_dirty_) {
             update_lighting();
         }
 
-        GEO_CHECK_GLUP();
+        GEO_CHECK_GL();
         
         glUseProgram(latest_program_);
 
-        GEO_CHECK_GLUP();
+        GEO_CHECK_GL();
 
         if(latest_program_ != 0) {
             copy_uniform_state_to_current_program();
         }
         
-        GEO_CHECK_GLUP();
+        GEO_CHECK_GL();
         
         uniform_buffer_dirty_ = false;
     }
@@ -691,14 +691,14 @@ namespace GLUP {
         if(uniform_state_.toggle[GLUP_PICKING].get()) {
             uniform_state_.base_picking_id.set(new_value);
             if(latest_program_ != 0) {
-                GEO_CHECK_GLUP();                                        
+                GEO_CHECK_GL();                                        
                 GLint loc = glGetUniformLocation(
                     latest_program_, "GLUP.base_picking_id"
                 );
-                GEO_CHECK_GLUP();
+                GEO_CHECK_GL();
                 glUseProgram(latest_program_);
                 glUniform1i(loc, new_value);
-                GEO_CHECK_GLUP();                
+                GEO_CHECK_GL();                
             }
         }
     }

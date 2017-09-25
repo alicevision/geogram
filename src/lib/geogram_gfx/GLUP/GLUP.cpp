@@ -78,14 +78,14 @@ namespace GLUP {
 /*****************************************************************************/
 
 const char* glupUniformStateDeclaration() {
-    GEO_CHECK_GLUP();     
+    GEO_CHECK_GL();     
     return GLUP::current_context_->uniform_state_declaration();
 }
 
 void GLUP_API glupBindUniformState(GLUPuint program) {
-    GEO_CHECK_GLUP(); 
+    GEO_CHECK_GL(); 
     GLUP::current_context_->bind_uniform_state(program);
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
 }
 
 
@@ -101,7 +101,7 @@ void GLUP_API glupBindUniformState(GLUPuint program) {
  * \retval false otherwise
  */
 static bool supports_tessellation_shader() {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
 
 #ifndef GEO_GL_150
     return false;
@@ -140,7 +140,7 @@ GLUPcontext glupCreateContext() {
         atexit(GLUP::cleanup);
     }
 
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     std::string GLUP_profile = GEO::CmdLine::get_arg("gfx:GLUP_profile");
     GLUP::Context* result = nil;
@@ -150,11 +150,11 @@ GLUPcontext glupCreateContext() {
 #if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE)
       GLUP_profile = "GLUPES2";
 #else
-      GEO_CHECK_GLUP();      
+      GEO_CHECK_GL();      
       double GLSL_version = GEO::GLSL::supported_language_version();
-      GEO_CHECK_GLUP();            
+      GEO_CHECK_GL();            
       if (GLSL_version >= 4.4) {
-	  GEO_CHECK_GLUP();      	  
+	  GEO_CHECK_GL();      	  
 	  if (!supports_tessellation_shader()) {
 	      GEO::Logger::out("GLUP")
 		<< "GLSL version >= 4.4 but tessellation unsupported"
@@ -163,7 +163,7 @@ GLUPcontext glupCreateContext() {
 				       << std::endl;
 	      GLSL_version = 1.5;
 	  }
-	  GEO_CHECK_GLUP();      	  
+	  GEO_CHECK_GL();      	  
       }
       
       if(GLSL_version >= 4.4) {
@@ -262,7 +262,7 @@ GLUPcontext glupCreateContext() {
 }
 
 void glupDeleteContext(GLUPcontext context_in) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLUP::Context* context =
         reinterpret_cast<GLUP::Context*>(context_in);
@@ -279,34 +279,34 @@ void glupDeleteContext(GLUPcontext context_in) {
 
 
 GLUPcontext glupCurrentContext() {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     return GLUP::current_context_;
 }
 
 const char* glupCurrentProfileName() {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     return GLUP::current_context_->profile_name();
 }
 
 void glupMakeCurrent(GLUPcontext context) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     GLUP::current_context_ = reinterpret_cast<GLUP::Context*>(context);
 }
 
 void glupCopyFromGLState(GLUPbitfield which_attributes) {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     GLUP::current_context_->copy_from_GL_state(which_attributes);
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
 }
 
 void glupCopyToGLState(GLUPbitfield which_attributes) {
-    GEO_CHECK_GLUP();            
+    GEO_CHECK_GL();            
     GLUP::current_context_->copy_to_GL_state(which_attributes);
-    GEO_CHECK_GLUP();            
+    GEO_CHECK_GL();            
 }
 
 GLUPboolean glupPrimitiveSupportsArrayMode(GLUPprimitive prim) {
-    GEO_CHECK_GLUP();            
+    GEO_CHECK_GL();            
     return GLUP::current_context_->primitive_supports_array_mode(prim) ?
         GL_TRUE : GL_FALSE ;
 }
@@ -318,41 +318,41 @@ namespace GLUP {
 }
 
 void glupEnable(GLUPtoggle toggle) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     GLUP::current_context_->uniform_state().toggle[toggle].set(GL_TRUE);
 }
 
 void glupDisable(GLUPtoggle toggle) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().toggle[toggle].set(GL_FALSE);
 }
 
 GLUPboolean glupIsEnabled(GLUPtoggle toggle) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUP::current_context_->uniform_state().toggle[toggle].get();
 }
 
 /********************** Texturing ******************************/
 
 void GLUP_API glupTextureType(GLUPtextureType type) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().texture_type.set(type);
 }
 
 GLUPtextureType glupGetTextureType() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPtextureType(
         GLUP::current_context_->uniform_state().texture_type.get()
     );
 }
 
 void GLUP_API glupTextureMode(GLUPtextureMode mode) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     GLUP::current_context_->uniform_state().texture_mode.set(mode);    
 }
 
 GLUPtextureMode glupGetTextureMode() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPtextureMode(
         GLUP::current_context_->uniform_state().texture_mode.get()
     );
@@ -361,7 +361,7 @@ GLUPtextureMode glupGetTextureMode() {
 /****************** Drawing state ******************************/
 
 void glupSetColor4fv(GLUPcolor color, const GLUPfloat* rgba) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     if(color == GLUP_FRONT_AND_BACK_COLOR) {
         glupSetColor4fv(GLUP_FRONT_COLOR, rgba);
         glupSetColor4fv(GLUP_BACK_COLOR, rgba);        
@@ -371,20 +371,20 @@ void glupSetColor4fv(GLUPcolor color, const GLUPfloat* rgba) {
 }
 
 void glupGetColor4fv(GLUPcolor color, float* rgba) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     geo_assert(color != GLUP_FRONT_AND_BACK_COLOR);
     GLUP::current_context_->uniform_state().color[color].get(rgba);
 }
 
 void glupSetColor3fv(GLUPcolor color, const GLUPfloat* rgba) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     glupSetColor4f(color, rgba[0], rgba[1], rgba[2], 1.0);
 }
 
 void glupSetColor4f(
     GLUPcolor color, GLUPfloat r, GLUPfloat g, GLUPfloat b, GLUPfloat a
 ) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     if(color == GLUP_FRONT_AND_BACK_COLOR) {
         glupSetColor4f(GLUP_FRONT_COLOR, r, g, b, a);
         glupSetColor4f(GLUP_BACK_COLOR, r, g, b, a);
@@ -399,12 +399,12 @@ void glupSetColor4f(
 }
 
 void glupSetColor3f(GLUPcolor color, GLUPfloat r, GLUPfloat g, GLUPfloat b) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     glupSetColor4f(color, r, g, b, 1.0f);
 }
 
 void glupSetColor4dv(GLUPcolor color, const GLUPdouble* rgba) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     glupSetColor4f(
         color,
         GLUPfloat(rgba[0]),
@@ -415,7 +415,7 @@ void glupSetColor4dv(GLUPcolor color, const GLUPdouble* rgba) {
 }
 
 void glupSetColor3dv(GLUPcolor color, const GLUPdouble* rgba) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     glupSetColor4f(
         color,
         GLUPfloat(rgba[0]),
@@ -428,7 +428,7 @@ void glupSetColor3dv(GLUPcolor color, const GLUPdouble* rgba) {
 void glupSetColor4d(
     GLUPcolor color, GLUPdouble r, GLUPdouble g, GLUPdouble b, GLUPdouble a
 ) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     glupSetColor4f(
         color,
         GLUPfloat(r),
@@ -441,7 +441,7 @@ void glupSetColor4d(
 void glupSetColor3d(
     GLUPcolor color, GLUPdouble r, GLUPdouble g, GLUPdouble b
 ) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     glupSetColor4f(
         color,
         GLUPfloat(r),
@@ -452,7 +452,7 @@ void glupSetColor3d(
 }
 
 void glupLightVector3f(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUPfloat* ptr =
         GLUP::current_context_->uniform_state().light_vector.get_pointer();
     ptr[0] = x;
@@ -462,60 +462,60 @@ void glupLightVector3f(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
 }
 
 void glupLightVector3fv(GLUPfloat* xyz) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().light_vector.set(xyz);
     GLUP::current_context_->flag_lighting_as_dirty();
 }
 
 void glupSetPointSize(GLUPfloat size) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().point_size.set(size);
 }
 
 GLUPfloat glupGetPointSize() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUP::current_context_->uniform_state().point_size.get();
 }
 
 void glupSetMeshWidth(GLUPint width) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().mesh_width.set(GLfloat(width));
 }
 
 GLUPint glupGetMeshWidth() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPint(GLUP::current_context_->uniform_state().mesh_width.get());
 }
 
 void glupSetCellsShrink(GLUPfloat x) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     x = GEO::geo_min(x, 1.0f);
     x = GEO::geo_max(x, 0.0f);
     GLUP::current_context_->uniform_state().cells_shrink.set(x);
 }
 
 GLUPfloat glupGetCellsShrink() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUP::current_context_->uniform_state().cells_shrink.get();    
 }
 
 void glupSetAlphaThreshold(GLUPfloat x) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     GLUP::current_context_->uniform_state().alpha_threshold.set(x);    
 }
 
 GLUPfloat glupGetAlphaThreshold() {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     return GLUP::current_context_->uniform_state().alpha_threshold.get();
 }
 
 void glupSetSpecular(GLUPfloat x) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     GLUP::current_context_->uniform_state().specular.set(x);    
 }
 
 GLUPfloat glupGetSpecular() {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     return GLUP::current_context_->uniform_state().specular.get();
 }
 
@@ -523,12 +523,12 @@ GLUPfloat glupGetSpecular() {
 /****************** Picking ******************************/
 
 void glupPickingMode(GLUPpickingMode mode) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().picking_mode.set(mode);
 }
 
 GLUPpickingMode glupGetPickingMode() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPpickingMode(
         GLUP::current_context_->uniform_state().picking_mode.get()
     );    
@@ -536,13 +536,13 @@ GLUPpickingMode glupGetPickingMode() {
 
 void glupPickingId(GLUPuint64 id) {
     // TODO: uint64
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().picking_id.set(GLint(id));
 }
 
 GLUPuint64 glupGetPickingId() {
     // TODO: uint64
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPuint64(
         GLUP::current_context_->uniform_state().picking_id.get()
     );
@@ -550,13 +550,13 @@ GLUPuint64 glupGetPickingId() {
 
 void glupBasePickingId(GLUPuint64 id) {
     // TODO: uint64
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().base_picking_id.set(GLint(id));    
 }
 
 GLUPuint64 glupGetBasePickingId() {
     // TODO: uint64
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPuint64(
         GLUP::current_context_->uniform_state().base_picking_id.get()
     );
@@ -565,19 +565,19 @@ GLUPuint64 glupGetBasePickingId() {
 /****************** Clipping ******************************/
 
 void glupClipMode(GLUPclipMode mode) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().clipping_mode.set(mode);
 }
 
 GLUPclipMode glupGetClipMode() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUPclipMode(
         GLUP::current_context_->uniform_state().clipping_mode.get()
     );
 }
 
 void glupClipPlane(const GLUPdouble* eqn_in) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     const GLfloat* modelview =
         GLUP::current_context_->get_matrix(GLUP_MODELVIEW_MATRIX);
@@ -601,7 +601,7 @@ void glupClipPlane(const GLUPdouble* eqn_in) {
 }
 
 void glupGetClipPlane(GLUPdouble* eqn) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     const GLfloat* ptr =
         GLUP::current_context_->uniform_state().clip_plane.get_pointer();
@@ -615,27 +615,27 @@ void glupGetClipPlane(GLUPdouble* eqn) {
 
 
 void glupMatrixMode(GLUPmatrix matrix) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->set_matrix_mode(matrix);
 }
 
 GLUPmatrix glupGetMatrixMode() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     return GLUP::current_context_->get_matrix_mode();
 }
 
 void glupPushMatrix() {
-    GEO_CHECK_GLUP();            
+    GEO_CHECK_GL();            
     GLUP::current_context_->push_matrix();
 }
 
 void glupPopMatrix() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->pop_matrix();    
 }
 
 void glupGetMatrixdv(GLUPmatrix matrix, GLUPdouble* ptr) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     for(GEO::index_t i=0; i<16; ++i) {
         ptr[i] = GLUPdouble(
             GLUP::current_context_->get_matrix(matrix)[i]
@@ -644,7 +644,7 @@ void glupGetMatrixdv(GLUPmatrix matrix, GLUPdouble* ptr) {
 }
 
 void glupGetMatrixfv(GLUPmatrix matrix, GLUPfloat* ptr) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     for(GEO::index_t i=0; i<16; ++i) {
         GLUP::copy_vector(
             ptr, GLUP::current_context_->get_matrix(matrix), 16
@@ -653,17 +653,17 @@ void glupGetMatrixfv(GLUPmatrix matrix, GLUPfloat* ptr) {
 }
 
 void glupLoadIdentity() {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->load_identity();
 }
 
 void glupLoadMatrixf(const GLUPfloat* M) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->load_matrix(M);
 }
 
 void glupLoadMatrixd(const GLUPdouble* M) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLfloat Mf[16];
     for(GEO::index_t i=0; i<16; ++i) {
         Mf[i] = GLfloat(M[i]);
@@ -672,12 +672,12 @@ void glupLoadMatrixd(const GLUPdouble* M) {
 }    
 
 void glupMultMatrixf(const GLUPfloat* M) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLUP::current_context_->mult_matrix(M);
 }
 
 void glupMultMatrixd(const GLUPdouble* M) {
-    GEO_CHECK_GLUP();                
+    GEO_CHECK_GL();                
     GLfloat Mf[16];
     for(GEO::index_t i=0; i<16; ++i) {
         Mf[i] = GLfloat(M[i]);
@@ -686,7 +686,7 @@ void glupMultMatrixd(const GLUPdouble* M) {
 }    
 
 void glupTranslatef(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLfloat M[16];
 
@@ -716,13 +716,13 @@ void glupTranslatef(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
 }
 
 void glupTranslated(GLUPdouble x, GLUPdouble y, GLUPdouble z) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     glupTranslatef(GLfloat(x), GLfloat(y), GLfloat(z));
 }
 
 void glupScalef(GLUPfloat sx, GLUPfloat sy, GLUPfloat sz) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLfloat M[16];
 
@@ -750,7 +750,7 @@ void glupScalef(GLUPfloat sx, GLUPfloat sy, GLUPfloat sz) {
 }
 
 void glupScaled(GLUPdouble sx, GLUPdouble sy, GLUPdouble sz) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     glupScalef(GLfloat(sx), GLfloat(sy), GLfloat(sz));    
 }
@@ -758,7 +758,7 @@ void glupScaled(GLUPdouble sx, GLUPdouble sy, GLUPdouble sz) {
 void glupRotatef(
     GLUPfloat angle, GLUPfloat x, GLUPfloat y, GLUPfloat z
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLUPfloat l = 1.0f / ::sqrtf(x*x+y*y+z*z);
     x *= l;
@@ -796,7 +796,7 @@ void glupRotatef(
 void glupRotated(
     GLUPdouble angle, GLUPdouble x, GLUPdouble y, GLUPdouble z
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     glupRotatef(GLfloat(angle), GLfloat(x), GLfloat(y), GLfloat(z));
 }
@@ -807,7 +807,7 @@ void glupOrtho(
     GLUPdouble bottom, GLUPdouble top,
     GLUPdouble nearVal, GLUPdouble farVal
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLfloat M[16];
 
@@ -842,7 +842,7 @@ void glupOrtho(
 void glupOrtho2D(
     GLUPdouble left, GLUPdouble right, GLUPdouble bottom, GLUPdouble top
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     glupOrtho(left, right, bottom, top, -1.0, 1.0);
 }
@@ -852,7 +852,7 @@ void glupFrustum(
     GLUPdouble bottom, GLUPdouble top,
     GLUPdouble nearVal, GLUPdouble farVal
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLfloat M[16];
 
@@ -889,7 +889,7 @@ void glupPerspective(
     GLUPdouble fovy, GLUPdouble aspect,
     GLUPdouble zNear, GLUPdouble zFar
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLfloat M[16];
     
@@ -926,7 +926,7 @@ GLUPint GLUP_API glupProject(
     const GLUPint viewport[4],
     GLUPdouble* winx, GLUPdouble* winy, GLUPdouble* winz
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     double in[4];
     double out[4];
@@ -968,7 +968,7 @@ GLUPboolean glupUnProject(
     const GLUPint viewport[4],
     GLUPdouble *objx, GLUPdouble *objy, GLUPdouble *objz
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     double modelviewproject[16];
     double modelviewproject_inv[16];
@@ -1010,7 +1010,7 @@ GLUPboolean glupInvertMatrixfv(
     GLUPfloat Minvert[16],    
     const GLUPfloat M[16]
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     return GLUP::invert_matrix(Minvert, M);
 }
@@ -1019,7 +1019,7 @@ GLUPboolean glupInvertMatrixdv(
     GLUPdouble Minvert[16],    
     const GLUPdouble M[16]
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
         
     return GLUP::invert_matrix(Minvert, M);
 }
@@ -1031,59 +1031,59 @@ GLUPboolean glupInvertMatrixdv(
 void glupDrawArrays(
     GLUPprimitive primitive, GLUPint first, GLUPsizei count
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLUP::current_context_->draw_arrays(
         primitive, first, count
     );
 
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
 }
     
 void glupDrawElements(
     GLUPprimitive primitive, GLUPsizei count,
     GLUPenum type, const GLUPvoid* indices
 ) {
-    GEO_CHECK_GLUP();
+    GEO_CHECK_GL();
     
     GLUP::current_context_->draw_elements(
         primitive, count, type, indices
     );
 
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
 }
 
 void glupBegin(GLUPprimitive primitive) {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     GLUP::current_context_->begin(primitive);
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
 }
 
 void glupEnd() {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     GLUP::current_context_->end();
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
 }
 
 void glupVertex2fv(const GLUPfloat* xy) {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     GLUP::current_context_->immediate_vertex(xy[0], xy[1]);
 }
 
 void glupVertex3fv(const GLUPfloat* xyz) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(xyz[0], xyz[1], xyz[2]);    
 }
 
 void glupVertex4fv(const GLUPfloat* xyzw) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         xyzw[0], xyzw[1], xyzw[2], xyzw[3]
     );        
 }
 
 void glupVertex2dv(const GLUPdouble* xy) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         GLfloat(xy[0]),
         GLfloat(xy[1])
@@ -1091,7 +1091,7 @@ void glupVertex2dv(const GLUPdouble* xy) {
 }
 
 void glupVertex3dv(const GLUPdouble* xyz) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         GLfloat(xyz[0]),
         GLfloat(xyz[1]),
@@ -1100,7 +1100,7 @@ void glupVertex3dv(const GLUPdouble* xyz) {
 }
 
 void glupVertex4dv(const GLUPdouble* xyzw) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         GLfloat(xyzw[0]),
         GLfloat(xyzw[1]),
@@ -1110,22 +1110,22 @@ void glupVertex4dv(const GLUPdouble* xyzw) {
 }
 
 void glupVertex2f(GLUPfloat x, GLUPfloat y) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(x,y);    
 }        
 
 void glupVertex3f(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(x,y,z);        
 }    
 
 void glupVertex4f(GLUPfloat x, GLUPfloat y, GLUPfloat z, GLUPfloat w) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(x,y,z,w);            
 }
 
 void glupVertex2d(GLUPdouble x, GLUPdouble y) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         GLfloat(x),
         GLfloat(y)
@@ -1133,7 +1133,7 @@ void glupVertex2d(GLUPdouble x, GLUPdouble y) {
 }        
 
 void glupVertex3d(GLUPdouble x, GLUPdouble y, GLUPdouble z) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         GLfloat(x),
         GLfloat(y),
@@ -1142,7 +1142,7 @@ void glupVertex3d(GLUPdouble x, GLUPdouble y, GLUPdouble z) {
 }    
 
 void glupVertex4d(GLUPdouble x, GLUPdouble y, GLUPdouble z, GLUPdouble w) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_vertex(
         GLfloat(x),
         GLfloat(y),
@@ -1152,17 +1152,17 @@ void glupVertex4d(GLUPdouble x, GLUPdouble y, GLUPdouble z, GLUPdouble w) {
 }
 
 void glupColor3fv(const GLUPfloat* rgb) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(rgb[0], rgb[1], rgb[2]);
 }
 
 void glupColor4fv(const GLUPfloat* rgba) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(rgba[0], rgba[1], rgba[2], rgba[3]);
 }
 
 void glupColor3dv(const GLUPdouble* rgb) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(
         GLfloat(rgb[0]),
         GLfloat(rgb[1]),
@@ -1171,7 +1171,7 @@ void glupColor3dv(const GLUPdouble* rgb) {
 }
 
 void glupColor4dv(const GLUPdouble* rgba) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(
         GLfloat(rgba[0]),
         GLfloat(rgba[1]),
@@ -1181,17 +1181,17 @@ void glupColor4dv(const GLUPdouble* rgba) {
 }
 
 void glupColor3f(GLUPfloat r, GLUPfloat g, GLUPfloat b) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(r, g, b);    
 }    
 
 void glupColor4f(GLUPfloat r, GLUPfloat g, GLUPfloat b, GLUPfloat a) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(r, g, b, a);        
 }
 
 void glupColor3d(GLUPdouble r, GLUPdouble g, GLUPdouble b) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(
         GLfloat(r),
         GLfloat(g),
@@ -1200,7 +1200,7 @@ void glupColor3d(GLUPdouble r, GLUPdouble g, GLUPdouble b) {
 }    
 
 void glupColor4d(GLUPdouble r, GLUPdouble g, GLUPdouble b, GLUPdouble a) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_color(
         GLfloat(r),
         GLfloat(g),
@@ -1210,24 +1210,24 @@ void glupColor4d(GLUPdouble r, GLUPdouble g, GLUPdouble b, GLUPdouble a) {
 }
 
 void glupTexCoord2fv(const GLUPfloat* st) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(st[0], st[1]);    
 }
 
 void glupTexCoord3fv(const GLUPfloat* stu) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(stu[0], stu[1], stu[2]);        
 }
 
 void glupTexCoord4fv(const GLUPfloat* stuv) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         stuv[0], stuv[1], stuv[2], stuv[3]
     );            
 }
 
 void glupTexCoord2dv(const GLUPdouble* st) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(st[0]),
         GLfloat(st[1])
@@ -1235,7 +1235,7 @@ void glupTexCoord2dv(const GLUPdouble* st) {
 }
 
 void glupTexCoord3dv(const GLUPdouble* stu) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(stu[0]),
         GLfloat(stu[1]),
@@ -1244,7 +1244,7 @@ void glupTexCoord3dv(const GLUPdouble* stu) {
 }
 
 void glupTexCoord4dv(const GLUPdouble* stuv) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(stuv[0]),
         GLfloat(stuv[1]),
@@ -1254,34 +1254,34 @@ void glupTexCoord4dv(const GLUPdouble* stuv) {
 }
 
 void glupTexCoord1f(GLUPfloat s) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(s);        
 }
 
 void glupTexCoord2f(GLUPfloat s, GLUPfloat t) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(s,t);        
 }        
 
 void glupTexCoord3f(GLUPfloat s, GLUPfloat t, GLUPfloat u) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(s,t,u);        
 }    
 
 void glupTexCoord4f(GLUPfloat s, GLUPfloat t, GLUPfloat u, GLUPfloat v) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(s,t,u,v);    
 }
 
 void glupTexCoord1d(GLUPdouble s) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(s)
     );        
 }            
 
 void glupTexCoord2d(GLUPdouble s, GLUPdouble t) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(s),
         GLfloat(t)
@@ -1289,7 +1289,7 @@ void glupTexCoord2d(GLUPdouble s, GLUPdouble t) {
 }        
 
 void glupTexCoord3d(GLUPdouble s, GLUPdouble t, GLUPdouble u) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(s),
         GLfloat(t),
@@ -1298,7 +1298,7 @@ void glupTexCoord3d(GLUPdouble s, GLUPdouble t, GLUPdouble u) {
 }    
 
 void glupTexCoord4d(GLUPdouble s, GLUPdouble t, GLUPdouble u, GLUPdouble v) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_tex_coord(
         GLfloat(s),
         GLfloat(t),
@@ -1309,21 +1309,21 @@ void glupTexCoord4d(GLUPdouble s, GLUPdouble t, GLUPdouble u, GLUPdouble v) {
 
 
 void glupNormal3fv(GLUPfloat* xyz) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_normal(
         xyz[0],xyz[1],xyz[2]
     );
 }
 
 void glupNormal3f(GLUPfloat x, GLUPfloat y, GLUPfloat z) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_normal(
         x,y,z
     );
 }    
 
 void glupNormal3dv(GLUPdouble* xyz) {
-    GEO_CHECK_GLUP();            
+    GEO_CHECK_GL();            
     GLUP::current_context_->immediate_normal(
         GLfloat(xyz[0]),
 	GLfloat(xyz[1]),
@@ -1332,7 +1332,7 @@ void glupNormal3dv(GLUPdouble* xyz) {
 }
 
 void glupNormal3d(GLUPdouble x, GLUPdouble y, GLUPdouble z) {
-    GEO_CHECK_GLUP();        
+    GEO_CHECK_GL();        
     GLUP::current_context_->immediate_normal(
         GLfloat(x),
         GLfloat(y),
@@ -1341,7 +1341,7 @@ void glupNormal3d(GLUPdouble x, GLUPdouble y, GLUPdouble z) {
 }    
 
 void glupUseProgram(GLUPuint program) {
-    GEO_CHECK_GLUP();    
+    GEO_CHECK_GL();    
     GLUP::current_context_->set_user_program(program);
 }
 

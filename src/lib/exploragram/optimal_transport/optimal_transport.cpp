@@ -106,7 +106,7 @@ namespace GEO {
         }
 
         newton_ = false;
-	verbose_ = false;
+	verbose_ = true;
         
         instance_ = nil;
         lambda_p_ = 0.0;
@@ -153,10 +153,6 @@ namespace GEO {
         lambda_p_ = total_mass_ / double(nb_points);
     }
 
-    // See http://arxiv.org/abs/1603.05579
-    // Kitawaga, Merigot, Thibert,
-    // A Newton Algorithm for semi-discrete OT
-    
     void OptimalTransportMap::optimize_full_Newton(
         index_t max_iterations, index_t n
     ) {
@@ -174,7 +170,9 @@ namespace GEO {
         w_did_not_change_ = false;
         
         for(index_t k=0; k<max_iterations; ++k) {
-            std::cerr << "======= k = " << k << std::endl;
+	    if(verbose_) {
+		std::cerr << "======= k = " << k << std::endl;
+	    }
             xk=weights_;
 
             new_linear_system(n);
@@ -187,12 +185,16 @@ namespace GEO {
             if(epsilon0 == 0.0) {
                 epsilon0 = 0.5 * geo_min(measure_of_smallest_cell_, lambda_p_);
             }
-            
-            Logger::out("OTM") << "   Solving linear system" << std::endl;
+
+	    if(verbose_) {
+		Logger::out("OTM") << "   Solving linear system" << std::endl;
+	    }
 
             solve_linear_system(pk.data());
 
-            std::cerr << "Line search ..." << std::endl;
+	    if(verbose_) {
+		std::cerr << "Line search ..." << std::endl;
+	    }
 
             w_did_not_change_ = false;
             
@@ -200,7 +202,9 @@ namespace GEO {
             double gknorm = g_norm_;
             
             for(index_t inner_iter=0; inner_iter < 100; ++inner_iter) {
-                std::cerr << "      inner iter = " << inner_iter << std::endl;
+		if(verbose_) {
+		    std::cerr << "      inner iter = " << inner_iter << std::endl;
+		}
 
                 // weights = xk + alphak pk
                 for(index_t i=0; i<n; ++i) {
@@ -217,13 +221,15 @@ namespace GEO {
 		if(Laguerre_centroids_ != nil) {
 		    callback_->set_Laguerre_centroids(nil);
 		}
-		
-                std::cerr << "cell measure :"
-                          << measure_of_smallest_cell_
-                          << "(>=?)" << epsilon0 << std::endl;
-                std::cerr << "gradient norm:"
-                          << g_norm_ << "(<=?)"
-                          << (1.0 - 0.5*alphak) * gknorm << std::endl;
+
+		if(verbose_) {
+		    std::cerr << "cell measure :"
+			      << measure_of_smallest_cell_
+			      << "(>=?)" << epsilon0 << std::endl;
+		    std::cerr << "gradient norm:"
+			      << g_norm_ << "(<=?)"
+			      << (1.0 - 0.5*alphak) * gknorm << std::endl;
+		}
                 if(
                     (measure_of_smallest_cell_ >= epsilon0) &&
                     (g_norm_ <= (1.0 - 0.5*alphak) * gknorm) 
@@ -282,8 +288,10 @@ namespace GEO {
         // To make sure everything is reset properly
         double dummy = 0;
         funcgrad(n, weights_.data(), dummy, nil);
-        Logger::out("OTM")
-            << "Used " << current_call_iter_ << " iterations" << std::endl;
+	if(verbose_) {
+	    Logger::out("OTM")
+		<< "Used " << current_call_iter_ << " iterations" << std::endl;
+	}
         if(save_RVD_last_iter_) {
             save_RVD(current_iter_);
         }
@@ -378,12 +386,14 @@ namespace GEO {
     void OptimalTransportMap::optimize_levels(
         const vector<index_t>& levels, index_t max_iterations
     ) {
-        if(levels.size() > 2) {
-            Logger::out("OTM") << "Using " << levels.size()-1
-                               << " levels" << std::endl;
-        } else {
-            Logger::out("OTM") << "Using 1 level" << std::endl;
-        }
+	if(verbose_) {
+	    if(levels.size() > 2) {
+		Logger::out("OTM") << "Using " << levels.size()-1
+				   << " levels" << std::endl;
+	    } else {
+		Logger::out("OTM") << "Using 1 level" << std::endl;
+	    }
+	}
         for(index_t l = 0; l + 1 < levels.size(); ++l) {
             level_ = l+1;
             index_t b = levels[l];
@@ -420,7 +430,9 @@ namespace GEO {
     void OptimalTransportMap::newiteration() {
         //xxx std::cerr << "newiteration" << std::endl;
         if(save_RVD_iter_) {
-            std::cerr << "  save iter" << std::endl;
+	    if(verbose_) {
+		std::cerr << "  save iter" << std::endl;
+	    }
             save_RVD(current_iter_);
         }
         ++current_iter_;
@@ -466,11 +478,13 @@ namespace GEO {
             {
 		Stopwatch* SW = nil;
 		if(newton_) {
-		    SW = new Stopwatch("Power diagram");
-		    Logger::out("OTM") << "In power diagram..." << std::endl;
+		    if(verbose_) {
+			SW = new Stopwatch("Power diagram");
+			Logger::out("OTM") << "In power diagram..." << std::endl;
+		    }
 		}
                 delaunay_->set_vertices(n, points_dimp1_.data());
-		if(newton_) {
+		if(verbose_ && newton_) {
 		    delete SW;
 		}
             }
@@ -505,12 +519,12 @@ namespace GEO {
 	
 	{
 	    Stopwatch* W = nil;
-	    if(newton_) {
+	    if(verbose_ && newton_) {
 		W = new Stopwatch("RVD");
 		Logger::out("OTM") << "In RVD (funcgrad)..." << std::endl;
 	    }
 	    call_callback_on_RVD();
-	    if(newton_) {
+	    if(verbose_ && newton_) {
 		delete W;
 	    }
 	}
@@ -631,15 +645,17 @@ namespace GEO {
         
         // "custom task progress" (clears the standard message
         // and replaces it with another one).
-        if(pretty_log_) {
-            if(current_call_iter_ != 0) {
-                CmdLine::ui_clear_line();
-            }
-            CmdLine::ui_message(str.str());
-        } else {
-            str << " f=" << f;
-            CmdLine::ui_message(str.str() + "\n");
-        }
+	if(verbose_) {
+	    if(pretty_log_) {
+		if(current_call_iter_ != 0) {
+		    CmdLine::ui_clear_line();
+		}
+		CmdLine::ui_message(str.str());
+	    } else {
+		str << " f=" << f;
+		CmdLine::ui_message(str.str() + "\n");
+	    }
+	}
         ++current_call_iter_;
     }
 
@@ -673,7 +689,9 @@ namespace GEO {
             nlInitExtension("SUPERLU");
         }
 
-	nlEnable(NL_VERBOSE);
+	if(verbose_) {
+	    nlEnable(NL_VERBOSE);
+	}
 	
         nlSolverParameteri(NL_NB_VARIABLES, NLint(n));
         if(use_SUPERLU) {
@@ -704,14 +722,16 @@ namespace GEO {
             nlGetIntegerv(NL_USED_ITERATIONS, &used_iters);
             nlGetDoublev(NL_ELAPSED_TIME, &elapsed_time);
             nlGetDoublev(NL_GFLOPS, &gflops);
-            nlGetDoublev(NL_ERROR, &error);                
-            std::cerr << "   "
-                      << used_iters << " iters in "
-                      << elapsed_time << " seconds "
-                      << gflops << " GFlop/s"
-                      << "  ||Ax-b||/||b||="
-                      << error
-                      << std::endl;
+            nlGetDoublev(NL_ERROR, &error);
+	    if(verbose_) {
+		std::cerr << "   "
+			  << used_iters << " iters in "
+			  << elapsed_time << " seconds "
+			  << gflops << " GFlop/s"
+			  << "  ||Ax-b||/||b||="
+			  << error
+			  << std::endl;
+	    }
         }
         for(NLint i=0; i<n; ++i) {
             x[i] = nlGetVariable(NLuint(i));

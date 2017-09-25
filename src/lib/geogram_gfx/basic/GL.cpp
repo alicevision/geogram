@@ -149,8 +149,38 @@ namespace {
         glupBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+#ifdef GEO_OS_EMSCRIPTEN
         static const char* vshader_source =
-            "#version 130                               \n"            
+            "#version 100                               \n"            
+            "attribute vec2 vertex_in;                  \n"
+            "attribute vec2 tex_coord_in;               \n"
+            "varying vec2 tex_coord;                    \n"
+            "void main() {                              \n"
+            "  tex_coord = tex_coord_in;                \n"
+            "  gl_Position = vec4(vertex_in, 0.0, 1.0); \n"
+            "}                                          \n"
+            ;
+
+        static const char* fshader_source =
+            "#version 100                               \n"
+	    "precision mediump float;                   \n"        	    
+            "varying vec2 tex_coord;                    \n"
+            "uniform sampler2D tex;                     \n"
+            "void main() {                              \n"
+            "   gl_FragColor = texture2D(               \n"
+            "       tex, tex_coord                      \n"
+            "   );                                      \n"
+            "}                                          \n"
+            ;
+
+#else
+
+        static const char* vshader_source =
+#ifdef GEO_OS_APPLE
+            "#version 330                               \n"	    
+#else	    
+            "#version 130                               \n"
+#endif	    
             "in vec2 vertex_in;                         \n"
             "in vec2 tex_coord_in;                      \n"
             "out vec2 tex_coord;                        \n"
@@ -161,17 +191,22 @@ namespace {
             ;
 
         static const char* fshader_source =
+#ifdef GEO_OS_APPLE
+            "#version 330                               \n"	    
+#else	    
             "#version 130                               \n"
+#endif	    
             "out vec4 frag_color ;                      \n"
             "in vec2 tex_coord;                         \n"
-            "uniform sampler2D texture2D;               \n"
+            "uniform sampler2D tex;                     \n"
             "void main() {                              \n"
             "   frag_color = texture(                   \n"
-            "       texture2D, tex_coord                \n"
+            "       tex, tex_coord                      \n"
             "   );                                      \n"
             "}                                          \n"
             ;
-
+#endif
+	
         GLuint vshader = GLSL::compile_shader(
             GL_VERTEX_SHADER, vshader_source, 0
         );
@@ -187,7 +222,7 @@ namespace {
         glBindAttribLocation(quad_program, 1, "tex_coord_in");
         GLSL::link_program(quad_program);
         
-        GLSL::set_program_uniform_by_name(quad_program, "texture2D", 0);
+        GLSL::set_program_uniform_by_name(quad_program, "tex", 0);
         
         glDeleteShader(vshader);
         glDeleteShader(fshader);
@@ -434,6 +469,9 @@ namespace GEO {
 	    error_code = glGetError() ;
 	}
         geo_argused(has_opengl_errors);
+//	if(has_opengl_errors) {
+//	    abort();
+//	}
     }
 
     void clear_gl_error_flags(const char* file, int line) {

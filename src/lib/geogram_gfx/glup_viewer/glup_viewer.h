@@ -144,7 +144,12 @@ typedef GLboolean (* GlupViewerMouseFunc)(
 #define GLUP_VIEWER_EDIT_CLIP 14
 #define GLUP_VIEWER_FIXED_CLIP 15
 #define GLUP_VIEWER_FULL_SCREEN 16
-   
+
+#define GLUP_VIEWER_NO_EFFECT 0
+#define GLUP_VIEWER_AMBIENT_OCCLUSION 1
+#define GLUP_VIEWER_UNSHARP_MASKING 2   
+#define GLUP_VIEWER_TEST_EFFECT 3
+    
 extern GLUP_VIEWER_API void glup_viewer_enable(int cap);
 extern GLUP_VIEWER_API void glup_viewer_disable(int cap);
 extern GLUP_VIEWER_API GLboolean glup_viewer_is_enabled(int cap);
@@ -280,6 +285,13 @@ extern GLUP_VIEWER_API GLboolean glup_viewer_is_high_dpi(void);
  * \param[in] filename name of the file
  */
 extern GLUP_VIEWER_API void glup_viewer_snapshot(const char* filename);
+
+/**
+ * \brief Sets the effect.
+ * \param[in] effect one of GLUP_VIEWER_NO_EFFECT, GLUP_VIEWER_AMBIENT_OCCLUSION, 
+ *  GLUP_VIEWER_UNSHARP_MASKING
+ */
+extern GLUP_VIEWER_API GLboolean glup_viewer_set_effect(GLenum effect);
     
 #ifdef __cplusplus
 }

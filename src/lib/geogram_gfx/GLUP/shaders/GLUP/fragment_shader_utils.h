@@ -1,13 +1,4 @@
 
-#ifdef GL_ES
-vec4 glup_texture(in sampler2D samp, in vec2 uv) {
-    return texture2D(samp, uv);                 
-}                                               
-#else
-vec4 glup_texture(in sampler2D samp, in vec2 uv) {
-    return texture(samp, uv);
-}                                              
-#endif
 
 #ifdef GL_ES
 // converts an integer into an ivec4. The components of
@@ -168,19 +159,6 @@ vec4 glup_lighting(in vec4 color, in vec3 normal) {
     return result;
 }
 
-#ifdef GL_ES        
-#define glup_FragColor gl_FragColor
-
-#ifdef GL_EXT_frag_depth
-#define glup_FragDepth gl_FragDepthEXT
-#else
-float glup_FragDepth; // depth updates will be ignored
-#endif
-
-#else
-out vec4 glup_FragColor;
-#define glup_FragDepth gl_FragDepth 
-#endif
 
 void glup_alpha_discard() {
     if(glupIsEnabled(GLUP_ALPHA_DISCARD)) {
