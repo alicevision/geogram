@@ -64,6 +64,7 @@ Transport in 3d that scales up to 1 million Dirac masses (see compute_OTM
 in \link geogram_examples example programs \endlink).
 
 - [Download](https://gforge.inria.fr/frs/?group_id=5833)
+- [Online demos](http://homepages.loria.fr/BLevy/GEOGRAM/)
 - \link geogram_compiling How to compile Geogram / How to generate the documentation \endlink
 - \link geogram_examples Example programs \endlink
 - \link geogram_license License and bundled third-party software \endlink

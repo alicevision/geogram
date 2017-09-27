@@ -37,15 +37,16 @@
  *     Qt, SuperLU, WildMagic and CGAL
  */
 
-#ifndef H_EXPLORAGRAM_OPTIMAL_TRANSPORT_OPTIMAL_TRANSPORT_2D_H
-#define H_EXPLORAGRAM_OPTIMAL_TRANSPORT_OPTIMAL_TRANSPORT_2D_H
+#ifndef H_EXPLORAGRAM_OPTIMAL_TRANSPORT_OPTIMAL_TRANSPORT_ON_SURFACE_H
+#define H_EXPLORAGRAM_OPTIMAL_TRANSPORT_OPTIMAL_TRANSPORT_ON_SURFACE_H
 
 #include <exploragram/basic/common.h>
 #include <exploragram/optimal_transport/optimal_transport.h>
 
 /**
- * \file exploragram/optimal_transport/optimal_transport_2d.h
- * \brief Solver for semi-discrete optimal transport in 2d.
+ * \file exploragram/optimal_transport/optimal_transport_on_surface.h
+ * \brief Solver for semi-discrete optimal transport between pointset and
+ *  3D surface.
  */
 
 
@@ -53,7 +54,7 @@ namespace GEO {
 
     /**
      * \brief Computes the centroids of the Laguerre cells that
-     *  correspond to optimal transport in 2D.
+     *  correspond to optimal transport over a surface embedded in 3D.
      * \param[in] omega a reference to the mesh that represents the
      *  domain
      * \param[in] nb_points number of points
@@ -63,7 +64,7 @@ namespace GEO {
      *  the uniform measure to the points
      * \param[in] parallel_pow if true, use parallel power diagram algorithm
      */
-    void EXPLORAGRAM_API compute_Laguerre_centroids_2d(
+    void EXPLORAGRAM_API compute_Laguerre_centroids_on_surface(
         Mesh* omega,
         index_t nb_points,
         const double* points,
@@ -73,13 +74,14 @@ namespace GEO {
 	bool verbose=false
     );
 
+    /*********************************************************************/
 
     /**
      * \brief Computes semi-discrete optimal transport maps.
      * \details Computes an optimal transport map between two
-     *  distributions in 2D. The first distribution is represented
-     *  by a 2D triangulated mesh. The second distribution is a sum
-     *  of Diracs with 2D coordinates.
+     *  distributions in 3D. The first distribution is represented
+     *  by a 3D surfacic triangulated mesh. The second distribution is a sum
+     *  of Diracs with 3D coordinates.
      *  The algorithm is described in the following references:
      *   - 3D algorithm: http://arxiv.org/abs/1409.1279
      *   - Earlier 2D version by Quentin M\'erigot: 
@@ -89,25 +91,24 @@ namespace GEO {
      *    F. Aurenhammer, F. Hoffmann, and B. Aronov. Minkowski-type theorems 
      *    and least-squares clustering. Algorithmica, 20:61-76, 1998.
      */
-    class EXPLORAGRAM_API OptimalTransportMap2d : public OptimalTransportMap {
+    class EXPLORAGRAM_API OptimalTransportMapOnSurface : public OptimalTransportMap {
     public:
         /**
-         * \brief OptimalTransportMap2d constructor.
-         * \param[in] mesh the source distribution, represented as a 2d mesh.
-	 *  It can be also a 3D mesh with the Z coordinate set to 0.
+         * \brief OptimalTransportOnSurface constructor.
+         * \param[in] mesh the source distribution, represented as a 3d mesh
          * \param[in] delaunay factory name of the Delaunay triangulation.
          * \param[in] BRIO true if vertices are already ordered using BRIO
          */
-        OptimalTransportMap2d(
+        OptimalTransportMapOnSurface(
             Mesh* mesh,
-            const std::string& delaunay = "BPOW2d",
+            const std::string& delaunay = "BPOW",
 	    bool BRIO=false
         );
 
 	/**
 	 * \brief OptimalTransportMap destructor.
 	 */
-	virtual ~OptimalTransportMap2d();
+	virtual ~OptimalTransportMapOnSurface();
 
 	/**
 	 * \copydoc OptimalTransportMap::get_RVD()
@@ -133,8 +134,7 @@ namespace GEO {
  	virtual void call_callback_on_RVD();
     };
 
-    /*********************************************************************/
-
+    /*********************************************************************/    
 }
 
 #endif

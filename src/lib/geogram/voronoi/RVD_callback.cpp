@@ -322,6 +322,240 @@ namespace {
 	}
 	return false;
     }
+
+    /**
+     * \brief Gets a 2d polygon that represents a mesh facet.
+     * \param[in] mesh a const reference to the mesh
+     * \param[in] f the facet
+     * \param[in] N the normal vector to the facet
+     * \param[out] P the vertices of the polygon
+     * \param[out] P_ind the global indices of the vertices in \p mesh
+     */
+    void get_mesh_polygon2d(
+	const Mesh& mesh,
+	index_t f,
+	const vec3& N,
+	vector<vec2>& P,
+	vector<index_t>& P_ind
+    ) {
+	P.resize(0);
+	P_ind.resize(0);
+	vec3 Z = normalize(N);
+	vec3 X = Geom::perpendicular(Z);
+	vec3 Y = cross(Z,X);
+	vec3 C = Geom::mesh_facet_center(mesh,f);
+	index_t n = mesh.facets.nb_vertices(f);
+	FOR(lv,n) {
+	    index_t v = mesh.facets.vertex(f,lv);
+	    vec3 W = Geom::mesh_vertex(mesh,v)-C;
+	    P_ind.push_back(v);
+	    P.push_back(vec2(dot(W,X), dot(W,Y)));
+	}
+	// TODO: normalize vertices order so that two
+	// opposite facets will have the same tessellation.
+    }
+
+    
+    /**
+     * \brief Evaluates the score of a triangle in a closed polygon.
+     * \param[in] pts the closed polygon
+     * \param[in] i , j , k the three vertices of the triangle
+     * \retval 1024 if a concave angle was encountered or if the proposed 
+     *    triangle contains one of the points.
+     * \retval the maximum angle of the proposed triangle otherwise.
+     */
+    double triangle_cost(
+	const vector<vec2>& pts, index_t i, index_t j, index_t k
+    ) {
+	vec2 C[3] = { pts[i], pts[j], pts[k] };
+	double m = 0;
+	FOR(v, 3) {
+	    // note that angle is not the angle inside the triangle,
+	    // but its complement
+	    // angle variable has the "direction" information, thus it
+	    // is negative for concave angles (right turn) and positive
+	    // for convex angles (left turn)
+	    double angle = atan2(
+		det(
+		    C[(v + 1) % 3] - C[(v + 0) % 3],
+		    C[(v + 2) % 3] - C[(v + 1) % 3]
+		),
+		dot(
+		    C[(v + 1) % 3] - C[(v + 0) % 3],
+		    C[(v + 2) % 3] - C[(v + 1) % 3]
+		)
+	    );
+	    if (angle <= 0) return 1024.;
+	    m = geo_max(m, M_PI - angle);
+	}
+	
+	FOR(other, pts.size()) {
+	    // TODO: check also whether triangle is inversed ?
+	    // To be checked: I think it is already done in
+	    // angle computations above.
+	    if (other == i || other == j || other == k) {
+		continue;
+	    }
+	    const vec2& P = pts[other];
+	    bool inside = true;
+	    FOR(l, 3) {
+		inside = inside && (det(C[(l + 1) % 3] - C[l], P - C[l]) > 0);
+	    }
+	    if (inside) {
+		return 1024.0;
+	    }
+	}
+	return m;
+    }
+
+    /**
+     * \brief Triangulates a (possibly non-convex) polygon.
+     * \note The algorithm is in O(n^4) (bad but good enough for now).
+     * \param[in] pts the polygon
+     * \param[out] triangles the indices of the triangles vertices
+     * \retval true on success
+     * \retval false otherwise
+     */
+    bool triangulate_polygon(
+	const vector<vec2>& pts, vector<index_t>& triangles
+    ) {
+	triangles.resize(0);
+	index_t n = pts.size();
+	geo_assert(n >= 3);
+
+	if (n == 3) {
+	    FOR(v, 3) {
+	        triangles.push_back(v);
+	    }
+	    return true;
+	}
+	    
+	// we store in this table results of subproblems
+	// table[i*n + j] stores the triangulation cost for points from i to j
+	// the entry table[0*n + n-1] has the final result.
+	vector<double> table(n*n, 0.);
+
+	// this table stores triangle indices:
+	//  for each subproblem (i,j) we have table[i*n + j]==k,
+	//    i.e. the triangle is (i,k,j)
+	vector<index_t> tri(n*n, index_t(-1));
+
+	// note that the table is filled in diagonals;
+	// elements below main diagonal are not used at all
+	for (index_t pbsize = 2; pbsize < n; pbsize++) {
+	    for (index_t i = 0, j = pbsize; j < n; i++, j++) {
+		// recall that we are testing triangle (i,k,j)
+		// which splits the problem (i,j) into
+		// two smaller subproblems (i,k) and (k,j)
+		
+		double minv = 1e20;
+		
+		index_t mink = index_t(-1);
+		
+		for (index_t k = i + 1; k < j; k++) {
+		    
+		    double val =
+			table[i*n + k] + table[k*n + j] +
+			triangle_cost(pts, i, k, j);
+		    
+		    if (minv <= val) {
+			continue;
+		    }
+		    minv = val;
+		    mink = k;
+		}
+                geo_assert(mink!=index_t(-1));
+		table[i*n + j] = minv;
+		tri[i*n + j] = mink;
+	    }
+	}
+
+	vector<index_t> Q(1, n - 1);
+	FOR(t, Q.size()) {
+	    index_t idx = Q[t];
+
+	    index_t i = idx / n;
+	    index_t k = tri[idx];
+	    index_t j = idx % n;
+
+	    geo_assert(i!=index_t(-1) && k != index_t(-1) && j!=index_t(-1));
+	    
+	    triangles.push_back(i);
+	    triangles.push_back(k);
+	    triangles.push_back(j);
+
+	    if (k + 2 <= j) {
+		Q.push_back(k*n + j);
+	    }
+	    if (i + 2 <= k) {
+		Q.push_back(i*n + k);
+	    }
+	}
+	return table[n-1] < 1024.;
+    }
+
+    /**
+     * \brief Tests whether a 2d polygon is convex.
+     * \param[in] P a const reference to the polygon.
+     * \retval true if the polygon \p P is convex.
+     * \retval false otherwise.
+     */
+    bool polygon_is_convex(const vector<vec2>& P) {
+	Sign s = ZERO;
+	FOR(i, P.size()) {
+	    index_t j = (i+1)%P.size();
+	    index_t k = (j+1)%P.size();
+	    Sign cur_s = PCK::orient_2d(P[i], P[j], P[k]);
+	    if(int(cur_s) * int(s) == -1) {
+		return false;
+	    }
+	    if(s == ZERO) {
+		s = cur_s;
+	    }
+	}
+	return true;
+    }
+
+    /**
+     * \brief Tesselates the non-convex facets of a mesh.
+     * \param[in,out] mesh a pointer to the mesh.
+     */
+    void tessellate_non_convex_facets(
+	Mesh* mesh
+    ) {
+	// TODO: use facet_seed_ attribute and replace normal vector
+	// with (seed-facet seed) vector.
+	vector<index_t> to_delete;
+	vector<vec2> P;
+	vector<index_t> P_ind;
+	vector<index_t> P_tri;
+	index_t nf = mesh->facets.nb();
+	FOR(f, nf) {
+	    vec3 N = Geom::mesh_facet_normal(*mesh, f);
+	    get_mesh_polygon2d(*mesh, f, N, P, P_ind);
+	    if(!polygon_is_convex(P)) {
+		if(triangulate_polygon(P, P_tri)) {
+		    to_delete.resize(mesh->facets.nb(),0);
+		    to_delete[f] = 1;
+		    FOR(t, P_tri.size()/3) {
+			mesh->facets.create_triangle(
+			    P_ind[P_tri[3*t  ]],
+			    P_ind[P_tri[3*t+1]],
+			    P_ind[P_tri[3*t+2]]
+			);
+		    }
+		} else {
+		    Logger::warn("RVD")
+			<< "Could not triangulate non-convex facet"
+			<< std::endl;
+		}
+	    }
+	}
+	if(to_delete.size() != 0) {
+	    to_delete.resize(mesh->facets.nb(), 0);
+	    mesh->facets.delete_elements(to_delete);
+	}
+    }
 }
 
 
@@ -378,6 +612,7 @@ namespace GEO {
 	simplify_voronoi_facets_(false),
 	simplify_boundary_facets_(false),
 	simplify_boundary_facets_angle_threshold_(0.0),
+	tessellate_non_convex_facets_(false),
 	use_mesh_(false),	
 	facet_is_skipped_(false),
 	vertex_map_(nil)
@@ -528,6 +763,9 @@ namespace GEO {
 		mesh_facet_seed_,
 		simplify_boundary_facets_angle_threshold_
 	    );
+	}
+	if(tessellate_non_convex_facets_) {
+	    tessellate_non_convex_facets(&mesh_);
 	}
 	begin_polyhedron(seed(), tet());
 	for(index_t f=0; f<mesh_.facets.nb(); ++f) {

@@ -109,7 +109,7 @@ namespace GEO {
 	verbose_ = true;
         
         instance_ = nil;
-        lambda_p_ = 0.0;
+        constant_nu_ = 0.0;
         total_mass_ = 0.0;
         current_call_iter_ = 0;
         epsilon_ = 0.01;
@@ -132,6 +132,8 @@ namespace GEO {
 
 	linesearch_maxiter_ = 100;
 	linesearch_init_iter_ = 0;
+
+	use_direct_solver_ = false;
     }
 
     OptimalTransportMap::~OptimalTransportMap() {
@@ -156,9 +158,17 @@ namespace GEO {
             points_dimp1_[i*dimp1_ + dimension()] = 0.0;
         }
         weights_.assign(nb_points, 0);
-        lambda_p_ = total_mass_ / double(nb_points);
+        constant_nu_ = total_mass_ / double(nb_points);
     }
 
+    void OptimalTransportMap::set_nu(index_t i, double nu) {
+        geo_debug_assert(i < weights_.size());
+        if(nu_.size() != weights_.size()) {
+	  nu_.assign(weights_.size(), 0.0);
+	}
+	nu_[i] = nu;
+    }
+  
     void OptimalTransportMap::optimize_full_Newton(
         index_t max_iterations, index_t n
     ) {
@@ -198,7 +208,11 @@ namespace GEO {
             }
             
             if(epsilon0 == 0.0) {
-                epsilon0 = 0.5 * geo_min(measure_of_smallest_cell_, lambda_p_);
+	        epsilon0 = measure_of_smallest_cell_;
+	        FOR(i,n) {
+		  epsilon0 = geo_min(epsilon0, nu(i));
+		}
+                epsilon0 = 0.5 * epsilon0;
             }
 
 	    if(verbose_) {
@@ -220,9 +234,12 @@ namespace GEO {
 		alphak /= pow(2.0, double(first_inner_iter));
 	    }
 	    
-            for(inner_iter=first_inner_iter; inner_iter < linesearch_maxiter_; ++inner_iter) {
+            for(inner_iter=first_inner_iter;
+		inner_iter < linesearch_maxiter_; ++inner_iter
+	    ) {
 		if(verbose_) {
-		    std::cerr << "      inner iter = " << inner_iter << std::endl;
+		    std::cerr << "      inner iter = "
+			      << inner_iter << std::endl;
 		}
 
                 // weights = xk + alphak pk
@@ -290,19 +307,45 @@ namespace GEO {
     }
     
     void OptimalTransportMap::optimize(index_t max_iterations) {
+ 
+        index_t n = index_t(points_dimp1_.size() / dimp1_);
+      
+	// Sanity check
+	if(nu_.size() != 0) {
+	  double total_nu = 0.0;
+	  FOR(i,n) {
+	    total_nu += nu(i);
+	  }
+	  std::cerr << "total nu=" << total_nu << std::endl;
+	  std::cerr << "total mass=" << total_mass_ << std::endl;
+	  if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
+	    Logger::warn("OTM") << "Specified nu do not sum to domain measure"
+				<< std::endl;
+	    Logger::warn("OTM") << "rescaling..."
+				<< std::endl;
+	  }
+	  FOR(i,n) {
+	    set_nu(i, nu(i) * total_mass_ / total_nu);
+	  }
 
-        level_ = 0;
+	  total_nu = 0.0;
+	  FOR(i,n) {
+	    total_nu += nu(i);
+	  }
+	  if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
+	    Logger::warn("OTM") << "Specified nu do not sum to domain measure"
+				<< std::endl;
+	    return;
+	  }
+	}
         
         if(newton_) {
             optimize_full_Newton(max_iterations);
             return;
         }
 
-
-	
-        index_t n = index_t(points_dimp1_.size() / dimp1_);
+        level_ = 0;
         index_t m = 7;
-        
         Optimizer_var optimizer = Optimizer::create("HLBFGS");
         
         optimizer->set_epsg(gradient_threshold(n));
@@ -378,7 +421,9 @@ namespace GEO {
                     for(index_t jj = 0; jj < nb; ++jj) {
                         if(dist[jj] != 0.0) {
                             index_t j = neighbor[jj];
-                            LLS.add_point(&points_dimp1_[dimp1_ * j], weights_[j]);
+                            LLS.add_point(
+				 &points_dimp1_[dimp1_ * j], weights_[j]
+			    );
                         }
                     }
                     LLS.end();
@@ -390,10 +435,10 @@ namespace GEO {
         // Optimize the weights associated with the sequence [0,e)
         index_t n = e;
         
-        // Important! lambda_p_ (target measure of a cell) needs
+        // Important! constant_nu_ (target measure of a cell) needs
         // to be updated, since it depends on the number of samples
         // (that varies at each level).
-        lambda_p_ = total_mass_ / double(n);
+        constant_nu_ = total_mass_ / double(n);
 
         if(newton_) {
             optimize_full_Newton(max_iterations, n);
@@ -593,20 +638,20 @@ namespace GEO {
         
         if(update_fg) {
             for(index_t p = 0; p < n; ++p) {
-                f += lambda_p_ * w[p];
+	      f += nu(p) * w[p];
                 // Note: we minimize -f instead of maximizing f,
                 // therefore, in the paper:
                 //    g[p] = lambda_p - mesure(power cell associated with p)
                 //
                 // What is programmed:
                 //    g[p] = mesure(power cell associated with p) - lambda_p
-                g[p] -= lambda_p_;
+	      g[p] -= nu(p);
 
                 if(is_Newton_step) {
                     // Newton step: solve H deltax = -g
                     // (note the minus sign on the right hand side)
-                    // g[p] -= lamnda_p_ -> RHS[p] += lambda_p_
-                    add_i_right_hand_side(p, lambda_p_);
+                    // g[p] -= lamnda_p_ -> RHS[p] += constant_nu_
+		  add_i_right_hand_side(p, nu(p));
                 }
             }
         }
@@ -629,17 +674,17 @@ namespace GEO {
         if(epsilon_regularization_ != 0.0) {
             if(update_fg) {                                    
                 for(index_t p = 0; p < n; ++p) {
-                    f += 0.5 * epsilon_regularization_ * lambda_p_ * w[p]*w[p];
-                    g[p] += epsilon_regularization_ * lambda_p_ * w[p];
+		  f += 0.5 * epsilon_regularization_ * nu(p) * w[p]*w[p];
+		  g[p] += epsilon_regularization_ * nu(p) * w[p];
                 }
             }
             if(is_Newton_step) {
                 for(index_t p = 0; p < n; ++p) {
                     add_ij_coefficient(
-                        p,p,epsilon_regularization_*lambda_p_
+  		        p,p,epsilon_regularization_*nu(p)
                     );
                     add_i_right_hand_side(
-                        p,-epsilon_regularization_*lambda_p_*w[p]
+ 		        p,-epsilon_regularization_*nu(p)*w[p]
                     );
                 }
             }
@@ -669,7 +714,7 @@ namespace GEO {
             }
         }
 
-	double scl = 100.0 / lambda_p_;
+	double scl = 100.0 / constant_nu_;
 	
         str << "iter=" << current_call_iter_
             << " nbZ=" << nb_empty_cells
@@ -725,10 +770,16 @@ namespace GEO {
     void OptimalTransportMap::new_linear_system(index_t n, double* x) {
         nlNewContext();
             
-        bool use_SUPERLU = false;
-        
-        if(use_SUPERLU) {
-            nlInitExtension("SUPERLU");
+        if(use_direct_solver_) {
+            use_direct_solver_ = (
+		use_direct_solver_ && (nlInitExtension("SUPERLU") == NL_TRUE)
+	    );
+	    if(!use_direct_solver_) {
+		Logger::warn("OTM") << "Could not initialize SUPERLU OpenNL extension"
+				    << std::endl;
+		Logger::warn("OTM") << "Falling back to conjugate gradient"
+				    << std::endl;
+	    }
         }
 
 	if(verbose_) {
@@ -736,7 +787,7 @@ namespace GEO {
 	}
 	
         nlSolverParameteri(NL_NB_VARIABLES, NLint(n));
-        if(use_SUPERLU) {
+        if(use_direct_solver_) {
             nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);
         } else {
             nlSolverParameteri(NL_SOLVER, NL_CG);

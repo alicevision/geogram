@@ -509,6 +509,10 @@ namespace {
 	    "poly:embedding_dim", 0,
 	    "force embedding dimension (0 = use input dim.)"
 	);
+	declare_arg(
+	    "poly:tessellate_non_convex_facets", false,
+	    "tessellate non-convex facets"
+	);
     }    
 
     /**

@@ -653,6 +653,9 @@ namespace {
 		    << simplify << " invalid cells simplification mode"
 		    << std::endl;
 	    }
+	    callback.set_tessellate_non_convex_facets(
+		CmdLine::get_arg_bool("poly:tessellate_non_convex_facets")
+	    );
 	    callback.set_shrink(CmdLine::get_arg_double("poly:cells_shrink"));
 	    callback.set_generate_ids(
 		CmdLine::get_arg_bool("poly:generate_ids")

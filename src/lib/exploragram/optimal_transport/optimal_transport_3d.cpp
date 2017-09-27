@@ -98,7 +98,7 @@ namespace {
     // eval_F() and eval_F_weighted() (if varying density is attached
     // to the background mesh as a vertex attribute named "weight").
     // The objective function is the most painful to compute, but it
-    // it not needed by the Newton solver (only the hierarchical BFGS
+    // is not needed by the Newton solver (only the hierarchical BFGS
     // solver needs it). 
     //
     //    The gradient of the objective function corrresponds to the
@@ -106,7 +106,7 @@ namespace {
     // each Laguerre cell and the prescribed masses. The mass (and
     // optionally centers of mass) is computed by compute_m_and_mg().
     // The callback operator() only computes the mass of each
-    // Laguerre cell. The desired mass is subtracted by the OptimalTransport
+    // Laguerre cell. The prescribed mass is subtracted by the OptimalTransport
     // class.
     // The center of mass is used by some applications (for instance
     // the Euler fluid simulator). The center of mass is weighted by the
@@ -165,7 +165,6 @@ namespace {
 	    const GEOGen::ConvexCell& C
 	) const {
 	    geo_argused(t);
-
 
 	    double m, mgx, mgy, mgz;
 	    compute_m_and_mg(C, m, mgx, mgy, mgz);
@@ -285,7 +284,6 @@ namespace {
 			    double w2 = V2->weight();
 			    double w3 = V3->weight();
 			    double S =  w0+w1+w2+w3;
-			    cur_m *= (S/4.0);
 			    if(mg_ != nil) {
 				mgx += 0.25*cur_m*(
 				    w0*p0[0]+w1*p1[0]+w2*p2[0]+w3*p3[0]
@@ -297,6 +295,7 @@ namespace {
 				    w0*p0[2]+w1*p1[2]+w2*p2[2]+w3*p3[2]
 				);
 			    }
+			    cur_m *= (S/4.0);
 			} else {
 			    if(mg_ != nil) {
 				mgx += 0.25*cur_m*(p0[0]+p1[0]+p2[0]+p3[0]);
@@ -460,10 +459,10 @@ namespace {
 			const double* p3 = V3->point();
 			double m = Geom::tetra_signed_volume(p0, p1, p2, p3);
 			double fT = 0.0;
-			for(coord_index_t c = 0; c < 3; ++c) {
-			    double Uc = p1[c] - p0[c];
-			    double Vc = p2[c] - p0[c];
-			    double Wc = p3[c] - p0[c];
+			for(coord_index_t cc = 0; cc < 3; ++cc) {
+			    double Uc = p1[cc] - p0[cc];
+			    double Vc = p2[cc] - p0[cc];
+			    double Wc = p3[cc] - p0[cc];
 			    fT +=
 				Uc * Uc +
 				Vc * Vc +
@@ -577,11 +576,11 @@ namespace {
 			double dotprod_32 = 0.0;
 			double dotprod_33 = 0.0;
             
-			for(coord_index_t c = 0; c < 3; c++) {
-			    double sp0 = q[c] - p0[c];
-			    double sp1 = q[c] - p1[c];
-			    double sp2 = q[c] - p2[c];
-			    double sp3 = q[c] - p3[c];                
+			for(coord_index_t cc = 0; cc < 3; ++cc) {
+			    double sp0 = q[cc] - p0[cc];
+			    double sp1 = q[cc] - p1[cc];
+			    double sp2 = q[cc] - p2[cc];
+			    double sp3 = q[cc] - p3[cc];                
 			    dotprod_00 += sp0 * sp0;
 			    dotprod_10 += sp1 * sp0;
 			    dotprod_11 += sp1 * sp1;

@@ -91,6 +91,7 @@ extern "C" {
 
 #ifdef GEOGRAM_WITH_LUA
 extern "C" {
+#include <geogram/third_party/lua/lua.h>    
 #include <geogram/third_party/lua/lauxlib.h>
 #include <geogram/third_party/lua/lualib.h>
 }

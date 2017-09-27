@@ -125,8 +125,21 @@ namespace GEO {
 	 * \param[in] stride number of doubles between two consecutive points.
 	 *  If 0 (default), then point coordinates are considered to be packed.
          */
-        void set_points(index_t nb_points, const double* points, index_t stride=0);
+        void set_points(
+	    index_t nb_points, const double* points, index_t stride=0
+	);
 
+	/**
+	 * \brief Sets the desired mass at one of the Diracs.
+	 * \details If unspecified, then default value is total mass
+	 *  divided by number of point. Note that the sum of all specified
+	 *  masses should match the total mass.
+	 * \param[in] i the index of the dirac, in 0 .. nb_points-1
+	 * \param[in] nu the desired mass at point i
+	 */
+	void set_nu(index_t i, double nu);
+	
+	
 	/**
 	 * \brief Specifies a user vector where the centroids of the Laguerre
 	 *  cells will be stored after computing transport.
@@ -196,6 +209,21 @@ namespace GEO {
             epsilon_regularization_ = eps_reg;
         }
 
+
+	/**
+	 * \brief Specifies whether a direct solver should be used.
+	 * \param[in] x true if a direct solver should be used, false
+	 *  otherwise. Default is false.
+	 * \details The used direct solver is SUPERLU (if OpenNL extension
+	 *  is available) and the iterative solver the Jacobi-preconditioned
+	 *  conjugate gradient. The direct solver is recommended only for
+	 *  surfacic data, since the sparse factors become not so sparse when
+	 *  volumetric meshes are considered.
+	 */
+	void set_use_direct_solver(bool x) {
+	    use_direct_solver_ = x;
+	}
+	
         /**
          * \brief Computes the weights that realize the optimal
          *  transport map between the source mesh and the target
@@ -410,6 +438,15 @@ namespace GEO {
 
     protected:
 
+	/**
+	 * \brief Gets the mass of the Dirac associated with point p.
+	 * \return the desired mass at point p.
+	 */
+	double nu(index_t p) const {
+	  return nu_.size() == 0 ? constant_nu_ : nu_[p];
+	}
+
+	
         /**
          * \brief Callback for the numerical solver.
          */
@@ -457,13 +494,13 @@ namespace GEO {
          * \brief Computes the stopping criterion of the solver.
          * \details The stopping criterion is determined from
          *  the user-specified epsilon, number of samples and
-         *  target measure of a cell (lambda_p_).
+         *  target measure of a cell (constant_nu_).
          * \param n number of samples
          * \return the gradient threshold
          * \see set_epsilon()
          */
         double gradient_threshold(index_t n) const {
-            return ::sqrt(double(n) * geo_sqr(epsilon_ * lambda_p_));
+            return ::sqrt(double(n) * geo_sqr(epsilon_ * constant_nu_));
         }
 
       public:
@@ -620,7 +657,8 @@ namespace GEO {
         vector<double> points_dimp1_;
         vector<double> weights_;
         double total_mass_;
-        double lambda_p_; /**< \brief Value of one of the Diracs */
+        double constant_nu_; /**< \brief Value of one of the Diracs if cte. */
+	vector<double> nu_;  /**< \brief Value of all the Diracs. */
         double epsilon_;
         /**< \brief Acceptable relative deviation for the measure of a cell */
         index_t current_call_iter_;
@@ -680,6 +718,9 @@ namespace GEO {
 
 	/** \brief starting number of steplength divisions */
 	index_t linesearch_init_iter_;
+
+	/** \brief if true, uses a direct solver (SUPERLU) */
+	bool use_direct_solver_;
     };
 
 }

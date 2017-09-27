@@ -59,13 +59,7 @@
 
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 
-#ifdef GEOGRAM_WITH_LUA
-extern "C" {
-#include <geogram/third_party/lua/lua.h>
-}
-#else
-typedef int lua_State;
-#endif
+struct lua_State;
 
 /**
  * \file geogram_gfx/glup_viewer/glup_viewer_gui.h

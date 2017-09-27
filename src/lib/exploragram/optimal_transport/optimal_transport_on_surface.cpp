@@ -36,7 +36,7 @@
  *     Qt, SuperLU, WildMagic and CGAL
  */
 
-#include <exploragram/optimal_transport/optimal_transport_2d.h>
+#include <exploragram/optimal_transport/optimal_transport_on_surface.h>
 #include <geogram/voronoi/generic_RVD_vertex.h>
 #include <geogram/voronoi/generic_RVD_polygon.h>
 #include <geogram/voronoi/RVD_callback.h>
@@ -44,11 +44,10 @@
 #include <geogram/basic/geometry_nd.h>
 #include <geogram/basic/stopwatch.h>
 
-
 namespace {
     using namespace GEO;
 
-    /**************************************************************************/
+    /**********************************************************************/
 
     // For more details on the algorithm / structure of the objective function,
     // see also implementation notes at the beginning of optimal_transport_3d.cpp.
@@ -58,16 +57,16 @@ namespace {
      *  to the objective function minimized by a semi-discrete
      *  optimal transport map in 2D.
      */
-    class OTMPolygonCallback :
+    class SurfaceOTMPolygonCallback :
 	public OptimalTransportMap::Callback,
 	public RVDPolygonCallback {
     public:
 	
 	/**
 	 * \brief OTMPolygonCallback constructor.
-	 * \param[in] OTM a pointer to the OptimalTransportMap2d
+	 * \param[in] OTM a pointer to the OptimalTransportMapOnSurface
 	 */
-	OTMPolygonCallback(OptimalTransportMap2d* OTM) :
+	SurfaceOTMPolygonCallback(OptimalTransportMapOnSurface* OTM) :
 	    OptimalTransportMap::Callback(OTM) {
 	}
 
@@ -80,8 +79,8 @@ namespace {
 	    const GEOGen::Polygon& P
 	) const {
 	    geo_argused(t);
-	    double m, mgx, mgy;
-	    compute_m_and_mg(P, m, mgx, mgy);
+	    double m, mgx, mgy, mgz;
+	    compute_m_and_mg(P, m, mgx, mgy, mgz);
 
 	    if(spinlocks_ != nil) {
 		spinlocks_->acquire_spinlock(v);
@@ -97,8 +96,9 @@ namespace {
 	    }
 	    
 	    if(mg_ != nil) {
-		mg_[2*v] += mgx;  
-		mg_[2*v+1] += mgy;
+		mg_[3*v] += mgx;  
+		mg_[3*v+1] += mgy;
+		mg_[3*v+2] += mgz;		
 	    }
 
 	    if(spinlocks_ != nil) {
@@ -115,7 +115,7 @@ namespace {
 		Thread* thread = Thread::current();
 		index_t current_thread_id = (thread == nil) ? 0 : thread->id();
 		double F = weighted_ ? eval_F_weighted(P, v) : eval_F(P, v);
-		const_cast<OTMPolygonCallback*>(this)->
+		const_cast<SurfaceOTMPolygonCallback*>(this)->
 		    funcval_[current_thread_id] += F;
 	    }
 	}
@@ -127,17 +127,18 @@ namespace {
 	 *  current intersection polygon.
 	 * \details Weights are taken into account if present.
 	 * \param[in] P a const reference to the current intersection polygon.
-	 * \param[out] m , mgx , mgy the mass and the mass times the
-	 *  centroid of the ConvexCell. mgx and mgy are not computed
+	 * \param[out] m , mgx , mgy , mgz the mass and the mass times the
+	 *  centroid of the ConvexCell. mgx, mgy and mgy are not computed
 	 *  if mg_ is nil.
 	 */
 	void compute_m_and_mg(
 	    const GEOGen::Polygon& P, 
-	    double& m, double& mgx, double& mgy
+	    double& m, double& mgx, double& mgy, double& mgz
 	) const {
 	    m = 0.0;
 	    mgx = 0.0;
 	    mgy = 0.0;
+	    mgz = 0.0;
 	    const GEOGen::Vertex& V0 = P.vertex(0);
 	    const double* p0 = V0.point();
 	    for(index_t i=1; i+1<P.nb_vertices(); ++i) {
@@ -155,9 +156,11 @@ namespace {
 			double s = cur_m/(w0+w1+w2);
 			mgx += s * (w0*p0[0] + w1*p1[0] + w2*p2[0]);
 			mgy += s * (w0*p0[1] + w1*p1[1] + w2*p2[1]);
+			mgz += s * (w0*p0[2] + w1*p1[2] + w2*p2[2]);			
 		    } else {
 			mgx += cur_m * (p0[0] + p1[0] + p2[0]) / 3.0;
 			mgy += cur_m * (p0[1] + p1[1] + p2[1]) / 3.0;
+			mgz += cur_m * (p0[2] + p1[2] + p2[2]) / 3.0;			
 		    }
 		}
 	    }
@@ -192,7 +195,7 @@ namespace {
 		    const double* pj = OTM_->point_ptr(j);
 		    double hij =
 			edge_mass(P.vertex(k1), P.vertex(k2)) /
-			(2.0 * GEO::Geom::distance(pi,pj,2)) ;
+			(2.0 * GEO::Geom::distance(pi,pj,3)) ;
 
 		    // -hij because we maximize F <=> minimize -F
 		    if(hij != 0.0) {
@@ -257,7 +260,7 @@ namespace {
 	    const GEOGen::Vertex& V1,
 	    const GEOGen::Vertex& V2
 	) const {
-	    double m = Geom::triangle_area_2d(V0.point(), V1.point(), V2.point());
+	    double m = Geom::triangle_area_3d(V0.point(), V1.point(), V2.point());
 	    if(weighted_) {
 		m *= ((V0.weight() + V1.weight() + V2.weight())/3.0);
 	    } 
@@ -276,7 +279,7 @@ namespace {
 	    const GEOGen::Vertex& V0,
 	    const GEOGen::Vertex& V1
 	) const {
-	    double m = Geom::distance(V0.point(), V1.point(), 2);
+	    double m = Geom::distance(V0.point(), V1.point(), 3);
 	    if(weighted_) {
 		m *= ((V0.weight() + V1.weight())/2.0);
 	    } 
@@ -284,7 +287,7 @@ namespace {
 	}
     };
 
-    /********************************************************************/
+    /**********************************************************************/
     
     /**
      * \brief A RVDPolygonCallback that stores the Restricted Voronoi
@@ -335,29 +338,30 @@ namespace {
 	Mesh* target_;
 	Attribute<index_t> chart_;
     };
-    
-    /********************************************************************/
+
 }
 
-namespace GEO {
+/**********************************************************************/
 
-    OptimalTransportMap2d::OptimalTransportMap2d(
+namespace GEO {
+    
+    OptimalTransportMapOnSurface::OptimalTransportMapOnSurface(
         Mesh* mesh, const std::string& delaunay, bool BRIO
     ) :
 	OptimalTransportMap(
-	    2, 
+	    3, 
 	    mesh,
-	    (delaunay == "default") ? "BPOW2d" : delaunay,
+	    (delaunay == "default") ? "BPOW" : delaunay,
 	    BRIO
         ) {
-	callback_ = new OTMPolygonCallback(this);
+	callback_ = new SurfaceOTMPolygonCallback(this);
 	total_mass_ = total_mesh_mass();
     }
 
-    OptimalTransportMap2d::~OptimalTransportMap2d() {
+    OptimalTransportMapOnSurface::~OptimalTransportMapOnSurface() {
     }
     
-    void OptimalTransportMap2d::get_RVD(Mesh& RVD_mesh) {
+    void OptimalTransportMapOnSurface::get_RVD(Mesh& RVD_mesh) {
 	ComputeRVDPolygonCallback callback(this, &RVD_mesh);
 	RVD()->for_each_polygon(callback, false, false, false);
 	/*
@@ -372,9 +376,9 @@ namespace GEO {
 	*/
     }
 
-    void OptimalTransportMap2d::compute_Laguerre_centroids(double* centroids) {
+    void OptimalTransportMapOnSurface::compute_Laguerre_centroids(double* centroids) {
         vector<double> g(nb_points(), 0.0);
-        Memory::clear(centroids, nb_points()*sizeof(double)*2);
+        Memory::clear(centroids, nb_points()*sizeof(double)*3);
 
 	callback_->set_Laguerre_centroids(centroids);
 	callback_->set_g(g.data());
@@ -395,12 +399,13 @@ namespace GEO {
 	callback_->set_Laguerre_centroids(nil);	    
 	
         for(index_t v=0; v<nb_points(); ++v) {
-            centroids[2*v  ] /= g[v];
-            centroids[2*v+1] /= g[v];
+            centroids[3*v  ] /= g[v];
+            centroids[3*v+1] /= g[v];
+            centroids[3*v+2] /= g[v];	    
         }
     }
 
-    double OptimalTransportMap2d::total_mesh_mass() const {
+    double OptimalTransportMapOnSurface::total_mesh_mass() const {
 	double result = 0.0;
 	
         //   This is terribly confusing, the parameters for
@@ -418,9 +423,9 @@ namespace GEO {
         
         for(index_t t = 0; t < mesh_->facets.nb(); ++t) {
             double tri_mass = GEO::Geom::triangle_area(
-                vec2(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 0))),
-		vec2(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 1))),
-		vec2(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 2)))
+                vec3(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 0))),
+		vec3(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 1))),
+		vec3(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 2)))
             );
             if(vertex_mass.is_bound()) {
                 tri_mass *= (
@@ -434,15 +439,15 @@ namespace GEO {
 	return result;
     }
 
-    void OptimalTransportMap2d::call_callback_on_RVD() {
+    void OptimalTransportMapOnSurface::call_callback_on_RVD() {
 	RVD_->for_each_polygon(
 	    *dynamic_cast<RVDPolygonCallback*>(callback_),false,false,true
 	);
     }
-    
-    /**********************************************************************/
-    
-    void compute_Laguerre_centroids_2d(
+
+    /**********************************************************************/    
+
+    void compute_Laguerre_centroids_on_surface(
         Mesh* omega,
         index_t nb_points,
         const double* points,
@@ -453,21 +458,18 @@ namespace GEO {
     ) {
 	geo_argused(parallel_pow); // Not implemented yet.
 
-	// Omega can be either 2d or 3d with third coordinate set to
-	// zero.
-	index_t omega_dim_backup = omega->vertices.dimension();
-        omega->vertices.set_dimension(3);
-
+        omega->vertices.set_dimension(4);
+	
         // false = no BRIO
         // (OTM does not use multilevel and lets Delaunay
         //  reorder the vertices)
-        OptimalTransportMap2d OTM(
+        OptimalTransportMapOnSurface OTM(
 	    omega,
-	    std::string("BPOW2d"),
+	    std::string("BPOW"),
 	    false
 	);
 
-        //OTM.set_regularization(1e-3);
+	//OTM.set_regularization(1e-3);
 	//OTM.set_use_direct_solver(true);
         OTM.set_Newton(true);
         OTM.set_points(nb_points, points);
@@ -479,8 +481,11 @@ namespace GEO {
 	if(RVD != nil) {
 	    OTM.get_RVD(*RVD);
 	}
-	
-        omega->vertices.set_dimension(omega_dim_backup);
+
+        omega->vertices.set_dimension(3);        
     }
+
+    /**********************************************************************/    
+    
 }
 

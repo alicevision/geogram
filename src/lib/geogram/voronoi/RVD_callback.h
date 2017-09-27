@@ -108,8 +108,8 @@ namespace GEO {
 	 *  polygon/polyhedron.
 	 * \return The index of the seed that corresponds to the 
 	 *  current polygon/polyhedron.
-	 * \details The current polygon/polyhedron is the intersection between a Voronoi
-	 *  cell (associted with a seed) and a simplex. 
+	 * \details The current polygon/polyhedron is the intersection 
+	 *  between a Voronoi cell (associted with a seed) and a simplex. 
 	 */
 	index_t seed() const {
 	    return seed_;
@@ -121,8 +121,8 @@ namespace GEO {
 	 * \return The index of the simplex that corresponds to the 
 	 *  current polygon/polyhedron. Points to a simplex in the mesh that the
 	 *  Voronoi diagram is restricted to.
-	 * \details The current polygon/polyhedron is the intersection between a Voronoi
-	 *  cell and a simplex. 
+	 * \details The current polygon/polyhedron is the intersection between 
+	 *  a Voronoi cell and a simplex. 
 	 */
 	index_t simplex() const {
 	    return simplex_;
@@ -385,8 +385,18 @@ namespace GEO {
 		simplify_boundary_facets_angle_threshold_ = 0.0;		
 	    }
 	}
-	
 
+	/**
+	 * \brief Specifies whether non-convex facets should be tessellated.
+	 * \param[in] x true if non-convex facets should be tessellated, 
+	 *  false otherwise.
+	 * \details Only taken into account if set_use_mesh(true) was called.
+	 */
+	void set_tessellate_non_convex_facets(bool x) {
+	    tessellate_non_convex_facets_ = x;
+	}
+
+	
 	/**
 	 * \brief Specifies whether a mesh should be built for each
 	 *  traversed polyhedron.
@@ -477,7 +487,8 @@ namespace GEO {
 	bool simplify_voronoi_facets_;
 	bool simplify_boundary_facets_;
 	double simplify_boundary_facets_angle_threshold_;
-
+	bool tessellate_non_convex_facets_;
+	
 	bool use_mesh_;
 	bool facet_is_skipped_;
 
