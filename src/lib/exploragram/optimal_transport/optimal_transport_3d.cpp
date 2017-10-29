@@ -164,6 +164,11 @@ namespace {
 	    index_t t,
 	    const GEOGen::ConvexCell& C
 	) const {
+	    // v can be an air particle.
+	    if(v >= n_) {
+		return;
+	    }
+	    
 	    geo_argused(t);
 
 	    double m, mgx, mgy, mgz;
@@ -319,7 +324,6 @@ namespace {
 	void update_Hessian(
 	    const GEOGen::ConvexCell& C, index_t v
 	) const {
-
 	    // The coefficient of the Hessian associated to a pair of
 	    // adjacent cells Lag(i),Lag(j) is :
 	    // - mass(Lag(i) /\ Lag(j)) / (2*distance(pi,pj))
@@ -391,9 +395,12 @@ namespace {
 		// Diagonal is positive, extra-diagonal
 		// coefficients are negative,
 		// this is a convex function.
-		OTM_->add_ij_coefficient(
-		    v, v_adj, -hij
-                );
+
+		if(v_adj < n_) {
+		    OTM_->add_ij_coefficient(
+			v, v_adj, -hij
+		    );
+		}
 		OTM_->add_ij_coefficient(
 		    v, v, hij
                 );
@@ -771,8 +778,13 @@ namespace GEO {
     void OptimalTransportMap3d::call_callback_on_RVD() {
 	RVD_->for_each_polyhedron(
 	    *dynamic_cast<RVDPolyhedronCallback*>(callback_),
-	    false, false, true
+	    false, // symbolic
+	    false, // connected components priority
+	    !clip_by_balls_ // parallel
 	);
+	// clip_by_balls deactivates parallel mode, because it needs to access
+	// the PointAllocator of the current thread, and we do not have any
+	// access (for now).
     }
 
     /**********************************************************************/

@@ -359,7 +359,6 @@ NLfunc nlFindFunction(NLdll handle, const char* funcname);
  * @{ 
  */
 
-
 /**
  * \brief Maximum unsigned 32 bits integer
  */
@@ -369,6 +368,16 @@ NLfunc nlFindFunction(NLdll handle, const char* funcname);
  * \brief Maximum unsigned 16 bits integer
  */
 #define NL_USHORT_MAX 0xffff
+
+/**
+ * @}
+ * \name Logging and messages
+ * @{ 
+ */
+
+extern NLprintfFunc nl_printf;
+
+extern NLfprintfFunc nl_fprintf;
 
 /**
  * @}

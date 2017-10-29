@@ -50,6 +50,131 @@ namespace {
 
     /**************************************************************************/
 
+    /**
+     * \brief Clips a polygon by a half-space.
+     * \param[in] P the polygon to be clipped
+     * \param[in] Pi the equation of the half-space,
+     *   Pi.x*x + Pi.y*y + Pi.z >= 0
+     * \param[out] clipped the result
+     * \param[in,out] first index to be used for intersections
+     * \param[in] alloc the PointAllocator used to create the
+     *  new vertices
+     */
+    void clip_polygon_by_halfplane(
+	const GEOGen::Polygon& P,
+	vec3 Pi,
+	GEOGen::Polygon& target,
+	index_t& n,
+	GEOGen::PointAllocator* alloc
+    ) {
+	target.clear();
+	if(P.nb_vertices() == 0) {
+	    return;
+	}
+
+	// The predecessor of the first vertex is the last vertex
+	index_t prev_k = P.nb_vertices() - 1;
+	const GEOGen::Vertex* prev_vk = &(P.vertex(prev_k));
+	const double* geo_restrict prev_pk = prev_vk->point();
+
+	GEO::Sign prev_status = GEO::geo_sgn(prev_pk[0]*Pi.x + prev_pk[1]*Pi.y + Pi.z);
+	
+	for(index_t k = 0; k < P.nb_vertices(); k++) {
+	    const GEOGen::Vertex* vk = &(P.vertex(k));
+	    const double* pk = vk->point();
+	    
+	    GEO::Sign status = GEO::geo_sgn(pk[0]*Pi.x + pk[1]*Pi.y + Pi.z);
+	    
+	    // If status of edge extremities differ,
+	    // then there is an intersection.
+	    if(status != prev_status && (prev_status != 0)) {
+		GEOGen::Vertex I;
+		double* Ipoint = alloc->new_item();
+		I.set_point(Ipoint);
+		
+		// Compute lambda1 and lambda2, the
+		// barycentric coordinates of the intersection I
+		// in the segment [prev_vk vk]
+		// Note that d and l (used for the predicates)
+		// are reused here.
+
+		
+		double denom = Pi.x * (pk[0] - prev_pk[0]) + Pi.y * (pk[1] - prev_pk[1]);
+		double lambda2 = -(Pi.z + Pi.x * prev_pk[0] + Pi.y * prev_pk[1]);
+		double lambda1 = denom - lambda2;
+		
+		// Shit happens ! [Forrest Gump]
+		if(::fabs(denom) < 1e-20) {
+		    lambda1 = 0.5;
+		    lambda2 = 0.5;
+		} else {
+		    lambda1 =  lambda1 / denom;
+		    lambda2 =  lambda2 / denom;
+		}
+
+		Ipoint[0] = lambda1 * prev_pk[0] + lambda2 * pk[0];
+		Ipoint[1] = lambda1 * prev_pk[1] + lambda2 * pk[1];		
+
+		I.set_weight(
+		    lambda1 * prev_vk->weight() + lambda2 * vk->weight()
+                );
+		if(status > 0) {
+		    I.copy_edge_from(*prev_vk);
+		    I.set_adjacent_seed(signed_index_t(n));
+		    ++n;
+		} else {
+		    I.set_flag(GEOGen::INTERSECT);
+		    I.set_adjacent_seed(vk->adjacent_seed());
+		}
+		target.add_vertex(I);
+	    }
+	    if(status > 0) {
+		target.add_vertex(*vk);
+	    }
+	    prev_vk = vk;
+	    prev_pk = pk;
+	    prev_status = status;
+	    prev_k = k;
+	}
+    }
+
+    
+    /**
+     * \brief Clips a polygon by a ball.
+     * \param[in] P the polygon to be clipped
+     * \param[in] center the center of the ball
+     * \param[in] radius the radius of the ball
+     * \param[out] clipped the result
+     * \param[in] n first index to be used for intersections (number of
+     *  vertices in Delaunay).
+     * \param[in] alloc the PointAllocator used to create the
+     *  new vertices
+     * \param[out] work a temporary work zone
+     */
+    void clip_polygon_by_ball(
+	const GEOGen::Polygon& P,
+	vec2 center, double radius,
+	GEOGen::Polygon& clipped,
+	index_t n,
+	GEOGen::PointAllocator* alloc,
+	GEOGen::Polygon& work
+    ) {
+	const index_t N = 16;
+	const double dalpha = M_PI * 2.0 / double(N);
+	index_t first_new_index = n;
+	clipped.copy(P);
+	FOR(i,N) {
+	    double s = ::sin(dalpha*i);
+	    double c = ::cos(dalpha*i);
+	    double off = (center.x+radius*c)*c + (center.y+radius*s)*s;
+	    vec3 Pi(-c,-s,off);
+	    clip_polygon_by_halfplane(clipped, Pi, work, first_new_index, alloc);
+	    clipped.swap(work);
+	 }
+    }
+    
+    /**************************************************************************/
+    
     // For more details on the algorithm / structure of the objective function,
     // see also implementation notes at the beginning of optimal_transport_3d.cpp.
     
@@ -79,6 +204,42 @@ namespace {
 	    index_t t,
 	    const GEOGen::Polygon& P
 	) const {
+	    geo_argused(t);
+	    if(OTM_->air_fraction() != 0.0 && OTM_->nb_air_particles() == 0) {
+		if(v < OTM_->nb_points()) {
+		    OptimalTransportMap2d* OTM = static_cast<OptimalTransportMap2d*>(OTM_);		    
+		    double R = OTM_->weight(v);
+		    geo_assert(R > 0.0);
+		    R = ::sqrt(R);
+		    vec2 center(OTM_->point_ptr(v));
+		    clip_polygon_by_ball(
+			P, center, R, OTM->clipped_,
+			OTM_->nb_points(),
+			OTM_->RVD()->point_allocator(),
+			OTM->work_
+		    );
+		    do_it(v,t,OTM->clipped_);
+		} 
+	    } else {
+		do_it(v,t,P);
+	    }
+	}
+	
+	void do_it(
+	    index_t v,
+	    index_t t,
+	    const GEOGen::Polygon& P
+	) const {
+	    
+	    // v can be an air particle.
+	    if(v >= n_) {
+		return;
+	    }
+
+	    if(P.nb_vertices() == 0) {
+		return;
+	    }
+	    
 	    geo_argused(t);
 	    double m, mgx, mgy;
 	    compute_m_and_mg(P, m, mgx, mgy);
@@ -172,7 +333,7 @@ namespace {
 	void update_Hessian(
 	    const GEOGen::Polygon& P, index_t i
 	) const {
-
+	    
 	    // The coefficient of the Hessian associated to a pair of
 	    // adjacent cells Lag(i),Lag(j) is :
 	    // - mass(Lag(i) /\ Lag(j)) / (2*distance(pi,pj))
@@ -189,10 +350,18 @@ namespace {
 		// not P.vertex(k1).adjacent_seed() !!!
 		index_t j = index_t(P.vertex(k2).adjacent_seed());
 		if(j != index_t(-1)) {
-		    const double* pj = OTM_->point_ptr(j);
-		    double hij =
-			edge_mass(P.vertex(k1), P.vertex(k2)) /
-			(2.0 * GEO::Geom::distance(pi,pj,2)) ;
+		    double hij = 0.0;
+		    if(j < n_) {
+			const double* pj = OTM_->point_ptr(j);
+			hij =
+			    edge_mass(P.vertex(k1), P.vertex(k2)) /
+			    (2.0 * GEO::Geom::distance(pi,pj,2)) ;
+		    } else {
+			double R = OTM_->weight(i);
+			geo_assert(R > 0.0);
+			R = ::sqrt(R);
+			hij = edge_mass(P.vertex(k1), P.vertex(k2)) / (2.0 * R);
+		    }
 
 		    // -hij because we maximize F <=> minimize -F
 		    if(hij != 0.0) {
@@ -202,7 +371,9 @@ namespace {
 			// Diagonal is positive, extra-diagonal
 			// coefficients are negative,
 			// this is a convex function.
-			OTM_->add_ij_coefficient(i, j, -hij);
+			if(j < n_) {
+			    OTM_->add_ij_coefficient(i, j, -hij);
+			}
 			OTM_->add_ij_coefficient(i, i,  hij);
 			if(spinlocks_ != nil) {
 			    spinlocks_->release_spinlock(i);
@@ -308,8 +479,41 @@ namespace {
 	    index_t t,
 	    const GEOGen::Polygon& P
 	) const {
+	    geo_argused(t);
+	    if(OTM_->air_fraction() != 0.0 && OTM_->nb_air_particles() == 0) {
+		if(v < OTM_->nb_points()) {
+		    OptimalTransportMap2d* OTM = static_cast<OptimalTransportMap2d*>(OTM_);
+		    double R = OTM_->weight(v);
+		    if(R < 0.0) {
+			std::cerr << '-' << std::flush;
+		    }
+		    R = R > 0.0 ? ::sqrt(R) : 0.0;
+		    vec2 center(OTM_->point_ptr(v));
+		    clip_polygon_by_ball(
+			P, center, R, OTM->clipped_,
+			OTM_->nb_points(),
+			OTM_->RVD()->point_allocator(),
+			OTM->work_
+		    );
+		    do_it(v,t,OTM->clipped_);
+		} 
+	    } else {
+		do_it(v,t,P);
+	    }
+	}
+	
+	void do_it(
+	    index_t v,
+	    index_t t,
+	    const GEOGen::Polygon& P
+	) const {
 	    geo_argused(v);
 	    geo_argused(t);
+
+	    if(P.nb_vertices() == 0) {
+		return;
+	    }
+	    
 	    index_t voffset = target_->vertices.nb();
 	    FOR(i,P.nb_vertices()) {
 		const double* p = P.vertex(i).point();
@@ -436,8 +640,14 @@ namespace GEO {
 
     void OptimalTransportMap2d::call_callback_on_RVD() {
 	RVD_->for_each_polygon(
-	    *dynamic_cast<RVDPolygonCallback*>(callback_),false,false,true
+	    *dynamic_cast<RVDPolygonCallback*>(callback_),
+	    false,          // symbolic
+	    false,          // connected components priority
+	    !clip_by_balls_ // parallel
 	);
+	// clip_by_balls deactivates parallel mode, because it needs to access
+	// the PointAllocator of the current thread, and we do not have any
+	// access (for now).
     }
     
     /**********************************************************************/
@@ -449,7 +659,12 @@ namespace GEO {
         double* centroids,
 	bool parallel_pow,
 	Mesh* RVD,
-	bool verbose
+	bool verbose,
+	index_t nb_air_particles,
+	const double* air_particles,
+	index_t air_particles_stride,
+	double air_fraction,
+	const double* weights
     ) {
 	geo_argused(parallel_pow); // Not implemented yet.
 
@@ -470,7 +685,16 @@ namespace GEO {
         //OTM.set_regularization(1e-3);
 	//OTM.set_use_direct_solver(true);
         OTM.set_Newton(true);
+	OTM.set_air_particles(
+	    nb_air_particles, air_particles, air_particles_stride, air_fraction
+	);
         OTM.set_points(nb_points, points);
+	if(weights != nil) {
+	    std::cerr << "Setting weights" << std::endl;
+	    FOR(i, nb_points) {
+		OTM.set_initial_weight(i, weights[i]);
+	    }
+	}
         OTM.set_epsilon(0.01);
 	OTM.set_Laguerre_centroids(centroids);
 	OTM.set_verbose(verbose);

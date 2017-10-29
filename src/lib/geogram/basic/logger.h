@@ -727,7 +727,7 @@ extern "C" {
      * \param[in] format printf-like format string
      * \see printf
      */
-    void GEOGRAM_API geogram_printf(const char* format, ...);
+    int GEOGRAM_API geogram_printf(const char* format, ...);
 
     /**
      * \brief Fprintf-like wrapper to the Logger
@@ -742,7 +742,7 @@ extern "C" {
      * \param[in] format printf-like format string
      * \see fprintf
      */
-    void GEOGRAM_API geogram_fprintf(FILE* out, const char* format, ...);
+    int GEOGRAM_API geogram_fprintf(FILE* out, const char* format, ...);
 }
 
 #else
@@ -761,7 +761,7 @@ extern "C" {
  * \param[in] format printf-like format string
  * \see printf
  */
-extern void GEOGRAM_API geogram_printf(const char* format, ...);
+extern int GEOGRAM_API geogram_printf(const char* format, ...);
 
 /**
  * \brief Fprintf-like wrapper to the Logger
@@ -775,7 +775,7 @@ extern void GEOGRAM_API geogram_printf(const char* format, ...);
  * \param[in] format printf-like format string
  * \see fprintf
  */
-extern void GEOGRAM_API geogram_fprintf(FILE* out, const char* format, ...);
+extern int GEOGRAM_API geogram_fprintf(FILE* out, const char* format, ...);
 
 #endif
 

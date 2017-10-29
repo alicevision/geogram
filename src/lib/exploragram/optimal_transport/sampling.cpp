@@ -485,7 +485,6 @@ namespace GEO {
         bool BRIO, bool multilevel, double ratio,
         vector<index_t>* levels_out
     ) {
-        CVT.set_volumetric(true);
         vector<index_t> levels;
         multilevel = multilevel | BRIO;
         if(CmdLine::get_arg_bool("RVD_iter") && multilevel) {
@@ -511,7 +510,6 @@ namespace GEO {
         if(project_on_border) {
             project_sampling_on_border(CVT);
         }
-        CVT.set_volumetric(true);
     }
     
     

@@ -538,11 +538,12 @@ namespace {
 		    to_delete.resize(mesh->facets.nb(),0);
 		    to_delete[f] = 1;
 		    FOR(t, P_tri.size()/3) {
-			mesh->facets.create_triangle(
+			index_t nf = mesh->facets.create_triangle(
 			    P_ind[P_tri[3*t  ]],
 			    P_ind[P_tri[3*t+1]],
 			    P_ind[P_tri[3*t+2]]
 			);
+			mesh->facets.attributes().copy_item(nf,f);
 		    }
 		} else {
 		    Logger::warn("RVD")

@@ -588,7 +588,8 @@ namespace GEO {
                 return false;
             }
 
-#ifndef GEOGRAM_PSM	    
+#ifndef GEOGRAM_PSM
+	    nlPrintfFuncs(geogram_printf, geogram_fprintf);	    
 	    nlInitialize(argc, argv);
 #endif
 	    if(

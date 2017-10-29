@@ -271,7 +271,6 @@ void glup_viewer_effect_begin_frame() {
     
 void glup_viewer_effect_end_frame() {
     if(!effect_.is_nil()) {
-//	glup_viewer_snapshot("frame.ppm");
 	effect_->post_render();
     }
 }

@@ -78,6 +78,15 @@ namespace {
 	    index_t t,
 	    const GEOGen::Polygon& P
 	) const {
+	    // v can be an air particle.
+	    if(v >= n_) {
+		return;
+	    }
+
+	    if(P.nb_vertices() == 0) {
+		return;
+	    }
+	    
 	    geo_argused(t);
 	    double m, mgx, mgy, mgz;
 	    compute_m_and_mg(P, m, mgx, mgy, mgz);
@@ -205,7 +214,9 @@ namespace {
 			// Diagonal is positive, extra-diagonal
 			// coefficients are negative,
 			// this is a convex function.
-			OTM_->add_ij_coefficient(i, j, -hij);
+			if(j < n_) {
+			    OTM_->add_ij_coefficient(i, j, -hij);
+			}
 			OTM_->add_ij_coefficient(i, i,  hij);
 			if(spinlocks_ != nil) {
 			    spinlocks_->release_spinlock(i);
@@ -313,6 +324,11 @@ namespace {
 	) const {
 	    geo_argused(v);
 	    geo_argused(t);
+	    
+	    if(P.nb_vertices() == 0) {
+		return;
+	    }
+	    
 	    index_t voffset = target_->vertices.nb();
 	    FOR(i,P.nb_vertices()) {
 		const double* p = P.vertex(i).point();
@@ -441,8 +457,14 @@ namespace GEO {
 
     void OptimalTransportMapOnSurface::call_callback_on_RVD() {
 	RVD_->for_each_polygon(
-	    *dynamic_cast<RVDPolygonCallback*>(callback_),false,false,true
+	    *dynamic_cast<RVDPolygonCallback*>(callback_),
+	    false,          // symbolic
+	    false,          // connected components priority
+	    !clip_by_balls_ // parallel
 	);
+	// clip_by_balls deactivates parallel mode, because it needs to access
+	// the PointAllocator of the current thread, and we do not have any
+	// access (for now).
     }
 
     /**********************************************************************/    

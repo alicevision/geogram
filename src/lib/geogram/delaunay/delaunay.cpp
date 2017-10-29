@@ -329,12 +329,29 @@ namespace GEO {
     void Delaunay::update_v_to_cell() {
         geo_assert(!is_locked_);  // Not thread-safe
         is_locked_ = true;
-        v_to_cell_.assign(nb_vertices(), -1);
-        for(index_t c = 0; c < nb_cells(); c++) {
-            for(index_t lv = 0; lv < cell_size(); lv++) {
-                v_to_cell_[cell_vertex(c, lv)] = signed_index_t(c);
-            }
-        }
+
+	// Note: if keeps_infinite is set, then infinite vertex
+	// tet chaining is at t2v_[nb_vertices].
+	
+	if(keeps_infinite()) {	
+	    v_to_cell_.assign(nb_vertices()+1, -1);
+	    for(index_t c = 0; c < nb_cells(); c++) {
+		for(index_t lv = 0; lv < cell_size(); lv++) {
+		    signed_index_t v = cell_vertex(c, lv);
+		    if(v == -1) {
+			v = signed_index_t(nb_vertices());
+		    }
+		    v_to_cell_[v] = signed_index_t(c);
+		}
+	    }
+	} else {
+	    v_to_cell_.assign(nb_vertices(), -1);	    
+	    for(index_t c = 0; c < nb_cells(); c++) {
+		for(index_t lv = 0; lv < cell_size(); lv++) {
+		    v_to_cell_[cell_vertex(c, lv)] = signed_index_t(c);
+		}
+	    }
+	}
         is_locked_ = false;
     }
 
@@ -342,36 +359,54 @@ namespace GEO {
         geo_assert(!is_locked_);  // Not thread-safe
         is_locked_ = true;
         cicl_.resize(cell_size() * nb_cells());
-        for(index_t v = 0; v < nb_vertices(); ++v) {
-            signed_index_t t = v_to_cell_[v];
-            if(t != -1) {
-                index_t lv = index(index_t(t), signed_index_t(v));
-                set_next_around_vertex(index_t(t), lv, index_t(t));
-            }
-        }
-        for(index_t t = 0; t < nb_cells(); ++t) {
-            bool skip = false;
-            if(keep_infinite_) {
-                for(index_t lv=0; lv < cell_size(); ++lv) {
-                    if(cell_vertex(t,lv) < 0) {
-                        skip = true;
-                        break;
-                    }
-                }
-            }
-            if(!skip) {
-                for(index_t lv = 0; lv < cell_size(); ++lv) {
-                    index_t v = index_t(cell_vertex(t, lv));
-                    if(v_to_cell_[v] != signed_index_t(t)) {
-                        index_t t1 = index_t(v_to_cell_[v]);
-                        index_t lv1 = index(t1, signed_index_t(v));
-                        index_t t2 = index_t(next_around_vertex(t1, lv1));
-                        set_next_around_vertex(t1, lv1, t);
-                        set_next_around_vertex(t, lv, t2);
-                    }
-                }
-            }
-        }
+
+	for(index_t v = 0; v < nb_vertices(); ++v) {
+	    signed_index_t t = v_to_cell_[v];
+	    if(t != -1) {
+		index_t lv = index(index_t(t), signed_index_t(v));
+		set_next_around_vertex(index_t(t), lv, index_t(t));
+	    }
+	}
+	
+	if(keeps_infinite()) {
+
+	    // Process the infinite vertex at index nb_vertices().
+	    signed_index_t t = v_to_cell_[nb_vertices()];
+	    if(t != -1) {
+		index_t lv = index(index_t(t), -1);
+		set_next_around_vertex(index_t(t), lv, index_t(t));
+	    }
+
+	    for(index_t t = 0; t < nb_cells(); ++t) {
+		for(index_t lv = 0; lv < cell_size(); ++lv) {
+		    signed_index_t v = cell_vertex(t, lv);
+		    index_t vv = (v == -1) ? nb_vertices() : index_t(v);
+		    if(v_to_cell_[vv] != signed_index_t(t)) {
+			index_t t1 = index_t(v_to_cell_[vv]);
+			index_t lv1 = index(t1, signed_index_t(v));
+			index_t t2 = index_t(next_around_vertex(t1, lv1));
+			set_next_around_vertex(t1, lv1, t);
+			set_next_around_vertex(t, lv, t2);
+		    }
+		}
+	    }
+	    
+	    
+	} else {
+	    for(index_t t = 0; t < nb_cells(); ++t) {
+		for(index_t lv = 0; lv < cell_size(); ++lv) {
+		    index_t v = index_t(cell_vertex(t, lv));
+		    if(v_to_cell_[v] != signed_index_t(t)) {
+			index_t t1 = index_t(v_to_cell_[v]);
+			index_t lv1 = index(t1, signed_index_t(v));
+			index_t t2 = index_t(next_around_vertex(t1, lv1));
+			set_next_around_vertex(t1, lv1, t);
+			set_next_around_vertex(t, lv, t2);
+		    }
+		}
+	    }
+	}
+	
         is_locked_ = false;
     }
 

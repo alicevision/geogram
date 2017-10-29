@@ -118,6 +118,8 @@ namespace GEO {
         
         /**
          * \brief Sets the points that define the target distribution.
+	 * \details If air particles are used, then set_air_particles() needs
+	 *  to be called before set_points().
          * \param[in] nb_points number of points in the target distribution
          * \param[in] points an array of size nb_points * dimension() with the
 	 *  coordinates of the Diracs centers in the target
@@ -129,6 +131,47 @@ namespace GEO {
 	    index_t nb_points, const double* points, index_t stride=0
 	);
 
+	/**
+	 * \brief Sets the air particles that define the volume occupied by the
+	 *  free space.
+	 * \details If air particles are used, then set_air_particles() needs
+	 *  to be called before set_points().
+	 * \param[in] nb_air_particles number of air particles.
+	 * \param[in] air_particles a pointer to the array of doubles with the
+	 *  coordinates of the air particles.
+	 * \param[in] stride number of doubles between two consecutive air
+	 *  particles in the array, or 0 if tightly packed.
+	 * \param[in] air_fraction the fraction of the total mass occupied by air.
+	 */
+	void set_air_particles(
+	    index_t nb_air_particles, const double* air_particles, index_t stride,
+	    double air_fraction
+	) {
+	    nb_air_particles_ = nb_air_particles;
+	    air_particles_ = air_particles;
+	    air_particles_stride_ = (stride == 0) ? dimension_ : stride;
+	    air_fraction_ = air_fraction;
+	    // "continuous air" mode (air fraction declared without any air
+	    // particle).
+	    clip_by_balls_ = (nb_air_particles == 0) && (air_fraction != 0.0);
+	}
+
+	/**
+	 * \brief Gets the air fraction.
+	 * \return the air fraction previously specified by set_air_particles()
+	 */
+	double air_fraction() const {
+	    return air_fraction_;
+	}
+
+	/**
+	 * \brief Gets the number of air particles.
+	 * \return the air fraction previously specified by set_air_particles()
+	 */
+	index_t nb_air_particles() const {
+	    return nb_air_particles_;
+	}
+	
 	/**
 	 * \brief Sets the desired mass at one of the Diracs.
 	 * \details If unspecified, then default value is total mass
@@ -436,6 +479,17 @@ namespace GEO {
          */
         void solve_linear_system();
 
+	/**
+	 * \brief Sets the initial value of the weight associated
+	 *  with one of the points.
+	 * \param[in] i index of the point, in 0..nb_points-1, where
+	 *  np_points corresponds to the parameter of set_points.
+	 * \param[in] w the value of the weight.
+	 */
+	void set_initial_weight(index_t i, double w) {
+	    weights_[i] = w;
+	}
+	
     protected:
 
 	/**
@@ -634,7 +688,7 @@ namespace GEO {
 		}
 		return result;
 	    }
-	    
+
 	  protected:
 	    OptimalTransportMap* OTM_;
 	    bool weighted_;
@@ -721,6 +775,29 @@ namespace GEO {
 
 	/** \brief if true, uses a direct solver (SUPERLU) */
 	bool use_direct_solver_;
+
+	/** \brief if set, pointer to the air particles. */
+	const double* air_particles_;
+	
+	/** \brief if non-zero, number of air particles. */
+	index_t nb_air_particles_;
+
+	/** 
+	 * \brief Number of doubles between two consecutive
+	 *  air particles in air_particles_.
+	 */
+	index_t air_particles_stride_;
+
+	/**
+	 * \brief The fraction of the total mass occupied by air.
+	 */
+	double air_fraction_;
+
+	/**
+	 * \brief Enabled if air fraction is specified without any
+	 *  air particles.
+	 */
+	bool clip_by_balls_;
     };
 
 }

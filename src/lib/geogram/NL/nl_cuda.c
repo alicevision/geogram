@@ -122,6 +122,7 @@ struct cudaDeviceProp {
     int singleToDoublePrecisionPerfRatio;
     int pageableMemoryAccess;
     int concurrentManagedAccess;
+    char padding[1024]; /* More room for future evolutions */
 };
 
 enum cudaComputeMode {
@@ -594,7 +595,7 @@ static int ConvertSMVer2Cores(int major, int minor) {
     }
     /* If we don't find the values, we default use the 
        previous one to run properly */
-    printf(
+    nl_printf(
       "MapSMtoCores for SM %d.%d is undefined.  Default to use %d Cores/SM\n",
       major, minor, nGpuArchCoresPerSM[8].Cores
     );
@@ -661,7 +662,7 @@ static int getBestDeviceID() {
 
     /**
      * Wrong ! It says 1TFlops for GTX 1080, whereas the specs say 8TFlops
-    printf(
+     nl_printf(
 	"OpenNL CUDA: maximum device single-precision Gflops=%f\n",
 	(double)(2*max_compute_perf)/(double)(1e6)
     );
@@ -713,13 +714,13 @@ NLboolean nlInitExtension_CUDA(void) {
     CUDA()->devID = getBestDeviceID();
 
     if(CUDA()->cudaGetDeviceProperties(&deviceProp, CUDA()->devID)) {
-	fprintf(stderr,"OpenNL CUDA: could not find a CUDA device\n");
+	nl_fprintf(stderr,"OpenNL CUDA: could not find a CUDA device\n");
 	return NL_FALSE;
     }
     
-    printf("OpenNL CUDA: Device ID = %d\n", CUDA()->devID);
-    printf("OpenNL CUDA: Device name=%s\n", deviceProp.name);
-    printf(
+    nl_printf("OpenNL CUDA: Device ID = %d\n", CUDA()->devID);
+    nl_printf("OpenNL CUDA: Device name=%s\n", deviceProp.name);
+    nl_printf(
 	"OpenNL CUDA: Device has %d Multi-Processors, "
 	"%d cores per Multi-Processor, SM %d.%d compute capabilities\n",
 	deviceProp.multiProcessorCount,
@@ -727,25 +728,25 @@ NLboolean nlInitExtension_CUDA(void) {
 	deviceProp.major, deviceProp.minor
     );
 
-    printf(
+    nl_printf(
 	"OpenNL CUDA: %d kB shared mem. per block, %d per MP\n",
 	(int)(deviceProp.sharedMemPerBlock / 1024),
 	(int)(deviceProp.sharedMemPerMultiprocessor / 1024)
     );
     
-    printf(
+    nl_printf(
 	"OpenNL CUDA: %d regs. per block, %d per MP\n",
 	deviceProp.regsPerBlock,
 	deviceProp.regsPerMultiprocessor	
     );
 
-    printf(
+    nl_printf(
 	"OpenNL CUDA: warpsize=%d\n",
 	deviceProp.warpSize
     );
     
     if ((deviceProp.major * 0x10 + deviceProp.minor) < 0x11) {
-        printf("OpenNL CUDA requires a minimum CUDA compute 1.1 capability\n");
+        nl_fprintf(stderr, "OpenNL CUDA requires a minimum CUDA compute 1.1 capability\n");
         CUDA()->cudaDeviceReset();
 	return NL_FALSE;
     }
@@ -774,7 +775,7 @@ NLboolean nlInitExtension_CUDA(void) {
     if(CUDA()->cublasGetVersion(CUDA()->HNDL_cublas, &cublas_version)) {
 	return NL_FALSE;
     }
-    printf("OpenNL CUDA: cublas version = %d\n", cublas_version);
+    nl_printf("OpenNL CUDA: cublas version = %d\n", cublas_version);
     
     CUDA()->DLL_cusparse = nlOpenDLL(
 	LIBPREFIX "cusparse" LIBEXTENSION, flags
@@ -798,7 +799,7 @@ NLboolean nlInitExtension_CUDA(void) {
     if(CUDA()->cusparseGetVersion(CUDA()->HNDL_cusparse, &cusparse_version)) {
 	return NL_FALSE;
     }
-    printf("OpenNL CUDA: cusparse version = %d\n", cusparse_version);
+    nl_printf("OpenNL CUDA: cusparse version = %d\n", cusparse_version);
     
     if(!nlExtensionIsInitialized_CUDA()) {
 	return NL_FALSE;
@@ -811,7 +812,7 @@ NLboolean nlInitExtension_CUDA(void) {
 
 static void nlCUDACheckImpl(int status, int line) {
     if(status != 0) {
-	fprintf(stderr,"nl_cuda.c:%d fatal error %d\n",line, status);
+	nl_fprintf(stderr,"nl_cuda.c:%d fatal error %d\n",line, status);
 	CUDA()->cudaDeviceReset();    	
 	exit(-1);
     }

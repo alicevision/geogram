@@ -268,7 +268,7 @@ static void nlCRSMatrixMult(
             y[i] = 0.0;
         }
         for(i=0; i<M->m; ++i) {
-            for(jj=M->rowptr[i]; jj<M->rowptr[i]; ++jj) {
+            for(jj=M->rowptr[i]; jj<M->rowptr[i+1]; ++jj) {
                 a = M->val[jj];
                 j = M->colind[jj];
                 y[i] += a * x[j];

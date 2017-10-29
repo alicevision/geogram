@@ -97,7 +97,12 @@ namespace GEO {
 
 
     /**
-     * \brief Computes a point sampling of a volumetric mesh.
+     * \brief Computes a point sampling of a surfacic or volumetric
+     *  mesh.
+     * \details If \p CVT is in volumetric mode and the mesh has cells, 
+     *  then the sampling is in the volume, else the sampling is on the
+     *  surface (facets) of the mesh.
+     * \see CentroidalVoronoiTesselation::set_volumetric()
      * \param[in,out] CVT a CentroidalVoronoiTesselation plugged 
      *  on the volumetric mesh to be sampled
      * \param[in] nb_points number of points to be created

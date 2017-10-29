@@ -306,7 +306,7 @@ NLboolean nlInitExtension_CHOLMOD(void) {
      * before.
      */
     if(NLMultMatrixVector_MKL != NULL) {
-	fprintf(
+	nl_fprintf(
 	    stderr,
 	    "CHOLMOD extension incompatible with MKL (deactivating)"
 	);

@@ -47,6 +47,7 @@
 #define OPENNL_H
 
 #include "nl_linkage.h"
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1377,6 +1378,28 @@ NLAPI void NLAPIENTRY nlMatrixMode(NLenum matrix);
  * \return the \p i th eigenvalue.
  */
     NLAPI double NLAPIENTRY nlGetEigenValue(NLuint i);
+
+/**
+ * @}
+ * \name Logging and messages
+ * @{
+ */    
+
+    /**
+     * \brief Function pointer type for user printf function.
+     */
+    typedef int (*NLprintfFunc)(const char* format, ...);
+
+    /**
+     * \brief Function pointer type for user fprintf function.
+     */
+    typedef int (*NLfprintfFunc)(FILE* out, const char* format, ...);
+    
+    /**
+     * \brief Specifies user functions for printing messages.
+     */
+    NLAPI void NLAPIENTRY nlPrintfFuncs(NLprintfFunc f1, NLfprintfFunc f2);
+    
     
 /**
  * @}

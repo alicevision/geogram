@@ -99,7 +99,7 @@ static NLuint nlSolveSystem_CG(
 		nlCurrentContext->progress_func(its, max_iter, curr_err, err);
 	    }
 	    if(nlCurrentContext->verbose && !(its % 100)) {
-		printf ( "%d : %.10e -- %.10e\n", its, curr_err, err );
+		nl_printf ( "%d : %.10e -- %.10e\n", its, curr_err, err );
 	    }
 	}
 	nlMultMatrixVector(M,r,p);
@@ -152,7 +152,7 @@ static NLuint nlSolveSystem_PRE_CG(
 		nlCurrentContext->progress_func(its, max_iter, curr_err, err);
 	    }
 	    if( nlCurrentContext->verbose && !(its % 100)) {
-		printf ( "%d : %.10e -- %.10e\n", its, curr_err, err );
+		nl_printf ( "%d : %.10e -- %.10e\n", its, curr_err, err );
 	    }
 	}
 	nlMultMatrixVector(M,d,Ad);
@@ -209,7 +209,7 @@ static NLuint nlSolveSystem_BICGSTAB(
 		nlCurrentContext->progress_func(its, max_iter, rTr, err);
 	    }
 	    if( (nlCurrentContext->verbose) && !(its % 100)) {
-		printf ( "%d : %.10e -- %.10e\n", its, rTr, err );
+		nl_printf ( "%d : %.10e -- %.10e\n", its, rTr, err );
 	    }
 	}
 	nlMultMatrixVector(M,d,Ad);
@@ -290,7 +290,7 @@ static NLuint nlSolveSystem_PRE_BICGSTAB(
 		nlCurrentContext->progress_func(its, max_iter, rTr, err);
 	    }
 	    if( (nlCurrentContext->verbose) && !(its % 100)) {
-		printf ( "%d : %.10e -- %.10e\n", its, rTr, err );
+		nl_printf ( "%d : %.10e -- %.10e\n", its, rTr, err );
 	    }
 	}
 	nlMultMatrixVector(M,d,aux);
@@ -509,12 +509,12 @@ NLuint nlSolveSystemIterative(
 	if(bnorm == 0.0) {
 	    nlCurrentContext->error = rnorm;
 	    if(nlCurrentContext->verbose) {
-		printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
+		nl_printf("in OpenNL : ||Ax-b|| = %e\n",nlCurrentContext->error);
 	    }
 	} else {
 	    nlCurrentContext->error = rnorm/bnorm;
 	    if(nlCurrentContext->verbose) {
-		printf("in OpenNL : ||Ax-b||/||b|| = %e\n",
+		nl_printf("in OpenNL : ||Ax-b||/||b|| = %e\n",
 		       nlCurrentContext->error
 		);
 	    }

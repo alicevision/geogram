@@ -2472,6 +2472,14 @@ namespace {
             return parts_[i];
         }
 
+	/**
+	 * \copydoc RestrictedVoronoiDiagram::point_allocator()
+	 */
+	virtual GEOGen::PointAllocator* point_allocator() {
+	    return RVD_.point_allocator();
+	}
+	
+ 	
     protected:
 
         GenRestrictedVoronoiDiagram RVD_;
@@ -2637,6 +2645,7 @@ namespace GEO {
             }
         }
     }
+
     
 }
 

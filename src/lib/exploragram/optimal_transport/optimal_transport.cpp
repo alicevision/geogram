@@ -134,6 +134,13 @@ namespace GEO {
 	linesearch_init_iter_ = 0;
 
 	use_direct_solver_ = false;
+
+	nb_air_particles_ = 0;
+	air_particles_ = nil;
+	air_particles_stride_ = 0;
+	air_fraction_ = 0.0;
+
+	clip_by_balls_ = false;
     }
 
     OptimalTransportMap::~OptimalTransportMap() {
@@ -144,27 +151,45 @@ namespace GEO {
     void OptimalTransportMap::set_points(
         index_t nb_points, const double* points, index_t stride
     ) {
+	
 	if(stride == 0) {
 	    stride = dimension_;
 	}
+
+	index_t nb_total = nb_points + nb_air_particles_;
 	
         // Note: we represent power diagrams as (d+1)-dim Voronoi diagrams.
         // The target points are lifted to (d+1)-dim.
-        points_dimp1_.resize(nb_points * dimp1_);
+        points_dimp1_.resize(nb_total * dimp1_);
         for(index_t i = 0; i < nb_points; ++i) {
+	    double* p = &points_dimp1_[i*dimp1_];	    
 	    for(index_t c=0; c<dimension_; ++c) {
-		points_dimp1_[i*dimp1_+c] = points[i*stride+c];
+		p[c] = points[i*stride+c];
 	    }
-            points_dimp1_[i*dimp1_ + dimension()] = 0.0;
+            p[dimension()] = 0.0; // Yes, dimension() and not dimension()-1
+	                          // (for instance, in 2d, x->0, y->1, W->2)
         }
+	for(index_t i=0; i<nb_air_particles_; ++i) {
+	    double* p = &points_dimp1_[(i + nb_points)*dimp1_];
+	    for(index_t c=0; c<dimension_; ++c) {
+		p[c] = air_particles_[i*air_particles_stride_+c];
+	    }
+            p[dimension()] = 0.0; // Yes, dimension() and not dimension()-1
+	                          // (for instance, in 2d, x->0, y->1, W->2)
+	}
         weights_.assign(nb_points, 0);
-        constant_nu_ = total_mass_ / double(nb_points);
+	constant_nu_ = (1.0 - air_fraction_) * total_mass_ / double(nb_points);
+	if(air_fraction_ != 0.0 && nb_air_particles_ == 0) {
+	    // constant_nu_ = pi*R^2 -> R^2 = constant_nu_ / pi
+	    // TODO: volumetric case.
+	    weights_.assign(nb_points, constant_nu_ / M_PI);
+	}
     }
 
     void OptimalTransportMap::set_nu(index_t i, double nu) {
         geo_debug_assert(i < weights_.size());
         if(nu_.size() != weights_.size()) {
-	  nu_.assign(weights_.size(), 0.0);
+	    nu_.assign(weights_.size(), 0.0);
 	}
 	nu_[i] = nu;
     }
@@ -173,7 +198,7 @@ namespace GEO {
         index_t max_iterations, index_t n
     ) {
         if(n == 0) {
-            n = index_t(points_dimp1_.size() / dimp1_);
+            n = index_t(points_dimp1_.size() / dimp1_) - nb_air_particles_;
         }
 
         vector<double> pk(n);
@@ -212,6 +237,9 @@ namespace GEO {
 	        FOR(i,n) {
 		  epsilon0 = geo_min(epsilon0, nu(i));
 		}
+		if(nb_air_particles_ != 0.0) {
+		    epsilon0 = geo_min(epsilon0, air_fraction_ * total_mass_);
+		}
                 epsilon0 = 0.5 * epsilon0;
             }
 
@@ -219,6 +247,11 @@ namespace GEO {
 		Logger::out("OTM") << "   Solving linear system" << std::endl;
 	    }
 
+	    if(nbZ_ != 0) {
+		std::cerr << "There were empty cells !!!!!!" << std::endl;
+		std::cerr << "FATAL error, exiting Newton" << std::endl;
+		return;
+	    }
             solve_linear_system();
 
 	    if(verbose_) {
@@ -269,8 +302,10 @@ namespace GEO {
 		
 		// Condition to exit linesearch loop
                 if(
-                    (measure_of_smallest_cell_ >= epsilon0) &&
-  		    (g_norm_ <= (1.0 - 0.5*alphak) * gknorm) 
+                    (measure_of_smallest_cell_ >= epsilon0)  && (
+			(air_fraction_ != 0.0) || 
+			(g_norm_ <= (1.0 - 0.5*alphak) * gknorm)
+		    )
                 ) {
 		    // Condition for global convergence
                     if(g_norm_ < gradient_threshold(n)) {
@@ -307,36 +342,36 @@ namespace GEO {
     }
     
     void OptimalTransportMap::optimize(index_t max_iterations) {
- 
-        index_t n = index_t(points_dimp1_.size() / dimp1_);
-      
+
+	index_t n = index_t(points_dimp1_.size() / dimp1_) - nb_air_particles_;
+	
 	// Sanity check
 	if(nu_.size() != 0) {
-	  double total_nu = 0.0;
-	  FOR(i,n) {
-	    total_nu += nu(i);
-	  }
-	  std::cerr << "total nu=" << total_nu << std::endl;
-	  std::cerr << "total mass=" << total_mass_ << std::endl;
-	  if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
-	    Logger::warn("OTM") << "Specified nu do not sum to domain measure"
-				<< std::endl;
-	    Logger::warn("OTM") << "rescaling..."
-				<< std::endl;
-	  }
-	  FOR(i,n) {
-	    set_nu(i, nu(i) * total_mass_ / total_nu);
-	  }
-
-	  total_nu = 0.0;
-	  FOR(i,n) {
-	    total_nu += nu(i);
-	  }
-	  if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
-	    Logger::warn("OTM") << "Specified nu do not sum to domain measure"
-				<< std::endl;
-	    return;
-	  }
+	    double total_nu = 0.0;
+	    FOR(i,n) {
+		total_nu += nu(i);
+	    }
+	    std::cerr << "total nu=" << total_nu << std::endl;
+	    std::cerr << "total mass=" << total_mass_ << std::endl;
+	    if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
+		Logger::warn("OTM") << "Specified nu do not sum to domain measure"
+				    << std::endl;
+		Logger::warn("OTM") << "rescaling..."
+				    << std::endl;
+	    }
+	    FOR(i,n) {
+		set_nu(i, nu(i) * total_mass_ / total_nu);
+	    }
+	    
+	    total_nu = 0.0;
+	    FOR(i,n) {
+		total_nu += nu(i);
+	    }
+	    if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
+		Logger::warn("OTM") << "Specified nu do not sum to domain measure"
+				    << std::endl;
+		return;
+	    }
 	}
         
         if(newton_) {
@@ -556,10 +591,17 @@ namespace GEO {
             for(index_t p = 0; p < n; ++p) {
                 W = geo_max(W, w[p]);
             }
-            for(index_t p = 0; p < n; ++p) {
-                points_dimp1_[dimp1_ * p + dimension_] = ::sqrt(W - w[p]);
-            }
-        
+	    for(index_t p = 0; p < n; ++p) {
+		// Yes, dimension_ and not dimension_ -1,
+		// for instance in 2d, x->0, y->1, W->2
+		points_dimp1_[dimp1_ * p + dimension_] = ::sqrt(W - w[p]);
+	    }
+	    if(nb_air_particles_ != 0) {
+		for(index_t p = 0; p < nb_air_particles_; ++p) {
+		    points_dimp1_[dimp1_ * (n + p) + dimension_] = ::sqrt(W - 0.0);
+		}		
+	    }
+		
             // Step 2: compute function and gradient
             {
 		Stopwatch* SW = nil;
@@ -569,7 +611,7 @@ namespace GEO {
 			Logger::out("OTM") << "In power diagram..." << std::endl;
 		    }
 		}
-                delaunay_->set_vertices(n, points_dimp1_.data());
+                delaunay_->set_vertices((n + nb_air_particles_), points_dimp1_.data());
 		if(verbose_ && newton_) {
 		    delete SW;
 		}
@@ -634,6 +676,17 @@ namespace GEO {
 		    ++nb_empty_cells;
 		}
             }
+	    if(air_fraction_ != 0.0) {
+		double air_mass = total_mass_;
+		for(index_t i=0; i<n; ++i) {
+		    air_mass -= g[i];
+		}
+		if(fabs(air_mass) < 1e-30) {
+		    ++nb_empty_cells;
+		}
+		measure_of_smallest_cell_ =
+		    GEO::geo_min(measure_of_smallest_cell_, air_mass);
+	    }
         }
         
         if(update_fg) {

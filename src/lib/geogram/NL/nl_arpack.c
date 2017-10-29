@@ -251,14 +251,14 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	 * OP = A^{-1} 
 	 */
 	if(nlCurrentContext->verbose) {
-	    fprintf(stderr, "Factorizing matrix...\n");
+	    nl_printf("Factorizing matrix...\n");
 	}
 	result = nlMatrixFactorize(
 	    (NLMatrix)A,
 	    symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
 	);
 	if(nlCurrentContext->verbose) {
-	    fprintf(stderr, "Matrix factorized\n");
+	    nl_printf("Matrix factorized\n");
 	}
 	nlDeleteMatrix((NLMatrix)A);
     } else {
@@ -266,14 +266,14 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	 * OP = M^{-1} 
 	 */
 	if(nlCurrentContext->verbose) {
-	    fprintf(stderr, "Factorizing matrix...\n");
+	    nl_printf("Factorizing matrix...\n");
 	}
 	result = nlMatrixFactorize(
 	    nlCurrentContext->M,
 	    symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
 	    );
 	if(nlCurrentContext->verbose) {
-	    fprintf(stderr, "Matrix factorized\n");
+	    nl_printf("Matrix factorized\n");
 	}
     }
     
@@ -382,16 +382,18 @@ void nlEigenSolve_ARPACK(void) {
 
     if(nlCurrentContext->verbose) {
 	if(symmetric) {
-	    fprintf(stderr, "calling dsaupd()\n");	    
+	    nl_printf("calling dsaupd()\n");	    
 	} else {
-	    fprintf(stderr, "calling dnaupd()\n");
+	    nl_printf("calling dnaupd()\n");
 	}
     }
     while(!converged) {
+	/*
 	if(nlCurrentContext->verbose) {
 	    fprintf(stderr, ".");
 	    fflush(stderr);
 	}
+	*/
 	if(symmetric) {
 	    ARPACK()->dsaupd(
 		&ido, bmat, &n, which, &nev, &tol, resid, &ncv,
@@ -418,9 +420,9 @@ void nlEigenSolve_ARPACK(void) {
 
     if(info < 0) {
 	if(symmetric) {
-	    fprintf(stderr, "\nError with dsaupd(): %d\n", info);	    
+	    nl_fprintf(stderr, "\nError with dsaupd(): %d\n", info);	    
 	} else {
-	    fprintf(stderr, "\nError with dnaupd(): %d\n", info);
+	    nl_fprintf(stderr, "\nError with dnaupd(): %d\n", info);
 	}
     } else {
 	if(nlCurrentContext->verbose) {
@@ -434,9 +436,9 @@ void nlEigenSolve_ARPACK(void) {
 	
 	if(nlCurrentContext->verbose) {
 	    if(symmetric) {
-		fprintf(stderr, "calling dseupd()\n");		
+		nl_printf("calling dseupd()\n");		
 	    } else {
-		fprintf(stderr, "calling dneupd()\n");
+		nl_printf("calling dneupd()\n");
 	    }
 	}
 	
@@ -463,15 +465,15 @@ void nlEigenSolve_ARPACK(void) {
 	if(nlCurrentContext->verbose) {
 	    if(ierr != 0) {		
 		if(symmetric) {
-		    fprintf(stderr, "Error with dseupd(): %d\n", ierr);		
+		    nl_fprintf(stderr, "Error with dseupd(): %d\n", ierr);		
 		} else {
-		    fprintf(stderr, "Error with dneupd(): %d\n", ierr);
+		    nl_fprintf(stderr, "Error with dneupd(): %d\n", ierr);
 		}
 	    } else {
 		if(symmetric) {
-		    fprintf(stderr, "dseupd() OK, nconv= %d\n", iparam[3-1]);
+		    nl_printf("dseupd() OK, nconv= %d\n", iparam[3-1]);
 		} else {
-		    fprintf(stderr, "dneupd() OK, nconv= %d\n", iparam[3-1]);
+		    nl_printf("dneupd() OK, nconv= %d\n", iparam[3-1]);
 		}
 	    }
 	}

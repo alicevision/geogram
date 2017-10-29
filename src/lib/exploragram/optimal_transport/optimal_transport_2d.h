@@ -42,6 +42,7 @@
 
 #include <exploragram/basic/common.h>
 #include <exploragram/optimal_transport/optimal_transport.h>
+#include <geogram/voronoi/generic_RVD_polygon.h>
 
 /**
  * \file exploragram/optimal_transport/optimal_transport_2d.h
@@ -62,6 +63,15 @@ namespace GEO {
      *  the Laguerre cells that correspond to the optimal transport of
      *  the uniform measure to the points
      * \param[in] parallel_pow if true, use parallel power diagram algorithm
+     * \param[out] RVD if non-nil, a mesh with the restricted Voronoi diagram.
+     * \param[in] nb_air_particles number of air particles.
+     * \param[in] air_particles a pointer to the array of doubles with the
+     *  coordinates of the air particles.
+     * \param[in] stride number of doubles between two consecutive air
+     *  particles in the array, or 0 if tightly packed.
+     * \param[in] air_fraction the fraction of the total mass occupied by air.
+     * \param[in] weights an optional array of nb_points doubles corresponding to
+     *  the initial value of the weight vector.
      */
     void EXPLORAGRAM_API compute_Laguerre_centroids_2d(
         Mesh* omega,
@@ -70,7 +80,12 @@ namespace GEO {
         double* centroids,
 	bool parallel_pow=true,
 	Mesh* RVD=nil,
-	bool verbose=false
+	bool verbose=false,
+	index_t nb_air_particles = 0,
+	const double* air_particles = nil,
+	index_t air_particles_stride = 0,	
+	double air_fraction = 0.0,
+	const double* weights = nil
     );
 
 
@@ -131,6 +146,16 @@ namespace GEO {
 	 * \copydoc OptimalTransportMap::call_callback_on_RVD()
 	 */
  	virtual void call_callback_on_RVD();
+
+      public:
+	/**
+	 * \brief Used by clipping operations.
+	 */
+	GEOGen::Polygon work_;
+	/**
+	 * \brief Used by clipping operations.
+	 */
+	GEOGen::Polygon clipped_;
     };
 
     /*********************************************************************/

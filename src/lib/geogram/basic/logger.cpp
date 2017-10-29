@@ -531,7 +531,7 @@ namespace GEO {
 
 extern "C" {
 
-    void geogram_printf(const char* format, ...) {
+    int geogram_printf(const char* format, ...) {
 
         static std::string last_string;
 
@@ -583,9 +583,11 @@ extern "C" {
                 GEO::Logger::out("") << lines[i] << std::endl;                
             }
         }
+
+	return nb;
     }
 
-    void geogram_fprintf(FILE* out, const char* format, ...) {
+    int geogram_fprintf(FILE* out, const char* format, ...) {
 
 
         static std::string last_string;
@@ -650,6 +652,8 @@ extern "C" {
                 }
             }
         }
+	
+	return nb;
     }
 }
 
