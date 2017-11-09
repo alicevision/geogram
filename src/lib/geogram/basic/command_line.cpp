@@ -383,6 +383,30 @@ namespace {
                : name.substr(0, pos);
     }
 
+
+    /**
+     * \brief Gets an argument as a string for display.
+     * \param[in] arg_name the name of the argument.
+     * \return a string with the value of the argument for
+     *  display.
+     * \details It ignores least significant digits for floating
+     *  point arguments.
+     */
+    std::string get_display_arg(const std::string& arg_name) {
+	CmdLine::ArgType arg_type = get_arg_type(arg_name);
+	std::string result;
+	if(arg_type == CmdLine::ARG_DOUBLE) {
+	    double x = CmdLine::get_arg_double(arg_name);
+	    result = String::to_display_string(x);
+	} else if(arg_type == CmdLine::ARG_PERCENT) {
+	    double x = CmdLine::get_arg_percent(arg_name, 100.0);
+	    result = String::to_display_string(x) + "%";
+	} else {
+	    result = CmdLine::get_arg(arg_name);
+	}
+	return result;
+    }
+    
     /**
      * \brief Private data used for printing ArgGroup details
      */
@@ -448,7 +472,7 @@ namespace {
 
             Line line;
             line.name = name_marker + arg.name;
-            line.value = " (=" + get_arg(arg.name) + ") : ";
+            line.value = " (=" + get_display_arg(arg.name) + ") : ";
             line.desc = arg.desc;
             lines.push_back(line);
 
@@ -476,6 +500,7 @@ namespace {
             }
         }
     }
+
 }
 
 /****************************************************************************/

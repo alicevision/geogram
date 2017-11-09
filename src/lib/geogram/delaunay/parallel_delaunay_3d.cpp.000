@@ -511,12 +511,6 @@ namespace GEO {
                 }
             }
             finished_ = true;
-
-	    //   Fix by Hiep Vu: wake up threads that potentially missed
-	    // the previous wake ups.
-	    pthread_mutex_lock(&mutex_);
-	    send_event();
-	    pthread_mutex_unlock(&mutex_);
         }
 
         /**
@@ -2079,14 +2073,12 @@ namespace GEO {
          * \pre t < nb_threads()
          */
         void wait_for_event(index_t t) {
-	    // Fixed by Hiep Vu: enlarged critical section (contains
-	    // now the test (!thrd->finished)
             Delaunay3dThread* thrd = thread(t);
-	    pthread_mutex_lock(&(thrd->mutex_));	    
             if(!thrd->finished_) {
+                pthread_mutex_lock(&(thrd->mutex_));
                 pthread_cond_wait(&(thrd->cond_), &(thrd->mutex_));
+                pthread_mutex_unlock(&(thrd->mutex_));
             }
-	    pthread_mutex_unlock(&(thrd->mutex_));	    
         }
 
         /****** iterative stellate_conflict_zone *****************/        

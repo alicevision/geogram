@@ -1477,6 +1477,14 @@ void glup_viewer_one_frame() {
     int cur_width;
     int cur_height;
     GlupViewerInitFunc init = init_func;
+
+    /*
+       can happen when ImGUI Graphite application 
+       triggers update too soon.
+    */
+    if(glup_viewer_window == NULL) {
+	return;
+    }
     
     if(init != NULL) {
 	init_func = NULL;

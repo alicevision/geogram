@@ -50,12 +50,16 @@
 #pragma GCC diagnostic ignored "-Wc++11-long-long"
 #endif
 
-// I do not know why, but without that isnan() and
-// isfinite() are not recognized when compiling
-// geogram in PSM mode under MacOSX.
-#if defined(GEOGRAM_PSM) && defined(GEO_OS_APPLE)
-using std::isnan;
-using std::isfinite;
+#ifdef GEO_COMPILER_MSVC
+#define isnan _isnan
+#define isfinite _finite
+#else
+#ifndef isnan
+#define isnan std::isnan
+#endif
+#ifndef isfinite
+#define isfinite std::isfinite
+#endif
 #endif
 
 namespace GEO {
@@ -66,11 +70,7 @@ namespace GEO {
         // this function, since it is a macro in some implementations.
 
         bool is_nan(float32 x) {
-#ifdef GEO_OS_WINDOWS
-            return (_isnan(x) != 0) || (_finite(x) == 0);
-#else
             return isnan(x) || !isfinite(x);
-#endif
         }
 
 
@@ -85,11 +85,7 @@ namespace GEO {
 #endif            
         
         bool is_nan(float64 x) {
-#ifdef GEO_OS_WINDOWS
-            return (_isnan(x) != 0) || (_finite(x) == 0);
-#else
             return isnan(x) || !isfinite(x);
-#endif            
         }
 
 #ifdef GEO_COMPILER_GCC

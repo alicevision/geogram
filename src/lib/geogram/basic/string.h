@@ -91,7 +91,6 @@ namespace GEO {
             bool skip_empty_fields = true
         );
 
-
         /**
          * \brief Splits a string into two parts.
          * \param[in] in the input string to split
@@ -218,6 +217,47 @@ namespace GEO {
             return out.str();
         }
 
+        /**
+         * \brief Converts a typed value to a string for display.
+	 * \details Does not keep all significant digits for floating point
+	 *   numbers.
+         * \param[in] value the typed value to convert
+         * \return a string that contain the stringified form of the value
+         */
+        template <class T>
+        inline std::string to_display_string(const T& value) {
+	    return to_string(value);
+	}
+
+
+        /**
+         * \brief Converts a typed value to a string for display.
+	 * \details Does not keep all significant digits for floating point
+	 *   numbers.
+         * \param[in] value the typed value to convert
+         * \return a string that contain the stringified form of the value
+         */
+        template <>
+        inline std::string to_display_string(const double& value) {
+            std::ostringstream out;	    
+            out << value;
+            return out.str();
+	}
+
+        /**
+         * \brief Converts a typed value to a string for display.
+	 * \details Does not keep all significant digits for floating point
+	 *   numbers.
+         * \param[in] value the typed value to convert
+         * \return a string that contain the stringified form of the value
+         */
+        template <>
+        inline std::string to_display_string(const float& value) {
+            std::ostringstream out;	    
+            out << value;
+            return out.str();
+	}
+	
         /**
          * \brief Converts a boolean value to a string
          * \param[in] value the boolean value to convert

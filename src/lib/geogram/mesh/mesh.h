@@ -1841,10 +1841,22 @@ namespace GEO {
          * \return vertex \p lv of facet \p lf in cell \p c
          */
         index_t facet_vertex(index_t c, index_t lf, index_t lv) const {
-            geo_debug_assert(lv < facet_nb_vertices(c,lf));
+            geo_debug_assert(lv < facet_nb_vertices(c, lf));
             return cell_corners_.vertex(
-                corner(c,descriptor(c).facet_vertex[lf][lv])
-            );
+                    corner(c, descriptor(c).facet_vertex[lf][lv])
+                    );
+        }
+        /**
+         * \brief Gets a corner of a cell by local facet index and
+         *  local corner index in the facet
+         * \param[in] c the cell, in 0..nb()-1
+         * \param[in] lf the local facet index, in 0..nb_facets(c)-1
+         * \param[in] lv the local corner index, in 0..facet_nb_vertices(c,lf)-1
+         * \return corner \p lc of facet \p lf in cell \p c
+         */
+        index_t facet_corner(index_t c, index_t lf, index_t lc) const {
+            geo_debug_assert(lc < facet_nb_vertices(c, lf));
+            return corner(c, descriptor(c).facet_vertex[lf][lc]);
         }
 
         /**

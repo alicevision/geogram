@@ -47,7 +47,6 @@
 #include <geogram_gfx/glup_viewer/glup_viewer_gui_private.h>
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
 #include <geogram_gfx/glup_viewer/geogram_logo_256.xpm>
-#include <geogram_gfx/third_party/ImGui/imgui.h>
 
 #ifdef GEOGRAM_WITH_LUA
 #include <geogram_gfx/lua/lua_glup.h>
@@ -167,137 +166,6 @@ namespace {
         return result;
     }
 
-    /**
-     * \brief Safer version of strncpy()
-     * \param[in] dest a pointer to the destination string
-     * \param[in] source a pointer to the source string
-     * \param[in] max_dest_size number of characters available in
-     *  destination string
-     * \return the length of the destination string after copy. If
-     *  the source string + null terminator was greater than max_dest_size,
-     *  then it is cropped. On exit, dest is always null-terminated (in 
-     *  contrast with strncpy()).
-     */ 
-    size_t safe_strncpy(
-        char* dest, const char* source, size_t max_dest_size
-    ) {
-        strncpy(dest, source, max_dest_size);
-        dest[max_dest_size-1] = '\0';
-        return strlen(dest);
-    }
-}
-
-namespace ImGui {
-
-    bool ColorEdit3WithPalette(const char* label, float* color_in) {
-	bool result = false;
-	static bool saved_palette_inited = false;
-	static ImVec4 saved_palette[40];
-	static ImVec4 backup_color;
-	ImGui::PushID(label);
-	int flags =
-	    ImGuiColorEditFlags_PickerHueWheel |
-	    ImGuiColorEditFlags_NoAlpha |
-	    ImGuiColorEditFlags_Float;
-	
-	ImVec4& color = *(ImVec4*)color_in;
-
-	if (!saved_palette_inited) {
-
-	    for (int n = 0; n < 8; n++) {
-		saved_palette[n].x = 0.0f;
-		saved_palette[n].y = 0.0f;
-		saved_palette[n].z = 0.0f;
-	    }
-
-	    saved_palette[0] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-	    saved_palette[1] = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-	    saved_palette[2] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-	    saved_palette[3] = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-	    saved_palette[4] = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
-	    saved_palette[5] = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
-	    saved_palette[6] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-	    saved_palette[7] = ImVec4(0.0f, 1.0f, 1.0f, 1.0f);	    
-	    
-	    for (int n = 0; n < 32; n++) {
-		ImGui::ColorConvertHSVtoRGB(
-		    float(n) / 31.0f, 0.8f, 0.8f,
-		    saved_palette[n+8].x,
-		    saved_palette[n+8].y,
-		    saved_palette[n+8].z
-		);
-	    }
-	    saved_palette_inited = true;
-	}
-	
-	bool open_popup = ImGui::ColorButton(label, color, flags);
-	
-	ImGui::SameLine();
-	ImGui::Text("%s",label);
-	if (open_popup) {
-	    ImGui::OpenPopup("##PickerPopup");
-	    backup_color = color;
-	}
-	if (ImGui::BeginPopup("##PickerPopup")) {
-	    ImGui::Text("%s",label);
-	    ImGui::Separator();
-	    if(ImGui::ColorPicker4(
-		"##picker", (float*)&color,
-		flags | ImGuiColorEditFlags_NoSidePreview
-		      | ImGuiColorEditFlags_NoSmallPreview
-		   )
-	    ) {
-		result = true;
-	    }
-	    ImGui::SameLine();
-	    ImGui::BeginGroup();
-	    ImGui::Text("Current");
-	    ImGui::ColorButton(
-		"##current", color,
-		ImGuiColorEditFlags_NoPicker |
-		ImGuiColorEditFlags_AlphaPreviewHalf,
-		ImVec2(60,40)
-	    );
-	    ImGui::Text("Previous");
-	    if (ImGui::ColorButton(
-		    "##previous", backup_color,
-		    ImGuiColorEditFlags_NoPicker |
-		    ImGuiColorEditFlags_AlphaPreviewHalf,
-		    ImVec2(60,40))
-		) {
-		color = backup_color;
-		result = true;
-	    }
-	    ImGui::Separator();
-	    ImGui::Text("Palette");
-	    for (int n = 0; n < 40; n++) {
-		ImGui::PushID(n);
-		if ( (n % 8) != 0 ) {
-		    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.y);
-		}
-		if (ImGui::ColorButton(
-			"##palette",
-			saved_palette[n],
-			ImGuiColorEditFlags_NoPicker |
-			ImGuiColorEditFlags_NoTooltip,
-			ImVec2(20,20))
-		    ) {
-		    color = ImVec4(
-			saved_palette[n].x,
-			saved_palette[n].y,
-			saved_palette[n].z,
-			color.w
-		    ); // Preserve alpha!
-		    result = true;
-		}
-		ImGui::PopID();
-	    }
-	    ImGui::EndGroup();
-	    ImGui::EndPopup();
-	}
-	ImGui::PopID();
-	return result;
-    }
 }
 
 namespace GEO {
@@ -370,7 +238,13 @@ namespace GEO {
     /*****************************************************************/
 
     Console::Console(bool* visible_flag) :
-        visible_flag_(visible_flag) {
+        visible_flag_(visible_flag),
+        completion_callback_(nil),
+        history_callback_(nil),
+        history_index_(0),
+        max_history_index_(0),
+        fixed_layout_(true) {
+	input_buf_[0] = '\0';
     }
     
     void Console::div(const std::string& value) {
@@ -432,14 +306,117 @@ namespace GEO {
     int Console::TextEditCallback(ImGuiTextEditCallbackData* data)  {
         switch (data->EventFlag) {
         case ImGuiInputTextFlags_CallbackCompletion: {
+	    if(completion_callback_ != nil) {
+		static const char*
+		    completer_word_break_characters = " .(){},+-*/=";
+		// Locate beginning of current word
+		const char* word_end = data->Buf + data->CursorPos;
+		const char* word_start = word_end;
+		while (word_start > data->Buf)
+		{
+		    const char c = word_start[-1];
+		    if(strchr(completer_word_break_characters,c) != nil) {
+			break;
+		    }
+		    word_start--;
+		}  
+		index_t startw = index_t(word_start - data->Buf);
+		index_t endw   = index_t(word_end - data->Buf);
+		std::string cmpword(word_start, size_t(word_end - word_start));
+		std::vector<std::string> matches;
+		completion_callback_(
+		    this, std::string(data->Buf),
+		    startw, endw, cmpword, matches
+		);
+		if(matches.size() == 0) {
+		    this->printf("Completions: no match\n");
+		} else if(matches.size() == 1) {
+		    // Single match. Delete the beginning of the word and
+		    // replace it entirely so we've got nice casing
+                    data->DeleteChars(
+			(int)(word_start-data->Buf),
+			(int)(word_end-word_start)
+		    );
+                    data->InsertChars(data->CursorPos, matches[0].c_str());
+		} else {
+		    // Several matches, find longest common prefix
+		    std::string longest_prefix;
+		    size_t cur_char = 0;
+		    bool finished = false;
+		    while(!finished) {
+			char c;
+			for(size_t i=0; i<matches.size(); ++i) {
+			    if(
+				cur_char >= matches[i].length() ||
+				(i != 0 && matches[i][cur_char] != c)
+			    ) {
+				finished = true;
+				break;
+			    }
+			    c = matches[i][cur_char];
+			}
+			if(!finished) {
+			    longest_prefix.push_back(c);
+			}
+			++cur_char;
+		    }
+		    // Replace edited text with longest prefix
+		    if(longest_prefix.length() != 0) {
+			data->DeleteChars(
+			    (int)(word_start-data->Buf),
+			    (int)(word_end-word_start)
+			);
+			data->InsertChars(
+			    data->CursorPos, longest_prefix.c_str()
+			);
+		    }
+		    this->printf("Completions:\n");
+		    for(size_t i=0; i<matches.size(); ++i) {
+			this->printf(
+			    "[%d] ... %s\n", int(i), matches[i].c_str()
+			);
+		    }
+		}
+	    }
 	} break;
         case ImGuiInputTextFlags_CallbackHistory: {
+	    if(max_history_index_ > 0 && history_callback_ != nil) {
+		int h = int(history_index_);
+		if(data->EventKey == ImGuiKey_UpArrow) {
+		    --h;
+		    if(h < 0) {
+			h += int(max_history_index_+1);
+		    }
+		} else if(data->EventKey == ImGuiKey_DownArrow) {
+		    ++h;
+		    if(h >= int(max_history_index_+1)) {
+			h -= int(max_history_index_+1);
+		    }
+		}
+		{
+		    history_index_ = index_t(h);
+		    std::string history_command;
+		    history_callback_(this, history_index_, history_command);
+		    int newpos = geo_min(
+			data->BufSize-1, int(history_command.length())
+		    );
+		    strncpy(data->Buf, history_command.c_str(), size_t(newpos));
+		    data->Buf[newpos] = '\0';
+		    data->CursorPos = newpos;
+		    data->SelectionStart = newpos;
+		    data->SelectionEnd = newpos;
+		    data->BufTextLen = newpos;
+                    data->BufDirty = true;   
+		}
+	    }
         } break;
 	}
         return 0;
     }
 
     bool Console::exec_command(const char* command) {
+	++max_history_index_;
+	history_index_ = max_history_index_;
 	return Application::instance()->exec_command(command);
     }
     
@@ -447,9 +424,11 @@ namespace GEO {
         visible_flag_ = visible;
         ImGui::Begin(
             "Console", visible,
-            ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse 
+	    fixed_layout_ ? (
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoCollapse
+	    ) : 0
         );
         if (ImGui::Button("Clear")) {
             clear();
@@ -460,14 +439,19 @@ namespace GEO {
         filter_.Draw("Filter", -100.0f);
         ImGui::Separator();
         ImGui::BeginChild(
-            "scrolling", ImVec2(0.0f,-20.0f), false,
+            "scrolling",
+	    ImVec2(
+		0.0f,
+		-20.0f * ImGui::GetIO().FontGlobalScale
+	    ),
+	    false,
             ImGuiWindowFlags_HorizontalScrollbar
         );
         if (copy) {
             ImGui::LogToClipboard();
         }
             
-        if (filter_.IsActive()) {
+        {
             const char* buf_begin = buf_.begin();
             const char* line = buf_begin;
             for (int line_no = 0; line != NULL; line_no++) {
@@ -475,15 +459,25 @@ namespace GEO {
                     (line_no < line_offsets_.Size) ?
                     buf_begin + line_offsets_[line_no] : NULL;
                 
-                if (filter_.PassFilter(line, line_end)) {
+                if (!filter_.IsActive() ||
+		    filter_.PassFilter(line, line_end)
+		) {
+		    bool is_error = ((line_end - line) >= 3 &&
+			line[0] == '[' &&
+			line[2] == ']' &&
+			(line[1] == 'E' || line[1] == 'W')
+		    );
+		    if(is_error) {
+			ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(1.0f,0.4f,0.4f,1.0f));
+		    }
                     ImGui::TextUnformatted(line, line_end);
+		    if(is_error) {
+			ImGui::PopStyleColor();
+		    }
                 }
                 line = line_end && line_end[1] ? line_end + 1 : NULL;
             }
-        } else {
-            ImGui::TextUnformatted(buf_.begin());
-        }
-        
+        } 
         if (scroll_to_bottom_) {
             ImGui::SetScrollHere(1.0f);
         }
@@ -494,7 +488,7 @@ namespace GEO {
 	ImGui::SameLine();
 	ImGui::PushItemWidth(-1);
         if(ImGui::InputText(
-	       "##CommandInput", input_buf_, 256,
+	       "##CommandInput", input_buf_, geo_imgui_string_length,
 	       ImGuiInputTextFlags_EnterReturnsTrue |
 	       ImGuiInputTextFlags_CallbackCompletion |
 	       ImGuiInputTextFlags_CallbackHistory,
@@ -524,438 +518,6 @@ namespace GEO {
 	
         ImGui::End();
     }
-    
-    /*****************************************************************/
-
-    FileDialog::FileDialog(
-        Application* app, bool save_mode, const std::string& default_filename
-    ) :
-        application_(app),
-        visible_(false),
-        current_write_extension_index_(0),        
-        pinned_(false),
-        show_hidden_(false),
-        scroll_to_file_(false),
-        save_mode_(save_mode),
-        are_you_sure_(false)
-    {
-        directory_ = FileSystem::get_current_working_directory() + "/";
-	set_default_filename(default_filename);
-	current_file_index_ = 0;
-	current_directory_index_ = 0;
-	current_write_extension_index_ = 0;
-    }
-
-    void FileDialog::set_default_filename(const std::string& default_filename) {
-        safe_strncpy(
-            current_file_, default_filename.c_str(), sizeof(current_file_)
-        );
-    }
-    
-    void FileDialog::update_files() {
-        directories_.clear();
-        files_.clear();
-
-        directories_.push_back("../");
-        
-        std::vector<std::string> entries;
-        FileSystem::get_directory_entries(directory_, entries);
-        std::sort(entries.begin(), entries.end());
-        for(index_t i=0; i<entries.size(); ++i) {
-            if(
-                FileSystem::is_file(entries[i]) &&
-                application_->can_load(entries[i])
-            ) {
-                files_.push_back(path_to_label(directory_,entries[i]));
-            } else if(FileSystem::is_directory(entries[i])) {
-                std::string subdir =
-                    path_to_label(directory_,entries[i]) + "/";
-                if(show_hidden_ || subdir[0] != '.') {
-                    directories_.push_back(subdir);
-                }
-            }
-        }
-        if(current_directory_index_ >= directories_.size()) {
-            current_directory_index_ = 0;
-        }
-        if(current_file_index_ >= files_.size()) {
-            current_file_index_ = 0;
-        }
-        if(!save_mode_) {
-            if(current_file_index_ >= files_.size()) {
-                current_file_[0] = '\0';
-            } else {
-                safe_strncpy(
-                    current_file_,
-                    files_[current_file_index_].c_str(),
-                    sizeof(current_file_)
-                );
-            }
-        }
-    }
-
-    void FileDialog::set_directory(const std::string& directory) {
-        current_directory_index_ = 0;
-        current_file_index_ = 0;
-        if(directory[0] == '/' || directory[1] == ':') {
-            directory_ = directory;
-        } else {
-            directory_ = FileSystem::normalized_path(
-                directory_ + "/" +
-                directory 
-            );
-        }
-        if(directory_[directory_.length()-1] != '/') {
-            directory_ += "/";
-        }
-        update_files();
-    }
-
-    int FileDialog::text_input_callback(ImGuiTextEditCallbackData* data) {
-        FileDialog* dlg = static_cast<FileDialog*>(data->UserData);
-        if((data->EventFlag & ImGuiInputTextFlags_CallbackCompletion) != 0) {
-            dlg->tab_callback(data);
-        } else if(
-            (data->EventFlag & ImGuiInputTextFlags_CallbackHistory) != 0
-        ) {
-            if(data->EventKey == ImGuiKey_UpArrow) {
-                dlg->updown_callback(data,-1);
-            } else if(data->EventKey == ImGuiKey_DownArrow) {
-                dlg->updown_callback(data,1);                
-            }
-        } 
-        return 0;
-    }
-
-
-    void FileDialog::updown_callback(
-        ImGuiTextEditCallbackData* data, int direction
-    ) {
-        int next = int(current_file_index_) + direction;
-        if(next < 0) {
-            if(files_.size() == 0) {
-                current_file_index_ = 0;
-            } else {
-                current_file_index_ = index_t(files_.size()-1);
-            }
-        } else if(next >= int(files_.size())) {
-            current_file_index_ = 0;
-        } else {
-            current_file_index_ = index_t(next);
-        }
-
-        if(files_.size() == 0) {
-            current_file_[0] = '\0';
-        } else {
-            safe_strncpy(
-                current_file_,
-                files_[current_file_index_].c_str(),
-                sizeof(current_file_)
-            );
-        }
-        update_text_edit_callback_data(data);
-        scroll_to_file_ = true;        
-    }
-
-    void FileDialog::update_text_edit_callback_data(
-        ImGuiTextEditCallbackData* data
-    ) {
-        data->BufTextLen = int(
-            safe_strncpy(
-                data->Buf, current_file_, (size_t)data->BufSize
-            )
-        );
-        data->CursorPos = data->BufTextLen;
-        data->SelectionStart = data->BufTextLen;
-        data->SelectionEnd = data->BufTextLen;
-        data->BufDirty = true;
-    }
-    
-    void FileDialog::tab_callback(ImGuiTextEditCallbackData* data) {
-        std::string file(current_file_);
-        bool found = false;
-        for(index_t i=0; i<files_.size(); ++i) {
-            if(String::string_starts_with(files_[i],file)) {
-                current_file_index_ = i;
-                found = true;
-                break;
-            }
-        }
-        if(found) {
-            safe_strncpy(
-                current_file_,
-                files_[current_file_index_].c_str(),
-                sizeof(current_file_)
-            );
-            update_text_edit_callback_data(data);
-            scroll_to_file_ = true;
-        }
-    }
-
-    void FileDialog::file_selected(bool force) {
-        std::string file =
-            FileSystem::normalized_path(
-                directory_ + "/" +
-                current_file_
-            );
-        
-        if(save_mode_) {
-            if(!force && FileSystem::is_file(file)) {
-                are_you_sure_ = true;
-                return;
-            } else {
-                if(application_->save(file)) {
-		    Logger::out("I/O") << "Saved " << current_file_ << std::endl;
-		}
-            }
-        } else {
-            application_->load(file);
-        }
-        
-        if(!pinned_) {
-            // Note: If I do not do that, then the system thinks that the
-            // enter key is still pressed (it misses the key release event)
-            // I do not know why...
-            const int key_index = ImGui::GetIO().KeyMap[ImGuiKey_Enter];
-            ImGui::GetIO().KeysDown[key_index] = false;
-            hide();
-        }
-    }
-    
-    void FileDialog::draw() {
-        
-        if(!visible_) {
-            return;
-        }
-
-        ImGui::SetNextWindowSize(
-            ImVec2(
-                application_->scaling()*400.0f,
-                application_->scaling()*400.0f
-            ),
-            ImGuiSetCond_Once
-        );
-
-        ImGui::Begin(
-            (std::string(
-                save_mode_ ? "Save as...##" : "Load...##"
-             )+String::to_string(this)).c_str(),
-            &visible_,
-            ImGuiWindowFlags_NoCollapse 
-        );
-        
-        if(ImGui::Button("parent")) {
-            set_directory("../");
-        }
-        ImGui::SameLine();
-        if(ImGui::Button("home")) {
-            set_directory(FileSystem::home_directory());
-            update_files();
-        }
-        ImGui::SameLine();            
-        if(ImGui::Button("refresh")) {
-            update_files();
-        }
-
-        // There is probably a simpler way to align right...
-        ImGui::SameLine(
-            0.0f,
-            ImGui::GetWindowWidth()-application_->scaling()*215.0f
-        );        
-        ImGui::Text("pin");
-        ImGui::SameLine();
-        ImGui::Checkbox("##pin", &pinned_);
-        if(ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Keeps this dialog open.");
-        }
-        
-        ImGui::Separator();
-        {
-            std::vector<std::string> path;
-            String::split_string(directory_, '/', path);
-            for(index_t i=0; i<path.size(); ++i) {
-                if(i != 0) {
-                    ImGui::SameLine();
-                }
-                // We need to generate a unique id, else there is an id
-                // clash with the "home" button right before !!
-                if(ImGui::SmallButton(
-                       (path[i] + "##path" + String::to_string(i)).c_str())
-                ) {
-                    std::string new_dir;
-                    if(path[0].length() >= 2 && path[0][1] == ':') {
-                        new_dir = path[0];
-                    } else {
-                        new_dir += "/";
-                        new_dir += path[0];
-                    }
-                    for(index_t j=1; j<=i; ++j) {
-                        new_dir += "/";
-                        new_dir += path[j];
-                    }
-                    set_directory(new_dir);
-                }
-            }
-        }
-
-        const float footer_size = 30.0f;
-        {
-            ImGui::BeginChild(
-                "##directories",
-                ImVec2(ImGui::GetWindowWidth() * 0.5f - 12.0f, -footer_size),
-                true
-            );
-            for(index_t i=0; i<directories_.size(); ++i) {
-                if(ImGui::Selectable(
-                       directories_[i].c_str(),
-                       (i == current_directory_index_)
-                       )
-                ) {
-                    current_directory_index_ = i;
-                    set_directory(directories_[current_directory_index_]);
-                }
-            }
-            ImGui::EndChild();
-        }
-        ImGui::SameLine();
-        {
-            ImGui::BeginChild(
-                "##files",
-                ImVec2(ImGui::GetWindowWidth() * 0.5f - 12.0f, -footer_size),
-                true
-            );
-            for(index_t i=0; i<files_.size(); ++i) {
-                if(ImGui::Selectable(
-                       files_[i].c_str(),
-                       (i == current_file_index_)
-                   )
-                ) {
-                    safe_strncpy(
-                        current_file_,files_[i].c_str(),sizeof(current_file_)
-                    );
-                    if(current_file_index_ == i) {
-                        file_selected();
-                    } else {
-                        current_file_index_ = i;
-                    }
-                }
-                if(scroll_to_file_ && i == current_file_index_) {
-                    ImGui::SetScrollHere();
-                    scroll_to_file_ = false;
-                }
-            }
-            ImGui::EndChild();
-
-            {
-                if(ImGui::Button(save_mode_ ? "Save as" : "Load")) {
-                    file_selected();
-                }
-                ImGui::SameLine();
-                ImGui::PushItemWidth(
-                    save_mode_ ? -80.0f*application_->scaling() : -1.0f
-                );
-                if(ImGui::InputText(
-                       "##filename",
-                       current_file_, 256,
-                       ImGuiInputTextFlags_EnterReturnsTrue    |
-                       ImGuiInputTextFlags_CallbackHistory     |
-                       ImGuiInputTextFlags_CallbackCompletion ,
-                       text_input_callback,
-                       this 
-                       )
-                ) {
-                    scroll_to_file_ = true;
-                    std::string file = current_file_;
-                    for(index_t i=0; i<files_.size(); ++i) {
-                        if(files_[i] == file) {
-                            current_file_index_ = i;
-                        }
-                    }
-                    file_selected();
-                }
-                ImGui::PopItemWidth();
-                // Keep auto focus on the input box
-                if (ImGui::IsItemHovered()) {
-                    // Auto focus previous widget                
-                    ImGui::SetKeyboardFocusHere(-1); 
-                }
-
-                if(save_mode_) {
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(-1.0);
-
-                    if(write_extensions_.size() == 0) {
-                        String::split_string(
-                            application_->supported_write_file_extensions(),
-                            ';', write_extensions_
-                        );
-                        std::string ext =
-                            FileSystem::extension(current_file_);
-                        for(index_t i=0; i<write_extensions_.size(); ++i) {
-                            if(write_extensions_[i] == ext) {
-                                current_write_extension_index_ = i;
-                            }
-                        }
-                    }
-                    std::vector<const char*> write_extensions;
-                    for(index_t i=0; i<write_extensions_.size(); ++i) {
-                        write_extensions.push_back(&write_extensions_[i][0]);
-                    }
-                    if(ImGui::Combo(
-                           "##extension",
-                           (int*)(&current_write_extension_index_),
-                           &write_extensions[0],
-                           int(write_extensions.size())
-                       )
-                    ) {
-                        std::string file = current_file_;
-                        file = FileSystem::base_name(file) + "." +
-                            write_extensions_[current_write_extension_index_];
-                        safe_strncpy(
-                            current_file_, file.c_str(), sizeof(current_file_)
-                        );
-                    }
-                    ImGui::PopItemWidth();
-                }
-                
-            }
-        }
-        
-        ImGui::End();
-        draw_are_you_sure();
-    }
-
-    void FileDialog::draw_are_you_sure() {
-        if(are_you_sure_) {
-            ImGui::OpenPopup("File exists");
-        }
-        if(
-            ImGui::BeginPopupModal(
-                "File exists", NULL, ImGuiWindowFlags_AlwaysAutoResize
-            )
-        ) {
-            ImGui::Text(
-                "%s",
-                 (std::string("File ") + current_file_ +
-                  " already exists\nDo you want to overwrite it ?"
-                 ).c_str()
-            );
-            ImGui::Separator();
-            float w = 120.0f*application_->scaling();
-            if (ImGui::Button("Overwrite", ImVec2(w,0))) {
-                are_you_sure_ = false;
-                ImGui::CloseCurrentPopup();
-                file_selected(true);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel",ImVec2(w,0))) {
-                are_you_sure_ = false;                
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-    }
-
     
     /*****************************************************************/
     
@@ -1528,6 +1090,7 @@ namespace GEO {
         geogram_logo_texture_ = 0;
 
         scaling_ = 1.0f;
+	fixed_layout_ = true;
         retina_mode_ = false;
 
 	GEO::CmdLine::declare_arg(
@@ -1843,11 +1406,11 @@ namespace GEO {
 	    h -= MENU_HEIGHT();
 	    ImGui::SetNextWindowPos(
 		ImVec2(0.0f, float(MENU_HEIGHT())),
-		ImGuiSetCond_Always
+		fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once
 	    );
 	    ImGui::SetNextWindowSize(
 		ImVec2(float(w), float(h)),
-		ImGuiSetCond_Always
+		fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once		
 	    );
 	    text_editor_.draw();
 	    if(console_visible_) {
@@ -1889,15 +1452,25 @@ namespace GEO {
             h /= 2;
         }
         
-        ImGui::SetNextWindowPos(
-            ImVec2(0.0f, float(MENU_HEIGHT())),
-            ImGuiSetCond_Always
-        );
-        
-        ImGui::SetNextWindowSize(
-            ImVec2(float(PANE_WIDTH()), float(h)),
-            ImGuiSetCond_Always
-        );
+	if(fixed_layout_) {
+	    ImGui::SetNextWindowPos(
+		ImVec2(0.0f, float(MENU_HEIGHT())),
+		ImGuiSetCond_Always 
+	    );
+	    ImGui::SetNextWindowSize(
+		ImVec2(float(PANE_WIDTH()), float(h)),
+		ImGuiSetCond_Always 
+	    );
+	} else {
+	    ImGui::SetNextWindowPos(
+		ImVec2(float(MENU_HEIGHT()), 2.0f*float(MENU_HEIGHT())),
+		ImGuiSetCond_Once			    
+	    );
+	    ImGui::SetNextWindowSize(
+		ImVec2(float(PANE_WIDTH()), float(h)/2.0f),
+		ImGuiSetCond_Once			    	    
+	    );
+	}
 
         draw_viewer_properties_window();
 
@@ -1927,12 +1500,12 @@ namespace GEO {
 
         ImGui::SetNextWindowPos(
             ImVec2(float(w-PANE_WIDTH()), float(MENU_HEIGHT())),
-            ImGuiSetCond_Always
+	    fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once	    
         );
         
         ImGui::SetNextWindowSize(
             ImVec2(float(PANE_WIDTH()), float(h)),
-            ImGuiSetCond_Always
+	    fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once	    
         );
         
         draw_object_properties_window();
@@ -1940,10 +1513,13 @@ namespace GEO {
 
     void Application::draw_viewer_properties_window() {
         ImGui::Begin(
-            "Viewer", &left_pane_visible_,
-            ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse 
+            "Viewer",
+	    fixed_layout_ ? &left_pane_visible_ : nil,
+            fixed_layout_ ? (
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoCollapse
+	    ) : 0
         );
         draw_viewer_properties();
         ImGui::End();
@@ -2013,9 +1589,11 @@ namespace GEO {
     void Application::draw_object_properties_window() {
         ImGui::Begin(
             "Object", &right_pane_visible_,
-            ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoCollapse 
+	    fixed_layout_ ? (
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoCollapse
+	    ) : 0
         );
         draw_object_properties();
         ImGui::End();
@@ -2050,14 +1628,29 @@ namespace GEO {
         if(status_bar_->active()) {
             h -= (STATUS_HEIGHT() + 1);
         }
-        ImGui::SetNextWindowPos(
-            ImVec2(0.0f, float(h)),
-            ImGuiSetCond_Always
-        );
-        ImGui::SetNextWindowSize(
-            ImVec2(float(w),float(CONSOLE_HEIGHT())),
-            ImGuiSetCond_Always
-        );
+	if(fixed_layout_) {
+	    ImGui::SetNextWindowPos(
+		ImVec2(0.0f, float(h)),
+		ImGuiSetCond_Always 
+	    );
+	    ImGui::SetNextWindowSize(
+		ImVec2(float(w),float(CONSOLE_HEIGHT())),
+		ImGuiSetCond_Always 
+	    );
+	} else {
+	    ImGui::SetNextWindowPos(
+		ImVec2(float(MENU_HEIGHT()), float(h) - float(MENU_HEIGHT())),
+		ImGuiCond_Once
+	    );
+	    ImGui::SetNextWindowSize(
+		ImVec2(
+		    float(w) - 2.0f * float(MENU_HEIGHT()),
+		    float(CONSOLE_HEIGHT())
+		),
+		ImGuiCond_Once	    
+	    );
+	}
+	console_->set_fixed_layout(fixed_layout_);
         console_->draw(&console_visible_);
     }
 
@@ -2085,9 +1678,11 @@ namespace GEO {
 		if(current_file_ != "") {
 		    if(ImGui::MenuItem("Save")) {
 			if(save(current_file_)) {
-			    Logger::out("I/O") << "Saved " << current_file_ << std::endl;
+			    Logger::out("I/O") << "Saved "
+					       << current_file_ << std::endl;
 			} else {
-			    Logger::out("I/O") << "Could not save " << current_file_ << std::endl;			    
+			    Logger::out("I/O") << "Could not save "
+					       << current_file_ << std::endl;
 			}
 		    }
 		}
@@ -2138,26 +1733,33 @@ namespace GEO {
     void Application::draw_save_menu() {
 #ifdef GEO_OS_EMSCRIPTEN
         if(ImGui::BeginMenu("Save as...")) {
-	    ImGui::MenuItem("Supported extensions:", NULL, false, false);	    
+	    ImGui::MenuItem("Supported extensions:", NULL, false, false);
             std::vector<std::string> extensions;
             String::split_string(
                 supported_write_file_extensions(), ';', extensions
             );
             for(index_t i=0; i<extensions.size(); ++i) {
-		ImGui::MenuItem((" ." + extensions[i]).c_str(), NULL, false, false);	    		
+		ImGui::MenuItem(
+		    (" ." + extensions[i]).c_str(), NULL, false, false
+		);	    		
 	    }
 	    ImGui::Separator();
-	    static char buff[256];
+	    static char buff[geo_imgui_string_length];
 	    if(current_file_ != "") {
 		strcpy(buff, current_file_.c_str());
 	    } else if (extensions.size() != 0) {
 		strcpy(buff, ("out." + extensions[0]).c_str());		
 	    }
 
-	    if(ImGui::InputText("##MenuFileName",buff,256,ImGuiInputTextFlags_EnterReturnsTrue)) {
+	    if(ImGui::InputText(
+		   "##MenuFileName",buff,geo_imgui_string_length,
+		   ImGuiInputTextFlags_EnterReturnsTrue)
+	    ) {
 		current_file_ = buff;
 		if(String::string_starts_with(current_file_, "/")) {
-		    current_file_ = current_file_.substr(1,current_file_.length()-1);
+		    current_file_ = current_file_.substr(
+			1,current_file_.length()-1
+		    );
 		}
 		if(save(current_file_)) {
 		    std::string command =
@@ -2211,7 +1813,8 @@ namespace GEO {
             ImGui::MenuItem("object properties", NULL, &right_pane_visible_);
             ImGui::MenuItem("viewer properties", NULL, &left_pane_visible_);
             ImGui::MenuItem("console", NULL, &console_visible_);
-            ImGui::MenuItem("text editor", NULL, &text_editor_visible_);	    
+            ImGui::MenuItem("text editor", NULL, &text_editor_visible_);
+	    
             if(ImGui::MenuItem(
                 "show/hide GUI [T]", NULL,
                 (bool*)glup_viewer_is_enabled_ptr(GLUP_VIEWER_TWEAKBARS)
@@ -2305,6 +1908,24 @@ namespace GEO {
 	return false;
     }
 
+    /**********************************************************************/
+
+    int Application::MENU_HEIGHT() const {
+	return int(20 * scaling());
+    }
+
+    int Application::PANE_WIDTH() const {
+	return int(140 * scaling());
+    }
+
+    int Application::CONSOLE_HEIGHT() const {
+	return int(200 * scaling());
+    }
+
+    int Application::STATUS_HEIGHT() const {
+	return retina_mode() ? 48 : 35;
+    }
+    
     /**********************************************************************/
 
     SimpleMeshApplication::SimpleMeshApplication(

@@ -64,10 +64,15 @@
 #ifdef GEO_COMPILER_MSVC
 #define isnan _isnan
 #define isfinite _finite
+#else
+#ifndef isnan
+#define isnan std::isnan
+#endif
+#ifndef isfinite
+#define isfinite std::isfinite
+#endif
 #endif
 
-// for std::isfinite()
-using namespace std;
 
 #include "MyTime.h"
 #include "MarchingCubes.h"

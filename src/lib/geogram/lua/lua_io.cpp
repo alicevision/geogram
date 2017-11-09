@@ -122,6 +122,10 @@ namespace {
 	return 1;
     }
 
+    inline void append(std::string& s, const char* c) {
+	s += (c==nil) ? "nil" : c;
+    }
+    
     int tostring(lua_State* L) {
 	if(lua_gettop(L) != 1) {
 	    return luaL_error(
@@ -142,7 +146,9 @@ namespace {
 		// tostring(), else this may modify the
 		// table in-place, which we do not want to do !
 		lua_pushvalue(L,-2);
-		result += lua_tostring(L,-1);
+		
+		append(result,lua_tostring(L,-1));
+		
 		lua_pop(L,1);
 		
 		result += "=";
@@ -151,7 +157,7 @@ namespace {
 		// tostring(), else this may modify the
 		// table in-place, which we do not want to do !
 		lua_pushvalue(L,-1);		
-		result += lua_tostring(L,-1);
+		append(result,lua_tostring(L,-1));
 		lua_pop(L,1);
 		
 		lua_pop(L,1);

@@ -57,7 +57,8 @@
 #include <geogram/basic/progress.h>
 #include <geogram/basic/string.h>
 
-#include <geogram_gfx/third_party/ImGui/imgui.h>
+#include <geogram_gfx/ImGui_ext/imgui_ext.h>
+#include <geogram_gfx/ImGui_ext/file_dialog.h>
 
 struct lua_State;
 
@@ -66,22 +67,6 @@ struct lua_State;
  * \brief Utilities and C++ classes for easily creating 
  *  applications with glup_viewer and ImGui.
  */
-
-namespace ImGui {
-    
-    /**
-     * \brief Manages the GUI of a color editor.
-     * \details This creates a custom dialog with the color editor and
-     *  a default palette, as in ImGUI example.
-     * \param[in] label the label of the widget, passed to ImGUI
-     * \param[in,out] color a pointer to an array of 3 floats
-     * \retval true if the color was changed
-     * \retval false otherwise
-     */
-    bool GEOGRAM_GFX_API ColorEdit3WithPalette(
-	const char* label, float* color
-    );
-}
 
 namespace GEO {
 
@@ -146,6 +131,7 @@ namespace GEO {
     class GEOGRAM_GFX_API Console : public GEO::LoggerClient {
     
     public:
+
         /**
          * \brief Console constructor.
          * \param[in] visible_flag an optional pointer to application's
@@ -204,152 +190,56 @@ namespace GEO {
 	void hide() {
 	    *visible_flag_ = false;
 	}
+
+	typedef void (*CompletionCallback)(
+	    Console* console,
+	    const std::string& line, index_t startw, index_t endw,
+	    const std::string& cmpword, std::vector<std::string>& matches
+	);
+
+	void set_completion_callback(CompletionCallback CB) {
+	    completion_callback_ = CB;
+	}
+
+	typedef void (*HistoryCallback)(
+	    Console* console,
+	    index_t index,
+	    std::string& command
+	);
+
+	void set_history_callback(HistoryCallback CB) {
+	    history_callback_ = CB;
+	}
+
+	void set_history_size(index_t n) {
+	    max_history_index_ = n;
+	}
+
+	void set_fixed_layout(bool x) {
+	    fixed_layout_ = x;
+	}
 	
       protected:
-	bool exec_command(const char* command);
+	virtual bool exec_command(const char* command);
 	
-    private:
+      private:
         ImGuiTextBuffer buf_;
         ImGuiTextFilter filter_;
         /** \brief Index to lines offset */
-        ImVector<int>   line_offsets_;   
-        bool            scroll_to_bottom_;
-        bool*           visible_flag_;
-	char            input_buf_[256];
+        ImVector<int>      line_offsets_;   
+        bool               scroll_to_bottom_;
+        bool*              visible_flag_;
+	char               input_buf_[geo_imgui_string_length];
+	CompletionCallback completion_callback_;
+	HistoryCallback    history_callback_;
+	index_t            history_index_;
+	index_t            max_history_index_;
+	bool               fixed_layout_;
     };
     
     /*****************************************************************/
 
     class Application;
-    
-    /**
-     * \brief Implementation of GLUP viewer's file dialog.
-     */
-    class GEOGRAM_GFX_API FileDialog {
-    public:
-
-        /**
-         * \brief FileDialog constructor.
-         * \param[in] application a pointer to the Application
-         * \param[in] save_mode if true, FileDialog is used to create files
-         * \param[in] default_filename the default file name used if save_mode
-         *  is set
-         */
-        FileDialog(
-            Application* application,
-            bool save_mode=false,
-            const std::string& default_filename=""
-        );
-
-	/** 
-	 * \brief Sets the default file.
-	 * \details Only valuid if save_mode is set.
-         * \param[in] default_filename the default file name.
-	 */	
-	void set_default_filename(const std::string& default_filename);
-	
-        /**
-         * \brief Makes this FileDialog visible.
-         */
-        void show() {
-            update_files();
-            visible_ = true;
-        }
-
-        /**
-         * \brief Makes this FileDialog invisibile.
-         */
-        void hide() {
-            visible_ = false;
-        }
-
-        /**
-         * \brief Tests whether this FileDialog is visible.
-         * \retval true if this FileDialog is visible
-         * \retval false otherwise
-         */
-        bool is_visible() const {
-            return visible_;
-        }
-
-        /**
-         * \brief Draws the console and handles the gui.
-         */
-        void draw();
-
-    protected:
-        /**
-         * \brief Updates the list of files and directories
-         *  displayed by this FileDialog.
-         */
-        void update_files();
-
-        /**
-         * \brief Changes the current directory.
-         * \param[in] directory either the path relative to the
-         *  current directory or an absolute path
-         */
-        void set_directory(const std::string& directory);
-
-        /**
-         * \brief The callback for handling the text input.
-         * \param[in,out] data a pointer to the callback data
-         */
-        static int text_input_callback(ImGuiTextEditCallbackData* data);
-
-        /**
-         * \brief Called whenever the up or down arrows are pressed.
-         * \param[in,out] data a pointer to the callback data
-         * \param[in] direction -1 if the up arrow was pressed, 1 if the
-         *  down arrow was pressed
-         */
-        void updown_callback(ImGuiTextEditCallbackData* data, int direction);
-
-        /**
-         * \brief Called whenever the tab key is pressed.
-         * \param[in,out] data a pointer to the callback data
-         */
-        void tab_callback(ImGuiTextEditCallbackData* data);
-
-        /**
-         * \brief Copies the currently selected file into the 
-         *  string currently manipulated by InputText.
-         * \param[out] data a pointer to the callback data
-         */
-        void update_text_edit_callback_data(
-            ImGuiTextEditCallbackData* data
-        );
-        
-        /**
-         * \brief Called whenever a file is selected.
-         * \param[in] force in save_mode, if set, 
-         *  overwrites the file even if it already 
-         *  exists.
-         */
-        void file_selected(bool force=false);
-
-        void draw_are_you_sure();
-        
-    private:
-        Application* application_;
-        bool visible_;
-        std::string directory_;
-        index_t current_directory_index_;
-        index_t current_file_index_;
-        std::vector<std::string> directories_;
-        std::vector<std::string> files_;
-        std::vector<std::string> write_extensions_;
-        index_t current_write_extension_index_;
-        char current_file_[256];
-        bool pinned_;
-        bool show_hidden_;
-        bool scroll_to_file_;
-        bool save_mode_;
-        bool are_you_sure_;
-    };
-    
-    
-    /*****************************************************************/
     
     /**
      * \brief Abstract class for calling functions or 
@@ -514,7 +404,7 @@ namespace GEO {
         /**
          * \brief Command constructor.
          * \param[in] prototype a const reference to a string with
-         *  the prototype of the function that implements the callbacl, 
+         *  the prototype of the function that implements the callback, 
          *  as declared in the C++ sources.
          * \note Regular client code should not need to use this function.
          */
@@ -1322,6 +1212,10 @@ namespace GEO {
             args_[i] = Arg("arg " + String::to_string(i), default_val);
         }
 
+	static void set_queued(Command* command) {
+	    queued_ = command;
+	}
+	
     private:
         
         /**
@@ -1814,7 +1708,7 @@ namespace GEO {
         virtual std::string supported_read_file_extensions(); 
 
         /**
-         * \brief Gets the list of supported file extensions for reading.
+         * \brief Gets the list of supported file extensions for writing.
          * \details This function may be olverloaded by derived class. Base
          *  class implementation returns "". If this function returns "", then
          *  no "Save..." option is displayed in the "File" menu.  
@@ -1836,6 +1730,24 @@ namespace GEO {
             return scaling_;
         }
 
+        /**
+         * \brief Sets the scaling applied to all dimensions.
+         * \details This function is used by retina displays to ensure that
+         *  GUI elements remain visible.
+         * \param x The scaling used for fonts and all sizes.
+         */
+	void set_scaling(float x) {
+	    scaling_ = x;
+	}
+
+
+	bool console_visible() const {
+	    return console_visible_;
+	}
+
+	void set_console_visible(bool x) {
+	    console_visible_ = x;
+	}
 
 	virtual bool exec_command(const char* command);
 
@@ -1847,6 +1759,11 @@ namespace GEO {
 	    return retina_mode_;
 	}
 
+	void set_retina_mode(bool x) {
+	    retina_mode_ = x;
+	    scaling_ = retina_mode_ ? 2.0f : 1.0f;
+	}
+	
 	virtual bool on_key_pressed(const char* key);
 	virtual bool on_key_released(const char* key);
 
@@ -1865,6 +1782,22 @@ namespace GEO {
 	    background_color_2_.x = r;
 	    background_color_2_.y = g;
 	    background_color_2_.z = b;	    
+	}
+
+	void set_background_color_1(const vec4f& value) {
+	    background_color_1_ = value;
+	}
+
+	void set_background_color_2(const vec4f& value) {
+	    background_color_2_ = value;
+	}
+	
+	const vec4f& get_background_color_1() const {
+	    return background_color_1_;
+	}
+
+	const vec4f& get_background_color_2() const {
+	    return background_color_2_;	    
 	}
 	
     protected:
@@ -2060,21 +1993,10 @@ namespace GEO {
         bool right_pane_visible_;
         bool console_visible_;
 
-        int MENU_HEIGHT() const {
-            return int(20 * scaling_);
-        }
-
-        int PANE_WIDTH() const {
-            return int(140 * scaling_);
-        }
-
-        int CONSOLE_HEIGHT() const {
-            return int(200 * scaling_);
-        }
-
-        int STATUS_HEIGHT() const {
-            return retina_mode_ ? 48 : 35;
-        }
+        virtual int MENU_HEIGHT() const;
+        virtual int PANE_WIDTH() const;
+        virtual int CONSOLE_HEIGHT() const;
+        virtual int STATUS_HEIGHT() const;
         
         SmartPointer<Console> console_;
         SmartPointer<StatusBar> status_bar_;
@@ -2101,6 +2023,7 @@ namespace GEO {
 	bool text_editor_visible_;
 	TextEditor text_editor_;
 
+	bool fixed_layout_;
         float scaling_;
         bool retina_mode_;
 
