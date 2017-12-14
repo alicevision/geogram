@@ -42,6 +42,14 @@
 #include <unistd.h>
 #endif // __linux__
 
+/* [Bruno] silence a gcc 7.2 warning.  */
+#ifdef __GNUC__
+#ifndef __ICC
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+#endif
+
 
 // Attempt to open the specified joystick device
 //

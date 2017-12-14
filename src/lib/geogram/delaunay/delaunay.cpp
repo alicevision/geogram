@@ -370,11 +370,13 @@ namespace GEO {
 	
 	if(keeps_infinite()) {
 
-	    // Process the infinite vertex at index nb_vertices().
-	    signed_index_t t = v_to_cell_[nb_vertices()];
-	    if(t != -1) {
-		index_t lv = index(index_t(t), -1);
-		set_next_around_vertex(index_t(t), lv, index_t(t));
+	    {
+		// Process the infinite vertex at index nb_vertices().
+		signed_index_t t = v_to_cell_[nb_vertices()];
+		if(t != -1) {
+		    index_t lv = index(index_t(t), -1);
+		    set_next_around_vertex(index_t(t), lv, index_t(t));
+		}
 	    }
 
 	    for(index_t t = 0; t < nb_cells(); ++t) {

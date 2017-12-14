@@ -485,6 +485,45 @@ namespace GEO {
     }
     
     void draw_unit_textured_quad() {
+	static bool initialized = false;
+	static bool vanillaGL = false;
+	if(!initialized) {
+#ifdef GEO_GL_LEGACY 		    
+	    vanillaGL = (
+		CmdLine::get_arg("gfx:GLUP_profile") == "VanillaGL"
+	    );
+#endif	    
+	    initialized = true;
+	}
+
+#ifdef GEO_GL_LEGACY
+	if(vanillaGL) {
+	    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	    glDisable(GL_LIGHTING);
+	    glMatrixMode(GL_MODELVIEW);
+	    glPushMatrix();
+	    glLoadIdentity();
+	    glMatrixMode(GL_PROJECTION);
+	    glPushMatrix();
+	    glLoadIdentity();
+	    glEnable(GL_TEXTURE_2D);
+	    glBegin(GL_QUADS);
+	    glTexCoord2f(0.0f, 0.0f);
+	    glVertex2f(-1.0f, -1.0f);
+	    glTexCoord2f(1.0f, 0.0f);
+	    glVertex2f(1.0f, -1.0f);
+	    glTexCoord2f(1.0f, 1.0f);
+	    glVertex2f(1.0f, 1.0f);
+	    glTexCoord2f(0.0f, 1.0f);
+	    glVertex2f(-1.0f, 1.0f);
+	    glEnd();
+	    glPopMatrix();
+	    glMatrixMode(GL_MODELVIEW);
+	    glPopMatrix();
+	    glDisable(GL_TEXTURE_2D);	    
+	    return;
+	}
+#endif	
         if(quad_VAO == 0) {
             create_quad_VAO_and_program();
         }

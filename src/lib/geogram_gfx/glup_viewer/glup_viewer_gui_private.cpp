@@ -31,6 +31,7 @@
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl3.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
+#include <geogram_gfx/third_party/imgui_fonts/roboto_medium.h>
 
 #include <geogram/basic/logger.h>
 #include <geogram/basic/progress.h>
@@ -99,7 +100,7 @@ void glup_viewer_gui_init(GLFWwindow* w) {
     if(vanillaGL) {
         GEO::Logger::out("ImGUI") << "Viewer GUI init (Vanilla)"
                                   << std::endl;        
-        ImGui_ImplGlfw_Init(w, false);        
+        ImGui_ImplGlfwGL2_Init(w, false);        
     } else
 #endif
     {
@@ -114,12 +115,21 @@ void glup_viewer_gui_init(GLFWwindow* w) {
     style.GrabRounding = 10.0f;
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = NULL;
+
+    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
+	roboto_medium_compressed_data, roboto_medium_compressed_size, 16.0f
+    );
+
+    io.Fonts->AddFontFromMemoryCompressedTTF(
+	roboto_medium_compressed_data, roboto_medium_compressed_size, 32.0f
+    );
+    
 }
 
 void glup_viewer_gui_cleanup() {
 #ifdef GEO_GL_LEGACY        
     if(vanillaGL) {    
-        ImGui_ImplGlfw_Shutdown();
+        ImGui_ImplGlfwGL2_Shutdown();
     } else
 #endif
     {
@@ -132,7 +142,7 @@ void glup_viewer_gui_begin_frame() {
     glup_viewer_gui_locked = true;
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
-        ImGui_ImplGlfw_NewFrame();        
+        ImGui_ImplGlfwGL2_NewFrame();        
     } else
 #endif        
     {
@@ -173,7 +183,7 @@ void glup_viewer_gui_mouse_button_callback(
     glup_viewer_post_redisplay();
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
-        ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+        ImGui_ImplGlfwGL2_MouseButtonCallback(window, button, action, mods);
     } else
 #endif        
     {
@@ -187,7 +197,7 @@ void glup_viewer_gui_scroll_callback(
     glup_viewer_post_redisplay();    
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
-        ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+        ImGui_ImplGlfwGL2_ScrollCallback(window, xoffset, yoffset);
     } else
 #endif        
     {
@@ -201,7 +211,7 @@ void glup_viewer_gui_key_callback(
     glup_viewer_post_redisplay();    
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
-        ImGui_ImplGlFw_KeyCallback(window, key, scancode, action, mods);
+        ImGui_ImplGlfwGL2_KeyCallback(window, key, scancode, action, mods);
     } else
 #endif        
     {
@@ -213,7 +223,7 @@ void glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c) {
     glup_viewer_post_redisplay();    
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
-        ImGui_ImplGlfw_CharCallback(window, c);
+        ImGui_ImplGlfwGL2_CharCallback(window, c);
     } else
 #endif        
     {

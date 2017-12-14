@@ -54,11 +54,11 @@
 #include <vector>
 
 #ifdef GEO_OS_APPLE
-#  define GEO_USE_DEFAULT_SPINLOCK_ARRAY
-#  include <Availability.h>
-#  ifdef __MAC_10_12
-#    include <os/lock.h>
-#  endif
+# define GEO_USE_DEFAULT_SPINLOCK_ARRAY
+# include <AvailabilityMacros.h>
+# if defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12
+#   include <os/lock.h>
+# endif
 #endif
 
 #ifdef geo_debug_assert
@@ -135,7 +135,7 @@ namespace GEO {
 
 #elif defined(GEO_OS_APPLE)
 
-#ifdef __MAC_10_12
+#if defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12
         /** A lightweight synchronization structure. */
         typedef os_unfair_lock spinlock;
         
@@ -231,11 +231,7 @@ namespace GEO {
              * \param[in] size_in The desired new size.
              */
             void resize(index_t size_in) {
-#if defined(GEO_OS_APPLE) && defined(__MAC_10_12)
-                spinlocks_.assign(size_in, OS_UNFAIR_LOCK_INIT);
-#else
-                spinlocks_.assign(size_in, 0);
-#endif
+                spinlocks_.assign(size_in, GEOGRAM_SPINLOCK_INIT);
             }
 
             /**

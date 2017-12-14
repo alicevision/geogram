@@ -112,3 +112,4 @@ Run Test
     [Documentation]    Runs test_nn_search on a single input file.
     ...    The name of the input file is taken from the test name.
     run command    test_nn_search    algo:predicates=exact    algo:nn_search=BNN    @{options}    ${DATADIR}${/}${input_name}
+

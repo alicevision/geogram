@@ -56,6 +56,10 @@ static GLFWbool chooseGLXFBConfig(const _GLFWfbconfig* desired, GLXFBConfig* res
     const char* vendor;
     GLFWbool trustWindowBit = GLFW_TRUE;
 
+    // [BL] for transparency
+    XVisualInfo *vi = NULL;      
+    XRenderPictFormat *pf = NULL;
+
     // HACK: This is a (hopefully temporary) workaround for Chromium
     //       (VirtualBox GL) not setting the window bit on any GLXFBConfigs
     vendor = glXGetClientString(_glfw.x11.display, GLX_VENDOR);
@@ -109,6 +113,15 @@ static GLFWbool chooseGLXFBConfig(const _GLFWfbconfig* desired, GLXFBConfig* res
         if (getGLXFBConfigAttrib(n, GLX_DOUBLEBUFFER))
             u->doublebuffer = GLFW_TRUE;
 
+        // [BL] for transparent windows
+       vi = glXGetVisualFromFBConfig(_glfw.x11.display, n);
+       if (vi)  {
+	   pf = XRenderFindVisualFormat(_glfw.x11.display, vi->visual);
+	   if (pf) {
+	       u->alphaMask = pf->direct.alphaMask;
+	   }
+       }
+	
         if (_glfw.glx.ARB_multisample)
             u->samples = getGLXFBConfigAttrib(n, GLX_SAMPLES);
 
@@ -126,6 +139,11 @@ static GLFWbool chooseGLXFBConfig(const _GLFWfbconfig* desired, GLXFBConfig* res
     XFree(nativeConfigs);
     free(usableConfigs);
 
+    // [BL] for transparent windows
+    if(vi) {
+	XFree(vi);
+    }
+    
     return closest != NULL;
 }
 

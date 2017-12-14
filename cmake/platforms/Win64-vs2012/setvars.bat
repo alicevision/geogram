@@ -7,5 +7,6 @@ set PATH=%PATH:"=%
 :: Configure environment for Visual Studio
 call "%MSVCDIR%\VCVARSALL.BAT" x64
 
-echo :: Set the generator to use
+:: Set the generator to use
 set CMAKE_VS_GENERATOR=Visual Studio 11 Win64
+

@@ -249,6 +249,11 @@ if (_GLFW_X11)
     list(APPEND glfw_LIBRARIES "${X11_Xinerama_LIB}")
     list(APPEND glfw_PKG_DEPS "xinerama")
 
+    # [BL] for transparency
+    list(APPEND glfw_LIBRARIES "${X11_Xrender_LIB}")
+    list(APPEND glfw_PKG_DEPS "xrender")
+
+    
     # Check for Xf86VidMode (fallback gamma control)
     if (X11_xf86vmode_FOUND)
         list(APPEND glfw_INCLUDE_DIRS "${X11_xf86vmode_INCLUDE_PATH}")

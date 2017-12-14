@@ -567,7 +567,7 @@ namespace GEO {
 			nlBegin(NL_SYSTEM);
 
 			if (!first_iter) {
-				static const double auto_snap_threshold = .5;// 25;
+			    static const double auto_snap_threshold = 0.5; // 0.01; // [default].5;// 25;
 				double snap_threshold = 1e20;
 				int nb_fixed_var = 0;
 				bool snap_size_has_changed = false;

@@ -34,9 +34,8 @@ namespace GEO {
      * \param[in] singtri_name the name of a created facet attribute with
      *  an index_t that indicates whether the facet is singular.
      */
-    void export_boundary_with_uv(Mesh* m, Mesh* hex, const char* uv_name, const char* singtri_name);
-
     void find_degenerate_facets(Mesh* m, vector<index_t> &degenerate);
+    void export_boundary_with_uv(Mesh* m, Mesh* hex, const char* uv_name, const char* singtri_name);
     
     void imprint(Mesh* m, const char *uv_name, const char *singular_name);
 

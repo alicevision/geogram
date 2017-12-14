@@ -224,7 +224,8 @@ int Octree< Real >::SetTree( OrientedPointStream< PointReal >* pointStream , int
                 n *= Real(-1.);
                 if( !_InBounds(p) ) continue;
                 Real normalLength = Real( Length( n ) );
-                if( isnan( normalLength ) || !isfinite( normalLength ) || normalLength<=EPSILON ) continue;
+		// [Bruno Levy] using Geogram's is_nan function (to overcome portability problems)
+                if( GEO::Numeric::is_nan( normalLength ) || normalLength<=EPSILON ) continue;
                 if( !useConfidence ) n /= normalLength;
 
                 Real pointWeight = Real(1.f);

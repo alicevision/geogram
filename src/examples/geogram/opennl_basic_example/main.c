@@ -80,6 +80,7 @@ static void test_simple_linear_solve(NLint solver) {
         break;
     case NL_PERM_SUPERLU_EXT:
         printf("(with permutation) ");
+	/* Fall through */
     case NL_SUPERLU_EXT:
         printf("Using SUPERLU\n");
         if(nlInitExtension("SUPERLU")) {

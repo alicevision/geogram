@@ -320,7 +320,7 @@ namespace GEO {
 		FOR(u, nb_U) {
 		    double coord = solver.value(u);
 		    snap_tex_coord(coord); // Required by mesh extraction
-		    U[u/2][u%2] = coord*2.0;
+		    U[u/2][u%2] = coord;
 		}
 		FOR(t, nb_T) {
 		    T[t] = solver.value(nb_U+t);

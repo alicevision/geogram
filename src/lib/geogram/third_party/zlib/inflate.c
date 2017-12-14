@@ -86,6 +86,17 @@
 #include <geogram/third_party/zlib/inflate.h>
 #include <geogram/third_party/zlib/inffast.h>
 
+/* [Bruno] silence a gcc 7.2 warning. 
+ * Would be cleaner to add "fallthrough" comments or attributes, but let's wait
+ * for next version of zlib, they'll probably do that.
+ */
+#ifdef __GNUC__
+#ifndef __ICC
+# pragma GCC diagnostic ignored "-Wpragmas"
+# pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+#endif
+
 #ifdef MAKEFIXED
 #  ifndef BUILDFIXED
 #    define BUILDFIXED

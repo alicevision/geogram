@@ -72,6 +72,8 @@
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wunused-result"
 
+#pragma GCC diagnostic ignored "-Wstrict-overflow"
+
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wmissing-noreturn"
 #pragma GCC diagnostic ignored "-Wcast-align"

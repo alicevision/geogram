@@ -175,6 +175,13 @@ const _GLFWfbconfig* _glfwChooseFBConfig(const _GLFWfbconfig* desired,
             continue;
         }
 
+	/* [BL] For transparency */
+	if (desired->alphaMask > 0 && current->alphaMask == 0)
+        {
+            // Alpha mask is a hard constraint
+            continue;
+        }
+
         if (desired->doublebuffer != current->doublebuffer)
         {
             // Double buffering is a hard constraint
@@ -313,7 +320,6 @@ const _GLFWfbconfig* _glfwChooseFBConfig(const _GLFWfbconfig* desired,
             leastExtraDiff = extraDiff;
         }
     }
-
     return closest;
 }
 

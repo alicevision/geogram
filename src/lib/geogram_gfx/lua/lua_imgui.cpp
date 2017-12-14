@@ -228,9 +228,9 @@ namespace {
 	);
 
 	lua_pushboolean(L,sel);
-	lua_pushnumber(L,rgb[0]);
-	lua_pushnumber(L,rgb[1]);
-	lua_pushnumber(L,rgb[2]);
+	lua_pushnumber(L,double(rgb[0]));
+	lua_pushnumber(L,double(rgb[1]));
+	lua_pushnumber(L,double(rgb[2]));
 
 	return 4;
     }

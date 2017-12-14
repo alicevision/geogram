@@ -307,6 +307,7 @@ struct _GLFWfbconfig
     GLFWbool    stereo;
     int         samples;
     GLFWbool    sRGB;
+    GLFWbool    alphaMask; /* [BL] for transparency */
     GLFWbool    doublebuffer;
     uintptr_t   handle;
 };
@@ -435,6 +436,7 @@ struct _GLFWlibrary
         _GLFWwndconfig  window;
         _GLFWctxconfig  context;
         int             refreshRate;
+	GLFWbool    alphaMask; /* [BL] for transparency */	
     } hints;
 
     _GLFWcursor*        cursorListHead;

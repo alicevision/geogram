@@ -31,10 +31,14 @@
 #include <third_party/glfw/include/GLFW/glfw3native.h>
 #endif
 
+// [Bruno Levy 11/26/2017] macros and inline functions for facilitating
+// interfacing with WebGL when using Emscripten.
+#include "glup_compat.h"
+
 // Data
 static GLFWwindow*  g_Window = NULL;
 static double       g_Time = 0.0f;
-static bool         g_MousePressed[3] = { false, false, false };
+static bool         g_MouseJustPressed[3] = { false, false, false };
 static float        g_MouseWheel = 0.0f;
 static GLuint       g_FontTexture = 0;
 static int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
@@ -43,8 +47,8 @@ static int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_Attr
 static unsigned int g_VboHandle = 0, g_VaoHandle = 0, g_ElementsHandle = 0;
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
-// If text or lines are blurry when integrating ImGui in your engine:
-// - in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
+// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so. 
+// If text or lines are blurry when integrating ImGui in your engine: in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
 void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
 {
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -60,12 +64,11 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     glActiveTexture(GL_TEXTURE0);
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+    GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
     GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
     GLint last_element_array_buffer; glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
-    
-    // [Bruno Levy] use GLUP vertex arrays
-    GLuint last_vertex_array=glupGetVertexArrayBinding();
-
+    GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+    GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
     GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
     GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
@@ -79,13 +82,14 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 
-    // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled
+    // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_SCISSOR_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     // Setup viewport, orthographic projection matrix
     glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height);
@@ -99,8 +103,8 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     glUseProgram(g_ShaderHandle);
     glUniform1i(g_AttribLocationTex, 0);
     glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
-    // [Bruno Levy] use GLUP vertex arrays
-    glupBindVertexArray(g_VaoHandle);
+    glBindVertexArray(g_VaoHandle);
+    glBindSampler(0, 0); // Rely on combined texture/sampler state.
 
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
@@ -133,9 +137,9 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     // Restore modified GL state
     glUseProgram(last_program);
     glBindTexture(GL_TEXTURE_2D, last_texture);
+    glBindSampler(0, last_sampler);
     glActiveTexture(last_active_texture);
-    // [Bruno Levy] use GLUP vertex array
-    glupBindVertexArray(last_vertex_array);
+    glBindVertexArray(last_vertex_array);
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_element_array_buffer);
     glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
@@ -144,11 +148,12 @@ void ImGui_ImplGlfwGL3_RenderDrawLists(ImDrawData* draw_data)
     if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
     if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, last_polygon_mode[0]);
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 }
 
-// [Bruno] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
+// [Bruno Levy] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
 // ImGUI clipboard instead.
 #ifndef __EMSCRIPTEN__
 
@@ -164,11 +169,10 @@ static void ImGui_ImplGlfwGL3_SetClipboardText(void* user_data, const char* text
 
 #endif
 
-
 void ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow*, int button, int action, int /*mods*/)
 {
     if (action == GLFW_PRESS && button >= 0 && button < 3)
-        g_MousePressed[button] = true;
+        g_MouseJustPressed[button] = true;
 }
 
 void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow*, double /*xoffset*/, double yoffset)
@@ -236,10 +240,9 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
     GLint last_texture, last_array_buffer, last_vertex_array;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    // [Bruno Levy] use GLUP vertex array
-    last_vertex_array = glupGetVertexArrayBinding();    
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
 
-    // [Bruno] 05/16/2016 Ported shaders to WebGL compatible GLSL,
+    // [Bruno Levy] 05/16/2016 Ported shaders to WebGL compatible GLSL,
     // so that it works in Emscripten. We keep the original shaders
     // (GLSL 3.30) because Apple seemingly does not support earlier
     // GLSL dialects.
@@ -300,14 +303,14 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
         "                 texture2D(Texture, Frag_UV.st); \n"
         "}                                                \n";
 #endif
-    
-    // [Bruno] 05/16/2016 Using Geogram_gfx's shader creation functions, so that
+
+    // [Bruno Levy] 05/16/2016 Using Geogram_gfx's shader creation functions, so that
     // we can have error reporting when compiling the shaders.
 
     g_VertHandle = GEO::GLSL::compile_shader(GL_VERTEX_SHADER, vertex_shader, NULL);
     g_FragHandle = GEO::GLSL::compile_shader(GL_FRAGMENT_SHADER, fragment_shader, NULL);
     g_ShaderHandle = GEO::GLSL::create_program_from_shaders(g_VertHandle, g_FragHandle, 0);
-    
+
     g_AttribLocationTex = glGetUniformLocation(g_ShaderHandle, "Texture");
     g_AttribLocationProjMtx = glGetUniformLocation(g_ShaderHandle, "ProjMtx");
     g_AttribLocationPosition = glGetAttribLocation(g_ShaderHandle, "Position");
@@ -317,10 +320,8 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
     glGenBuffers(1, &g_VboHandle);
     glGenBuffers(1, &g_ElementsHandle);
 
-    // [Bruno Levy] using GLUP vertex arrays
-    glupGenVertexArrays(1, &g_VaoHandle);
-    glupBindVertexArray(g_VaoHandle);
-
+    glGenVertexArrays(1, &g_VaoHandle);
+    glBindVertexArray(g_VaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
     glEnableVertexAttribArray(g_AttribLocationPosition);
     glEnableVertexAttribArray(g_AttribLocationUV);
@@ -337,17 +338,14 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
     // Restore modified GL state
     glBindTexture(GL_TEXTURE_2D, last_texture);
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-
-    // [Bruno Levy] use GLUP vertex arrays
-    glupBindVertexArray(last_vertex_array);
+    glBindVertexArray(last_vertex_array);
 
     return true;
 }
 
 void    ImGui_ImplGlfwGL3_InvalidateDeviceObjects()
 {
-    // [Bruno Levy] use GLUP vertex arrays
-    if (g_VaoHandle) glupDeleteVertexArrays(1, &g_VaoHandle);
+    if (g_VaoHandle) glDeleteVertexArrays(1, &g_VaoHandle);
     if (g_VboHandle) glDeleteBuffers(1, &g_VboHandle);
     if (g_ElementsHandle) glDeleteBuffers(1, &g_ElementsHandle);
     g_VaoHandle = g_VboHandle = g_ElementsHandle = 0;
@@ -398,13 +396,14 @@ bool    ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks)
 
     io.RenderDrawListsFn = ImGui_ImplGlfwGL3_RenderDrawLists;       // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
 
-// [Bruno] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
+// [Bruno Levy] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
 // ImGUI clipboard instead.
 #ifndef __EMSCRIPTEN__    
     io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
     io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
     io.ClipboardUserData = g_Window;
 #endif
+    
 #ifdef _WIN32
     io.ImeWindowHandle = glfwGetWin32Window(g_Window);
 #endif
@@ -449,26 +448,34 @@ void ImGui_ImplGlfwGL3_NewFrame()
     // Setup inputs
     // (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
 
-    //[Bruno] 05/16/2016 Under emscripten, it seems that the window is never focused (so I bypass the test).
+    //[Bruno Levy] 05/16/2016 Under emscripten, it seems that the window is never focused (so I bypass the test).
 #ifndef __EMSCRIPTEN__    
     if (glfwGetWindowAttrib(g_Window, GLFW_FOCUSED))
-#endif        
+#endif	
     {
-        double mouse_x, mouse_y;
-        glfwGetCursorPos(g_Window, &mouse_x, &mouse_y);
-        io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);   // Mouse position in screen coordinates (set to -1,-1 if no mouse / on another screen, etc.)
+        if (io.WantMoveMouse)
+        {
+            glfwSetCursorPos(g_Window, (double)io.MousePos.x, (double)io.MousePos.y);   // Set mouse position if requested by io.WantMoveMouse flag (used when io.NavMovesTrue is enabled by user and using directional navigation)
+        }
+        else
+        {
+            double mouse_x, mouse_y;
+            glfwGetCursorPos(g_Window, &mouse_x, &mouse_y);
+            io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);   // Get mouse position in screen coordinates (set to -1,-1 if no mouse / on another screen, etc.)
+        }
     }
 #ifndef __EMSCRIPTEN__        
     else
     {
-        io.MousePos = ImVec2(-1,-1);
+        io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX);
     }
 #endif
     
     for (int i = 0; i < 3; i++)
     {
-        io.MouseDown[i] = g_MousePressed[i] || glfwGetMouseButton(g_Window, i) != 0;    // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
-        g_MousePressed[i] = false;
+        // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
+        io.MouseDown[i] = g_MouseJustPressed[i] || glfwGetMouseButton(g_Window, i) != 0;
+        g_MouseJustPressed[i] = false;
     }
 
     io.MouseWheel = g_MouseWheel;

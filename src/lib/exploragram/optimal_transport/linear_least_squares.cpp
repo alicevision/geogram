@@ -89,12 +89,12 @@ namespace GEO {
         for(index_t i = 0; i < dim(); ++i) {
             for(index_t j = 0; j < dim(); ++j) {
                 switch(degree_) {
-                case 1:
+                case 1: {
                     AtA_4_(i, j) += b[i] * b[j];
-                    break;
-                case 2:
+		} break;
+                case 2: {
                     AtA_10_(i, j) += b[i] * b[j];
-                    break;
+		} break;
                 default:
                     geo_assert_not_reached;
                 }

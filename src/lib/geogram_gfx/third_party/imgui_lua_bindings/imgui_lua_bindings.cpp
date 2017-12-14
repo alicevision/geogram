@@ -9,6 +9,11 @@
 #endif
 #endif
 
+#ifdef _MSC_VER
+# pragma warning( disable: 4244 )
+# pragma warning( disable: 4800 )
+#endif
+
 #ifdef __ICC
 #pragma warning disable 177
 #endif

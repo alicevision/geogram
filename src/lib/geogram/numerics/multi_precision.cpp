@@ -55,10 +55,6 @@
 #include <geogram/numerics/multi_precision.h>
 #include <geogram/basic/process.h>
 
-#if defined(GEO_OS_APPLE) && defined(__MAC_10_12)
-#include <os/lock.h>
-#endif
-
 namespace {
 
     using namespace GEO;

@@ -141,6 +141,7 @@ GLFWAPI GLFWwindow* glfwCreateWindow(int width, int height,
     }
 
     fbconfig  = _glfw.hints.framebuffer;
+    fbconfig.alphaMask = _glfw.hints.alphaMask;
     ctxconfig = _glfw.hints.context;
     wndconfig = _glfw.hints.window;
 
@@ -260,6 +261,8 @@ void glfwDefaultWindowHints(void)
 
     // The default is to select the highest available refresh rate
     _glfw.hints.refreshRate = GLFW_DONT_CARE;
+
+    _glfw.hints.alphaMask   = GLFW_FALSE; // [BL] for transparency
 }
 
 GLFWAPI void glfwWindowHint(int hint, int value)
@@ -367,6 +370,9 @@ GLFWAPI void glfwWindowHint(int hint, int value)
         case GLFW_REFRESH_RATE:
             _glfw.hints.refreshRate = value;
             break;
+        case GLFW_ALPHA_MASK: // [BL] for transparency
+	    _glfw.hints.alphaMask = value;
+	    break;
         default:
             _glfwInputError(GLFW_INVALID_ENUM, "Invalid window hint %i", hint);
             break;

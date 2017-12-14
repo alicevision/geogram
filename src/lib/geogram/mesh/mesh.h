@@ -1851,7 +1851,7 @@ namespace GEO {
          *  local corner index in the facet
          * \param[in] c the cell, in 0..nb()-1
          * \param[in] lf the local facet index, in 0..nb_facets(c)-1
-         * \param[in] lv the local corner index, in 0..facet_nb_vertices(c,lf)-1
+         * \param[in] lc the local corner index, in 0..facet_nb_vertices(c,lf)-1
          * \return corner \p lc of facet \p lf in cell \p c
          */
         index_t facet_corner(index_t c, index_t lf, index_t lc) const {

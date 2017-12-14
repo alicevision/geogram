@@ -158,7 +158,7 @@ extern "C" {
     void GLUP_VIEWER_API glup_viewer_effect_begin_frame(void);
     
     void GLUP_VIEWER_API glup_viewer_effect_end_frame(void);
-    
+
 #ifdef __cplusplus
 }
 #endif

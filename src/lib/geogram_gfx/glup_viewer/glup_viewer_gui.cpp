@@ -344,7 +344,7 @@ namespace GEO {
 		    size_t cur_char = 0;
 		    bool finished = false;
 		    while(!finished) {
-			char c;
+			char c = '\0';
 			for(size_t i=0; i<matches.size(); ++i) {
 			    if(
 				cur_char >= matches[i].length() ||
@@ -438,11 +438,17 @@ namespace GEO {
         ImGui::SameLine();
         filter_.Draw("Filter", -100.0f);
         ImGui::Separator();
+
+	float scaling = 1.0f;
+	if(ImGui::GetIO().FontDefault == ImGui::GetIO().Fonts->Fonts[1]) {
+	    scaling = 2.0f;
+	}
+	
         ImGui::BeginChild(
             "scrolling",
 	    ImVec2(
 		0.0f,
-		-20.0f * ImGui::GetIO().FontGlobalScale
+		-20.0f * scaling
 	    ),
 	    false,
             ImGuiWindowFlags_HorizontalScrollbar
@@ -1392,7 +1398,17 @@ namespace GEO {
     }
 
     void Application::draw_gui() {
-        ImGui::GetIO().FontGlobalScale = scaling_;
+	// TODO: better management of font size (for now we use two
+	// hardwired sizes)
+	// Fonts are created in glup_viewer_gui_init(), in glup_viewer_gui_private.cpp
+	
+	//ImGui::GetIO().FontGlobalScale = scaling_;
+	if(scaling_ == 2.0f) {
+	    ImGui::GetIO().FontDefault = ImGui::GetIO().Fonts->Fonts[1];
+	} else {
+	    ImGui::GetIO().FontDefault = ImGui::GetIO().Fonts->Fonts[0];
+	}
+	
         draw_menu_bar();
 	if(text_editor_visible_) {
 	    int w,h;
@@ -1625,7 +1641,7 @@ namespace GEO {
         int w,h;
         glup_viewer_get_screen_size(&w, &h);
         h = h - CONSOLE_HEIGHT();
-        if(status_bar_->active()) {
+        if(!fixed_layout_ || status_bar_->active()) {
             h -= (STATUS_HEIGHT() + 1);
         }
 	if(fixed_layout_) {

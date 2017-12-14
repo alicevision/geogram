@@ -78,7 +78,7 @@ namespace {
      * \brief Generic implementation of RestrictedVoronoiDiagram.
      * \tparam DIM dimension
      */
-    template <int DIM>
+    template <unsigned int DIM>
     class RVD_Nd_Impl : public GEO::RestrictedVoronoiDiagram {
 
         /** \brief This class type */

@@ -52,6 +52,7 @@
 */
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wcomma"
 #endif
 
 #ifndef NL_FORTRAN_WRAP

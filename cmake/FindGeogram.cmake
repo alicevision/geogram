@@ -60,11 +60,11 @@ find_library (GEOGRAM_GLFW3_LIBRARY
 
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-  Geogram DEFAULT_MSG GEOGRAM_LIBRARY GEOGRAM_INCLUDE_DIR
+  GEOGRAM DEFAULT_MSG GEOGRAM_LIBRARY GEOGRAM_INCLUDE_DIR
 )
 
 # Create an imported target for Geogram 
-If (Geogram_FOUND)
+If (GEOGRAM_FOUND)
   
         set(GEOGRAM_INSTALL_PREFIX ${GEOGRAM_INCLUDE_DIR}/..)
   

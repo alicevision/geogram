@@ -172,7 +172,7 @@ namespace GEO {
         /**
          * \brief Displays a formatted string to the console.
          */
-        void printf(const char* fmt, ...) IM_PRINTFARGS(2);
+        void printf(const char* fmt, ...) /* IM_FMTARGS(1) */;
 
         /**
          * \brief Draws the console and handles the gui.
@@ -1775,13 +1775,15 @@ namespace GEO {
 	void set_background_color_1(float r, float g, float b) {
 	    background_color_1_.x = r;
 	    background_color_1_.y = g;
-	    background_color_1_.z = b;	    
+	    background_color_1_.z = b;
+	    background_color_1_.w = 1.0;
 	}
 
 	void set_background_color_2(float r, float g, float b) {
 	    background_color_2_.x = r;
 	    background_color_2_.y = g;
-	    background_color_2_.z = b;	    
+	    background_color_2_.z = b;
+	    background_color_1_.w = 1.0;	    
 	}
 
 	void set_background_color_1(const vec4f& value) {
@@ -2027,14 +2029,16 @@ namespace GEO {
         float scaling_;
         bool retina_mode_;
 
-#ifdef GEOGRAM_WITH_LUA	
-	lua_State* lua_state_;
-	bool lua_error_occured_;
-	bool owns_lua_state_;
-#endif
-
 	vec4f background_color_1_;
 	vec4f background_color_2_;
+
+#ifdef GEOGRAM_WITH_LUA	
+	lua_State* lua_state_;
+#else
+	void* lua_state_;
+#endif	
+	bool lua_error_occured_;
+	bool owns_lua_state_;
     };
 
     /*****************************************************************/

@@ -1244,11 +1244,6 @@ IMGUI_FUNCTION(IsItemHovered)
 CALL_FUNCTION(IsItemHovered, bool)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
-//    IMGUI_API bool          IsItemRectHovered();                                                // was the last item hovered by mouse? even if another item is active or window is blocked by popup while we are hovering this
-IMGUI_FUNCTION(IsItemRectHovered)
-CALL_FUNCTION(IsItemRectHovered, bool)
-PUSH_BOOL(ret)
-END_IMGUI_FUNC
 //    IMGUI_API bool          IsItemActive();                                                     // was the last item active? (e.g. button being held, text field being edited- items that don't interact will always return false)
 IMGUI_FUNCTION(IsItemActive)
 CALL_FUNCTION(IsItemActive, bool)
@@ -1305,11 +1300,6 @@ END_IMGUI_FUNC
 //    IMGUI_API bool          IsWindowHovered();                                                  // is current window hovered and hoverable (not blocked by a popup) (differentiate child windows from each others)
 IMGUI_FUNCTION(IsWindowHovered)
 CALL_FUNCTION(IsWindowHovered, bool)
-PUSH_BOOL(ret)
-END_IMGUI_FUNC
-//    IMGUI_API bool          IsWindowRectHovered();                                              // is current window rectnagle hovered, disregarding of any consideration of being blocked by a popup. (unlike IsWindowHovered() this will return true even if the window is blocked because of a popup)
-IMGUI_FUNCTION(IsWindowRectHovered)
-CALL_FUNCTION(IsWindowRectHovered, bool)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
 //    IMGUI_API bool          IsRootWindowFocused();                                              // is current root window focused (root = top-most parent of a child, otherwise self)

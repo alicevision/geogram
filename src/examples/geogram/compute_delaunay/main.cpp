@@ -339,7 +339,8 @@ int main(int argc, char** argv) {
 	
 	Logger::out("Delaunay")
 	    << "Loaded " << nb_points << " points" << std::endl;
-	
+
+	double time = 0.0;
 	{
 	    Stopwatch Wdel("Delaunay");
 	    // Note: this does not transfer ownership of memory, caller
@@ -347,11 +348,16 @@ int main(int argc, char** argv) {
     	    // vector<double>). No memory is copied, Delaunay just keeps
 	    // a pointer.
 	    delaunay->set_vertices(nb_points, points.data());
+	    time = Wdel.elapsed_time();
 	}
 	
         Logger::out("Delaunay") << delaunay->nb_cells() << " tetrahedra"
             << std::endl;
 
+	Logger::out("Delaunay") << double(delaunay->nb_cells()) / time
+				<< " tetrahedra / second"
+				<< std::endl;
+	
         if(output) {
 	    save_Delaunay(delaunay, output_filename, convex_hull_only);
 	}

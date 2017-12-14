@@ -176,6 +176,8 @@ static GLuint background_tex = 0;
 static GLFWwindow* glup_viewer_window = NULL;
 
 
+static GLboolean transparent = GL_FALSE;
+
 /* ========================== Trackball prototypes ========================= */
 /* (from SGI, see copyright below) */
 
@@ -838,15 +840,20 @@ static void draw_background() {
 
     if(background_tex == 0) {
 
-        glupEnable(GLUP_VERTEX_COLORS);        
-        glupBegin(GLUP_QUADS);
-        glupColor3fv(bkg1);
-        glupVertex3f(-1, -1, z);
-        glupVertex3f(1, -1, z);
-        glupColor3fv(bkg2);
-        glupVertex3f(1, 1, z);
-        glupVertex3f(-1, 1, z);
-        glupEnd();
+	if(transparent) {
+	    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	    glClear(GL_COLOR_BUFFER_BIT);
+	} else {
+	    glupEnable(GLUP_VERTEX_COLORS);        
+	    glupBegin(GLUP_QUADS);
+	    glupColor3fv(bkg1);
+	    glupVertex3f(-1, -1, z);
+	    glupVertex3f(1, -1, z);
+	    glupColor3fv(bkg2);
+	    glupVertex3f(1, 1, z);
+	    glupVertex3f(-1, 1, z);
+	    glupEnd();
+	}
         
     } else {
         
@@ -1291,7 +1298,8 @@ static void glup_viewer_key_callback(
     glup_viewer_post_redisplay();
 }
 
-void glup_viewer_home() {
+
+void glup_viewer_home(void) {
     cur_xlat[0] = cur_xlat[1] = cur_xlat[2] = 0.0;
     params[GLUP_VIEWER_ZOOM] = 1.0;
     trackball(cur_rot, 0.0, 0.0, 0.0, 0.0);
@@ -1560,7 +1568,18 @@ void glup_viewer_main_loop(int argc, char** argv) {
     }
 
     glup_viewer_set_screen_size_from_args();
+
+    transparent = glup_viewer_get_arg_bool("gfx:transparent");
     
+    if(transparent) {
+/*	glfwWindowHint(GLFW_ALPHA_BITS,8);  */
+#ifdef GLFW_ALPHA_MASK	    
+	glfwWindowHint(GLFW_ALPHA_MASK,GL_TRUE);
+#else
+	fprintf(stderr,"Transparent not supported by this version of GLFW\n");
+#endif	    
+    }
+   
     if( 
         glup_viewer_get_arg_bool("gfx:fullscreen") ||
         glup_viewer_is_enabled(GLUP_VIEWER_FULL_SCREEN) 
@@ -1569,13 +1588,27 @@ void glup_viewer_main_loop(int argc, char** argv) {
         const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
         glup_viewer_W = vidmode->width;
         glup_viewer_H = vidmode->height;
+
+	/* TODO: for now deactivated, because 3D renderer redraw can be
+	   too slow and cause flickering (but I don't know why)
+	  glfwWindowHint(GLFW_FOCUSED,GL_TRUE);	
+	  glfwWindowHint(GLFW_DECORATED,GL_FALSE);
+	  glfwWindowHint(GLFW_RESIZABLE,GL_FALSE);
+	  glfwWindowHint(GLFW_AUTO_ICONIFY,GL_FALSE);
+	  glfwWindowHint(GLFW_FLOATING,GL_FALSE);
+	  glfwWindowHint(GLFW_MAXIMIZED,GL_TRUE);				
+	*/
+	
         /* 
          * Note: I'd rather not use a fullscreen window because it may change the resolution,
          * this can be very annoying when doing a presentation, since the beamer may have
-         * difficulties to quickly react to resolution changes.
+         * difficulties to quickly react to resolution changes. In "transparent" mode we
+	 * use a true fullscreen window though.
          */
         glup_viewer_window = glfwCreateWindow(
-            glup_viewer_W, glup_viewer_H, title, NULL /* glfwGetPrimaryMonitor() */, NULL
+            glup_viewer_W, glup_viewer_H, title,
+	    NULL, /* transparent ? glfwGetPrimaryMonitor() : NULL, */
+	    NULL
         );
     } else {
         glup_viewer_window = glfwCreateWindow(

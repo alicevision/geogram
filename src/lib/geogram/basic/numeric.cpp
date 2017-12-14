@@ -50,47 +50,25 @@
 #pragma GCC diagnostic ignored "-Wc++11-long-long"
 #endif
 
-#ifdef GEO_COMPILER_MSVC
-#define isnan _isnan
-#define isfinite _finite
-#else
-#ifndef isnan
-#define isnan std::isnan
-#endif
-#ifndef isfinite
-#define isfinite std::isfinite
-#endif
-#endif
-
 namespace GEO {
 
     namespace Numeric {
 
-        // Note: do not add global scope (::isnan) for calling
-        // this function, since it is a macro in some implementations.
-
         bool is_nan(float32 x) {
-            return isnan(x) || !isfinite(x);
+#ifdef GEO_COMPILER_MSVC
+            return _isnan(x) || !_finite(x);	    
+#else	    
+            return std::isnan(x) || !std::isfinite(x);
+#endif	    
         }
 
-
-// Under GCC, to work for both floats and doubles, isnan() is a macro
-// that calls both isnanf() and isnan(), based on operator size (using ?:),
-// thus it generates a conversion warning (that we ignore using the following
-// pragmas).
-            
-#ifdef GEO_COMPILER_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-conversion"
-#endif            
-        
         bool is_nan(float64 x) {
-            return isnan(x) || !isfinite(x);
+#ifdef GEO_COMPILER_MSVC
+            return _isnan(x) || !_finite(x);	    	    
+#else	    
+            return std::isnan(x) || !std::isfinite(x);
+#endif	    
         }
-
-#ifdef GEO_COMPILER_GCC
-#pragma GCC diagnostic pop            
-#endif            
 
         void random_reset() {
 #ifdef GEO_OS_WINDOWS

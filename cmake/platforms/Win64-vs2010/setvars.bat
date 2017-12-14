@@ -6,3 +6,4 @@ call "%MSVCDIR%\VCVARSALL.BAT" x64
 
 :: Set the generator to use
 set CMAKE_VS_GENERATOR=Visual Studio 10 Win64
+
