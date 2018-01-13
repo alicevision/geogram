@@ -352,6 +352,26 @@ namespace GEO {
             int argc, char** argv
         );
 
+	/**
+	 * \brief Gets the number of arguments of the command line.
+	 * \return the number of arguments plus one.
+	 * \details parse() should be called before.
+	 */
+	int GEOGRAM_API argc();
+
+	
+	typedef char** charptrptr; // Need to do that else the compiler thinks
+	                           // that GEOGRAM_API qualifies the ptr instead
+	                           // of the function.
+	
+	/**
+	 * \brief Gets the command line arguments.
+	 * \return a pointer to an array of null-terminated strings with
+	 *  the command line arguments. The first one is the program name.
+	 * \details parse() should be called before.
+	 */
+	charptrptr GEOGRAM_API argv();
+	
         /**
          * \brief Displays program help
          * \details Displays a list of all declared arguments (sorted by

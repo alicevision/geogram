@@ -688,9 +688,13 @@ namespace {
             "one of auto, GLUP150, GLUP440, VanillaGL"
         );
         declare_arg("gfx:full_screen", false, "full screen mode");
+        declare_arg(
+	    "gfx:no_decoration", false,
+	    "no window decoration (full screen mode)"
+	);	
 	declare_arg(
 	    "gfx:transparent", false,
-	    "use transparent backsgroung (desktop integration)"
+	    "use transparent backgroung (desktop integration)"
 	);
         declare_arg(
             "gfx:GLSL_tesselation", true, "use tesselation shaders if available"

@@ -416,8 +416,10 @@ void LoadImguiBindings() {
   lua_setglobal(lState, "ImGuiWindowFlags_NoCollapse");
   lua_pushnumber(lState, ImGuiWindowFlags_AlwaysAutoResize);
   lua_setglobal(lState, "ImGuiWindowFlags_AlwaysAutoResize");
+/* [Bruno Levy] Sun Dec 31 20:05:17 CET 2017 Not defined in ImGUI 1.53
   lua_pushnumber(lState, ImGuiWindowFlags_ShowBorders);
   lua_setglobal(lState, "ImGuiWindowFlags_ShowBorders");
+ */ 
   lua_pushnumber(lState, ImGuiWindowFlags_NoSavedSettings);
   lua_setglobal(lState, "ImGuiWindowFlags_NoSavedSettings");
   lua_pushnumber(lState, ImGuiWindowFlags_NoInputs);
@@ -437,9 +439,11 @@ void LoadImguiBindings() {
   lua_setglobal(lState, "ImGuiWindowFlags_ChildWindowAutoFitX");
   lua_pushnumber(lState, ImGuiWindowFlags_ChildWindowAutoFitY);
   lua_setglobal(lState, "ImGuiWindowFlags_ChildWindowAutoFitY");
-*/ 
+*/
+/* [Bruno Levy] Sun Dec 31 20:05:17 CET 2017 Not defined in ImGUI 1.53
   lua_pushnumber(lState, ImGuiWindowFlags_ComboBox);
   lua_setglobal(lState, "ImGuiWindowFlags_ComboBox");
+ */ 
   lua_pushnumber(lState, ImGuiWindowFlags_Tooltip);
   lua_setglobal(lState, "ImGuiWindowFlags_Tooltip");
   lua_pushnumber(lState, ImGuiWindowFlags_Popup);
@@ -502,5 +506,4 @@ void LoadImguiBindings() {
   lua_setglobal(lState, "ImGuiKey_PageDown");
   lua_pushnumber(lState, ImGuiKey_Home);
   lua_setglobal(lState, "ImGuiKey_Home");
-
 }

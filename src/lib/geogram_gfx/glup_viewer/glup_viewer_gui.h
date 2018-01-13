@@ -112,8 +112,13 @@ namespace GEO {
         bool active() const {
             return (nb_active_ > 0);
         }
-        
-    private:
+
+	/**
+	 * \brief Redraws the GUI.
+	 */
+	virtual void update();
+	
+      private:
         bool progress_;
         index_t step_;
         index_t percent_;
@@ -172,14 +177,14 @@ namespace GEO {
         /**
          * \brief Displays a formatted string to the console.
          */
-        void printf(const char* fmt, ...) /* IM_FMTARGS(1) */;
+        virtual void printf(const char* fmt, ...) /* IM_FMTARGS(1) */;
 
         /**
          * \brief Draws the console and handles the gui.
          * \param[in] visible an optional pointer to a visibility
          *  flag, controlled by a close button if different from NULL.
          */
-        void draw(bool* visible=NULL);
+        virtual void draw(bool* visible=NULL);
 
 	int TextEditCallback(ImGuiTextEditCallbackData* data);
 
@@ -218,11 +223,18 @@ namespace GEO {
 	void set_fixed_layout(bool x) {
 	    fixed_layout_ = x;
 	}
+
+	void set_console_font(ImFont* font) {
+	    console_font_ = font;
+	}
 	
       protected:
 	virtual bool exec_command(const char* command);
+	/**
+	 * \brief Redraws the GUI.
+	 */
+	virtual void update();
 	
-      private:
         ImGuiTextBuffer buf_;
         ImGuiTextFilter filter_;
         /** \brief Index to lines offset */
@@ -235,6 +247,7 @@ namespace GEO {
 	index_t            history_index_;
 	index_t            max_history_index_;
 	bool               fixed_layout_;
+	ImFont*            console_font_;
     };
     
     /*****************************************************************/

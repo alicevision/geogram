@@ -176,16 +176,9 @@ namespace GEO {
         double box_dist = 0.0;
         double* bbox_min = (double*) (alloca(dimension() * sizeof(double)));
         double* bbox_max = (double*) (alloca(dimension() * sizeof(double)));
-	
-        for(coord_index_t c = 0; c < dimension(); ++c) {
-            bbox_min[c] = bbox_min_[c];
-            bbox_max[c] = bbox_max_[c];
-            if(query_point[c] < bbox_min_[c]) {
-                box_dist += geo_sqr(bbox_min_[c] - query_point[c]);
-            } else if(query_point[c] > bbox_max_[c]) {
-                box_dist += geo_sqr(bbox_max_[c] - query_point[c]);
-            }
-        }
+	init_bbox_and_bbox_dist_for_traversal(
+	    bbox_min, bbox_max, box_dist, query_point
+	);
         NearestNeighbors NN(
             nb_neighbors,
 	    neighbors,
@@ -206,10 +199,8 @@ namespace GEO {
         double* neighbors_sq_dist,
 	KeepInitialValues KV
     ) const {
-
         geo_debug_assert(nb_neighbors <= nb_points());
 	geo_argused(KV);
-
         // Compute distance between query point and global bounding box
         // and copy global bounding box to local variables (bbox_min, bbox_max),
         // allocated on the stack. bbox_min and bbox_max are updated during the
@@ -220,16 +211,9 @@ namespace GEO {
         double box_dist = 0.0;
         double* bbox_min = (double*) (alloca(dimension() * sizeof(double)));
         double* bbox_max = (double*) (alloca(dimension() * sizeof(double)));
-	
-        for(coord_index_t c = 0; c < dimension(); ++c) {
-            bbox_min[c] = bbox_min_[c];
-            bbox_max[c] = bbox_max_[c];
-            if(query_point[c] < bbox_min_[c]) {
-                box_dist += geo_sqr(bbox_min_[c] - query_point[c]);
-            } else if(query_point[c] > bbox_max_[c]) {
-                box_dist += geo_sqr(bbox_max_[c] - query_point[c]);
-            }
-        }
+	init_bbox_and_bbox_dist_for_traversal(
+	    bbox_min, bbox_max, box_dist, query_point
+	);
         NearestNeighbors NN(
             nb_neighbors,
 	    neighbors,
@@ -243,7 +227,6 @@ namespace GEO {
         );
 	NN.copy_to_user();
     }
-    
 
     void KdTree::get_nearest_neighbors(
         index_t nb_neighbors,
@@ -407,6 +390,27 @@ namespace GEO {
 	}
     }
 
+    void KdTree::init_bbox_and_bbox_dist_for_traversal(
+	double* bbox_min, double* bbox_max,
+	double& box_dist, const double* query_point
+    ) const {
+        // Compute distance between query point and global bounding box
+        // and copy global bounding box to local variables (bbox_min, bbox_max),
+        // allocated on the stack. bbox_min and bbox_max are updated during the
+        // traversal of the KdTree (see get_nearest_neighbors_recursive()). They
+        // are necessary to compute the distance between the query point and the
+        // bbox of the current node.
+        box_dist = 0.0;
+        for(coord_index_t c = 0; c < dimension(); ++c) {
+            bbox_min[c] = bbox_min_[c];
+            bbox_max[c] = bbox_max_[c];
+            if(query_point[c] < bbox_min_[c]) {
+                box_dist += geo_sqr(bbox_min_[c] - query_point[c]);
+            } else if(query_point[c] > bbox_max_[c]) {
+                box_dist += geo_sqr(bbox_max_[c] - query_point[c]);
+            }
+        }
+    }
     
 /****************************************************************************/
     
@@ -589,6 +593,14 @@ namespace GEO {
     /**************************************************************************/
 
     AdaptiveKdTree::AdaptiveKdTree(coord_index_t dim) : KdTree(dim) {
+    }
+
+    index_t AdaptiveKdTree::new_node() {
+	splitting_coord_.push_back(0);
+	splitting_val_.push_back(0.0);	
+	node_m_.push_back(0);
+	node_right_child_.push_back(0);
+	return nb_nodes()-1;
     }
     
     index_t AdaptiveKdTree::build_tree() {

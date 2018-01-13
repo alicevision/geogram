@@ -404,6 +404,38 @@ namespace {
 	return 0;
     }
 
+
+    int wrapper_IsItemHovered(lua_State* L) {
+	if(lua_gettop(L) != 0) {
+	    return luaL_error(
+		L, "'imgui.IsItemHovered()' invalid number of arguments"
+	    );
+	}
+	lua_pushboolean(L,ImGui::IsItemHovered());
+	return 1;
+    }
+
+    int wrapper_Text(lua_State* L) {
+	const char* str = lua_tostring(L,1);
+	ImGui::Text("%s",str);
+	return 0;
+    }
+
+    int wrapper_SetTooltip(lua_State* L) {
+	const char* str = lua_tostring(L,1);
+	ImGui::SetTooltip("%s",str);
+	return 0;
+    }
+
+    int wrapper_ShowStyleEditor(lua_State* L) {
+	if(lua_gettop(L) != 0) {
+	    return luaL_error(
+		L, "'imgui.ShowStyleEditor()' invalid number of arguments"
+	    );
+	}
+	ImGui::ShowStyleEditor(nil);
+	return 0;
+    }
     
 }
 
@@ -457,6 +489,22 @@ void init_lua_imgui(lua_State* L) {
 
     lua_pushliteral(L,"SetNextWindowSize");
     lua_pushcfunction(L,wrapper_SetNextWindowSize);
+    lua_settable(L,-3);
+    
+    lua_pushliteral(L,"IsItemHovered");
+    lua_pushcfunction(L,wrapper_IsItemHovered);
+    lua_settable(L,-3);
+
+    lua_pushliteral(L,"Text");
+    lua_pushcfunction(L,wrapper_Text);
+    lua_settable(L,-3);
+
+    lua_pushliteral(L,"SetTooltip");
+    lua_pushcfunction(L,wrapper_SetTooltip);
+    lua_settable(L,-3);
+
+    lua_pushliteral(L,"ShowStyleEditor");
+    lua_pushcfunction(L,wrapper_ShowStyleEditor);
     lua_settable(L,-3);
     
     lua_pop(L,1);

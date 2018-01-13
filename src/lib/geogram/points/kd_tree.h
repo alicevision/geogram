@@ -103,47 +103,9 @@ namespace GEO {
             index_t* neighbors,
             double* neighbors_sq_dist
         ) const;
+
+	/************************************************************************/
 	
-    protected:
-        /**
-         * \brief Number of points stored in the leafs of the tree.
-         */
-        static const index_t MAX_LEAF_SIZE = 16;
-
-	/**
-	 * \brief Builds the tree.
-	 * \return the index of the root node.
-	 */
-	virtual index_t build_tree() = 0 ;
-
-	/**
-	 * \brief Gets all the attributes of a node.
-	 * \details This function is virtual, because indices can
-	 *  be either computed on the fly (as in BalancedKdTree) or
-	 *  stored (as in AdaptiveKdTree).
-	 * \param[in] n a node index
-	 * \param[in] b the first point in the node
-	 * \param[in] e one position past the last point in the node
-	 * \param[out] left_child the node index of the 
-	 *   left child of node \p n.
-	 * \param[out] right_child the node index of the 
-	 *   right child of node \p n.
-	 * \param[out] splitting_coord The coordinate along which \p n is split.
-	 * \param[out] m the point m such that [b,m-1] corresponds 
-	 *  to the points in the left child of \p n and [m,e-1] 
-	 *  corresponds to the points in the right child of \p n.
-	 * \param[out] splitting_val The coordinate value that separates points
-	 *  in the left and right childs.
-	 */
-	virtual void get_node(
-	    index_t n, index_t b, index_t e,
-	    index_t& left_child, index_t& right_child,
-	    coord_index_t&  splitting_coord,
-	    index_t& m,
-	    double& splitting_val
-	) const = 0;
-	
-
         /**
          * \brief The context for traversing a KdTree.
          * \details Stores a sorted sequence of (point,distance)
@@ -309,6 +271,7 @@ namespace GEO {
         /**
          * \brief The recursive function to implement KdTree traversal and
          *  nearest neighbors computation.
+	 * \note This is a lower-level function, most users will not use it.
          * \details Traverses the subtree under the
          *  node_index node that corresponds to the
          *  [b,e) point sequence. Nearest neighbors
@@ -335,17 +298,85 @@ namespace GEO {
          * \param[in] query_point the query point
          * \param[in,out] neighbors the computed nearest neighbors
          */
-        void get_nearest_neighbors_recursive(
+        virtual void get_nearest_neighbors_recursive(
             index_t node_index, index_t b, index_t e,
             double* bbox_min, double* bbox_max,
             double bbox_dist, const double* query_point,
             NearestNeighbors& neighbors
         ) const;
 
+	/**
+	 * \brief Initializes bounding box and box distance for
+	 *  Kd-Tree traversal.
+	 * \note This is a lower-level function, most users will not use it.
+	 * \details This functions needs to be called before 
+	 *  get_nearest_neighbors_recursive()
+	 * \param[out] bbox_min a pointer to an array of dimension() doubles,
+	 *   managed by client code (typically on the stack).
+	 * \param[out] bbox_max a pointer to an array of dimension() doubles,
+	 *   managed by client code (typically on the stack).
+	 * \param[out] box_dist the squared distance between the query point and
+	 *   the box.
+	 * \param[in] query_point a const pointer to the coordinates ot
+	 *   the query point.
+	 */
+	void init_bbox_and_bbox_dist_for_traversal(
+	    double* bbox_min, double* bbox_max,
+	    double& box_dist, const double* query_point
+	) const;
+
+	/**
+	 * \brief Gets the root node.
+	 * \return the index of the root node.
+	 */
+	index_t root() const {
+	    return root_;
+	}
+	
+    protected:
+        /**
+         * \brief Number of points stored in the leafs of the tree.
+         */
+        static const index_t MAX_LEAF_SIZE = 16;
+
+	/**
+	 * \brief Builds the tree.
+	 * \return the index of the root node.
+	 */
+	virtual index_t build_tree() = 0 ;
+
+	/**
+	 * \brief Gets all the attributes of a node.
+	 * \details This function is virtual, because indices can
+	 *  be either computed on the fly (as in BalancedKdTree) or
+	 *  stored (as in AdaptiveKdTree).
+	 * \param[in] n a node index
+	 * \param[in] b the first point in the node
+	 * \param[in] e one position past the last point in the node
+	 * \param[out] left_child the node index of the 
+	 *   left child of node \p n.
+	 * \param[out] right_child the node index of the 
+	 *   right child of node \p n.
+	 * \param[out] splitting_coord The coordinate along which \p n is split.
+	 * \param[out] m the point m such that [b,m-1] corresponds 
+	 *  to the points in the left child of \p n and [m,e-1] 
+	 *  corresponds to the points in the right child of \p n.
+	 * \param[out] splitting_val The coordinate value that separates points
+	 *  in the left and right childs.
+	 */
+	virtual void get_node(
+	    index_t n, index_t b, index_t e,
+	    index_t& left_child, index_t& right_child,
+	    coord_index_t&  splitting_coord,
+	    index_t& m,
+	    double& splitting_val
+	) const = 0;
+	
+
 
         /**
          * \brief The recursive function to implement KdTree traversal and
-         *  nearest neighbors computation.
+         *  nearest neighbors computation in a leaf.
          * \details Traverses the node_index leaf that corresponds to the
          *  [b,e) point sequence. Nearest neighbors
          *  are inserted into neighbors during traversal.
@@ -356,7 +387,7 @@ namespace GEO {
          * \param[in] query_point the query point
          * \param[in,out] neighbors the computed nearest neighbors
          */
-	void get_nearest_neighbors_leaf(
+	virtual void get_nearest_neighbors_leaf(
             index_t node_index, index_t b, index_t e,
 	    const double* query_point,
             NearestNeighbors& neighbors	    
@@ -581,7 +612,7 @@ namespace GEO {
          *  Modified by the function and restored on exit.
 	 * \return the node index of the root of the created tree.
          */
-        index_t create_kd_tree_recursive(
+        virtual index_t create_kd_tree_recursive(
 	    index_t b, index_t e,
             double* bbox_min, double* bbox_max	    	    
 	);
@@ -590,8 +621,7 @@ namespace GEO {
          * \brief Computes and stores the splitting coordinate
          *  and splitting value of the node node_index, that
          *  corresponds to the [b,e) points sequence.
-         * \return a point index m. The point sequences
-         *  [b,m) and [m,e) correspond to the left
+         *  The point sequences [b,m) and [m,e) correspond to the left
          *  child (2*node_index) and right child (2*node_index+1)
          *  of node_index.
          * \param[in,out] bbox_min coordinates of the lower
@@ -602,7 +632,7 @@ namespace GEO {
 	 * \param[out] cut_dim the coordinate along which the node is splitted.
 	 * \param[out] cut_val the splitting value.
          */
-        void split_kd_node(
+        virtual void split_kd_node(
             index_t b, index_t e,
             double* bbox_min, double* bbox_max,
 	    index_t& m, coord_index_t& cut_dim, double& cut_val
@@ -622,7 +652,7 @@ namespace GEO {
 	 *   - the sequence br1 .. br2-1 has points with coord equal to val
 	 *   - the sequence br2 .. e-1   has points with coord larger than val
 	 */
-	void plane_split(
+	virtual void plane_split(
 	    index_t b, index_t e, coord_index_t coord, double val,
 	    index_t& br1, index_t& br2
 	);
@@ -655,13 +685,7 @@ namespace GEO {
 	 * \brief Creates a new node.
 	 * \return the index of the newly created node.
 	 */
-	index_t new_node() {
-	    splitting_coord_.push_back(0);
-	    splitting_val_.push_back(0.0);	
-	    node_m_.push_back(0);
-	    node_right_child_.push_back(0);
-	    return nb_nodes()-1;
-	}
+	virtual index_t new_node();
 	
      protected:
 	/**

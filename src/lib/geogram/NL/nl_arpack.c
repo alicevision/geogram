@@ -258,7 +258,11 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	    symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
 	);
 	if(nlCurrentContext->verbose) {
-	    nl_printf("Matrix factorized\n");
+	    if(result == NULL) {
+		nl_printf("Could not factorize matrix\n");
+	    } else {
+		nl_printf("Matrix factorized\n");
+	    }
 	}
 	nlDeleteMatrix((NLMatrix)A);
     } else {
@@ -271,10 +275,18 @@ static NLMatrix create_OP(NLboolean symmetric) {
 	result = nlMatrixFactorize(
 	    nlCurrentContext->M,
 	    symmetric ? NL_SYMMETRIC_SUPERLU_EXT : NL_PERM_SUPERLU_EXT
-	    );
+	);
 	if(nlCurrentContext->verbose) {
-	    nl_printf("Matrix factorized\n");
+	    if(result == NULL) {
+		nl_printf("Could not factorize matrix\n");		
+	    } else {
+		nl_printf("Matrix factorized\n");
+	    }
 	}
+    }
+
+    if(result == NULL) {
+	return NULL;
     }
     
     if(nlCurrentContext->B != NULL) {
@@ -337,6 +349,11 @@ void nlEigenSolve_ARPACK(void) {
     int index;
     int* sorted; /* indirection array for sorting eigenpairs */
 
+    if(OP == NULL) {
+	nlError("nlEigenSolve_ARPACK","Could not factorize matrix");
+	return;
+    }
+    
     if(ncv > n) {
 	ncv = n;
     }

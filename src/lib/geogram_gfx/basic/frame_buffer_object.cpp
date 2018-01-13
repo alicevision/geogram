@@ -287,5 +287,13 @@ namespace GEO {
         glBindFramebuffer(GL_FRAMEBUFFER, previous_frame_buffer_id);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+
+    bool FrameBufferObject::is_bound_as_framebuffer() const {
+	GLuint current_frame_buffer_id;
+	glGetIntegerv(
+	    GL_FRAMEBUFFER_BINDING, (GLint*)(&current_frame_buffer_id)
+	);
+	return (current_frame_buffer_id == frame_buffer_id);
+    }
 }
 

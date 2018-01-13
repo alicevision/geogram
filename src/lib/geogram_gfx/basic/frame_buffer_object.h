@@ -113,6 +113,15 @@ namespace GEO {
          */
         void bind_as_framebuffer();
 
+
+	/**
+	 * \brief Tests whether this framebuffer is bound as a framebuffer.
+	 * \retval true if this framebuffer is bound, i.e. used for OpenGL
+	 *   output.
+	 * \retval false otherwise
+	 */
+	bool is_bound_as_framebuffer() const;
+	
         /**
          * \brief Unbind this framebuffer.
          * \details This removes all the bindings (both as texture and 

@@ -189,7 +189,7 @@ namespace GEO {
     void StatusBar::progress(GEO::index_t step, GEO::index_t percent) {
         step_ = step;
         percent_ = percent;
-        glup_viewer_gui_update();        
+	update();
     }
 
     void StatusBar::end(bool canceled) {
@@ -234,6 +234,10 @@ namespace GEO {
         }
         ImGui::End();
     }
+
+    void StatusBar::update() {
+	glup_viewer_gui_update();
+    }
     
     /*****************************************************************/
 
@@ -245,6 +249,7 @@ namespace GEO {
         max_history_index_(0),
         fixed_layout_(true) {
 	input_buf_[0] = '\0';
+	console_font_ = nil;
     }
     
     void Console::div(const std::string& value) {
@@ -286,7 +291,7 @@ namespace GEO {
         int old_size = buf_.size();
         va_list args;
         va_start(args, fmt);
-        buf_.appendv(fmt, args);
+        buf_.appendfv(fmt, args); 
         va_end(args);
         for (int new_size = buf_.size(); old_size < new_size; old_size++) {
             if (buf_[old_size] == '\n') {
@@ -294,7 +299,11 @@ namespace GEO {
             }
         }
         scroll_to_bottom_ = true;
-        glup_viewer_gui_update();
+	update();
+    }
+
+    void Console::update() {
+        glup_viewer_gui_update();	
     }
 
     static int TextEditCallbackStub(ImGuiTextEditCallbackData* data) {
@@ -422,6 +431,9 @@ namespace GEO {
     
     void Console::draw(bool* visible) {
         visible_flag_ = visible;
+	if(!*visible) {
+	    return;
+	}
         ImGui::Begin(
             "Console", visible,
 	    fixed_layout_ ? (
@@ -439,10 +451,11 @@ namespace GEO {
         filter_.Draw("Filter", -100.0f);
         ImGui::Separator();
 
-	float scaling = 1.0f;
-	if(ImGui::GetIO().FontDefault == ImGui::GetIO().Fonts->Fonts[1]) {
-	    scaling = 2.0f;
+	if(console_font_ != nil) {
+	    ImGui::PushFont(console_font_);
 	}
+	
+	float scaling = ImGui::GetIO().FontDefault->FontSize / 16.0f;
 	
         ImGui::BeginChild(
             "scrolling",
@@ -474,7 +487,9 @@ namespace GEO {
 			(line[1] == 'E' || line[1] == 'W')
 		    );
 		    if(is_error) {
-			ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(1.0f,0.4f,0.4f,1.0f));
+			ImGui::PushStyleColor(
+			    ImGuiCol_Text,ImVec4(1.0f,0.0f,0.0f,1.0f)
+			);
 		    }
                     ImGui::TextUnformatted(line, line_end);
 		    if(is_error) {
@@ -485,12 +500,12 @@ namespace GEO {
             }
         } 
         if (scroll_to_bottom_) {
-            ImGui::SetScrollHere(1.0f);
+            ImGui::SetScrollHere();
         }
         scroll_to_bottom_ = false;
         ImGui::EndChild();
 
-	ImGui::Text("Command>>");
+	ImGui::Text(">>>");
 	ImGui::SameLine();
 	ImGui::PushItemWidth(-1);
         if(ImGui::InputText(
@@ -520,6 +535,10 @@ namespace GEO {
 	    ) */
         ) {
             ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
+	}
+
+	if(console_font_ != nil) {
+	    ImGui::PopFont();
 	}
 	
         ImGui::End();

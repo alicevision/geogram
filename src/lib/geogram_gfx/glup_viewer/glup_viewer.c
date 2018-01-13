@@ -1589,25 +1589,21 @@ void glup_viewer_main_loop(int argc, char** argv) {
         glup_viewer_W = vidmode->width;
         glup_viewer_H = vidmode->height;
 
-	/* TODO: for now deactivated, because 3D renderer redraw can be
-	   too slow and cause flickering (but I don't know why)
-	  glfwWindowHint(GLFW_FOCUSED,GL_TRUE);	
-	  glfwWindowHint(GLFW_DECORATED,GL_FALSE);
-	  glfwWindowHint(GLFW_RESIZABLE,GL_FALSE);
-	  glfwWindowHint(GLFW_AUTO_ICONIFY,GL_FALSE);
-	  glfwWindowHint(GLFW_FLOATING,GL_FALSE);
-	  glfwWindowHint(GLFW_MAXIMIZED,GL_TRUE);				
-	*/
+	if(glup_viewer_get_arg_bool("gfx:no_decoration")) {
+	    glfwWindowHint(GLFW_FOCUSED,GL_TRUE);	
+	    glfwWindowHint(GLFW_DECORATED,GL_FALSE);
+	    glfwWindowHint(GLFW_RESIZABLE,GL_FALSE);
+	    glfwWindowHint(GLFW_AUTO_ICONIFY,GL_FALSE);
+	    glfwWindowHint(GLFW_FLOATING,GL_FALSE);
+	    glfwWindowHint(GLFW_MAXIMIZED,GL_TRUE);
+	}				
 	
-        /* 
-         * Note: I'd rather not use a fullscreen window because it may change the resolution,
-         * this can be very annoying when doing a presentation, since the beamer may have
-         * difficulties to quickly react to resolution changes. In "transparent" mode we
-	 * use a true fullscreen window though.
-         */
         glup_viewer_window = glfwCreateWindow(
             glup_viewer_W, glup_viewer_H, title,
-	    NULL, /* transparent ? glfwGetPrimaryMonitor() : NULL, */
+	    (
+		glup_viewer_get_arg_bool("gfx:no_decoration") ?
+		glfwGetPrimaryMonitor() : NULL
+	    ), 
 	    NULL
         );
     } else {
@@ -2097,6 +2093,7 @@ void glTexImage2DXPM(const char** xpm_data) {
     int x, y;
     unsigned char* rgba;
     unsigned char* pixel;
+
     sscanf(
         xpm_data[line], "%6d%6d%6d%6d",
         &width, &height, &nb_colors, &chars_per_pixel
@@ -2111,7 +2108,7 @@ void glTexImage2DXPM(const char** xpm_data) {
         return;
     }
     for(color = 0; color < nb_colors; color++) {
-        int r, g, b, a;
+        int r, g, b;
         int none ;
         
         key1 = xpm_data[line][0];
@@ -2130,18 +2127,21 @@ void glTexImage2DXPM(const char** xpm_data) {
         }
         colorcode += 3;
 
-        r = 16 * htoi(colorcode[0]) + htoi(colorcode[1]);
-        g = 16 * htoi(colorcode[2]) + htoi(colorcode[3]);
-        b = 16 * htoi(colorcode[4]) + htoi(colorcode[5]);
-
+	if(strlen(colorcode) == 12) {
+	    r = 16 * htoi(colorcode[0]) + htoi(colorcode[1]);
+	    g = 16 * htoi(colorcode[4]) + htoi(colorcode[5]);
+	    b = 16 * htoi(colorcode[8]) + htoi(colorcode[9]);
+	} else {
+	    r = 16 * htoi(colorcode[0]) + htoi(colorcode[1]);
+	    g = 16 * htoi(colorcode[2]) + htoi(colorcode[3]);
+	    b = 16 * htoi(colorcode[4]) + htoi(colorcode[5]);
+	}
+	    
         i2r[color] = (unsigned char) r;
         i2g[color] = (unsigned char) g;
         i2b[color] = (unsigned char) b;
 	if(none) {
 	    i2a[color] = 0;
-	} else if(colorcode[6] != '\0' && colorcode[7] != '\0') {
-	    a = 16 * htoi(colorcode[6]) + htoi(colorcode[7]);	    
-	    i2a[color] = (unsigned char) a;
 	} else {
 	    i2a[color] = 255;
 	}

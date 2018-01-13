@@ -70,3 +70,34 @@
    ...
 }
 
+{
+   OpenGL driver
+   Memcheck:Addr4
+   ...
+   obj:*/i965_dri.so
+   ...
+}
+
+{
+   OpenGL driver
+   Memcheck:Addr8
+   ...
+   obj:*/i965_dri.so
+   ...
+}
+
+{
+   OpenGL driver
+   Memcheck:Value4
+   ...
+   obj:*/i965_dri.so
+   ...
+}
+
+{
+   OpenGL driver
+   Memcheck:Value8
+   ...
+   obj:*/i965_dri.so
+   ...
+}
