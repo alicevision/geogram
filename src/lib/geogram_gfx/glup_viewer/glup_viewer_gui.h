@@ -60,6 +60,8 @@
 #include <geogram_gfx/ImGui_ext/imgui_ext.h>
 #include <geogram_gfx/ImGui_ext/file_dialog.h>
 
+#include <geogram_gfx/third_party/ImGuiColorTextEdit/TextEditor.h>
+
 struct lua_State;
 
 /**
@@ -183,8 +185,11 @@ namespace GEO {
          * \brief Draws the console and handles the gui.
          * \param[in] visible an optional pointer to a visibility
          *  flag, controlled by a close button if different from NULL.
+	 * \param[in] with_window if true, then creates a new window
+	 *  using imgui::Begin() / imgui::End(), else caller is responsible
+	 *  for doing that.
          */
-        virtual void draw(bool* visible=NULL);
+        virtual void draw(bool* visible=NULL, bool with_window=true);
 
 	int TextEditCallback(ImGuiTextEditCallbackData* data);
 
@@ -217,6 +222,9 @@ namespace GEO {
 	}
 
 	void set_history_size(index_t n) {
+	    if(n != max_history_index_) {
+		history_index_  = n;
+	    }
 	    max_history_index_ = n;
 	}
 
@@ -229,7 +237,17 @@ namespace GEO {
 	}
 	
       protected:
+	/**
+	 * \brief This function is called whenever an error is
+	 *  displayed using err()
+	 * \details Base implementation does nothing. This function
+	 *  is meant to be overloaded in derived classes.
+	 * \param[in] err the error message sent to err()
+	 */
+	virtual void notify_error(const std::string& err);
+
 	virtual bool exec_command(const char* command);
+	
 	/**
 	 * \brief Redraws the GUI.
 	 */
@@ -1625,16 +1643,14 @@ namespace GEO {
     public:
 	TextEditor(bool* visible);
 	void draw();
-	const char* text() const {
-	    return text_;
-	}
+	std::string text() const;
 	void load(const std::string& filename);
 	void save(const std::string& filename);
 	void clear();
 	void load_data(const char* data);
 	
     private:
-	char text_[65536];
+	::TextEditor impl_;
 	bool* visible_;
     };
     

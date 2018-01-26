@@ -16,6 +16,7 @@ examples/maison.lua
 games/hackman.lua
 games/labyrinthe.lua
 games/asteroids.lua
+games/invaders.lua
 book/S01E01.lua
 book/S01E02.lua
 "

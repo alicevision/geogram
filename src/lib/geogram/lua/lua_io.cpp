@@ -204,7 +204,7 @@ namespace {
 	Logger::out("LUA") << out.str() << std::endl;
 	return 0;
     }
-    
+
     namespace LUAFileSystemImpl {
 
 	// These three functions needed adaptation, because in the FileSystem

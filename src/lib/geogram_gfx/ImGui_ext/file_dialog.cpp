@@ -106,7 +106,11 @@ namespace GEO {
         save_mode_(save_mode),
         are_you_sure_(false)
     {
+#ifdef GEO_OS_WINDOWS
+	directory_ = FileSystem::home_directory() + "/";
+#else	
         directory_ = FileSystem::get_current_working_directory() + "/";
+#endif	
 	set_default_filename(default_filename);
 	current_file_index_ = 0;
 	current_directory_index_ = 0;
@@ -289,7 +293,8 @@ namespace GEO {
 		    application_ != nil &&
 		    application_->save(file)
 		) {
-		    Logger::out("I/O") << "Saved " << current_file_ << std::endl;
+		    Logger::out("I/O") << "Saved "
+				       << current_file_ << std::endl;
 		}
             }
         } else {
@@ -300,11 +305,6 @@ namespace GEO {
         }
         
         if(!pinned_) {
-            // Note: If I do not do that, then the system thinks that the
-            // enter key is still pressed (it misses the key release event)
-            // I do not know why...
-            const int key_index = ImGui::GetIO().KeyMap[ImGuiKey_Enter];
-            ImGui::GetIO().KeysDown[key_index] = false;
             hide();
         }
     }
@@ -345,11 +345,7 @@ namespace GEO {
         }
 
 	if(!save_mode_) {
-	    // There is probably a simpler way to align right...	    
-	    ImGui::SameLine(
-		0.0f,
-		ImGui::GetWindowWidth()-ImGui::scaling()*215.0f
-	    );        
+	    ImGui::SameLine();        
 	    ImGui::Text("pin");
 	    ImGui::SameLine();
 	    ImGui::Checkbox("##pin", &pinned_);
@@ -357,6 +353,7 @@ namespace GEO {
 		ImGui::SetTooltip("Keeps this dialog open.");
 	    }
 	}
+
         
         ImGui::Separator();
         {

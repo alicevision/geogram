@@ -1664,7 +1664,11 @@ bool    ImFontAtlasBuildWithStbTruetype(ImFontAtlas* atlas)
 
     // Start packing
     const int max_tex_height = 1024*32;
-    stbtt_pack_context spc = {};
+
+    stbtt_pack_context spc;
+    // [Bruno Levy]: replaced "={}" with memset() (={} generates a warning on MSVC).
+    memset(&spc, 0, sizeof(spc));
+
     stbtt_PackBegin(&spc, NULL, atlas->TexWidth, max_tex_height, 0, atlas->TexGlyphPadding, NULL);
     stbtt_PackSetOversampling(&spc, 1, 1);
 

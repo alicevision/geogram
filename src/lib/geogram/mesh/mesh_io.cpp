@@ -205,7 +205,10 @@ namespace GEO {
 			}
 			
 			if(!ignore_tex_coords) {
-			    if(in.nb_fields() != 3) {
+			    if(
+				in.nb_fields() != 3 &&
+				in.nb_fields() != 4  // TODO: read 3D UVs ?
+			    ) {
                                 Logger::err("I/O")
                                     << "Line " << in.line_number()
                                     << " malformed texture vertex"
@@ -2958,12 +2961,14 @@ namespace GEO {
 		if(!M.cells.are_simplices()) {
 		    M.cells.cell_ptr_[M.cells.nb()] = M.cell_corners.nb();
 		}
-		
-                if(chunk_class == "SPTR") {
-                    Logger::out("GeoFile")
-                        << "File may contain several objects"
-                        << std::endl;
-                }
+
+//  This warning when loading a single mesh from a file that may
+// contain several meshes -> deactivated for now.	       
+//                if(chunk_class == "SPTR") {
+//                    Logger::out("GeoFile")
+//                        << "File may contain several objects"
+//                        << std::endl;
+//                }
 		
             } catch(const GeoFileException& exc) {
                 Logger::err("I/O") << exc.what() << std::endl;

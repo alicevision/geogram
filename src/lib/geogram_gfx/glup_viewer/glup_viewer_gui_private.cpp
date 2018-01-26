@@ -32,6 +32,7 @@
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
 #include <geogram_gfx/third_party/imgui_fonts/roboto_medium.h>
+#include <geogram_gfx/third_party/imgui_fonts/cousine_regular.h>
 
 #include <geogram/basic/logger.h>
 #include <geogram/basic/progress.h>
@@ -122,6 +123,14 @@ void glup_viewer_gui_init(GLFWwindow* w) {
 
     io.Fonts->AddFontFromMemoryCompressedTTF(
 	roboto_medium_compressed_data, roboto_medium_compressed_size, 32.0f
+    );
+
+    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
+	cousine_regular_compressed_data, cousine_regular_compressed_size, 16.0f
+    );
+
+    io.Fonts->AddFontFromMemoryCompressedTTF(
+	cousine_regular_compressed_data, cousine_regular_compressed_size, 32.0f
     );
     
 }

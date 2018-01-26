@@ -250,6 +250,12 @@ namespace GEO {
         fixed_layout_(true) {
 	input_buf_[0] = '\0';
 	console_font_ = nil;
+	scroll_to_bottom_ = false;
+    }
+
+    void Console::notify_error(const std::string& err) {
+	geo_argused(err);
+	return;
     }
     
     void Console::div(const std::string& value) {
@@ -272,6 +278,7 @@ namespace GEO {
         if(visible_flag_ != nil) {
             *visible_flag_ = true;
         }
+	notify_error(value);
     }
 
     void Console::status(const std::string& value) {
@@ -286,11 +293,11 @@ namespace GEO {
         buf_.clear();
         line_offsets_.clear();
     }
-
+    
     void Console::printf(const char* fmt, ...) {
-        int old_size = buf_.size();
         va_list args;
         va_start(args, fmt);
+        int old_size = buf_.size();
         buf_.appendfv(fmt, args); 
         va_end(args);
         for (int new_size = buf_.size(); old_size < new_size; old_size++) {
@@ -389,33 +396,42 @@ namespace GEO {
 	    }
 	} break;
         case ImGuiInputTextFlags_CallbackHistory: {
-	    if(max_history_index_ > 0 && history_callback_ != nil) {
-		int h = int(history_index_);
-		if(data->EventKey == ImGuiKey_UpArrow) {
-		    --h;
-		    if(h < 0) {
-			h += int(max_history_index_+1);
+	    if(history_callback_ != nil) {
+		std::string history_command;
+		//   Call the callback first, to give it the opportunity to
+		// declare the history size.
+		history_callback_(this, history_index_, history_command);
+		if(max_history_index_ > 0) {
+		    int h = int(history_index_);
+		    if(data->EventKey == ImGuiKey_UpArrow) {
+			--h;
+			if(h < 0) {
+			    h = int(max_history_index_);
+			}
+		    } else if(data->EventKey == ImGuiKey_DownArrow) {
+			++h;
+			if(h > int(max_history_index_)) {
+			    h = 0;
+			}
 		    }
-		} else if(data->EventKey == ImGuiKey_DownArrow) {
-		    ++h;
-		    if(h >= int(max_history_index_+1)) {
-			h -= int(max_history_index_+1);
+		    {
+			history_index_ = index_t(h);
+			if(history_index_ == max_history_index_) {
+			    history_command = "";
+			} else {
+			    history_callback_(this, history_index_, history_command);
+			}
+			int newpos = geo_min(
+			    data->BufSize-1, int(history_command.length())
+			);
+			strncpy(data->Buf, history_command.c_str(), size_t(newpos));
+			data->Buf[newpos] = '\0';
+			data->CursorPos = newpos;
+			data->SelectionStart = newpos;
+			data->SelectionEnd = newpos;
+			data->BufTextLen = newpos;
+			data->BufDirty = true;   
 		    }
-		}
-		{
-		    history_index_ = index_t(h);
-		    std::string history_command;
-		    history_callback_(this, history_index_, history_command);
-		    int newpos = geo_min(
-			data->BufSize-1, int(history_command.length())
-		    );
-		    strncpy(data->Buf, history_command.c_str(), size_t(newpos));
-		    data->Buf[newpos] = '\0';
-		    data->CursorPos = newpos;
-		    data->SelectionStart = newpos;
-		    data->SelectionEnd = newpos;
-		    data->BufTextLen = newpos;
-                    data->BufDirty = true;   
 		}
 	    }
         } break;
@@ -424,24 +440,25 @@ namespace GEO {
     }
 
     bool Console::exec_command(const char* command) {
-	++max_history_index_;
-	history_index_ = max_history_index_;
+	// Note: history_index_ and max_history_index_ are
+	// not managed here. They are managed by the callback.
 	return Application::instance()->exec_command(command);
     }
     
-    void Console::draw(bool* visible) {
-        visible_flag_ = visible;
+    void Console::draw(bool* visible, bool with_window) {
 	if(!*visible) {
 	    return;
 	}
-        ImGui::Begin(
-            "Console", visible,
-	    fixed_layout_ ? (
-		ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoCollapse
-	    ) : 0
-        );
+	if(with_window) {
+	    ImGui::Begin(
+		"Console", visible,
+		fixed_layout_ ? (
+		    ImGuiWindowFlags_NoResize |
+		    ImGuiWindowFlags_NoMove |
+		    ImGuiWindowFlags_NoCollapse
+		) : 0
+	    );
+	}
         if (ImGui::Button("Clear")) {
             clear();
         }
@@ -453,7 +470,18 @@ namespace GEO {
 
 	if(console_font_ != nil) {
 	    ImGui::PushFont(console_font_);
+	} else if(
+	    ImGui::GetIO().Fonts->Fonts.size() >= 4 &&
+	    Application::instance() != nil
+	) {
+	    if(Application::instance()->scaling() == 2.0f) {
+		console_font_ = ImGui::GetIO().Fonts->Fonts[3];
+	    } else {
+		console_font_ = ImGui::GetIO().Fonts->Fonts[2];
+	    }
+	    ImGui::PushFont(console_font_);	    
 	}
+
 	
 	float scaling = ImGui::GetIO().FontDefault->FontSize / 16.0f;
 	
@@ -540,8 +568,10 @@ namespace GEO {
 	if(console_font_ != nil) {
 	    ImGui::PopFont();
 	}
-	
-        ImGui::End();
+
+	if(with_window) {
+	    ImGui::End();
+	}
     }
     
     /*****************************************************************/
@@ -1022,9 +1052,20 @@ namespace GEO {
     /**********************************************************************/
 
     TextEditor::TextEditor(bool* visible) : visible_(visible) {
-	text_[0] = '\0';
+	impl_.SetText("\n");
+	impl_.SetCursorPosition(
+	    ::TextEditor::Coordinates(0,0)
+	);
+	impl_.SetLanguageDefinition(
+	    ::TextEditor::LanguageDefinition::Lua()
+	);
+	impl_.SetPalette(::TextEditor::GetDarkPalette());	    	    
     }
 
+    std::string TextEditor::text() const {
+	return impl_.GetText();
+    }
+    
     void TextEditor::draw() {
 	ImGui::Begin(
 	    "Text Editor", visible_,
@@ -1032,18 +1073,17 @@ namespace GEO {
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse 
 	);
-	ImVec2 sz = ImGui::GetWindowSize();
-	float margin = 40.0f;
-	if(Application::instance()->retina_mode()) {
-	    margin *= 2.0f;
+
+	if(Application::instance()->scaling() == 2.0f) {
+	    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[3]);
+	} else {
+	    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[2]);
 	}
-	ImGui::InputTextMultiline(
-	    "##source",
-	    text_,
-	    65535,
-	    ImVec2(-1.0f, sz.y - margin),
-	    ImGuiInputTextFlags_AllowTabInput 
-	);
+
+	impl_.Render("##source");
+	
+	ImGui::PopFont();
+	
 	ImGui::End();
     }
 
@@ -1055,20 +1095,29 @@ namespace GEO {
 	    text += line;
 	    text += "\n";
 	}
-	strcpy(text_, text.c_str()); // TODO: test size.
+	impl_.SetText(text);
+	impl_.SetCursorPosition(
+	    ::TextEditor::Coordinates(0,0)
+	);
     }
 
     void TextEditor::save(const std::string& filename) {
 	std::ofstream out(filename.c_str());
-	out << text_;
+	out << impl_.GetText();
     }
 
     void TextEditor::clear() {
-	text_[0] = '\0';
+	impl_.SetText("\n");
+	impl_.SetCursorPosition(
+	    ::TextEditor::Coordinates(0,0)
+	);
     }
 
     void TextEditor::load_data(const char* data) {
-	strcpy(text_, data); // TODO: test size.	
+	impl_.SetText(data);
+	impl_.SetCursorPosition(
+	    ::TextEditor::Coordinates(0,0)
+	);
     }
     
     /**********************************************************************/

@@ -45,6 +45,9 @@ endif()
 add_flags(CMAKE_CXX_FLAGS -frounding-math -ffp-contract=off)
 add_flags(CMAKE_C_FLAGS -frounding-math -ffp-contract=off)
 
+# Activate c++ 2011
+add_flags(CMAKE_CXX_FLAGS -std=c++11)
+
 # Enable glibc parallel mode
 #add_flags(CMAKE_CXX_FLAGS -D_GLIBCXX_PARALLEL)
 

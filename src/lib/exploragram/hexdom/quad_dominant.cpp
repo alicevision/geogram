@@ -347,7 +347,7 @@ namespace GEO {
         Mesh m_bak;
         m_bak.copy(*m);
 
-        while (1) {
+        for(;;) {
             split_edges_by_iso_uvs(m, uv_name, singular_name);
             facets_split(m, uv_name, singular_name);
 
@@ -780,7 +780,7 @@ namespace GEO {
         m_bak.copy(*m);
 
         vector<BBox> locked_regions;
-        while (1) {
+        for(;;) {
             {
                 Attribute<index_t> chart(m->facets.attributes(), "chart");
                 Attribute<index_t> undo(m->facets.attributes(), "undo");

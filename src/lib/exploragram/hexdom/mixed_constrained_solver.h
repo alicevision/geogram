@@ -277,7 +277,7 @@ namespace GEO {
 		}
 
 		index_t size() const {
-			geo_assert(false);
+		        geo_assert_not_reached;
 			return multiplicity.size();
 		}
 

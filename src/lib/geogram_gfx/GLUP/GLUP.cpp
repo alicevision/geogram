@@ -49,12 +49,39 @@
 #include <geogram_gfx/GLUP/GLUP_context_ES.h>
 #include <geogram_gfx/basic/GLSL.h>
 #include <geogram/basic/logger.h>
+#include <geogram/basic/file_system.h>
 #include <geogram/basic/command_line.h>
 
 #ifdef GEO_OS_EMSCRIPTEN
 #include <emscripten.h>
 #pragma GCC diagnostic ignored "-Wdollar-in-identifier-extension"
 #endif
+
+/*****************************************************************************/
+
+namespace {
+    using namespace GEO;
+    void downgrade_message() {
+	static bool done = false;
+	if(!done) {
+	    done = true;
+	    Logger::out("GLUP") << "Something happened, trying to fix (by downgrading)" << std::endl;
+	    Logger::out("GLUP") << "If this does not work, try the following options:" << std::endl;
+	    Logger::out("GLUP") << " (1) make sure your OpenGL driver is up to date" << std::endl;
+	    Logger::out("GLUP") << " (2) create a file named \'geogram.ini\' in " << std::endl;
+	    Logger::out("GLUP") << "     your home directory (" << FileSystem::home_directory() << ")" << std::endl;
+	    Logger::out("GLUP") << "     with: " << std::endl;
+	    Logger::out("GLUP") << "       gfx:GL_profile=core" << std::endl;
+	    Logger::out("GLUP") << " (3) create a file named \'geogram.ini\' in " << std::endl;
+	    Logger::out("GLUP") << "     your home directory (" << FileSystem::home_directory() << ")" << std::endl;
+	    Logger::out("GLUP") << "     with: " << std::endl;
+	    Logger::out("GLUP") << "       gfx:GL_profile=compatibility" << std::endl;
+	    Logger::out("GLUP") << "       gfx:GLUP_profile=VanillaGL" << std::endl;
+	    Logger::out("GLUP") << " Note: solution (3) will result in degraded performance."
+				<< std::endl;
+	}
+    }
+}
 
 /*****************************************************************************/
 
@@ -134,7 +161,7 @@ static bool supports_tessellation_shader() {
 #endif
 
 GLUPcontext glupCreateContext() {
-  
+    
     if(!GLUP::initialized_) {
         GLUP::initialized_ = true;
         atexit(GLUP::cleanup);
@@ -159,6 +186,7 @@ GLUPcontext glupCreateContext() {
 	      GEO::Logger::out("GLUP")
 		<< "GLSL version >= 4.4 but tessellation unsupported"
 		<< std::endl;
+	      downgrade_message();
 	      GEO::Logger::out("GLUP") << "Downgrading to GLUP 150..."
 				       << std::endl;
 	      GLSL_version = 1.5;
@@ -190,6 +218,7 @@ GLUPcontext glupCreateContext() {
 	    GEO::Logger::warn("GLUP")
 	        << "Caught an exception in GLUP440, downgrading to GLUP150"
 	        << std::endl;
+	    downgrade_message();	    
 	    GLUP_profile = "GLUP150";
 	    delete result;
 	    result = nil;
@@ -206,6 +235,7 @@ GLUPcontext glupCreateContext() {
 	    GEO::Logger::warn("GLUP")
 	        << "Caught an exception in GLUP150, downgrading to GLUPES2"
 	        << std::endl;
+	    downgrade_message();	    
 	    GLUP_profile = "GLUPES2";
 	    delete result;
 	    result = nil;
@@ -222,6 +252,7 @@ GLUPcontext glupCreateContext() {
 	    GEO::Logger::warn("GLUP")
 	        << "Caught an exception in GLUPES2, downgrading to VanillaGL"
 	        << std::endl;
+	    downgrade_message();	    
 	    GLUP_profile = "VanillaGL";
 	    delete result;
 	    result = nil;

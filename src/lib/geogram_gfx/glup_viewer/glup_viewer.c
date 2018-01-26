@@ -485,8 +485,8 @@ static int mouse_pressed = 0;
 
 static void mouse(GLFWwindow* w, int button, int action, int mods) {
     glup_viewer_post_redisplay();
+    glup_viewer_gui_mouse_button_callback(w, button, action, mods);
     if(glup_viewer_gui_takes_input()) {
-        glup_viewer_gui_mouse_button_callback(w, button, action, mods);
         return;
     }
     
@@ -518,8 +518,8 @@ static void mouse(GLFWwindow* w, int button, int action, int mods) {
 
 static void scroll(GLFWwindow* w, double xoffset, double yoffset) {
     glup_viewer_post_redisplay();
+    glup_viewer_gui_scroll_callback(w, xoffset, yoffset);    
     if(glup_viewer_gui_takes_input()) {
-        glup_viewer_gui_scroll_callback(w, xoffset, yoffset);
         return;
     }
     
@@ -1132,8 +1132,10 @@ static void copy_image_to_clipboard(void);
 void glup_viewer_char_callback(GLFWwindow* w, unsigned int c);
 
 void glup_viewer_char_callback(GLFWwindow* w, unsigned int c) {
+
+    glup_viewer_gui_char_callback(w,c);
+    
     if(glup_viewer_gui_takes_input()) {
-        glup_viewer_gui_char_callback(w,c);
         return;
     }
     
@@ -1188,8 +1190,9 @@ static void glup_viewer_key_callback(
     static char buffer[2];
 #endif
     
+    glup_viewer_gui_key_callback(w, key, scancode, action, mods);
+
     if(glup_viewer_gui_takes_input()) {
-        glup_viewer_gui_key_callback(w, key, scancode, action, mods);
 	/* 
 	 * We continue capturing keypresses on function keys even if
 	 * ImGUI window is active, else we cannot "run program" with
@@ -1199,6 +1202,7 @@ static void glup_viewer_key_callback(
 	    return;
 	}
     }
+    
 
     if(keyboard_func_ext != NULL && action != GLFW_REPEAT) {
 	ev = (action == GLFW_PRESS) ? GLUP_VIEWER_DOWN : GLUP_VIEWER_UP;

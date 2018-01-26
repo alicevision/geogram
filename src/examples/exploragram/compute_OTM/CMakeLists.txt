@@ -7,3 +7,5 @@ if(GEOGRAM_WITH_VORPALINE)
 else()
   target_link_libraries(compute_OTM exploragram geogram)
 endif()
+
+set_target_properties(compute_OTM PROPERTIES FOLDER "GEOGRAM")

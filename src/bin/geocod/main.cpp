@@ -194,7 +194,7 @@ namespace {
 
 	void run_program() {
 	    exec_command("require(\"preamble\")");	    
-	    if(exec_command(text_editor_.text())) {
+	    if(exec_command(text_editor_.text().c_str())) {
 		Logger::out("LUA") << "Program is OK." << std::endl;
 	    } else {
 		adjust_lua_glup_state(lua_state_);		

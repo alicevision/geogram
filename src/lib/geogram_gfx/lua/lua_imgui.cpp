@@ -98,13 +98,6 @@ namespace {
 	lua_pushboolean(L,result);
 	lua_pushstring(L,buff);
 	
-	// Note: If I do not do that, then the system thinks that the
-	// enter key is still pressed (it misses the key release event)
-	// I do not know why...
-	if(result) {
-            const int key_index = ImGui::GetIO().KeyMap[ImGuiKey_Enter];
-            ImGui::GetIO().KeysDown[key_index] = false;
-	}
 	
 	return 2;
     }
@@ -234,6 +227,67 @@ namespace {
 
 	return 4;
     }
+
+    int wrapper_ColorEdit4WithPalette(
+	lua_State* L	
+    ) {
+	if(lua_gettop(L) != 5) {
+	    return luaL_error(
+		L, "'imgui.ColorEdit3WithPalette()' invalid number of arguments"
+	    );
+	}
+	
+	if(!lua_isstring(L,1)) {
+	    return luaL_error(
+		L, "'imgui.ColorEdit3WithPalette()' argument 1 should be a string"
+	    );
+	}
+
+	if(!lua_isnumber(L,2)) {
+	    return luaL_error(
+		L, "'imgui.ColorEdit3WithPalette()' argument 2 should be a number"
+	    );
+	}
+
+	if(!lua_isnumber(L,3)) {
+	    return luaL_error(
+		L, "'imgui.ColorEdit3WithPalette()' argument 3 should be a number"
+	    );
+	}
+
+	if(!lua_isnumber(L,4)) {
+	    return luaL_error(
+		L, "'imgui.ColorEdit3WithPalette()' argument 4 should be a number"
+	    );
+	}
+
+	if(!lua_isnumber(L,5)) {
+	    return luaL_error(
+		L, "'imgui.ColorEdit3WithPalette()' argument 5 should be a number"
+	    );
+	}
+	
+	const char* label = lua_tostring(L,1);
+	
+	float rgb[4];
+	rgb[0] = float(lua_tonumber(L,2));
+	rgb[1] = float(lua_tonumber(L,3));
+	rgb[2] = float(lua_tonumber(L,4));
+	rgb[3] = float(lua_tonumber(L,5));		
+
+	bool sel = ImGui::ColorEdit4WithPalette(
+	    label, rgb
+	);
+
+	lua_pushboolean(L,sel);
+	lua_pushnumber(L,double(rgb[0]));
+	lua_pushnumber(L,double(rgb[1]));
+	lua_pushnumber(L,double(rgb[2]));
+	lua_pushnumber(L,double(rgb[3]));	
+
+	return 5;
+    }
+
     
     int wrapper_OpenFileDialog(
 	lua_State* L
@@ -271,7 +325,8 @@ namespace {
 	const char* label      = lua_tostring(L,1);
 	const char* extensions = lua_tostring(L,2);
 	const char* filename   = lua_tostring(L,3);
-	ImGuiExtFileDialogFlags flags = ImGuiExtFileDialogFlags(lua_tonumber(L,4));
+	ImGuiExtFileDialogFlags flags =
+	    ImGuiExtFileDialogFlags(lua_tonumber(L,4));
 
 	ImGui::OpenFileDialog(label, extensions, filename, flags);
 	
@@ -302,7 +357,7 @@ namespace {
 	const char* label      = lua_tostring(L,1);
 	char filename[geo_imgui_string_length];
 
-	const char* filename_in = lua_tostring(L,3);
+	const char* filename_in = lua_tostring(L,2);
 	if(filename_in != nil) {
 	    if(strlen(filename_in) > geo_imgui_string_length + 1) {
 		Logger::err("ImGui") << "Max file name length exceeded"
@@ -314,10 +369,11 @@ namespace {
 	    filename[0] = '\0';
 	}
 	
-	bool result = ImGui::FileDialog(label, filename, geo_imgui_string_length);
+	bool result =
+	    ImGui::FileDialog(label, filename, geo_imgui_string_length);
 
 	lua_pushboolean(L,result);
-	lua_pushstring(L, filename);
+	lua_pushstring(L, result ? filename : filename_in);
 	
 	return 2;
     }
@@ -348,7 +404,8 @@ namespace {
 	if(lua_gettop(L) == 3) {
 	    if(!lua_isnumber(L,3)) {
 		return luaL_error(
-		    L, "'imgui.SetNextWindowPos()' argument 3 should be a number"
+		    L,
+		    "'imgui.SetNextWindowPos()' argument 3 should be a number"
 		);
 	    }
 	    cond = ImGuiCond(lua_tonumber(L,3));
@@ -389,7 +446,8 @@ namespace {
 	if(lua_gettop(L) == 3) {
 	    if(!lua_isnumber(L,3)) {
 		return luaL_error(
-		    L, "'imgui.SetNextWindowSize()' argument 3 should be a number"
+		    L,
+		    "'imgui.SetNextWindowSize()' argument 3 should be a number"
 		);
 	    }
 	    cond = ImGuiCond(lua_tonumber(L,3));
@@ -461,6 +519,10 @@ void init_lua_imgui(lua_State* L) {
     lua_pushinteger(L, ImGuiCond_Appearing);
     lua_setglobal(L,"ImGuiCond_Appearing");
 
+
+    lua_pushinteger(L, ImGuiSelectableFlags_AllowDoubleClick);
+    lua_setglobal(L, "ImGuiSelectableFlags_AllowDoubleClick");    
+    
     lua_getglobal(L, "imgui");
 
     lua_pushliteral(L,"TextInput");
@@ -475,6 +537,10 @@ void init_lua_imgui(lua_State* L) {
     lua_pushcfunction(L,wrapper_ColorEdit3WithPalette); 
     lua_settable(L,-3);
 
+    lua_pushliteral(L,"ColorEdit4WithPalette");
+    lua_pushcfunction(L,wrapper_ColorEdit4WithPalette); 
+    lua_settable(L,-3);
+    
     lua_pushliteral(L,"OpenFileDialog");
     lua_pushcfunction(L,wrapper_OpenFileDialog);
     lua_settable(L,-3);

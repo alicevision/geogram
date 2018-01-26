@@ -70,19 +70,21 @@ namespace {
 	    atexit(terminate);
 	}
     }
-}
 
-namespace ImGui {
-
-    float scaling() {
-	return ImGui::GetIO().FontGlobalScale;
-    }
-
-    void set_scaling(float x) {
-	ImGui::GetIO().FontGlobalScale = x;
-    }
-    
-    bool ColorEdit3WithPalette(const char* label, float* color_in) {
+    /**
+     * \brief Manages the GUI of a color editor.
+     * \details This creates a custom dialog with the color editor and
+     *  a default palette, as in ImGUI example.
+     * \param[in] label the label of the widget, passed to ImGUI
+     * \param[in,out] color a pointer to an array of 3 floats if 
+     *  with_alpha is false or 4 floats if with_alpha is true
+     * \param[in] with_alpha true if transparency is edited, false otherwise
+     * \retval true if the color was changed
+     * \retval false otherwise
+     */
+    bool ColorEdit3or4WithPalette(
+	const char* label, float* color_in, bool with_alpha
+    ) {
 	bool result = false;
 	static bool saved_palette_initialized = false;
 	static ImVec4 saved_palette[40];
@@ -90,8 +92,11 @@ namespace ImGui {
 	ImGui::PushID(label);
 	int flags =
 	    ImGuiColorEditFlags_PickerHueWheel |
-	    ImGuiColorEditFlags_NoAlpha |
 	    ImGuiColorEditFlags_Float;
+
+	if(!with_alpha) {
+	    flags |= ImGuiColorEditFlags_NoAlpha ; 
+	}
 	
 	ImVec4& color = *(ImVec4*)color_in;
 
@@ -169,7 +174,7 @@ namespace ImGui {
 	    ImGui::Text("Palette");
 	    for (int n = 0; n < 40; n++) {
 		ImGui::PushID(n);
-		if ( (n % 8) != 0 ) {
+		if ( (n % 6) != 0 ) {
 		    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.y);
 		}
 		if (ImGui::ColorButton(
@@ -189,14 +194,43 @@ namespace ImGui {
 		}
 		ImGui::PopID();
 	    }
+	    ImGui::Separator();
+	    if(ImGui::Button(
+		   "OK", ImVec2(-1, -1)
+	       )
+	    ) {
+		ImGui::CloseCurrentPopup();
+	    }
 	    ImGui::EndGroup();
 	    ImGui::EndPopup();
 	}
 	ImGui::PopID();
 	return result;
     }
+    
+}
 
-    /****************************************************************/
+namespace ImGui {
+
+    float scaling() {
+	return ImGui::GetIO().FontGlobalScale;
+    }
+
+    void set_scaling(float x) {
+	ImGui::GetIO().FontGlobalScale = x;
+    }
+    
+    /*******************************************************************/
+    
+    bool ColorEdit3WithPalette(const char* label, float* color_in) {
+	return ColorEdit3or4WithPalette(label, color_in, false);
+    }
+
+    bool ColorEdit4WithPalette(const char* label, float* color_in) {
+	return ColorEdit3or4WithPalette(label, color_in, true);	
+    }
+
+    /*******************************************************************/
     
     void OpenFileDialog(
 	const char* label,
@@ -220,7 +254,9 @@ namespace ImGui {
 	dlg->show();
     }
 
-    bool FileDialog(const char* label, char* filename, size_t filename_buff_len) {
+    bool FileDialog(
+	const char* label, char* filename, size_t filename_buff_len
+    ) {
 	if(file_dialogs.find(label) == file_dialogs.end()) {
 	    filename[0] = '\0';
 	    return false;
