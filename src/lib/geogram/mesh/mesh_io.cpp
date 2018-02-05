@@ -45,6 +45,7 @@
 
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/mesh/mesh.h>
+#include <geogram/mesh/index.h>
 #include <geogram/points/colocate.h>
 #include <geogram/basic/line_stream.h>
 #include <geogram/basic/b_stream.h>
@@ -3501,6 +3502,8 @@ namespace GEO {
         }
     };
 
+    /************************************************************************/
+    
     /**
      * \brief IO handler for graphite files.
      * \details Graphite files with a single object can be directly read
@@ -3525,6 +3528,7 @@ namespace GEO {
         }
     };
 
+    /************************************************************************/
    
     /**
      * \brief IO handler for PDB (Protein DataBase) files.
@@ -3611,8 +3615,532 @@ namespace GEO {
 	    return String::to_double(s);
 	}
     };
-   
-   
+
+    /************************************************************************/
+
+    /**
+     * \brief Mesh IO Handler for OpenVolumeMesh file format.
+     * \details Saves a polyhedral mesh stored in a surfacic mesh that
+     *  has all cell boundaries and a vertex_id vertex attribute and cell_id
+     *  facet attribute. Note: the implementation is pretty inefficient (uses
+     *  tables).
+     */
+    class OVMIOHandler : public MeshIOHandler {
+    public:
+	/**
+	 * \copydoc MeshIOHandler::load()
+	 */
+        virtual bool load(
+            const std::string& filename, Mesh& M,
+            const MeshIOFlags& ioflags
+        ) {
+	    geo_argused(ioflags);
+	    M.clear();
+	    M.vertices.set_dimension(3);
+            LineInput in(filename);
+            if(!in.OK()) {
+                return false;
+            }
+	    
+	    in.get_line();
+	    in.get_fields();
+	    if(
+		in.nb_fields() != 2 ||
+		strcmp(in.field(0),"OVM") ||
+		strcmp(in.field(1),"ASCII")
+	    ) {
+		Logger::err("OVM") << "Invalid file header" << std::endl;
+		return false;
+	    }
+
+
+	    Attribute<int> vertex_id(M.vertices.attributes(), "vertex_id");
+	    Attribute<int> cell_id(M.facets.attributes(), "cell_id");
+
+	    index_t nb_vertices = 0;
+	    vector<double> vertices;
+	    vector<index_t> ovm_to_vertex_id;
+
+	    index_t nb_edges = 0;
+	    vector<index_t> edges;
+
+	    index_t nb_facets = 0;
+	    vector<index_t> facet_ptr;
+	    vector<index_t> facet_edge;
+
+	    index_t nb_cells = 0;
+
+	    try {
+		while(!in.eof()) {
+		    std::string kw = get_keyword(in);
+		    if(kw == "Vertices") {
+			nb_vertices = get_number(in);
+			vertices.resize(nb_vertices*3);
+			ovm_to_vertex_id.assign(nb_vertices*3, index_t(-1));
+			FOR(v, nb_vertices) {
+			    in.get_line();
+			    in.get_fields();
+			    if(in.nb_fields() != 3) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid vertex, expected 3 coordinates"
+				);
+			    }
+			    vertices[3*v]   = in.field_as_double(0);
+			    vertices[3*v+1] = in.field_as_double(1);
+			    vertices[3*v+2] = in.field_as_double(2);		
+			}
+		    } else if(kw == "Edges") {
+			nb_edges = get_number(in);
+			edges.resize(nb_edges*2);
+			FOR(e, nb_edges) {
+			    in.get_line();
+			    in.get_fields();
+			    if(in.nb_fields() != 2) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid edge, expected 2 indices"
+				);
+			    }
+			    edges[2*e]   = in.field_as_uint(0);
+			    edges[2*e+1] = in.field_as_uint(1);
+			    if(
+				edges[2*e] >= nb_vertices ||
+				edges[2*e+1] >= nb_vertices) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid vertex id in edge"
+				);
+			    }
+			}
+		    } else if(kw == "Faces") {
+			nb_facets = get_number(in);
+			facet_ptr.resize(nb_facets+1);
+			facet_ptr[0] = 0;
+			FOR(f, nb_facets) {
+			    in.get_line();
+			    in.get_fields();
+			    if(in.nb_fields() == 0) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid facet, empty line"
+				);
+			    }
+			    index_t facet_size = in.field_as_uint(0);
+			    facet_ptr[f+1] = facet_ptr[f] + facet_size;
+			    if(in.nb_fields() != facet_size+1) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid facet, wrong number of elements"
+				);
+			    }
+			    FOR(lf, facet_size) {
+				index_t ie = in.field_as_uint(1+lf);
+				if((ie/2) >= nb_edges) {
+				    throw(
+					"Line: " +
+					String::to_string(in.line_number()) +
+					":Invalid edge id in facet"
+				    );
+				}
+				facet_edge.push_back(ie);
+			    }
+			}
+		    } else if(kw == "Polyhedra") {
+			nb_cells = get_number(in);
+			FOR(c, nb_cells) {
+			    in.get_line();
+			    in.get_fields();
+			    if(in.nb_fields() == 0) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid cell, empty line"
+				);
+			    }
+			    index_t cell_size = in.field_as_uint(0);
+			    if(in.nb_fields() != cell_size + 1) {
+				throw(
+				    "Line: " +
+				    String::to_string(in.line_number()) +
+				    ":Invalid cell, wrong number of elements"
+				);
+			    }
+			    vector<index_t> cell_facets;
+			    FOR(lf, cell_size) {
+				index_t f = in.field_as_uint(lf+1);
+				if((f/2) >= nb_facets) {
+				    throw(
+					"Line: " +
+					String::to_string(in.line_number()) +
+					":Invalid facet id in cell"
+				    );
+				}
+				cell_facets.push_back(f);
+			    }
+			    
+			    // Clear vertex ids
+			    FOR(lf, cell_size) {
+				index_t f = cell_facets[lf];		    
+				bool inverse_f = (f & 1) != 0;		    
+				f /= 2;
+				for(index_t ee = facet_ptr[f]; ee<facet_ptr[f+1]; ++ee) {
+				    index_t e = facet_edge[ee];
+				    if(inverse_f) {
+					e = e ^ index_t(1);
+				    }
+				    // Vertex index is directly obtained from edge[]
+				    // (edge2vertices) table, and rule for orientation
+				    // (2*e for direct edge, 2*e+1 for inversed edge)
+				    // directly gives the index of the origin vertex.
+				    // If the facet is inversed, then the edge is inversed
+				    // (by inverting its least significant bit, with the
+				    // XOR e ^(index_t(1)) operation).
+				    index_t ovm_v = edges[e];			
+				    ovm_to_vertex_id[ ovm_v ] = index_t(-1);
+				}
+			    }
+			    
+			    // Create vertices
+			    FOR(lf, cell_size) {
+				index_t f = cell_facets[lf];
+				bool inverse_f = (f & 1) != 0;		    
+				f /= 2;
+				for(index_t ee = facet_ptr[f]; ee<facet_ptr[f+1]; ++ee) {
+				    index_t e = facet_edge[ee];
+				    if(inverse_f) {
+					e = e ^ index_t(1);
+				    }
+				    index_t ovm_v = edges[e];
+				    if(ovm_to_vertex_id[ovm_v] == index_t(-1)) {
+					const double* p = &(vertices[ ovm_v*3 ]);
+					index_t new_v = M.vertices.create_vertex();
+					set_mesh_point(M, new_v, p, 3);
+					ovm_to_vertex_id[ovm_v] = new_v;
+					vertex_id[new_v] = int(ovm_v);
+				    }
+				}		    
+			    }
+			    
+			    // Create facets
+			    FOR(lf, cell_size) {
+				index_t f = cell_facets[lf];
+				bool inverse_f = (f & 1) != 0;
+				f /= 2;
+				index_t facet_size = facet_ptr[f+1] - facet_ptr[f];
+				index_t new_f = M.facets.create_polygon(facet_size);
+				cell_id[new_f] = int(c);
+				FOR(le, facet_size) {
+				    index_t ee = inverse_f ?
+					(facet_ptr[f+1] - le - 1) :
+					(facet_ptr[f] + le);
+				    index_t e = facet_edge[ee];
+				    if(inverse_f) {
+					e = e ^ index_t(1);
+				    }
+				    index_t ovm_v = edges[e];
+				    index_t geo_v = ovm_to_vertex_id[ovm_v];
+				    M.facets.set_vertex(new_f, le, geo_v);
+				}
+			    }
+			}
+		    } else if(kw == "Vertex_Property") {
+			skip_property(in,nb_vertices);
+		    } else if(kw == "Edge_Property") {
+			skip_property(in,nb_edges);
+		    } else if(kw == "HalfEdge_Property") {
+			skip_property(in,nb_edges*2);
+		    } else if(kw == "Face_Property") {
+			skip_property(in,nb_facets);
+		    } else if(kw == "HalfFace_Property") {
+			skip_property(in,nb_facets*2);		    
+		    } else if(kw == "Polyhedron_Property") {
+			skip_property(in,nb_cells);
+		    } 
+		}
+	    } catch(const std::string& what) {
+                Logger::err("I/O") << what << std::endl;
+		return false;
+	    } catch(const std::exception& ex) {
+                Logger::err("I/O") << ex.what() << std::endl;
+		return false;
+            } catch(...) {
+                Logger::err("I/O") << "Caught exception" << std::endl;
+		return false;
+	    }
+
+	    M.facets.connect();
+	    
+	    return true;
+	}
+	
+	/**
+	 * \copydoc MeshIOHandler::save()
+	 */
+	virtual bool save(
+            const Mesh& M, const std::string& filename,
+            const MeshIOFlags& ioflags = MeshIOFlags()
+	) {
+	    geo_argused(ioflags);
+	    
+	    Attribute<int> vertex_id;
+	    vertex_id.bind_if_is_defined(M.vertices.attributes(), "vertex_id");
+	    Attribute<int> cell_id;
+	    cell_id.bind_if_is_defined(M.facets.attributes(), "cell_id");
+
+	    if(!vertex_id.is_bound()) {
+		Logger::err("OVM") << "Missing vertex ids" << std::endl;
+		return false;
+	    }
+
+	    if(!cell_id.is_bound()) {
+		Logger::err("OVM") << "Missing cell ids" << std::endl;
+		return false;
+	    }
+
+	    std::ofstream out(filename.c_str());
+	    if(!out) {
+		return false;
+	    }
+
+	    out << "OVM ASCII" << std::endl;
+
+	    // Output the vertices
+	    {
+		index_t nb_vertices = 0;
+		FOR(v, M.vertices.nb()) {
+		    nb_vertices = geo_max(nb_vertices, index_t(vertex_id[v]));
+		}
+		++nb_vertices;
+		vector<index_t> vid_to_v(nb_vertices);
+		FOR(v, M.vertices.nb()) {
+		    vid_to_v[vertex_id[v]] = v;
+		}
+		out << "Vertices" << std::endl;
+		out << nb_vertices << std::endl;
+		FOR(vid, nb_vertices) {
+		    const double* p = M.vertices.point_ptr(vid_to_v[vid]);
+		    FOR(d, M.vertices.dimension()) {
+			out << std::setprecision(17) << p[d] << " ";
+		    }
+		    out << std::endl;
+		}
+	    }
+
+	    std::map<bindex, index_t> edge_to_id;
+	    vector<bindex> edges;
+	    index_t nb_edges = 0;
+	    
+	    // Construct edge table and output edges
+	    {
+		FOR(f, M.facets.nb()) {
+		    for(
+			index_t c1=M.facets.corners_begin(f);
+			c1<M.facets.corners_end(f); ++c1
+		    ) {
+			index_t c2 = M.facets.next_corner_around_facet(f,c1);
+			index_t iv1 =
+			    index_t(vertex_id[M.facet_corners.vertex(c1)]);
+			index_t iv2 =
+			    index_t(vertex_id[M.facet_corners.vertex(c2)]);
+			bindex K(iv1, iv2);
+			if(edge_to_id.find(K) == edge_to_id.end()) {
+			    edge_to_id[K] = nb_edges;
+			    edges.push_back(K);
+			    ++nb_edges;
+			}
+		    }
+		}
+		out << "Edges" << std::endl;
+		out << nb_edges << std::endl;
+		FOR(e, nb_edges) {
+		    out << edges[e].indices[0] << " "
+			<< edges[e].indices[1] << std::endl;
+		}
+	    }
+
+	    std::map<trindex, index_t> facet_to_id;
+	    vector<index_t> facets;
+	    index_t nb_facets = 0;
+
+	    // Construct facet table and output facets
+	    {
+		FOR(f, M.facets.nb()) {
+		    trindex K    = facet_key(M, f, vertex_id, false);
+		    trindex Kinv = facet_key(M, f, vertex_id, true);		    
+		    if(
+			facet_to_id.find(K) == facet_to_id.end() &&
+			facet_to_id.find(Kinv) == facet_to_id.end()
+		    ) {
+			facet_to_id[K]    = 2*nb_facets;
+			facet_to_id[Kinv] = 2*nb_facets + 1;			
+			++nb_facets;
+			facets.push_back(f);
+		    }
+		}
+		out << "Faces" << std::endl;
+		out << nb_facets << std::endl;
+		FOR(fi, nb_facets) {
+		    index_t f = facets[fi];
+		    out << M.facets.nb_vertices(f) << " ";
+		    for(
+			index_t c1=M.facets.corners_begin(f);
+			c1<M.facets.corners_end(f); ++c1
+		    ) {
+			index_t c2 = M.facets.next_corner_around_facet(f,c1);
+			index_t iv1 =
+			    index_t(vertex_id[M.facet_corners.vertex(c1)]);
+			index_t iv2 =
+			    index_t(vertex_id[M.facet_corners.vertex(c2)]);
+			bindex K(iv1, iv2, bindex::KEEP_ORDER);
+			index_t ie = index_t(-1);
+			std::map<bindex,index_t>::const_iterator it =
+			    edge_to_id.find(K);
+			if(it == edge_to_id.end()) {
+			    ie = 2*edge_to_id[bindex(iv1,iv2)]+1;
+			} else {
+			    ie = 2*it->second;
+			}
+			out << ie << " ";
+		    }
+		    out << std::endl;
+		}
+	    }
+
+	    // Construct cell table and output cells
+	    
+	    index_t nb_cells = 0;
+	    FOR(f, M.facets.nb()) {
+		nb_cells = geo_max(nb_cells, index_t(cell_id[f]));
+	    }
+	    ++nb_cells;
+	    
+	    // Ugly ! One could use compressed row storage instead.
+	    // ... but anyway we got all these tables indexed by bindexes
+	    // and trindexes that eat much memory, no need to optimize that
+	    // for now since tables storage probably dominate...
+	    vector< vector<index_t> >cell_to_f(nb_cells);
+	    FOR(f, M.facets.nb()) {
+		cell_to_f[cell_id[f]].push_back(f);
+	    }
+
+	    out << "Polyhedra" << std::endl;
+	    out << nb_cells << std::endl;
+	    
+	    FOR(ci, nb_cells) {
+		out << cell_to_f[ci].size() << " ";
+		FOR(lf, cell_to_f[ci].size()) {
+		    index_t f = cell_to_f[ci][lf];
+		    trindex K = facet_key(M, f, vertex_id);
+		    out << facet_to_id[K] << " ";
+		}
+		out << std::endl;
+	    }
+
+	    vertex_id.unbind();
+	    cell_id.unbind();
+	    
+	    return true;
+	}
+
+    private:
+
+	/**
+	 * \brief Gets one keyword from the next line.
+	 * \param[in] in a reference to the line input stream.
+	 * \details Throws an exception if the line has
+	 *  not exactly one keyword.
+	 */
+	std::string get_keyword(LineInput& in) {
+	    in.get_line();
+	    in.get_fields();
+	    if(in.nb_fields() == 0 && in.eof()) {
+		return std::string("");
+	    }
+	    if(in.nb_fields() < 1) {
+		throw("Expected one keyword");
+	    }
+	    return std::string(in.field(0));
+	}
+
+	/**
+	 * \brief Gets one unsigned integer from the next
+	 *  line.
+	 * \param[in] in a reference to the line input stream.
+	 * \details Throws an exception if the next line
+	 *  has not exactly one unsigned integer.
+	 */
+	index_t get_number(LineInput& in) {
+	    in.get_line();
+	    in.get_fields();
+	    if(in.nb_fields() != 1) {
+		throw("Expected one number");
+	    }
+	    index_t result = in.field_as_uint(0);
+	    return result;
+	}
+
+	/*
+	 * \brief Skips property.
+	 * \param[in] in a reference to the line input stream.
+	 * \param[in] nb_elements number of elements to be skipped
+	 */
+	void skip_property(LineInput& in, index_t nb_elements) {
+	    // +1 because there is the type of the property
+	    FOR(i, nb_elements+1) {
+		in.get_line();
+	    }
+	}
+	
+	/**
+	 * \brief Gets a key to be able to retreive facet indices.
+	 * \param[in] M a reference to a mesh
+	 * \param[in] f a facet of the mesh
+	 * \param[in] vertex_id an Id attribute attached to the vertices
+	 * \param[in] invert if true, invert the order of the vertices
+	 *  of the facet.
+	 * \return a trindex composed of the ids of three corners of the
+	 *  facet, formed by the id of the vertex with the lowest id, 
+	 *  and the ids of its predecessor and successor around the facet.
+	 */
+
+	static trindex facet_key(
+	    const Mesh& M, index_t f, const Attribute<int>& vertex_id,
+	    bool invert=false
+	) {
+	    index_t min_iv = index_t(-1);
+	    index_t min_corner = index_t(-1);
+	    for(
+		index_t c=M.facets.corners_begin(f);
+		c<M.facets.corners_end(f); ++c
+	    ) {
+		index_t iv = index_t(vertex_id[M.facet_corners.vertex(c)]);
+		if(min_iv == index_t(-1) || iv < min_iv) {
+		    min_corner = c;
+		    min_iv = iv;
+		}
+	    }
+	    index_t c1 = min_corner;
+	    index_t c2 = invert ?
+		M.facets.prev_corner_around_facet(f,c1) :
+		M.facets.next_corner_around_facet(f,c1) ;
+	    index_t c3 = invert ?
+		M.facets.prev_corner_around_facet(f,c2) :
+		M.facets.next_corner_around_facet(f,c2) ;
+	    index_t iv1 = index_t(vertex_id[M.facet_corners.vertex(c1)]);
+	    index_t iv2 = index_t(vertex_id[M.facet_corners.vertex(c2)]);
+	    index_t iv3 = index_t(vertex_id[M.facet_corners.vertex(c3)]);
+	    return trindex(iv1,iv2,iv3,trindex::KEEP_ORDER);
+	}
+	
+    };
+    
+    
 }
 
 /****************************************************************************/
@@ -3799,7 +4327,8 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(GeogramIOHandler, "geogram_ascii");
         geo_register_MeshIOHandler_creator(GraphiteIOHandler, "graphite");
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb");
-        geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb1");		
+        geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb1");
+        geo_register_MeshIOHandler_creator(OVMIOHandler, "ovm");
     }
 
     

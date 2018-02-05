@@ -92,11 +92,6 @@ namespace {
 	    TY_[2] = -(x1 - x2)/d ;
 	}
 
-	const vec2& vertex(index_t i) const {
-	    geo_debug_assert(i<3);
-	    return vertex_[i];
-	}
-	
         double TX(int i) const {
 	    geo_debug_assert(i<3);
 	    return TX_[i]; 

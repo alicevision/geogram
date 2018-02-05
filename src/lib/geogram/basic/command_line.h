@@ -83,6 +83,24 @@ namespace GEO {
          */
         void GEOGRAM_API terminate();
 
+
+	/**
+	 * \brief Defines the name of the configuration file.
+	 * \param[in] filename the name of the configuration file. Before
+	 *  parsing command line arguments, arguments are set according
+	 *  to this file, loaded from the home directory (or 'My Documents'
+	 *  under Windows). Default is 'geogram.ini'.
+	 */
+	void GEOGRAM_API set_config_file_name(const std::string& filename);
+
+	/**
+	 * \brief Gets the name of the configuration file.
+	 * \return the name of the configuration file, as
+	 *  specified by set_config_file_name(). User's home directory
+	 *  needs to be prepended to have the complete file path.
+	 */
+	std::string GEOGRAM_API get_config_file_name();
+	
         /**
          * \brief Command line argument types
          */

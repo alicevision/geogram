@@ -500,6 +500,111 @@ namespace GEO {
 	vector<index_t> current_facet_;
     };
 
+    /***************************************************************/    
+
+    /**
+     * \brief Constructs a polyhedral mesh from a restricted Voronoi diagram.
+     * \details Its member functions are called for each RVD polyhedron, 
+     *  i.e. the intersections between the volumetric mesh tetrahedra and
+     *  the Voronoi cells. Based on set_simplify_xxx(), a smaller number of
+     *  polyhedra can be generated.
+     */
+    class GEOGRAM_API BuildRVDMesh : public RVDPolyhedronCallback {
+    public:
+
+	/**
+	 * \brief BuildRVDMesh constructor.
+	 * \param[out] output_mesh a reference to the generated mesh 
+	 */
+	BuildRVDMesh(Mesh& output_mesh);
+
+	/**
+	 * \brief BuildRVDMesh destructor.
+	 */
+	~BuildRVDMesh();
+
+	/**
+	 * \brief Specifies whether ids should be generated.
+	 * \details If enabled, unique vertex ids, seed ids and cell ids are
+	 *  generated and attached to the mesh vertices ("vertex_id" attribute)
+	 *  and mesh facets ("seed_id" and "cell_id" attributes) respectively.
+	 *  There is a cell_id per generated polyhedron, and seed_id refers to
+	 *  the Voronoi seed (the point that the Voronoi cell is associated 
+	 *  with).
+	 * \param[in] x true if ids should be generated, false
+	 *  otherwise (default)
+	 */
+	void set_generate_ids(bool x);
+	
+	/**
+	 * \brief Defines the optional shrink factor for cells.
+	 * \param[in] x shrink factor, 0.0 means no shrink, 1.0 means
+	 *  maximum shrink (cell reduced to a point).
+	 */
+	void set_shrink(double x);
+	
+	/**
+	 * \brief Called at the beginning of RVD traversal.
+	 */
+	virtual void begin();
+
+	/**
+	 * \brief Called at the end of RVD traversal.
+	 */
+	virtual void end();
+
+	/**
+	 * \brief Called at the beginning of each RVD polyhedron.
+	 * \param[in] seed , tetrahedron the (seed,tetrahedron) pair that
+	 *  defines the RVD polyhedron, as the intersection between the Voronoi
+	 *  cell of the seed and the tetrahedron.
+	 */
+	virtual void begin_polyhedron(index_t seed, index_t tetrahedron);
+
+	/**
+	 * \copydoc RVDPolyhedronCallback::begin_facet()
+	 */
+	virtual void begin_facet(index_t facet_seed, index_t facet_tet_facet);
+
+	/**
+	 * \copydoc RVDPolyhedronCallback::vertex()
+	 */
+	virtual void vertex(
+	    const double* geometry, const GEOGen::SymbolicVertex& symb
+	);
+
+	/**
+	 * \copydoc RVDPolyhedronCallback::end_facet()
+	 */
+	virtual void end_facet();
+
+	/**
+	 * \copydoc RVDPolyhedronCallback::end_polyhedron()
+	 */
+	virtual void end_polyhedron();
+
+	/**
+	 * \copydoc RVDPolyhedronCallback::process_polyhedron_mesh()
+	 */
+	virtual void process_polyhedron_mesh();
+	
+    private:
+	vector<index_t> current_facet_;
+	Mesh& output_mesh_;
+	RVDVertexMap* global_vertex_map_;
+	RVDVertexMap* cell_vertex_map_;
+	double shrink_;
+	bool generate_ids_;
+	Attribute<int> cell_id_;
+	Attribute<int> seed_id_;
+	Attribute<int> vertex_id_;
+	Attribute<int> facet_seed_id_;
+	index_t current_cell_id_;
+    };
+
+
+    /***************************************************************/    
+     
 }
 
 #endif

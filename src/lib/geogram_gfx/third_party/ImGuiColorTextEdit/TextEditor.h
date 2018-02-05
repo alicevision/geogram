@@ -1,14 +1,69 @@
 #pragma once
 
+// [Bruno Levy] For the older mac that does not have
+// regex support, deactivate syntax highlighting
+#if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_12)
+#define GEO_OLD_COMPILER
+#endif
+
 #include <string>
 #include <vector>
-#include <array>
 #include <memory>
+#include <map>
+
+#ifndef GEO_OLD_COMPILER
+#include <regex>
 #include <unordered_set>
 #include <unordered_map>
-#include <map>
-#include <regex>
+#include <array>
+#else
+#include <set>
+namespace std {
 
+    /**
+     * \brief Minimal drop-in replacement for class std::array.
+     */
+    template <class T, unsigned int SIZE> class array {
+      public:
+	typedef array<T,SIZE> thisclass;
+
+	array() {
+	}
+
+	array(const thisclass& rhs) {
+	    for(unsigned int i=0; i<SIZE; ++i) {
+		data_[i] = rhs.data_[i];
+	    }
+	}
+
+	thisclass& operator=(const thisclass& rhs) {
+	    for(unsigned int i=0; i<SIZE; ++i) {
+		data_[i] = rhs.data_[i];
+	    }
+	    return *this;
+	}
+	
+	T& operator[](unsigned int idx) {
+	    return data_[idx];
+	}
+	const T& operator[](unsigned int idx) const {
+	    return data_[idx];		
+	}
+
+      private:
+	T data_[SIZE];
+    };
+
+    /**
+     * \brief Drop-in replacement for std::move(), that does
+     *  nothing here.
+     */
+    template <class T> inline const T& move(const T& x) {
+	return x;
+    }
+    
+}
+#endif
 
 // [Bruno Levy] include path redirected to geogram.
 #include <geogram_gfx/api/defs.h>
@@ -116,10 +171,20 @@ public:
 	};
 
 	typedef std::string String;
+
+	// [Bruno Levy] for old compilers that do not have std::unordered_set
+	// and map.
+#ifdef GEO_OLD_COMPILER
+	typedef std::map<std::string, Identifier> Identifiers;
+	typedef std::set<std::string> Keywords;
+	typedef std::set<int> Breakpoints;
+#else	
 	typedef std::unordered_map<std::string, Identifier> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
-	typedef std::map<int, std::string> ErrorMarkers;
 	typedef std::unordered_set<int> Breakpoints;
+#endif
+	
+	typedef std::map<int, std::string> ErrorMarkers;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
 	
@@ -217,8 +282,12 @@ public:
 	static const Palette& GetLightPalette();
 
 private:
-	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
+// [Bruno Levy] Made syntax hightlighting optional	
+#ifndef GEO_OLD_COMPILER   
+	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
+#endif
+	
 	struct EditorState
 	{
 		Coordinates mSelectionStart;
@@ -305,8 +374,11 @@ private:
 
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
-	RegexList mRegexList;
 
+// [Bruno Levy] Made syntax hightlighting optional		
+#ifndef GEO_OLD_COMPILER
+	RegexList mRegexList;
+#endif
 	bool mCheckMultilineComments;
 	Breakpoints mBreakpoints;
 	ErrorMarkers mErrorMarkers;

@@ -85,6 +85,8 @@ namespace {
     using namespace GEO;
     using namespace CmdLine;
 
+    std::string config_file_name = "geogram.ini";
+    
     int geo_argc = 0;
     char** geo_argv = nil;
     
@@ -269,12 +271,14 @@ namespace {
 	    return;
 	}
 	init = true;
-	Logger::out("geogram.ini") << "Home directory:" << FileSystem::home_directory()
-				   << std::endl;
-	std::string config_filename = FileSystem::home_directory() + "/geogram.ini";
+	Logger::out("config") << "Configuration file name:" << config_file_name
+			      << std::endl;
+	Logger::out("config") << "Home directory:" << FileSystem::home_directory()
+			      << std::endl;
+	std::string config_filename = FileSystem::home_directory() + "/" + config_file_name;
 	std::string section = "*";
 	if(FileSystem::is_file(config_filename)) {
-	    Logger::out("geogram.ini") << "Using configuration file:"
+	    Logger::out("config") << "Using configuration file:"
 				       << config_filename
 				       << std::endl;
 	    std::ifstream in(config_filename.c_str());
@@ -290,7 +294,7 @@ namespace {
 			if(CmdLine::arg_is_declared(argname)) {
 			    CmdLine::set_arg(argname, argval);
 			} else {
-			    Logger::warn("geogram.ini") << argname << "=" << argval << " ignored" << std::endl;
+			    Logger::warn("config") << argname << "=" << argval << " ignored" << std::endl;
 			}
 		    }
 		}
@@ -532,6 +536,14 @@ namespace GEO {
 
 	char** argv() {
 	    return geo_argv;
+	}
+
+	void set_config_file_name(const std::string& filename) {
+	    config_file_name = filename;
+	}
+
+	std::string get_config_file_name() {
+	    return config_file_name;
 	}
 	
         bool parse(

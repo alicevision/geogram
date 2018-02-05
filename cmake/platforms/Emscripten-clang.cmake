@@ -38,6 +38,9 @@ set(FULL_WARNINGS
     -Wno-format-nonliteral # Todo: use Laurent Alonso's trick
 )
 
+# Activate c++ 2011
+add_flags(CMAKE_CXX_FLAGS -std=c++11)
+
 # Compile with full warnings by default
 add_definitions(${FULL_WARNINGS})
 

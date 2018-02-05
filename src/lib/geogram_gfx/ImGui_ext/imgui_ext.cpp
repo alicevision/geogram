@@ -76,7 +76,7 @@ namespace {
      * \details This creates a custom dialog with the color editor and
      *  a default palette, as in ImGUI example.
      * \param[in] label the label of the widget, passed to ImGUI
-     * \param[in,out] color a pointer to an array of 3 floats if 
+     * \param[in,out] color_in a pointer to an array of 3 floats if 
      *  with_alpha is false or 4 floats if with_alpha is true
      * \param[in] with_alpha true if transparency is edited, false otherwise
      * \retval true if the color was changed

@@ -310,7 +310,7 @@ namespace GEO {
 #define GEO_NORETURN_DECL 
 #endif
 
-#if defined(GEO_COMPILER_CLANG)
+#if defined(GEO_COMPILER_CLANG) || defined(GEO_COMPILER_EMSCRIPTEN)
 #if __has_feature(cxx_noexcept)
 #define GEO_NOEXCEPT noexcept
 #endif
