@@ -52,7 +52,6 @@
 #include <exploragram/hexdom/time_log.h>
 
 
-#include <exploragram/hexdom/hex_cruncher.h>
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/mesh/mesh_tetrahedralize.h>
 
@@ -121,12 +120,12 @@ namespace GEO {
 			}
 
 			m->edges.attributes().delete_attribute_store("corr"); // ? can we really do that ?
-			m->vertices.attributes().delete_attribute_store("U");
+			//m->vertices.attributes().delete_attribute_store("U");
 			//m->edges.clear();
 		}
 
 		void HexCandidates(Mesh*m, Mesh* result) {
-			STEP(export_hexes,(m,result));
+			STEP(export_hexes, (m, result));
 		}
 
 		bool QuadDominant(Mesh*m, Mesh* chartmesh) {
@@ -216,7 +215,7 @@ namespace GEO {
 			    #endif
 				Mesh tets;
 				tets.copy(*cavity);
-				STEP(fill_cavity_with_tetgen,(cavity, &tets, true, with_pyramid));
+				STEP(fill_cavity_with_tetgen,(cavity, &tets, with_pyramid));
 				result->copy(tets);
 				result->facets.clear();
 				STEP(add_hexes_to_tetmesh,(hexahedrons, result));

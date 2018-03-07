@@ -95,8 +95,9 @@ namespace GEO {
 	return ave / double(m->facets.nb_vertices(f));
     }
 
-    EXPLORAGRAM_API double get_cell_average_edge_size(const Mesh* mesh);
-    EXPLORAGRAM_API vec3 tet_facet_cross(Mesh* m, index_t c, index_t lf);
+	EXPLORAGRAM_API double get_cell_average_edge_size( Mesh* mesh);
+	EXPLORAGRAM_API double get_facet_average_edge_size( Mesh* mesh);
+	EXPLORAGRAM_API vec3 tet_facet_cross(Mesh* m, index_t c, index_t lf);
     EXPLORAGRAM_API index_t next_cell_around_oriented_edge(Mesh* m, index_t cell_id, index_t v_org, index_t v_dest);
 
 

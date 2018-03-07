@@ -400,18 +400,21 @@ namespace GEO {
                 glGetShaderInfoLog(
                     s_handle, sizeof(compiler_message), 0, compiler_message
                 );
+
+                Logger::out("GLSL") << "Error in program:"
+                                    << std::endl;
+
+		if(CmdLine::get_arg_bool("gfx:GL_debug")) {
+		    dump_program_source_with_line_numbers(sources, nb_sources);
+		}
+
                 Logger::err("GLSL")
                     << "compiler status :"
                     << compile_status << std::endl;
                 Logger::err("GLSL")
-                    << "compiler message:"
+                    << "compiler message:" << '\n'
                     << compiler_message << std::endl;
-
-                Logger::out("GLSL") << "Erroneous program source:"
-                                    << std::endl;
-
-                dump_program_source_with_line_numbers(sources, nb_sources);
-                
+		
                 glDeleteShader(s_handle);
                 s_handle = 0;
                 throw GLSLCompileError();

@@ -55,14 +55,14 @@ namespace GEO {
         m = p_m;
         compute_tet_edge_graph(m,v2e, true); // here  need a bidirectionl edge graph to speed up the LBFGS part
         Attribute<vec3> lockB(m->vertices.attributes(), "lockB");
-        num_l_v = 0;
-        num_ln_v = 0;
-        FOR(v, m->vertices.nb()) {
-            if (lockB[v][2] == 1 && lockB[v][0] == 0 && v > 0 && lockB[v-1][0] != 0) num_l_v = v - 1;
-            if (lockB[v][2] == 0 && v > 0 && num_ln_v == 0) num_ln_v = v - 1;
+        num_l_v = m->vertices.nb();
+        num_ln_v = m->vertices.nb();
+        FOR(inv_v, m->vertices.nb()) {
+	    index_t v = m->vertices.nb()-1 - inv_v;
+	    if (lockB[v][0] <.5) num_l_v = v;
+	    if (lockB[v][2] <.5) num_ln_v = v;
         }
-		if (num_ln_v == 0) num_ln_v = m->vertices.nb();
-
+	if (num_ln_v == 0) num_ln_v = m->vertices.nb();
     }
 
     FFopt::~FFopt() {
@@ -151,17 +151,17 @@ namespace GEO {
                 if (generate_sh) sh[v] = fv;
                 if (v >= num_l_v) {
                     vec3 oldz = col(B[v], 2);
-                    if (v > start) {
+					if (v > start && v > num_l_v) {
                         vec3  prev = mat3_to_euler(normalize_columns(B[v - 1]));
-                        B[v] = fv.project_mat3(1e-3, 1e-5, &prev);
+						B[v] = fv.project_mat3(1e-3, 1e-5, &prev);
                     } else 
                         B[v] = fv.project_mat3(1e-3, 1e-5, NULL);
-                    if (v < num_ln_v) {
+                    if (v <= num_ln_v) {
                         AxisPermutation ap;
                         ap.make_col2_equal_to_z(B[v], normalize(oldz));
                         B[v] = Frame(B[v]).apply_permutation(ap);
-                        FOR(d, 3) B[v](d, 2) = oldz[d];// restore size as well
-                    }
+						FOR(d, 3) B[v](d, 2) = oldz[d];// restore size as well
+					}
                 }
             }
         }
@@ -218,6 +218,12 @@ namespace {
         index_t nverts = FF_LBFGS::ffopt_ptr->m->vertices.nb();
         geo_assert(N == 3 * (nverts - FF_LBFGS::Num_ln_v) + FF_LBFGS::Num_ln_v);
 
+
+		Attribute<bool> border_vertex(FF_LBFGS::ffopt_ptr->m->vertices.attributes(), "border_vertex");
+		FOR(v, FF_LBFGS::ffopt_ptr->m->vertices.nb()) border_vertex[v] = false;
+		FOR(c, FF_LBFGS::ffopt_ptr->m->cells.nb())  FOR(cf, 4) if (FF_LBFGS::ffopt_ptr->m->cells.adjacent(c, cf) == NOT_AN_ID)
+			FOR(cfv, 3) border_vertex[FF_LBFGS::ffopt_ptr->m->cells.facet_vertex(c, cf, cfv)] = true;
+
 #ifdef GEO_OPENMP
         int max_threads = omp_get_max_threads();
 #else
@@ -270,21 +276,25 @@ namespace {
                     mSinv = mSinv.transpose();
                     mPst = mSinv* mR; // Pst = S^{-1} * R
 
-
-                    if (v1 > v2) FOR(i, 3) 
-                        f_chunks[thread_id] += 10. / 3.*(pow(mPst(0,i) * mPst(1,i), 2) + pow(mPst(0,i) * mPst(2,i), 2) + pow(mPst(1,i )* mPst(2,i), 2));
+					double scale = 1.;
+					if (HexdomParam::FF.rigid_border) {
+						if (border_vertex[v1])scale += 100.;
+						if (border_vertex[v2])scale += 100.;
+					}
+					if (v1 > v2) FOR(i, 3)
+                        f_chunks[thread_id] += scale *(10. / 3.*(pow(mPst(0,i) * mPst(1,i), 2) + pow(mPst(0,i) * mPst(2,i), 2) + pow(mPst(1,i )* mPst(2,i), 2)));
                     
                     if (v1 >= FF_LBFGS::Num_ln_v) {
                         index_t idx = FF_LBFGS::Num_ln_v + (v1 - FF_LBFGS::Num_ln_v) * 3;
                         FOR(d,3) {                         
                             mJPst[d] = mSinv* mJR[d]; // JPst[d] = S^{-1} * JR[d]
                             FOR(i,3)FOR(j,3)
-                                g[idx + d] += 20. / 3.*mPst(i,j) * (pow(mPst(i, (j + 1)%3), 2) + pow(mPst(i , (j + 2) % 3), 2))*mJPst[d](i , j);     
+                                g[idx + d] += scale *(20. / 3.*mPst(i,j) * (pow(mPst(i, (j + 1)%3), 2) + pow(mPst(i , (j + 2) % 3), 2))*mJPst[d](i , j));
                         }
                     } else if (v1 >= FF_LBFGS::Num_l_v) {
                         mJPst[0] = mSinv* mJR[0]; // JPst[0] = S^{-1} * JR[0] ; JPst[1] and JPst[2] are not initialized
                         FOR(i, 3)FOR(j, 3)
-                            g[v1] += 20. / 3.*mPst(i ,j) * (pow(mPst(i ,(j + 1) % 3), 2) + pow(mPst(i , (j + 2) % 3), 2))*mJPst[0](i , j);
+                            g[v1] += scale *(20. / 3.*mPst(i ,j) * (pow(mPst(i ,(j + 1) % 3), 2) + pow(mPst(i , (j + 2) % 3), 2))*mJPst[0](i , j));
                     }
                 } // v2
             } // v1
@@ -395,6 +405,7 @@ namespace GEO {
                         B[v] = B[v]* M.get_mat();
                         FOR(d, 3) if (std::abs(lockU[v][d]) < .1) lockU[v][d] = 0;
                     }
+					Q.push_back(v);
                 }
             }
         }

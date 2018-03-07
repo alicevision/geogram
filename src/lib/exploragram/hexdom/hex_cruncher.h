@@ -52,5 +52,8 @@ namespace GEO {
 
 	void EXPLORAGRAM_API hex_crunch(Mesh* m, Mesh* hex);
 
+
+	void EXPLORAGRAM_API quadrangulate_easy_boundary(Mesh* m);
+
 }
 #endif

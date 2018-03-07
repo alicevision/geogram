@@ -19,24 +19,25 @@
  *
  */
 
-
-#include "glup_viewer.h"
-
-#include <stdlib.h>
-#include <stdarg.h>
-
 /* 
  * Many documentation tags in GLFW that are
  * not understood by CLANG.
  */
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wdocumentation"
+#pragma GCC diagnostic ignored "-Wstrict-prototypes"
 #endif
 
-#ifdef GEO_USE_BUILTIN_GLFW3
-#include <third_party/glfw/include/GLFW/glfw3.h>
-#else
+#include "glup_viewer.h"
+
+#include <stdlib.h>
+#include <stdarg.h>
+
+
+#ifdef GEO_USE_SYSTEM_GLFW3
 #include <GLFW/glfw3.h>
+#else
+#include <third_party/glfw/include/GLFW/glfw3.h>
 #endif
 
 #ifdef __EMSCRIPTEN__

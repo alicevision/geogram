@@ -49,6 +49,7 @@ namespace GEO {
 		return bary;
 	}
 
+	static int dump_contour_save_id = 0;
 	void Poly2d::dump_contour() {
 		index_t nbv = pts.size();
 		Mesh export_mesh;
@@ -58,7 +59,20 @@ namespace GEO {
 		FOR(i, nbv) num.push_back(i);
 		export_mesh.facets.create_polygon(num);
 		char filename[1024];
-		sprintf(filename, "C:/DATA/2dcontours/nimp%i.obj", rand());
+		sprintf(filename, "C:/DATA/2dcontours/nimp2D%i.obj", dump_contour_save_id++);
+		mesh_save(export_mesh, filename);
+	}	
+	
+	void Poly3d::dump_contour() {
+		index_t nbv = pts.size();
+		Mesh export_mesh;
+		export_mesh.vertices.create_vertices(nbv);
+		FOR(i, nbv) X(&export_mesh)[i] = vec3(pts[i][0], pts[i][1], pts[i][2] );
+		vector<index_t> num;
+		FOR(i, nbv) num.push_back(i);
+		export_mesh.facets.create_polygon(num);
+		char filename[1024];
+		sprintf(filename, "C:/DATA/2dcontours/nimp3D%i.obj", dump_contour_save_id++);
 		mesh_save(export_mesh, filename);
 	}
 
@@ -78,7 +92,7 @@ namespace GEO {
 			m = std::max(m, M_PI - angle);
 		}
 
-		FOR(other, pts.size()) { // TODO c'et con de faire ça, vaut mieux regarder si le triangle est inversé (ça ne gere pas tout [comme, d'ailleurs, le teste courant!])
+		FOR(other, pts.size()) { // TODO c'est con de faire ça, vaut mieux regarder si le triangle est inversé (ça ne gere pas tout [comme, d'ailleurs, le teste courant!])
 			if (other == i || other == j || other == k) continue;
 			vec2 P = pts[other];
 			bool inside = true;
@@ -186,6 +200,8 @@ namespace GEO {
 
 
 	bool Poly2d::quads_are_valid(vector<index_t>& quads) {
+		
+		// geometric criteria
 		FOR(q, quads.size() / 4) {
 			FOR(e, 4) {
 				vec2 v0 = normalize(pts[quads[4 * q + next_mod(e, 4)]] - pts[quads[4 * q + e]]);
@@ -238,14 +254,7 @@ namespace GEO {
 			pos_.erase(pos_.begin() + i);
 			angu_.erase(angu_.begin() + i);
 			vid_.erase(vid_.begin() + i);
-			/*
-			for (int j = i; j < index_t(pos_.size() - 1); j++) {
-				pos_[j] = pos_[j + 1];
-				angu_[j] = angu_[j + 1];
-				vid_[j] = vid_[j + 1];
-			}
-			pos_.pop_back(); angu_.pop_back(); vid_.pop_back();
-			*/
+
 		}
 	    
 
@@ -254,6 +263,7 @@ namespace GEO {
 		vector<int> vid_;
 	};
 
+	static int export_debug_mesh_id = 0;
 	struct QuadrangulateWithOneSingularity {
 		QuadrangulateWithOneSingularity(vector<vec2>& p_pts, vector<index_t>& p_quads) 
 			:pts(p_pts), quads(p_quads) {
@@ -329,8 +339,21 @@ namespace GEO {
 			return int(singularity_index);
 		}
 
+		
+		void export_debug_mesh() {
+			Mesh outm;
+			outm.vertices.create_vertices(contour.pos_.size());
+			vector<index_t> vid(contour.pos_.size());
+			FOR(i, contour.pos_.size()) {
+				vid[i] = i;
+				X(&outm)[i] = vec3(contour.pos(i)[0], contour.pos(i)[1], 0);
+			}
+			Attribute<int> angu_attr(outm.vertices.attributes(), "angu");
+			FOR(i, contour.pos_.size()) angu_attr[i] = contour.angu(i);
 
-
+			outm.facets.create_polygon(vid);
+			mesh_save(outm, "C:/DATA/2dcontours/contour2D"+ String::to_string(export_debug_mesh_id ++) +".geogram");
+		}
 
 
 		bool try_to_punch() {
@@ -339,13 +362,12 @@ namespace GEO {
 				if (contour.angu(v) != 1) continue;
 				// cut ear
 				if (contour.angu(v + 1) == 1) {
-				        FOR(s, 4) quads.push_back(index_t(contour.vid(int(v) - 1 + int(s))));
+				    FOR(s, 4) quads.push_back(index_t(contour.vid(int(v) - 1 + int(s))));
 					contour.remove(int(v));
 					contour.remove(int(v));
 					contour.angu(int(v) - 1)++;
 					contour.angu(int(v)) ++;
 					return true;
-
 				}
 				// add new point
 				vec2 npos = contour.pos(v - 1) + contour.pos(v + 1) - contour.pos(v);
@@ -387,6 +409,12 @@ namespace GEO {
 			else {
 				return false;
 			}
+
+			//plop("valok");
+			//plop(sing_valence);
+			//plop(singularity_index);
+			//plop(border_size);
+			//plop(contour.pos_.size());
 			vector<vec2> theta_r(border_size);
 			vec2 O(.5, .5);
 			if (singularity_index!=-1) O= contour.pos(singularity_index);
@@ -397,12 +425,16 @@ namespace GEO {
 			}
 
 			FOR(v, border_size) FOR(vv, border_size) if (vv != v && (theta_r[vv] - theta_r[v]).length2() < .0001) {
-				plop("gna");
-				FOR(v, theta_r.size()) plop(theta_r[v]);
+				FOR(w, theta_r.size()) plop(theta_r[w]);
 				return false;
 			}
-			while (try_to_punch());
 			
+
+			while (try_to_punch()) {
+				//export_debug_mesh();
+				//plop(export_debug_mesh_id);
+				if (quads.size() > 1000) geo_assert_not_reached;
+			}
 
 			nlNewContext();
 			nlSolverParameteri(NL_LEAST_SQUARES, NL_TRUE);
@@ -425,10 +457,15 @@ namespace GEO {
 			nlSolve();
 			FOR(v, pts.size()) FOR(d, 2)  pts[v][d]= nlGetVariable(2*v+d);
 			nlDeleteContext(nlGetCurrent());
-
+			//export_debug_mesh();
 			if (contour.pos_.size() > 2) { pts.resize(index_t(border_size)); quads.clear(); return false; }
+			
+			if (!Poly2d(pts).quads_are_valid(quads)) {
+				//export_debug_mesh();
+				FOR(i, contour.pos_.size())  plop(contour.pos(i));
+			}
+			return Poly2d(pts).quads_are_valid(quads);
 
-			return true;
 		}
 		mat2 R90;
 
@@ -460,10 +497,10 @@ namespace GEO {
 			if (angle < -M_PI / 4.) angu[v] = -1;
 			sing_valence += angu[v];
 		}
-		plop("try_quad_cover");
+		//plop("try_quad_cover");
 		//dump_contour();
+		
 		QuadrangulateWithOneSingularity doit(pts,quads);
-		//return doit.apply();
 		if (doit.apply(angu, sing_valence)) return true;
 		
 		return false;
@@ -474,7 +511,6 @@ namespace GEO {
 
 
 	bool Poly2d::try_quadrangulate(vector<index_t>& quads) {
-		return try_quad_cover(quads);
 		bool verbose = false;
 
 		index_t nbv = pts.size();
@@ -485,12 +521,17 @@ namespace GEO {
 			if (!quads_are_valid(quads)) { GEO::Logger::out("HexDom")  << "FAIL" <<  std::endl; return false; }
 			return true;
 		}
+
+
 		if (nbv % 2 != 0) {
 			GEO::Logger::out("HexDom")  << "There is no way to quadrangulate a surface with an odd number of boundary edges" <<  std::endl;
 			return false;
 		}
 
 
+		return try_quad_cover(quads);
+
+		/*
 		// precompute a few things
 		vector<double> angle(nbv);
 		vector<double> length(nbv);
@@ -625,7 +666,7 @@ namespace GEO {
 				}
 				FOR(i, 2) FOR(qu, poly_quad[i].size()) quads.push_back(global_vid[i][poly_quad[i][qu]]);
 
-				if (!quads_are_valid(quads)) { GEO::Logger::out("HexDom")  << "FAIL" <<  std::endl; return false; }
+				if (!quads_are_valid(quads)) { GEO::Logger::out("HexDom")  << "FAIL remove quad strip" <<  std::endl; return false; }
 				return true;
 			}
 
@@ -635,9 +676,10 @@ namespace GEO {
 
 		if (verbose) GEO::Logger::out("HexDom")  << "middle_point_quadrangulate(quads)" <<  std::endl;
 		middle_point_quadrangulate(quads);
-		if (!quads_are_valid(quads)) { GEO::Logger::out("HexDom")  << "FAIL" <<  std::endl; return false; }
+		if (!quads_are_valid(quads)) { GEO::Logger::out("HexDom")  << "FAIL middle_point_quadrangulate" <<  std::endl; return false; }
 
 		return true;
+		*/
 	}
 
 	/*****************************************************************************************************/
@@ -655,6 +697,7 @@ namespace GEO {
 		vec3 bary = barycenter();
 		FOR(fv, pts.size()) {
 			n = n + cross(pts[fv] - bary, pts[next_mod(fv, pts.size())] - bary);
+		//	plop(n);
 		}
 		n = normalize(n);
 		return n;
@@ -687,12 +730,16 @@ namespace GEO {
 		index_t nbv = pts.size();
 		if (nbv < 4) return false;
 		vec3 G = barycenter();
+		if (normal().length2() < 1e-20) return false;
 		Basis3d b(normal());
 
 		vector<vec2> pts2d;
 		FOR(fv, nbv) pts2d.push_back(b.project_xy(pts[fv] - G));
 		Poly2d p2d(pts2d);
-		if (!p2d.try_quadrangulate(quads)) return false;
+		if (!p2d.try_quadrangulate(quads)) {
+			//dump_contour();
+			return false;
+		}
 		for (index_t i = pts.size(); i < p2d.pts.size(); i++)
 			pts.push_back(G + b.un_project_xy(p2d.pts[i]));
 		return true;

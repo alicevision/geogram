@@ -29,16 +29,9 @@ namespace GEO {
 		if (hex->cells.nb() == 0) return;
 		double eps = 1e-3*get_cell_average_edge_size(hex);
 
-		Attribute<index_t> hexvid(quad->vertices.attributes(), "hexvid");
-		FOR(v, quad->vertices.nb()) hexvid[v] = NOT_AN_ID;
-
-
-
-
 		// add hex surface to quadt
 		index_t off_v = quad->vertices.create_vertices(hex->vertices.nb());
 		FOR(v, hex->vertices.nb()) X(quad)[off_v + v] = X(hex)[v];
-		FOR(v, hex->vertices.nb()) hexvid[off_v + v] = v;
 
 		index_t off_f = quad->facets.create_facets(hex->facets.nb(), 4);
 		FOR(f, hex->facets.nb()) FOR(fc, 4)
@@ -59,7 +52,6 @@ namespace GEO {
 				index_t nearest = NN->get_nearest_neighbor(X(quad)[v].data());
 				if ((X(quad)[v] - X(quad)[nearest]).length2() == 0) {
 					old2new[v] = nearest;
-					hexvid[nearest] = hexvid[v];
 				}
 			}
 

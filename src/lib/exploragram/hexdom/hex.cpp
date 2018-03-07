@@ -40,58 +40,86 @@ namespace GEO {
 
 	void kill_intersecting_hexes(Mesh* hex) {
 		hex->cells.connect();
-		int nb_intersecting_hex = 0;
+		index_t nb_intersecting_hex = 0;
 		vector<index_t> to_kill(hex->cells.nb(), false);
-		vector<BBox> inboxes(6 * hex->cells.nb());
-		FOR(f, inboxes.size())FOR(cfv, 4)
-			inboxes[f].add(X(hex)[hex->cells.facet_vertex(f / 6, f % 6, cfv)]);
-		HBoxes hb(inboxes);
+		
+		// alternativeway of finding intersections
+		
+		Mesh quadset;
+		Attribute<index_t> cell_id(quadset.facets.attributes(), "cellid");
+		quadset.vertices.create_vertices(hex->vertices.nb());
+		FOR(v, hex->vertices.nb()) X(&quadset)[v] = X(hex)[v];
+		quadset.facets.create_quads(6 * hex->cells.nb());
+		FOR(f, 6 * hex->cells.nb()) cell_id[f] = f / 6;
+		FOR(c, hex->cells.nb()) FOR(lf, 6) FOR(lv, 4)  quadset.facets.set_vertex(6 * c+lf, lv, hex->cells.facet_vertex(c,lf,lv));
+		
+		// kill adjacency faces
+		vector<index_t> to_kill_f(quadset.facets.nb(), false);
+		FOR(c, hex->cells.nb()) FOR(lf, 6) if (hex->cells.adjacent(c, lf) != NOT_AN_ID) to_kill_f[6 * c + lf] = true;
+		quadset.facets.delete_elements(to_kill_f);
 
-		FOR(c, hex->cells.nb()) FOR(cf, 6) {
-			if (hex->cells.adjacent(c, cf) != NOT_AN_ID) continue; // just check on boundary
-			BBox b;
-			vector<vec3> Q(4);
-			FOR(cfv, 4) {
-				Q[cfv] = X(hex)[hex->cells.facet_vertex(c, cf, cfv)];
-				b.add(Q[cfv]);
-			}
-			vector<index_t> primitives;
-			hb.intersect(b, primitives);
+		//plop("gre");
 
-			FOR(i, primitives.size()) {
-				index_t other_c = primitives[i] / 6;
-				if (other_c == c) continue;
-				if (to_kill[other_c]) continue;
-				index_t other_cf = primitives[i] % 6;
-				if (hex->cells.adjacent(other_c, other_cf) != NOT_AN_ID) continue; // just check on boundary
-				vector<vec3> P(4);
-				FOR(other_cfv, 4) P[other_cfv] = X(hex)[hex->cells.facet_vertex(other_c, other_cf, other_cfv)];
 
-				// check if opposite
-				bool is_opp = false;
-				FOR(v, 4) {
-					index_t it = 0;
-					while (it < 4 && (Q[it] - P[(v + it) % 4]).length2() == 0) it++;
-					is_opp = is_opp || (it == 4);
-				}
+		//mesh_save(quadset, "C:\\DATA\\quadeset.meshb");
+		vector<index_t> intersections = get_intersecting_faces(&quadset);
+		plop(intersections.size());
+		nb_intersecting_hex = intersections.size();
+		FOR(i, intersections.size()) to_kill[cell_id[intersections[i] ]] = true;
+		FOR(i, intersections.size()) plop(intersections[i]);
 
-				if (is_opp) continue;
 
-				// check intersection
-				vector<TriangleIsect> result;
-				FOR(c0, 2)FOR(c1, 2) {
-					if (triangles_intersections(
-						P[quad_rand_split[c0][0]], P[quad_rand_split[c0][1]], P[quad_rand_split[c0][2]],
-						Q[quad_rand_split[c1][0]], Q[quad_rand_split[c1][1]], Q[quad_rand_split[c1][2]],
-						result
-					)) {
-						plop("auto intersection found");
-						to_kill[c] = true;
-						nb_intersecting_hex++;
-					}
-				}
-			}
-		}
+
+		//vector<BBox> inboxes(6 * hex->cells.nb());
+		//FOR(f, inboxes.size())FOR(cfv, 4)
+		//	inboxes[f].add(X(hex)[hex->cells.facet_vertex(f / 6, f % 6, cfv)]);
+		//HBoxes hb(inboxes);
+
+		//FOR(c, hex->cells.nb()) FOR(cf, 6) {
+		//	if (hex->cells.adjacent(c, cf) != NOT_AN_ID) continue; // just check on boundary
+		//	BBox b;
+		//	vector<vec3> Q(4);
+		//	FOR(cfv, 4) {
+		//		Q[cfv] = X(hex)[hex->cells.facet_vertex(c, cf, cfv)];
+		//		b.add(Q[cfv]);
+		//	}
+		//	vector<index_t> primitives;
+		//	hb.intersect(b, primitives);
+
+		//	FOR(i, primitives.size()) {
+		//		index_t other_c = primitives[i] / 6;
+		//		if (other_c == c) continue;
+		//		if (to_kill[other_c]) continue;
+		//		index_t other_cf = primitives[i] % 6;
+		//		if (hex->cells.adjacent(other_c, other_cf) != NOT_AN_ID) continue; // just check on boundary
+		//		vector<vec3> P(4);
+		//		FOR(other_cfv, 4) P[other_cfv] = X(hex)[hex->cells.facet_vertex(other_c, other_cf, other_cfv)];
+
+		//		// check if opposite
+		//		bool is_opp = false;
+		//		FOR(v, 4) {
+		//			index_t it = 0;
+		//			while (it < 4 && (Q[it] - P[(v + it) % 4]).length2() == 0) it++;
+		//			is_opp = is_opp || (it == 4);
+		//		}
+
+		//		if (is_opp) continue;
+
+		//		// check intersection
+		//		vector<TriangleIsect> result;
+		//		FOR(c0, 2)FOR(c1, 2) {
+		//			if (triangles_intersections(
+		//				P[quad_rand_split[c0][0]], P[quad_rand_split[c0][1]], P[quad_rand_split[c0][2]],
+		//				Q[quad_rand_split[c1][0]], Q[quad_rand_split[c1][1]], Q[quad_rand_split[c1][2]],
+		//				result
+		//			)) {
+		//				plop("auto intersection found");
+		//				to_kill[c] = true;
+		//				nb_intersecting_hex++;
+		//			}
+		//		}
+		//	}
+		//}
 		logt.add_value("nb_intersecting_hex", nb_intersecting_hex);
 		plop(nb_intersecting_hex);
 		hex->cells.delete_elements(to_kill);

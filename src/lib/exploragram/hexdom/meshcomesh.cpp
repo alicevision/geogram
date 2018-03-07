@@ -117,7 +117,7 @@ namespace GEO {
     vector<vector<index_t> > generate_v2f(Mesh *m) {
         vector<vector<index_t> > v2f(m->vertices.nb());
         FOR(f, m->facets.nb()) {
-            geo_assert(m->facets.nb_vertices(f) == 3);
+	    geo_assert(m->facets.nb_vertices(f) == 3);
             FOR(lc, m->facets.nb_corners(f)) {
                 v2f[m->facets.vertex(f, lc)].push_back(f);
             }

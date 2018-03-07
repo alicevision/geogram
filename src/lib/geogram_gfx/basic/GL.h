@@ -46,7 +46,9 @@
 #ifndef GEOGRAM_GFX_BASIC_GL
 #define GEOGRAM_GFX_BASIC_GL
 
-// #define GEO_DEBUG_GL
+#ifdef GEO_DEBUG
+#define GEO_DEBUG_GL
+#endif
 
 #include <geogram_gfx/basic/common.h>
 #include <geogram_gfx/api/defs.h>

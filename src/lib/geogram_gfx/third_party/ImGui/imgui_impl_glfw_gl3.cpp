@@ -21,7 +21,11 @@
 #include <GLFW/glfw3.h>
 #include <emscripten.h>
 #else
+#ifdef GEO_USE_SYSTEM_GLFW3
+#include <GLFW/glfw3.h>
+#else
 #include <third_party/glfw/include/GLFW/glfw3.h>
+#endif
 #endif
 
 #ifdef _WIN32

@@ -104,12 +104,12 @@ namespace GEO {
 		return os;
 	}
 
-	inline double nint(double x) {
-		// return floor(x + .5);
-		double r1 = floor(x);
-		double r2 = floor(x + 1.0);
-		return (x - r1) < (r2 - x) ? r1 : r2;
-	}
+	//inline double nint(double x) {
+	//	// return floor(x + .5);
+	//	double r1 = floor(x);
+	//	double r2 = floor(x + 1.0);
+	//	return (x - r1) < (r2 - x) ? r1 : r2;
+	//}
 
 	inline bool coeffCmp(const Coeff& A, const Coeff& B) {
 		return (A.index < B.index);
@@ -124,7 +124,7 @@ namespace GEO {
 			if (i + 1 != c.size() && c[i].index == c[i + 1].index) {
 				continue;
 			}
-			if (sum != 0) {
+			if (std::fabs(sum)>1e-10) {
 				c[ires] = Coeff(c[i].index, sum);
 				ires++;
 			}
@@ -276,11 +276,6 @@ namespace GEO {
 			pass = 0;
 		}
 
-		index_t size() const {
-		        geo_assert_not_reached;
-			return multiplicity.size();
-		}
-
 		void finalize_M0() {
 			geo_assert(M1.size() == 0);
 			geo_assert(M2.nb_lines() == 0);
@@ -398,25 +393,24 @@ namespace GEO {
 			}
 		}
 
-		void add_constraint(vector<Coeff>& c) {
+		bool add_constraint(vector<Coeff>& c) {
 
 			if (pass == 0) {
 				if (c.size() == 1) {
 					geo_assert(c[0].a != 0);
 					M0[c[0].index] = NOT_AN_ID;
 				}
-				return;
+				return true;
 			}
 
 			vector<Coeff> cM0 = mult_by_M0(c);
 
 			vector<Coeff> cM0M1 = mult_by_M1(cM0);
-			if (cM0M1.size() == 0) return;
+			if (cM0M1.size() == 0) return  true;
 
 			if (pass == 1) {
 				if (cM0M1.size() == 2) {
-					geo_assert(std::abs(cM0M1[0].a) == 1);
-					geo_assert(std::abs(cM0M1[1].a) == 1);
+					FOR(i, 2) if ((std::abs(cM0M1[i].a) != 1)) return false;
 					RemoveColMatrix B(cM0M1);
 					Coeff co[2] = { Coeff(B.zero_col, 1.0),B.line[0] };
 					// find root
@@ -432,12 +426,12 @@ namespace GEO {
 					else M1[co[1].index] = Coeff(co[0].index, co[1].a*co[0].a);
 
 				}
-				return;
+				return  true;
 			}
 
 			vector<Coeff> cM0M1M2 = mult_by_M2(cM0M1);
 			if (cM0M1M2.size() == 0) {
-				return;
+				return  true;
 			}
 			
 			if (pass == 2) {
@@ -454,6 +448,7 @@ namespace GEO {
 			}
 			// debug
 			geo_assert(pass != 3 || cM0M1M2.empty());// "Kernel must be complete ";
+			return true;
 			
 		}
 
@@ -548,8 +543,8 @@ namespace GEO {
 			}
 		}
 
-		void end_constraint() {
-			M.add_constraint(new_constraint);
+		bool  end_constraint() {
+			return M.add_constraint(new_constraint);
 		}
 		vector<Coeff> new_constraint;
 
@@ -567,7 +562,7 @@ namespace GEO {
 			nlBegin(NL_SYSTEM);
 
 			if (!first_iter) {
-			    static const double auto_snap_threshold = 0.5; // 0.01; // [default].5;// 25;
+				static const double auto_snap_threshold = 1.;// .005;// 25;
 				double snap_threshold = 1e20;
 				int nb_fixed_var = 0;
 				bool snap_size_has_changed = false;
@@ -579,6 +574,7 @@ namespace GEO {
 							nlSetVariable(i, V[i]);
 
 							if (M.multiplicity[i] < snap_size) continue;
+							if (M.multiplicity[i] ==0 ) continue;
 							if (M.M2t.nb_coeffs_in_line(i) == 0) continue;
 							if (pass == 0 && fixed[i]) continue;
 							double val = V[i];
@@ -591,9 +587,18 @@ namespace GEO {
 								}
 								continue;
 							}
-							if (pass == 1) if (dist < snap_threshold && M.multiplicity[i] != 1000) {
+
+							//if (!fixed[i]) {
+							//	std::cerr << std::setprecision(2);
+							//	std::cerr << snap_threshold << "            " << dist << "  " << val << "(" << M.multiplicity[i] << ")\n";
+							//	if (dist < snap_threshold)
+							//		std::cerr << snap_threshold << " < " << dist << " < " << 1.-	snap_threshold << "\n";
+							//}
+							
+							if (dist < snap_threshold && M.multiplicity[i] != 1000) {
 								if (!fixed[i])  nb_fixed_var++;
 								fixed[i] = true;
+								GEO::Logger::out("HexDom")  << " i " << i << "  snapped_val" << snapped_val << " (V[i] " << V[i] <<  std::endl;
 								nlSetVariable(i, snapped_val);
 								nlLockVariable(i);
 							}
@@ -614,7 +619,7 @@ namespace GEO {
 		}
 
 		bool converged() {
-			//return (!V.empty());
+			
 			if (fixed.empty()) return false;
 			FOR(i, M.kernel_size)
 				if (M.multiplicity[i] > 0

@@ -39,15 +39,18 @@
 
 #include <exploragram/hexdom/preprocessing.h>
 #include <geogram/mesh/mesh_tetrahedralize.h>
+
+#include <exploragram/hexdom/quadmesher.h> // for debug output
+
 namespace GEO {
 
-    vec3 triangle_normal(const Mesh& M, index_t f){
+    static vec3 triangle_normal(const Mesh& M, index_t f){
         vec3 pt[3];
         for (index_t v = 0; v < 3; v++) pt[v] = M.vertices.point(M.facets.vertex(f,v));
         return cross(normalize(pt[1] - pt[0]), normalize(pt[2] - pt[0]));
     }
 
-    bool get_a_triangle_patch(
+    static bool get_a_triangle_patch(
             const Mesh& M, 
             index_t facet, 
             std::vector<bool>& tri_patch_flag,
@@ -78,7 +81,7 @@ namespace GEO {
         return patch_size >= nb_tri_min_in_patch;
     }
 
-    void generate_facet_is_in_patch_attribute(const Mesh& M) {
+    static void generate_facet_is_in_patch_attribute(const Mesh& M) {
         geo_assert(M.facets.nb() > 0);
 
         /* The input constrained are only computed from "valid" triangles
@@ -155,7 +158,6 @@ namespace GEO {
                 }
             }
         }
-
         /* Build the constraints */
         FOR(v, m->vertices.nb()) {
             vector<vec3>& n = normals[v];
@@ -205,18 +207,19 @@ namespace GEO {
 		for (index_t i = num_ln_v; i < m->vertices.nb(); i++)   geo_assert(lockB[ind_map[i]][2] == 0);
 
         geo_assert(num_l_v <= num_ln_v && num_ln_v <= m->vertices.nb());
-	
+
 		plop(hibert_sort);
 		if (hibert_sort) {
-		    compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, 0, num_l_v, 3);
-		    compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_l_v, num_ln_v, 3);
-		    compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_ln_v, m->vertices.nb(), 3);
+			compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, 0, num_l_v,3);
+			compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_l_v, num_ln_v, 3);
+			compute_Hilbert_order(m->vertices.nb(), m->vertices.point_ptr(0), ind_map, num_ln_v, m->vertices.nb(), 3);
 		}
         m->vertices.permute_elements(ind_map);          // note: it also updates the cell_corners.vertex... and invert ind_map :(
     }
 
 
     void produce_hexdom_input(Mesh* m,std::string& error_msg,bool hilbert_sort, bool relaxed) {
+		
 		m->edges.clear();
 		m->vertices.remove_isolated();
 
@@ -241,29 +244,19 @@ namespace GEO {
             throw (" tetgen is not able to remesh the volume from its boundary");
         }
 
-        /*
 
-        FOR(v, m->vertices.nb()) {
-            vec3 pt = X(m)[v];
-            X(m)[v][0] =  cos(.01)*pt[0] + sin(.01)*pt[1];
-            X(m)[v][1] = -sin(.01)*pt[0] + cos(.01)*pt[1];
-            pt = X(m)[v];
-            X(m)[v][1] =  cos(.02)*pt[1] + sin(.02)*pt[2];
-            X(m)[v][2] = -sin(.02)*pt[1] + cos(.02)*pt[2];
-        }
 
-        */
-
-		
 		// add some attributes
 		compute_input_constraints(m, relaxed);
 		
+
 		// compute scale
         double wanted_edge_length = get_cell_average_edge_size(m);
 		
 		Attribute<mat3> B(m->vertices.attributes(), "B");
         FOR(v, m->vertices.nb()) FOR(ij, 9) B[v].data()[ij] *= wanted_edge_length;
         reorder_vertices_according_to_constraints(m,hilbert_sort );
+
 	}
 
 

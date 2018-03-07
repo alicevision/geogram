@@ -45,6 +45,9 @@
 #include <exploragram/hexdom/time_log.h>
 
 
+
+
+#include <exploragram/hexdom/quadmesher.h>
 #include <geogram/NL/nl.h>
 
 #include <algorithm>
@@ -77,7 +80,11 @@ namespace GEO {
 			AxisPermutation r = Rij(m, B, v[i], v[(i + 1) % 3]);
 			bool inv;
 			index_t e = edge_from_vertices(v[i], v[(i + 1) % 3], inv);
-			t += R*(inv ? -(r.inverse()*tij[e]) : tij[e]);
+			int i1 = int(tij[e][0]);
+			int i2 = int(tij[e][1]);
+			int i3 = int(tij[e][2]);
+			vec3i ltij(i1,i2,i3);
+			t += R*(inv ? -(r.inverse()*ltij) : ltij);
 			R = R* r.inverse().get_mat();
 		}
 
@@ -245,8 +252,7 @@ namespace GEO {
 			}
 
 
-			if (org != NOT_AN_ID)
-				FOR(i, 4) {
+			if (org != NOT_AN_ID) FOR(i, 4) {
 				index_t corner = m->cells.corner(c, i);
 				UC[corner] = U[m->cells.vertex(c, i)];
 				if (i != org) {
@@ -255,8 +261,9 @@ namespace GEO {
 					bool inv;
 					index_t e = edge_from_vertices(m->cells.vertex(c, org), m->cells.vertex(c, i), inv);
 					geo_assert(e != NOT_AN_ID);
-					vec3i t2 = !inv ? tij[e] : -(change.inverse()*tij[e]);
+					vec3 t2 = !inv ? tij[e] : -(change.inverse()*tij[e]);
 					UC[corner] += vec3(t2[0], t2[1], t2[2]);
+
 				}
 			}
 			else geo_assert(!has_param[m->cells.facet(c, 0)] && !has_param[m->cells.facet(c, 1)] && !has_param[m->cells.facet(c, 2)] && !has_param[m->cells.facet(c, 3)]);
@@ -322,7 +329,6 @@ namespace GEO {
 
 		nlDeleteContext(nlGetCurrent());
 
-//		snap_U_to_round();
 
 		FOR(e, m->edges.nb()) {
 			index_t i = m->edges.vertex(e, 0);

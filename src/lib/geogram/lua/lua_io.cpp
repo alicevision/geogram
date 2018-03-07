@@ -236,6 +236,22 @@ namespace {
 	    FileSystem::get_subdirectories(path,result);
 	    return result;
 	}
+
+	static const char* os_name() {
+	    const char* result = "unknown";
+#if defined(GEO_OS_LINUX)
+	    result = "Linux";
+#elif defined(GEO_OS_APPLE)
+	    result = "Apple";
+#elif defined(GEO_OS_WINDOWS)
+	    result = "Windows";
+#elif defined(GEO_OS_ANDROID)
+	    result = "Android";
+#elif defined(GEO_OS_UNIX)
+	    result = "Generic Unix";
+#endif
+	    return result;
+	}
 	
     }
 }
@@ -297,6 +313,8 @@ void init_lua_io(lua_State* L) {
     lua_bindwrapper(L, LUAFileSystemImpl::get_directory_entries);
     lua_bindwrapper(L, LUAFileSystemImpl::get_files);
     lua_bindwrapper(L, LUAFileSystemImpl::get_subdirectories);		
+
+    lua_bindwrapper(L, LUAFileSystemImpl::os_name);		
     
     lua_setglobal(L, "FileSystem");
     

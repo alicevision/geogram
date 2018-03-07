@@ -41,6 +41,10 @@
 #include <geogram/basic/file_system.h>
 #include <geogram/basic/string.h>
 
+GEO::FF_param GEO::HexdomParam::FF;
+GEO::FF_param::FF_param() { rigid_border = true; }
+
+
 
 std::string plop_file(const char* file_in, int line) {
     std::string file(file_in);
@@ -48,5 +52,4 @@ std::string plop_file(const char* file_in, int line) {
     return GEO::FileSystem::base_name(file) + "." + GEO::FileSystem::extension(file) + ":" + GEO::String::to_string(line);
 }
     
-
 

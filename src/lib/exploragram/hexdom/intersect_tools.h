@@ -42,7 +42,7 @@
 
 #include <exploragram/basic/common.h>
 #include <exploragram/hexdom/basic.h>
-
+#include <geogram/mesh/mesh.h>
 namespace GEO {
 
     extern const index_t EXPLORAGRAM_API quad_rand_split[2][3];
@@ -50,7 +50,9 @@ namespace GEO {
     extern const index_t EXPLORAGRAM_API diamon_split[12][3];
     extern const index_t EXPLORAGRAM_API diamon_quad_split[16][3];
 
-    struct EXPLORAGRAM_API BBox {
+
+	
+	struct EXPLORAGRAM_API BBox {
         BBox() {
             min = vec3(1e20, 1e20, 1e20);
             max = vec3(-1e20, -1e20, -1e20);
@@ -61,6 +63,10 @@ namespace GEO {
         bool is_null() const;
         void add(const BBox& b);
         void add(const vec3& P);
+		void dilate(double eps) {
+			min -= vec3(eps, eps, eps);
+			max += vec3(eps, eps, eps);
+		}
         vec3 bary() const;
 
         vec3 min;
@@ -78,8 +84,6 @@ namespace GEO {
         void init(vector<BBox>& inboxes);
 
         ~HBoxes() {
-            //plop(STAT_nb_visits / STAT_nb_requests);
-            //plop(STAT_nb_leafs / STAT_nb_requests);
         }
 
         void sort(vector<vec3> &G, index_t org, index_t dest);
@@ -106,6 +110,28 @@ namespace GEO {
         vector<index_t> moved;
         vector<BBox>    movedbbox;
     };
+	
 
+
+	// double tetra_volume(vec3 A, vec3 B, vec3 C, vec3 D);
+	 double tetra_volume_sign(vec3 A, vec3 B, vec3 C, vec3 D);
+	 bool same_sign(double a, double b);
+
+	//bool naive_tri_tri_intersect(vec3 v0, vec3 v1, vec3 v2, vec3 u0, vec3 u1, vec3 u2);
+
+	 vector<BBox> facets_bbox(Mesh* m);
+	struct FacetIntersect {
+		FacetIntersect(Mesh* p_m);
+		vector<index_t> get_intersections(vector<vec3>& P);
+		vector<index_t> get_intersections(index_t& f);
+		vector<BBox> inboxes;
+		DynamicHBoxes hb;
+		Mesh* m;
+	};
+
+
+	bool polyintersect(vector<vec3>& P, vector<vec3>& Q);
+	vector<index_t> get_intersecting_faces(Mesh* m);
+	void check_no_intersecting_faces(Mesh* m,bool allow_duplicated = false);
 }
 #endif

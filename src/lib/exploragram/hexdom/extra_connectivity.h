@@ -70,6 +70,35 @@ namespace GEO {
 	vector<index_t> c2c;	// corner to next corner sharing the same vertex
     };
 
+
+	/**
+	* All connectivity informations of an halfedge data structure
+	* WARNING: does not support mesh modification
+	*/
+	struct FacetsExtraConnectivityWithInvalidFacets {
+		FacetsExtraConnectivityWithInvalidFacets(Mesh * p_m);
+		void reset();
+		index_t org(index_t corner_id);
+		index_t dest(index_t corner_id);
+		index_t opposite(index_t corner_id);
+		index_t next_around_vertex(index_t  cir);
+		index_t facet(index_t corner_id);
+		index_t local_id(index_t corner_id);
+		index_t next_CCW(index_t h) { return opposite(prev(h)); }
+		index_t next_CW(index_t h) { return next(opposite(h)); }
+
+
+		index_t next(index_t corner_id);
+		index_t prev(index_t corner_id);
+		vec3 geom(index_t corner_id);
+
+		Mesh* m;
+		Attribute<bool> facet_is_valid;
+		vector<index_t> v2c;	// vertex to corner
+		vector<index_t> c2f;	// corner to facet
+		vector<index_t> c2c;	// corner to next corner sharing the same vertex
+	};
+
     void halfedge_manip_example(Mesh* m);
 
     /**

@@ -275,13 +275,35 @@ namespace GEO {
         return permut;
     }
 
-    bool triangle_is_frame_singular(Mesh* m, Attribute<mat3>& B, index_t c, index_t cf) {
-        mat3 ac_rot;
-        ac_rot.load_identity();
-        FOR(e, 3) ac_rot = Rij(m, B, m->cells.facet_vertex(c, cf, e), m->cells.facet_vertex(c, cf, next_mod(e, 3))).get_mat()*ac_rot;
-        return !is_identity_auvp(ac_rot);
-    }
+	bool triangle_is_frame_singular(Mesh* m, Attribute<mat3>& B, index_t c, index_t cf) {
+		mat3 ac_rot;
+		ac_rot.load_identity();
+		FOR(e, 3) ac_rot = Rij(m, B, m->cells.facet_vertex(c, cf, e), m->cells.facet_vertex(c, cf, next_mod(e, 3))).get_mat()*ac_rot;
+		return !is_identity_auvp(ac_rot);
+	}
 
+	bool triangle_is_frame_singular___give_stable_direction(Mesh* m, int& stable_dir_index, Attribute<mat3>& B, index_t c, index_t cf, index_t cfv) {
+		mat3 ac_rot,id3D;
+		stable_dir_index = -1;
+		ac_rot.load_identity();
+		FOR(e, 3) ac_rot = Rij(m, B, m->cells.facet_vertex(c, cf, (e+ cfv)%3), m->cells.facet_vertex(c, cf, (e + cfv+1) % 3)).get_mat()*ac_rot;
+		if (is_identity_auvp(ac_rot)) return false;
+		FOR(ax, 3){
+			double sum = 0;
+			FOR(d, 3) sum += std::abs(ac_rot(d, ax) - id3D(d, ax));
+			if (sum<1e-10) stable_dir_index = int(ax);
+		}
+		return true;
+	}
+	bool triangle_is_frame_singular___give_stable_direction(Mesh* m, vec3& stable_dir_geom, Attribute<mat3>& B, index_t c, index_t cf, index_t cfv) {
+		int stable_dir_index;
+		if (!triangle_is_frame_singular___give_stable_direction(m, stable_dir_index, B, c, cf,cfv)) return false; 
+		stable_dir_geom = vec3(0, 0, 0);
+		if (stable_dir_index == -1) return true;
+		FOR(d, 3) stable_dir_geom[d] = B[m->cells.facet_vertex(c, cf, cfv)](d, index_t(stable_dir_index));
+		stable_dir_geom = normalize(stable_dir_geom);
+		return true;
+	}
     
 }
 

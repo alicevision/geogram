@@ -1414,6 +1414,31 @@ namespace GLUP {
         virtual void get_marching_cells_pseudo_file(
             std::vector<GLSL::Source>& sources
         );
+
+        /**
+         * \brief Sets the string that describes the settings of
+         *  the toggles for a given configuration.
+         * \param[in] toggles_state an unsigned integer, with its bits
+         *  corresponding to the state of each toggle
+         * \param[in] toggles_undetermined an unsigned integer, with its bits
+         *  set if the corresponding toggle state needs to be determined
+         *  dynamically from GLUP state
+         */
+        void setup_shaders_source_for_toggles(
+            GLUPbitfield toggles_state,
+            GLUPbitfield toggles_undetermined=0
+        );
+
+        /**
+         * \brief Sets the configurable GLSL sources for a given 
+         *  primitive type.
+         * \details This function needs to be called before compiling
+         *  the GLSL program.
+         * \param[in] primitive the GLUP primitive
+         */
+        virtual void setup_shaders_source_for_primitive(
+            GLUPprimitive primitive
+        );
         
     protected:
 
@@ -1644,31 +1669,6 @@ namespace GLUP {
          * \return a string with the GLSL declaration.
          */
         std::string primitive_declaration(GLUPprimitive prim) const;
-        
-        /**
-         * \brief Sets the string that describes the settings of
-         *  the toggles for a given configuration.
-         * \param[in] toggles_state an unsigned integer, with its bits
-         *  corresponding to the state of each toggle
-         * \param[in] toggles_undetermined an unsigned integer, with its bits
-         *  set if the corresponding toggle state needs to be determined
-         *  dynamically from GLUP state
-         */
-        void setup_shaders_source_for_toggles(
-            GLUPbitfield toggles_state,
-            GLUPbitfield toggles_undetermined=0
-        );
-
-        /**
-         * \brief Sets the configurable GLSL sources for a given 
-         *  primitive type.
-         * \details This function needs to be called before compiling
-         *  the GLSL program.
-         * \param[in] primitive the GLUP primitive
-         */
-        virtual void setup_shaders_source_for_primitive(
-            GLUPprimitive primitive
-        );
         
         /**
          * \brief Sets the string that describes the settings of

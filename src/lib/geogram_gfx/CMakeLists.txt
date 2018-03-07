@@ -19,8 +19,8 @@ if(GEOGRAM_WITH_LUA)
    aux_source_directories(SOURCES "Source Files\\lua"           lua)
 endif()
 
-if(GEOGRAM_USE_BUILTIN_GLFW3)
-  add_definitions(-DGEO_USE_BUILTIN_GLFW3)
+if(GEOGRAM_USE_SYSTEM_GLFW3)
+  add_definitions(-DGEO_USE_SYSTEM_GLFW3)
 endif()
 
 add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)

@@ -240,7 +240,7 @@ namespace GEO {
      * \brief Computes the sum of two Quaternion
      * \param[in] a a const reference to the first Quaternion
      * \param[in] b a const reference to the second Quaternion     
-     * \returnt the sum of \p a and \p b
+     * \return the sum of \p a and \p b
      */
     inline Quaternion operator + (const Quaternion& a, const Quaternion& b) {
         return Quaternion(
@@ -253,7 +253,7 @@ namespace GEO {
      * \brief Computes the difference between two Quaternion
      * \param[in] a a const reference to the first Quaternion
      * \param[in] b a const reference to the second Quaternion     
-     * \returnt the difference between \p a and \p b
+     * \return the difference between \p a and \p b
      */
     inline Quaternion operator - (const Quaternion& a, const Quaternion& b) {
         return Quaternion( 
@@ -265,7 +265,7 @@ namespace GEO {
     /**
      * \brief Computes the opposite of a Quaternion
      * \param[in] a a const reference to the Quaternion
-     * \returnt the opposite of \p a 
+     * \return the opposite of \p a 
      */
     inline Quaternion operator - (const Quaternion& a ) {
         return Quaternion( -1.0 * a.v(), -a.s() );
@@ -275,7 +275,7 @@ namespace GEO {
      * \brief Computes the product of two Quaternion
      * \param[in] a a const reference to the first Quaternion
      * \param[in] b a const reference to the second Quaternion     
-     * \returnt the product of \p a and \p b
+     * \return the product of \p a and \p b
      */
     inline Quaternion operator * ( const Quaternion& a, const Quaternion& b) {
         return Quaternion( 
@@ -288,7 +288,7 @@ namespace GEO {
      * \brief Computes the product of a Quaternion and a scalar
      * \param[in] a a const reference to the Quaternion
      * \param[in] t the scalar
-     * \returnt the product of \p a and \p t
+     * \return the product of \p a and \p t
      */
     inline Quaternion operator * ( const Quaternion& a, double t ) {
         return Quaternion( t * a.v(), a.s() * t );
@@ -299,7 +299,7 @@ namespace GEO {
      * \brief Computes the product of a scalar and a Quaternion
      * \param[in] t the scalar
      * \param[in] a a const reference to the second Quaternion     
-     * \returnt the product of \p t and \p a
+     * \return the product of \p t and \p a
      */
     inline Quaternion operator * ( double t, const Quaternion& a ) {
         return Quaternion( t * a.v(), a.s() * t );

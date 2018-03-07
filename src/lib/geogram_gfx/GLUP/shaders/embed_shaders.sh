@@ -6,6 +6,8 @@ GLUP/defs.h
 GLUP/stdglup.h
 GLUP/fragment_shader_utils.h
 GLUP/fragment_ray_tracing.h
+GLUP/portable_fragment_shader.h
+GLUP/ShaderToy.h
 GLUPES/fragment_shader_utils.h
 GLUPES/vertex_shader_state.h
 GLUPES/fragment_shader_state.h

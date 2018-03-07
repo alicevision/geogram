@@ -39,7 +39,7 @@ include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 6)
-set(VORPALINE_VERSION_PATCH 0)
+set(VORPALINE_VERSION_PATCH 1)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
@@ -95,8 +95,6 @@ configure_file(
 
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-
-
 
 ##############################################################################
 # Geogram/Vorpaline sources

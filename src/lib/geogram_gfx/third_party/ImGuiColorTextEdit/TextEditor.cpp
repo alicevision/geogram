@@ -20,6 +20,15 @@
 #include <regex>
 #endif
 
+// [Bruno Levy] includes for GLFW, needed by new callbacks
+// (for key constants).
+#ifdef GEO_USE_SYSTEM_GLFW3
+#include <GLFW/glfw3.h>
+#else
+#include <third_party/glfw/include/GLFW/glfw3.h>
+#endif
+
+
 // [Bruno Levy] replaced std::equal() with local function
 // so that we do not depend on C++ 2014
 namespace {
@@ -91,6 +100,9 @@ TextEditor::TextEditor()
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
+	// [Bruno Levy] additional callback.
+	callback_ = NULL;
+	callback_client_data_ = NULL;
 }
 
 
@@ -461,7 +473,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	{
 	    if (ImGui::IsWindowHovered()) {
 		    ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
-		    ImGui::CaptureKeyboardFromApp(true); // [Bruno Levy] seems to be needed (to be checked)
+		    //ImGui::CaptureKeyboardFromApp(true); // [Bruno Levy] seems to be needed (to be checked)
 		    ImGui::CaptureMouseFromApp(true);
 	    }
 		
@@ -513,9 +525,30 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Cut();
 		else if (!ctrl && shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Delete)))
 			Cut();
-		else if(ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter))) // [Bruno Levy] Seems that this was missing.
+		else if(ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter))) { // [Bruno Levy] Seems that this was missing.
 		    EnterCharacter('\n');
-		    
+		} else if(ctrl && !shift && !alt && (ImGui::IsKeyPressed('A') || ImGui::IsKeyPressed('Q'))) {
+		    // [Bruno Levy] select all		
+		    SetSelection(Coordinates(0,0), Coordinates(GetTotalLines(),0), false);
+		    SetCursorPosition(Coordinates(GetTotalLines(),0));
+		}
+
+		// [Bruno Levy] additional callback
+		if(callback_ != NULL){
+		    if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(GLFW_KEY_F2)) {
+			callback_(TEXT_EDITOR_SAVE, callback_client_data_);
+		    }
+		    if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(GLFW_KEY_F5)) {
+			callback_(TEXT_EDITOR_RUN, callback_client_data_);			
+		    }
+		    if (ctrl && !shift && !alt && ImGui::IsKeyPressed('F')) {
+			callback_(TEXT_EDITOR_FIND, callback_client_data_);			
+		    }
+		    if (ctrl && !shift && !alt && ImGui::IsKeyPressed('C') && !HasSelection()) {
+			callback_(TEXT_EDITOR_STOP, callback_client_data_);			
+		    }
+		}
+		
 		if (!IsReadOnly())
 		{
 			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
@@ -574,7 +607,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto scrollX = ImGui::GetScrollX();
 	auto scrollY = ImGui::GetScrollY();
 
-	auto lineNo = (int)floor(scrollY / mCharAdvance.y);
+	auto lineNo = (int)floor(scrollY / mCharAdvance.y);  
 	auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / mCharAdvance.y)));
 	if (!mLines.empty())
 	{
@@ -627,9 +660,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					ImGui::BeginTooltip();
 					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
 					ImGui::Text("Error at line %d:", errorIt->first);
-					ImGui::PopStyleColor();
+//					ImGui::PopStyleColor();
 					ImGui::Separator();
-					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.2f, 1.0f));
+// [Bruno Levy] I'm using the Light style, and yellow on white is not very legible.					
+//					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.2f, 1.0f));
 					ImGui::Text("%s", errorIt->second.c_str());
 					ImGui::PopStyleColor();
 					ImGui::EndTooltip();
@@ -737,7 +771,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	if (mScrollToCursor)
 	{
 		EnsureCursorVisible();
-		ImGui::SetWindowFocus();
+		// ImGui::SetWindowFocus(); // [Bruno Levy] commented-out because this breaks my <control><S>
 		mScrollToCursor = false;
 	}
 
@@ -774,6 +808,9 @@ void TextEditor::EnterCharacter(Char aChar)
 {
 	assert(!mReadOnly);
 
+	// [Bruno Levy] clear error markers whenever text is entered.
+	mErrorMarkers.clear();
+	
 	UndoRecord u;
 
 	u.mBefore = mState;
@@ -1129,6 +1166,9 @@ void TextEditor::Delete()
 {
 	assert(!mReadOnly);
 
+	// [Bruno Levy] clear error markers whenever text is entered.
+	mErrorMarkers.clear();
+	
 	if (mLines.empty())
 		return;
 
@@ -1182,6 +1222,9 @@ void TextEditor::BackSpace()
 {
 	assert(!mReadOnly);
 
+	// [Bruno Levy] clear error markers whenever text is entered.
+	mErrorMarkers.clear();
+	
 	if (mLines.empty())
 		return;
 
@@ -1373,7 +1416,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 	0xffffffff, // Background
 	0xff000000, // Cursor
 	0x80600000, // Selection
-	0xa00010ff, // ErrorMarker
+        0xa00010ff, // ErrorMarker
 	0x80f08000, // Breakpoint
 	0xff505000, // Line number
 	0x40000000, // Current line fill

@@ -82,7 +82,7 @@ namespace GEO {
     struct EXPLORAGRAM_API Poly3d {
         Poly3d(vector<vec3> &p_pts) : pts(p_pts) {
         }
-
+		void dump_contour();
         vec3 barycenter();
 
         vec3 normal();

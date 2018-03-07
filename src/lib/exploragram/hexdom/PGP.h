@@ -99,6 +99,7 @@ namespace GEO {
 
 /*
         void snap_U_to_round(double eps = 0.05) {
+			return;
             FOR(v, m->vertices.nb()) FOR(d, 3) {
                 if (std::abs(U[v][d] - round(U[v][d])) < eps) {
                     U[v][d] = round(U[v][d]);
@@ -116,7 +117,8 @@ namespace GEO {
         // A PGP solution is not only a mesh + attrib: it also requires these datas
        
         Attribute<vec3> corr;
-        Attribute<vec3i> tij;
+		//Attribute<vec3i> tij;
+		Attribute<vec3> tij;
 
         vector<index_t> v2e;
         vector<vector<index_t> > v2eopp;

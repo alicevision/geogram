@@ -500,8 +500,8 @@ namespace GEO {
 	index = 0;
 	bb = (double)FABS(D[1]);
 	cc = (double)FABS(D[2]);
-	if (bb>max) max = bb, index = 1;
-	if (cc>max) max = cc, index = 2;
+	if (bb>max) {max = bb; index = 1;}
+	if (cc>max) {max = cc; index = 2;}
 
 	/* this is the simplified projection onto L*/
 	vp0 = V0[index];

@@ -84,7 +84,7 @@ namespace GEO {
 	     *  whether the halfedge associated with the corner is on the 
 	     *  border of the ball (1) or not (0). It is computed by one of 
 	     *  the two versions of do_the_ball().
-	     * \param[in] constraint an attribute that indicates for each 
+	     * \param[in] constraints an attribute that indicates for each 
 	     *  corner  whether the u and/or v coordinate is constrained to 
 	     *  have an integer value.
 	     * \param[out] U a vector attribute of dimension 2 associated with 

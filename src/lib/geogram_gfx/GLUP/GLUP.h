@@ -98,6 +98,31 @@ extern "C" {
      *  have access to the GLUP uniform state.
      */
     GLUP_API const char* glupUniformStateDeclaration(void);
+
+    /**
+     * \brief Compiles a GLSL shader.
+     * \param[in] target one of GL_VERTEX_SHADER, GL_FRAGMENT_SHADER,
+     *  GL_COMPUTE_SHADER, GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER,
+     *  GL_GEOMETRY_SHADER.
+     * \return an opaque handle to the compiled shader, or 0 if an error
+     *  occured.
+     */
+    GLUP_API GLUPuint glupCompileShader(GLUPenum target, const char* source);
+
+    /**
+     * \brief Compiles a GLSL program.
+     * \param[in] source the program source. Shader stages are indicated
+     *  by special comments:
+     *  //stage GL_VERTEX_SHADER
+     *  //stage GL_FRAGMENT_SHADER
+     *  //stage GL_COMPUTE_SHADER
+     *  //stage GL_TESS_CONTROL_SHADER
+     *  //stage GL_TESS_EVALUATION_SHADER
+     *  //stage GL_GEOMETRY_SHADER
+     * \return an opaque handle to the compiled program, or 0 if an error
+     *  occured.
+     */
+    GLUP_API GLUPuint glupCompileProgram(const char* source);
     
     /**
      * \brief Opaque identifier of a GLUP context.

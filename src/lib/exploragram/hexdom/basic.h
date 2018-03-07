@@ -54,6 +54,19 @@
 
 namespace GEO {
 
+	struct FF_param {
+		FF_param();
+		bool rigid_border;
+	};
+	struct HexdomParam {
+		static FF_param  FF;
+	};
+
+	template<class T> void min_equal(T& A, T B) { if (A > B) A = B; }
+	template<class T> void max_equal(T& A, T B) { if (A < B) A = B; }
+
+	inline double nint(double x) { return floor(x + .5); }
+
     inline index_t next_mod(index_t i, index_t imax) {
 	return (i + 1) % imax;
     }
@@ -153,7 +166,28 @@ namespace GEO {
 	while (id >= data.size()) id -= data.size();
 	return data[id];
     }
+
+
+
+
+struct EXPLORAGRAM_API BBox1 {
+	BBox1() { min = 1e20; max = -1e20; }
+	double length() { return max - min; }
+	bool intersect(const BBox1& b) const { return contains(b.min) || contains(b.max) || b.contains(min) || b.contains(max); }
+	bool contains(const double& v) const { return v > min && v < max; }
+	bool is_null() const;
+	void add(const BBox1& b);
+	void add(const double& P) { min_equal(min, P); max_equal(max, P);}
+	void dilate(double eps) { min -= eps; max += eps; }
+	double bary() const { return (max + min) / 2.; }
+
+	double min;
+	double max;
+};
 }
+
+
+
 
 /**************** debugging and logging ***************************/
 

@@ -1,1 +1,3 @@
 set(CPACK_GENERATOR RPM)
+set(CMAKE_INSTALL_PREFIX /Users/sgaspari/dev/code/popart/libs/sandbox/geogram/build/Darwin-clang-dynamic-Release/install)
+

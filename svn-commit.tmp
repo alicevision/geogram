@@ -1,9 +1,0 @@
-* Better error reporting in OVM mesh IO (displays line numbers)
-* Made TextEditor work with earliers compilers that do not have
-std::chrono or std::regex
-
---This line, and those below, will be ignored--
-
-M    src/lib/geogram/mesh/mesh_io.cpp
-M    src/lib/geogram_gfx/third_party/ImGuiColorTextEdit/TextEditor.cpp
-M    src/lib/geogram_gfx/third_party/ImGuiColorTextEdit/TextEditor.h

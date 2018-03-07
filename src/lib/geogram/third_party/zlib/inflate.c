@@ -92,6 +92,9 @@
  */
 #ifdef __GNUC__
 #ifndef __ICC
+#ifdef __clang__
+# pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif
 # pragma GCC diagnostic ignored "-Wpragmas"
 # pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif

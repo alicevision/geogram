@@ -175,21 +175,26 @@ namespace GEO {
 	}
     }
 
-    double get_cell_average_edge_size(const Mesh* mesh){
-	double sum = 0;
-	int nb = 0;
-	//FOR_EACH_CELL_FACET_VERTEX(mesh, c, lf, lv)
-	FOR(c,mesh->cells.nb()) FOR(lf,mesh->cells.nb_facets(c)) FOR(lv,mesh->cells.facet_nb_vertices(c,lf))
-	    {
-		index_t v0 = mesh->cells.facet_vertex(c, lf, lv);
-		index_t v1 = mesh->cells.facet_vertex(c, lf, (lv + 1) % mesh->cells.facet_nb_vertices(c, lf));
-		sum += (mesh->vertices.point(v0) - mesh->vertices.point(v1)).length();
-		nb++;
-	    }
-	geo_assert(nb > 0);
-	return sum / double(nb);
-    }
-    
+	double get_cell_average_edge_size( Mesh* mesh) {
+		double sum = 0;
+		int nb = 0;
+		FOR(c, mesh->cells.nb()) FOR(lf, mesh->cells.nb_facets(c)) FOR(lv, mesh->cells.facet_nb_vertices(c, lf))
+		{
+			index_t v0 = mesh->cells.facet_vertex(c, lf, lv);
+			index_t v1 = mesh->cells.facet_vertex(c, lf, (lv + 1) % mesh->cells.facet_nb_vertices(c, lf));
+			sum += (mesh->vertices.point(v0) - mesh->vertices.point(v1)).length();
+			nb++;
+		}
+		geo_assert(nb > 0);
+		return sum / double(nb);
+	}
+	double get_facet_average_edge_size( Mesh* m) {
+		geo_assert(m->facet_corners.nb() > 0);
+		double ave_edge_length = 0;
+		FOR(f, m->facets.nb()) FOR(v, m->facets.nb_vertices(f)) ave_edge_length += (X(m)[m->facets.vertex(f, v)] - X(m)[m->facets.vertex(f, (v + 1) % m->facets.nb_vertices(f))]).length();
+		return ave_edge_length / double(m->facet_corners.nb());
+	}
+
     vec3 tet_facet_cross(Mesh* m, index_t c, index_t lf){
 	vec3 pt[3];
 	for (index_t v = 0; v < 3; v++) pt[v] = m->vertices.point(m->cells.facet_vertex(c, lf, v));

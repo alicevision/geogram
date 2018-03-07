@@ -133,6 +133,9 @@ namespace GEO {
     AxisPermutation EXPLORAGRAM_API Rij(Mesh* m, Attribute<mat3>& B, index_t i, index_t j);
 
     bool EXPLORAGRAM_API triangle_is_frame_singular(Mesh* m, Attribute<mat3>& B, index_t c, index_t cf);
+
+	bool triangle_is_frame_singular___give_stable_direction(Mesh* m, int& stable_dir_index, Attribute<mat3>& B, index_t c, index_t cf, index_t cfv=0);
+	bool triangle_is_frame_singular___give_stable_direction(Mesh* m, vec3& stable_dir_geom, Attribute<mat3>& B, index_t c, index_t cf, index_t cfv=0);
 }
 
 #endif

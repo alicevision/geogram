@@ -9,6 +9,9 @@
 #include <geogram/mesh/mesh_tetrahedralize.h>
 #include <geogram/delaunay/delaunay.h>
 
+#include <exploragram/hexdom/hex_cruncher.h>
+
+
 #include <geogram/points/nn_search.h>
 #include <geogram/points/colocate.h>
 #include <queue>
@@ -82,48 +85,36 @@ namespace GEO {
 		}
 	}
 
-	void fill_cavity_with_tetgen(Mesh* input, Mesh* tri, bool propagate_hexvid, bool with_pyramid) {
+	void fill_cavity_with_tetgen(Mesh* input, Mesh* tri, bool with_pyramid) {
 		tri->copy(*input, false);
 		fill_quad_tri_surface(tri, with_pyramid);
-
-
-		if (propagate_hexvid) {
-			Attribute<index_t> in_hexvid(input->vertices.attributes(), "hexvid");
-			Attribute<index_t>  tri_hexvid(tri->vertices.attributes(), "hexvid");
-			FOR(v, tri->vertices.nb()) tri_hexvid[v] = NOT_AN_ID;
-			FOR(v, input->vertices.nb()) tri_hexvid[v] = in_hexvid[v];
-			FOR(v, input->vertices.nb()) if ((X(input)[v] - X(tri)[v]).length2() > 0) {
-				error("tetgen has jittered my vertices !! ");
-				geo_assert_not_reached;
-			}
-		}
-
 	}
 
 
 	void add_hexes_to_tetmesh(Mesh* hex, Mesh* tet_mesh) {
 		if (hex->cells.nb() == 0) return;
-		Attribute<index_t> hexvid(tet_mesh->vertices.attributes(), "hexvid");
-		vector<index_t> hex2tet_idmap(hex->vertices.nb(), NOT_AN_ID);
+
 
 		index_t off_v = tet_mesh->vertices.create_vertices(hex->vertices.nb());
 		FOR(v, hex->vertices.nb()) X(tet_mesh)[off_v + v] = X(hex)[v];
-
-		FOR(v, hex->vertices.nb()) hexvid[off_v + v] = NOT_AN_ID;
-
-
-		FOR(v, hex->vertices.nb()) hex2tet_idmap[v] = off_v + v;
-		FOR(v, tet_mesh->vertices.nb())
-			if (hexvid[v] != NOT_AN_ID) {
-				geo_assert((X(hex)[hexvid[v]] - X(tet_mesh)[v]).length2() == 0); // we assume that tetgen does not change vertices ids on boundary
-				hex2tet_idmap[hexvid[v]] = v;
-			}
-		
 		index_t off_c = tet_mesh->cells.create_hexes(hex->cells.nb());
 		FOR(c, hex->cells.nb())FOR(cv, 8) {
-			index_t vid = hex2tet_idmap[hex->cells.vertex(c, cv)];
+			index_t vid = hex->cells.vertex(c, cv)+off_v;
 			tet_mesh->cells.set_vertex(off_c + c, cv, vid);
 		}
+		// merge vertices
+		double eps = (1e-3)*get_cell_average_edge_size(tet_mesh);
+		{
+			vector<index_t> to_kill(tet_mesh->vertices.nb(), 0);
+			vector<index_t> old2new(tet_mesh->vertices.nb());
+			Geom::colocate(tet_mesh->vertices.point_ptr(0), 3, tet_mesh->vertices.nb(), old2new, eps);
+			FOR(c, tet_mesh->cells.nb()) FOR(cv, tet_mesh->cells.nb_vertices(c))
+				tet_mesh->cells.set_vertex(c, cv, old2new[tet_mesh->cells.vertex(c, cv)]);
+			FOR(v, tet_mesh->vertices.nb()) if (old2new[v] != v) to_kill[v] = NOT_AN_ID;
+			tet_mesh->vertices.delete_elements(to_kill);
+		}
+
+
 	}
 
        /*
@@ -238,6 +229,158 @@ namespace GEO {
 		index_t off_v = m->vertices.create_vertices(nvvertices.size());
 		FOR(i, nvvertices.size())  X(m)[off_v + i] = nvvertices[i];
 
+	}
+
+	
+        static void stuff_with_tets_and_pyramids(Mesh* m) {
+		if (m->vertices.nb() == 0 || m->facets.nb()==0)  return;
+		m->edges.clear();
+		check_no_intersecting_faces(m);
+		double ave_edge_length = get_facet_average_edge_size(m);
+
+		vector<index_t> pyrindex;
+		vector<vec3> pyr_Z;
+		vector<index_t> pyr_top_index;
+
+		{// split quads into 4 triangles... and remember them to produce pyramids
+			// Remark: spliting quads in 2 may be better on boundary... but it is not clear for constrained boundary... 
+			vector<index_t> to_kill(m->facets.nb(), 0);
+
+
+			index_t init_nb_facets = m->facets.nb();
+			FOR(f, init_nb_facets) {
+				if (m->facets.nb_vertices(f) != 4) {
+					geo_assert(m->facets.nb_vertices(f)==3);
+					continue;
+				}
+				index_t nvv = m->vertices.create_vertex();
+				pyr_Z.push_back(facet_normal(m, f));
+
+				double d = 0;
+				FOR(e, 4) d += .25*(X(m)[m->facets.vertex(f, e)] - X(m)[m->facets.vertex(f, (e + 1) % 4)]).length();
+				X(m)[nvv] = facet_bary(m, f);// +.2*d*n;
+				to_kill[f] = 1;
+
+				index_t off_f = m->facets.create_triangles(4);
+				FOR(e, 4) {
+					to_kill.push_back(0);
+					m->facets.set_vertex(off_f + e, 0, m->facets.vertex(f, e));
+					m->facets.set_vertex(off_f + e, 1, m->facets.vertex(f, (e + 1) % 4));
+					m->facets.set_vertex(off_f + e, 2, nvv);
+				}
+				FOR(e, 4) pyrindex.push_back(m->facets.vertex(f, e));
+				pyrindex.push_back(nvv);
+				pyr_top_index.push_back(nvv);
+			}
+			m->facets.delete_elements(to_kill, false);
+		}
+
+		{// mode the tip of pyramid in the normal direction to produce better shape (not flat)
+			check_no_intersecting_faces(m);
+			vector<double> max_pyr_top_coeff(pyr_top_index.size(), .5);
+			bool done = false;
+			while (!done){
+					Mesh copy;
+					copy.copy(*m);
+					create_non_manifold_facet_adjacence(&copy);
+
+					FOR(v, pyr_top_index.size())
+						X(&copy)[pyr_top_index[v]] = X(m)[pyr_top_index[v]]
+						- max_pyr_top_coeff[v]*ave_edge_length * pyr_Z[v];
+
+					vector<index_t> intersections = get_intersecting_faces(&copy);
+					done = (intersections.size() == 0);
+					vector<bool> vertexpb(copy.vertices.nb(), false);
+					FOR(i, intersections.size())  FOR(lv, 3) vertexpb[copy.facets.vertex(intersections[i], lv)] = true;
+
+					FOR(v, pyr_top_index.size()) if (vertexpb[pyr_top_index[v]]) {
+						if (max_pyr_top_coeff[v] > .02)max_pyr_top_coeff[v] /= 2.;
+						else max_pyr_top_coeff[v] = 0;
+					}
+			}
+
+			FOR(v, pyr_top_index.size()) X(m)[pyr_top_index[v]]
+				-= geo_max(0.0, .7*max_pyr_top_coeff[v])*ave_edge_length * pyr_Z[v];
+
+			check_no_intersecting_faces(m);
+		}
+		// keep vertices geometry (indices are broken by the tetrahedrisation)
+		vector<vec3> pyrpos(pyrindex.size());
+		FOR(nv, pyrindex.size()) pyrpos[nv] = X(m)[pyrindex[nv]];
+
+		// tetrahedrize inside
+		try {
+			FOR(f, m->facets.nb()) geo_assert(m->facets.nb_vertices(f)==3);
+			
+			mesh_save(*m, "C:/DATA/debug/pretriangulate.geogram");
+			m->facets.triangulate();
+			mesh_save(*m, "C:/DATA/debug/posttrinagulate.geogram");
+			create_non_manifold_facet_adjacence(m);
+			mesh_tetrahedralize(*m, false, true, 1.);
+		}
+		catch (const Delaunay::InvalidInput& error_report) {
+			FOR(i, error_report.invalid_facets.size())
+				plop(error_report.invalid_facets[i]);
+			Attribute<int> intersection(m->facets.attributes(), "intersection");
+			FOR(f, m->facets.nb()) intersection[f] = 0;
+			FOR(i, error_report.invalid_facets.size())
+				intersection[error_report.invalid_facets[i]] = 1;
+			mesh_save(*m, "C:/DATA/debug/intersectingsurface2.geogram");
+			geo_assert_not_reached;
+		}
+		
+		// restore indices from geometry
+		NearestNeighborSearch_var NN = NearestNeighborSearch::create(3);
+		NN->set_points(m->vertices.nb(), m->vertices.point_ptr(0), 3);
+		FOR(nv, pyrindex.size()) pyrindex[nv] = NN->get_nearest_neighbor(pyrpos[nv].data());
+
+
+		// produce pyramids
+		index_t off_c = m->cells.create_pyramids(pyrindex.size() / 5);
+		FOR(p, pyrindex.size() / 5) FOR(lv, 5)
+			m->cells.set_vertex(off_c + p, lv, pyrindex[5 * p + lv]);
+
+	}
+
+
+
+	void hex_dominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result) {
+		plop("HexDominant with vertex_puncher and pyramids");
+		hex_crunch(cavity, hexahedrons);
+
+		//return;
+		Mesh tets;
+		tets.copy(*cavity);
+		stuff_with_tets_and_pyramids(&tets);
+		result->copy(tets);
+		result->facets.clear();
+		
+
+
+		index_t off_c = result->cells.create_hexes(hexahedrons->cells.nb());
+		index_t off_v = result->vertices.create_vertices(hexahedrons->vertices.nb());
+		FOR(v, hexahedrons->vertices.nb()) X(result)[off_v + v] = X(hexahedrons)[v];
+		FOR(c, hexahedrons->cells.nb())FOR(cv, 8) {
+			result->cells.set_vertex(off_c + c, cv, off_v + hexahedrons->cells.vertex(c, cv));
+		}
+
+
+		// merge vertices
+		double eps = (1e-3)*get_cell_average_edge_size(result);
+		{
+			vector<index_t> to_kill(result->vertices.nb(), 0);
+			vector<index_t> old2new(result->vertices.nb());
+			Geom::colocate(result->vertices.point_ptr(0), 3, result->vertices.nb(), old2new, eps);
+			FOR(c, result->cells.nb()) FOR(cv, result->cells.nb_vertices(c))
+				result->cells.set_vertex(c, cv, old2new[result->cells.vertex(c, cv)]);
+			FOR(v, result->vertices.nb()) if (old2new[v] != v) to_kill[v] = NOT_AN_ID;
+			result->vertices.delete_elements(to_kill);
+		}
+
+		result->cells.connect();
+		result->facets.clear();
+	//	result->cells.compute_borders();
+		return;
 	}
 
 }

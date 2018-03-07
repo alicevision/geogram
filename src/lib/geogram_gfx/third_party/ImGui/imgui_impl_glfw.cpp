@@ -22,7 +22,11 @@
 // [Bruno 05/16/2016] Modified references to GL and GLfw includes
 //  for interfacing with geogram_gfx
 
+#ifdef GEO_USE_SYSTEM_GLFW3
+#include <GLFW/glfw3.h>
+#else
 #include <third_party/glfw/include/GLFW/glfw3.h>
+#endif
 
 #ifdef _WIN32
 #undef APIENTRY

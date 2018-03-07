@@ -424,7 +424,6 @@ namespace GEO {
 #endif
             if(
                 end != s && *end == '\0' && errno == 0 &&
-                v >= std::numeric_limits<T>::min() &&
                 v <= std::numeric_limits<T>::max()
             ) {
                 value = static_cast<T>(v);

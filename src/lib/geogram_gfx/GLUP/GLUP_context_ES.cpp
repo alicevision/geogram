@@ -1214,7 +1214,6 @@ namespace GLUP {
                 "#version 130                                    \n"
 #endif		
                 "#define GLUP_FRAGMENT_SHADER                    \n"
-                "#extension GL_EXT_frag_depth: enable            \n"
             );
         }
     }

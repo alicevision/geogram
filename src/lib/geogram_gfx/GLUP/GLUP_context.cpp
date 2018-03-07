@@ -82,6 +82,9 @@ namespace {
 	GLUP::Context* ctxt = dynamic_cast<GLUP::Context*>(provider);
 	geo_assert(ctxt != nil);
 	ctxt->get_vertex_shader_preamble_pseudo_file(sources);
+	sources.push_back("#define ");
+	sources.push_back(ctxt->profile_name());
+	sources.push_back("\n");
     }
 
     void fragment_shader_preamble_pseudo_file(
@@ -90,6 +93,9 @@ namespace {
 	GLUP::Context* ctxt = dynamic_cast<GLUP::Context*>(provider);
 	geo_assert(ctxt != nil);
 	ctxt->get_fragment_shader_preamble_pseudo_file(sources);
+	sources.push_back("#define ");
+	sources.push_back(ctxt->profile_name());
+	sources.push_back("\n");
     }
 
     void geometry_shader_preamble_pseudo_file(
@@ -98,6 +104,9 @@ namespace {
 	GLUP::Context* ctxt = dynamic_cast<GLUP::Context*>(provider);
 	geo_assert(ctxt != nil);
 	ctxt->get_geometry_shader_preamble_pseudo_file(sources);
+	sources.push_back("#define ");
+	sources.push_back(ctxt->profile_name());
+	sources.push_back("\n");
     }
 
     void marching_cells_pseudo_file(
@@ -106,6 +115,9 @@ namespace {
 	GLUP::Context* ctxt = dynamic_cast<GLUP::Context*>(provider);
 	geo_assert(ctxt != nil);
 	ctxt->get_marching_cells_pseudo_file(sources);
+	sources.push_back("#define ");
+	sources.push_back(ctxt->profile_name());
+	sources.push_back("\n");
     }
 
     void tess_control_shader_preamble_pseudo_file(
@@ -114,6 +126,9 @@ namespace {
 	GLUP::Context* ctxt = dynamic_cast<GLUP::Context*>(provider);
 	geo_assert(ctxt != nil);
 	ctxt->get_tess_control_shader_preamble_pseudo_file(sources);
+	sources.push_back("#define ");
+	sources.push_back(ctxt->profile_name());
+	sources.push_back("\n");
     }
 
     void tess_evaluation_shader_preamble_pseudo_file(
@@ -122,6 +137,9 @@ namespace {
 	GLUP::Context* ctxt = dynamic_cast<GLUP::Context*>(provider);
 	geo_assert(ctxt != nil);
 	ctxt->get_tess_evaluation_shader_preamble_pseudo_file(sources);
+	sources.push_back("#define ");
+	sources.push_back(ctxt->profile_name());
+	sources.push_back("\n");
     }
 
     void toggles_pseudo_file(

@@ -1,10 +1,8 @@
 #pragma once
 
-// [Bruno Levy] For the older mac that does not have
-// regex support, deactivate syntax highlighting
-#if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_12)
-#define GEO_OLD_COMPILER
-#endif
+// [Bruno Levy] For the older compilers that does not have
+// regex support, uncomment to deactivate syntax highlighting
+// #define GEO_OLD_COMPILER
 
 #include <string>
 #include <vector>
@@ -68,6 +66,16 @@ namespace std {
 // [Bruno Levy] include path redirected to geogram.
 #include <geogram_gfx/api/defs.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
+
+// [Bruno Levy] additional callback type.
+enum TextEditorAction {
+    TEXT_EDITOR_RUN, TEXT_EDITOR_SAVE,
+    TEXT_EDITOR_FIND, TEXT_EDITOR_STOP
+};
+
+typedef void (*TextEditorCallback)(
+    TextEditorAction action, void* client_data
+);
 
 class GEOGRAM_GFX_API TextEditor
 {
@@ -234,11 +242,16 @@ public:
 	void SetPalette(const Palette& aValue);
 
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
+	const ErrorMarkers& GetErrorMarkers() const { return mErrorMarkers; } //[Bruno]
+	
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers; }
-
+	const Breakpoints& GetBreakpoints() const { return mBreakpoints; } //[Bruno]
+	
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
 	std::string GetText() const;
+	//[Bruno] made public
+	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;	
 	std::string GetSelectedText() const;
 
 	int GetTotalLines() const { return (int)mLines.size(); }
@@ -338,7 +351,7 @@ private:
 	void EnsureCursorVisible();
 	int GetPageSize() const;
 	int AppendBuffer(std::string& aBuffer, char chr, int aIndex);
-	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
+
 	Coordinates GetActualCursorCoordinates() const;
 	Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
 	void Advance(Coordinates& aCoordinates) const;
@@ -384,5 +397,17 @@ private:
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
+
+// [Bruno Levy] Additional callback.
+  public:
+	void set_callback(
+	    TextEditorCallback cb, void* cb_cli_data = NULL
+	) {
+	    callback_ = cb;
+	    callback_client_data_ = cb_cli_data;
+	}
+  private:
+	TextEditorCallback callback_;
+	void* callback_client_data_;
 };
 

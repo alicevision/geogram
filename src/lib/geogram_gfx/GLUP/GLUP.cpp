@@ -68,11 +68,13 @@ namespace {
 	    Logger::out("GLUP") << "Something happened, trying to fix (by downgrading)" << std::endl;
 	    Logger::out("GLUP") << "If this does not work, try the following options:" << std::endl;
 	    Logger::out("GLUP") << " (1) make sure your OpenGL driver is up to date" << std::endl;
-	    Logger::out("GLUP") << " (2) create a file named \'geogram.ini\' in " << std::endl;
+	    Logger::out("GLUP") << " (2) create a file named \'"
+				<< CmdLine::get_config_file_name() << "\' in " << std::endl;
 	    Logger::out("GLUP") << "     your home directory (" << FileSystem::home_directory() << ")" << std::endl;
 	    Logger::out("GLUP") << "     with: " << std::endl;
 	    Logger::out("GLUP") << "       gfx:GL_profile=core" << std::endl;
-	    Logger::out("GLUP") << " (3) create a file named \'geogram.ini\' in " << std::endl;
+	    Logger::out("GLUP") << " (3) create a file named \'"
+				<< CmdLine::get_config_file_name() << "\' in " << std::endl;
 	    Logger::out("GLUP") << "     your home directory (" << FileSystem::home_directory() << ")" << std::endl;
 	    Logger::out("GLUP") << "     with: " << std::endl;
 	    Logger::out("GLUP") << "       gfx:GL_profile=compatibility" << std::endl;
@@ -109,7 +111,148 @@ const char* glupUniformStateDeclaration() {
     return GLUP::current_context_->uniform_state_declaration();
 }
 
-void GLUP_API glupBindUniformState(GLUPuint program) {
+GLUPuint glupCompileShader(GLUPenum target, const char* source) {
+    GEO_CHECK_GL();
+    GLUP::current_context_->setup_shaders_source_for_primitive(GLUP_TRIANGLES);
+    // First param: ignored.
+    // Second param: all toggle states are unknown.
+    GLUP::current_context_->setup_shaders_source_for_toggles(0,~0);
+    GEO_CHECK_GL();
+    GLUPuint result = GLSL::compile_shader_with_includes(
+	target, source, GLUP::current_context_
+    );
+    GEO_CHECK_GL();
+    return result;
+}
+
+namespace {
+    /**
+     * \brief Converts a comment //stage GL_VERTEX_SHADER into
+     *  the associated GLUPenum value.
+     * \param[in,out] comment_str on entry, a pointer to the comment.
+     *  on exit, the next line. A '\0' terminator is inserted in
+     *  the string (replaces the '\n' that ends the line).
+     * \return the target or 0 if an error was encountered.
+     */
+    static GLUPenum stage_to_target(char*& comment_str) {
+	char* p1 = comment_str + 8;
+	char* p2 = strchr(p1, '\n');
+	if(p2 == nil) {
+	    Logger::err("GLSL")
+		<< "Missing CR in //stage GL_xxxxx declaration"
+		<< std::endl;
+	    return 0;
+	}
+	std::string stage_str(p1, size_t(p2-p1));
+	GLenum stage = 0;
+	if(stage_str == "GL_VERTEX_SHADER") {
+	    stage = GL_VERTEX_SHADER;
+	} else if(stage_str == "GL_FRAGMENT_SHADER") {
+	    stage = GL_FRAGMENT_SHADER;
+	}
+
+#ifndef GEO_OS_EMSCRIPTEN
+	else if(stage_str == "GL_GEOMETRY_SHADER") {
+	    stage = GL_GEOMETRY_SHADER;
+                } else if(stage_str == "GL_TESS_CONTROL_SHADER") {
+	    stage = GL_TESS_CONTROL_SHADER;
+	} else if(stage_str == "GL_TESS_EVALUATION_SHADER") {
+	    stage = GL_TESS_EVALUATION_SHADER;
+	}
+#endif
+	else {
+	    Logger::err("GLSL") << stage_str << ": unknown stage"
+				<< std::endl;
+	}
+	*comment_str = '\0';
+	comment_str = p2+1;
+	return stage;
+    }
+}
+
+GLUPuint glupCompileProgram(const char* source_in) {
+    std::string source(source_in);
+    std::vector<const char*> sources;
+    std::vector<GLUPenum> targets;
+    std::vector<GLuint> shaders;
+
+    char* p = const_cast<char*>(source.c_str());
+
+    bool has_vertex_shader = false;
+    for(
+	p = strstr(p,"//stage");
+	(p != nil) && (*p != '\0');
+	p = strstr(p,"//stage ")
+    ) {
+	GLUPenum target = stage_to_target(p);
+	if(target == 0) {
+	    return 0;
+	}
+	sources.push_back(p);
+	targets.push_back(target);
+	has_vertex_shader = has_vertex_shader || (target == GL_VERTEX_SHADER);
+    }
+
+    // Use default vertex shader if no vertex shader was specified.
+    if(!has_vertex_shader) {
+	if(!strcmp(glupCurrentProfileName(),"GLUPES2")) {
+	    targets.push_back(GL_VERTEX_SHADER);	    
+	    sources.push_back("//import <GLUPES/vertex_shader.h>\n");
+	} else if(
+	    !strcmp(glupCurrentProfileName(),"GLUP150") ||
+	    !strcmp(glupCurrentProfileName(),"GLUP440")	    
+	) {
+	    targets.push_back(GL_VERTEX_SHADER);	    	    
+	    sources.push_back("//import <GLUPGLSL/vertex_shader.h>\n");	    
+	}
+    }
+    
+    GLuint program = 0;
+    try {
+	for(index_t i=0; i<index_t(sources.size()); ++i) {
+	    GLUPuint shader = glupCompileShader(targets[i], sources[i]);
+	    if(shader == 0) {
+		throw(GLSL::GLSLCompileError());
+	    }
+	    shaders.push_back(shader);
+	}
+	
+    	program = glCreateProgram();
+	
+	for(index_t i=0; i<index_t(shaders.size()); ++i) {
+	    glAttachShader(program, shaders[i]);
+	}
+	
+        GEO_CHECK_GL();    	
+        glBindAttribLocation(program, GLUP::GLUP_VERTEX_ATTRIBUTE, "vertex_in");
+        glBindAttribLocation(program, GLUP::GLUP_COLOR_ATTRIBUTE, "color_in");
+        glBindAttribLocation(program, GLUP::GLUP_TEX_COORD_ATTRIBUTE, "tex_coord_in");
+        glBindAttribLocation(program, GLUP::GLUP_NORMAL_ATTRIBUTE, "normal_in");
+	
+        GEO_CHECK_GL();    		
+	GLSL::link_program(program);
+        GEO_CHECK_GL();    			
+	GLUP::current_context_->bind_uniform_state(program);
+        GEO_CHECK_GL();
+    } catch(...) {
+	if(program != 0) {
+	    Logger::err("GLSL") << "Could not compile program"
+				<< std::endl;
+	    glDeleteProgram(program);
+	    program = 0;
+	}
+    }
+
+    // Shaders are reference-counted, now they are attached
+    // to the program.
+    for(index_t i=0; i<index_t(shaders.size()); ++i) {
+	glDeleteShader(shaders[i]);
+    }
+    
+    return program;
+}
+
+void glupBindUniformState(GLUPuint program) {
     GEO_CHECK_GL(); 
     GLUP::current_context_->bind_uniform_state(program);
     GEO_CHECK_GL();
@@ -365,7 +508,7 @@ GLUPboolean glupIsEnabled(GLUPtoggle toggle) {
 
 /********************** Texturing ******************************/
 
-void GLUP_API glupTextureType(GLUPtextureType type) {
+void glupTextureType(GLUPtextureType type) {
     GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().texture_type.set(type);
 }
@@ -377,7 +520,7 @@ GLUPtextureType glupGetTextureType() {
     );
 }
 
-void GLUP_API glupTextureMode(GLUPtextureMode mode) {
+void glupTextureMode(GLUPtextureMode mode) {
     GEO_CHECK_GL();
     GLUP::current_context_->uniform_state().texture_mode.set(mode);    
 }
@@ -950,7 +1093,7 @@ void glupPerspective(
     glupMultMatrixf(M);    
 }
 
-GLUPint GLUP_API glupProject(
+GLUPint glupProject(
     GLUPdouble objx, GLUPdouble objy, GLUPdouble objz,
     const GLUPdouble modelMatrix[16],
     const GLUPdouble projMatrix[16],

@@ -105,6 +105,90 @@ namespace GEO {
 
 
 
+
+
+
+
+
+
+		FacetsExtraConnectivityWithInvalidFacets::FacetsExtraConnectivityWithInvalidFacets(Mesh * p_m) {
+			m = p_m;
+			facet_is_valid.bind(m->facets.attributes(), "is_valid");
+			FOR(f, m->facets.nb()) facet_is_valid[f] = true;
+			reset();
+		}
+
+		void FacetsExtraConnectivityWithInvalidFacets::reset() {
+			//plop(m->facets.nb());
+			index_t nbc = m->facet_corners.nb();
+			c2f.resize(nbc,NOT_AN_ID);
+			c2c.resize(nbc, NOT_AN_ID);
+			v2c.resize(m->vertices.nb(), NOT_AN_ID);
+			FOR(f, m->facets.nb()) FOR(fc, m->facets.nb_corners(f)) {
+				index_t c = m->facets.corner(f, fc);
+				if (facet_is_valid[f]) { // everything is NOT_AN_ID for invalid facet and associated corner 
+					c2f[c] = f;
+					c2c[c] = c;
+					v2c[m->facets.vertex(f, fc)] = c;
+				}
+			}
+			FOR(f, m->facets.nb()) {
+				if (!facet_is_valid[f]) continue;
+				FOR(fc, m->facets.nb_corners(f)) {
+					index_t c = m->facets.corner(f, fc);
+					c2c[c] = v2c[m->facets.vertex(f, fc)];
+					v2c[m->facets.vertex(f, fc)] = c;
+				}
+			}
+		}
+
+		index_t FacetsExtraConnectivityWithInvalidFacets::org(index_t corner_id) { return m->facet_corners.vertex(corner_id); }
+		index_t FacetsExtraConnectivityWithInvalidFacets::dest(index_t corner_id) { return m->facet_corners.vertex(next(corner_id)); }
+
+		index_t FacetsExtraConnectivityWithInvalidFacets::opposite(index_t corner_id) {
+			index_t cir = corner_id;
+			index_t result = NOT_AN_ID; // not found
+			do {
+				index_t candidate = prev(cir);
+				if ((org(candidate) == dest(corner_id)) && (dest(candidate) == org(corner_id))) {
+					if (result == NOT_AN_ID) result = candidate;
+					else return NOT_AN_ID; // found more than one
+				}
+				if (cir != corner_id && dest(corner_id) == dest(cir))
+					return NOT_AN_ID; // the edge is non manifold
+				cir = c2c[cir];
+			} while (cir != corner_id);
+			return result;
+		}
+		//index_t FacetsExtraConnectivityWithInvalidFacets::next_around_vertex(index_t  cir) { return opposite(prev(cir)); }
+
+		index_t FacetsExtraConnectivityWithInvalidFacets::facet(index_t corner_id) { return c2f[corner_id]; }
+		index_t FacetsExtraConnectivityWithInvalidFacets::local_id(index_t corner_id) { return corner_id - m->facets.corners_begin(c2f[corner_id]); }
+
+		index_t FacetsExtraConnectivityWithInvalidFacets::next(index_t corner_id) {
+			index_t fc = local_id(corner_id);
+			index_t offset = corner_id - fc;
+			return offset + next_mod(fc, m->facets.nb_corners(c2f[corner_id]));
+		}
+		index_t FacetsExtraConnectivityWithInvalidFacets::prev(index_t corner_id) {
+			index_t fc = local_id(corner_id);
+			index_t offset = corner_id - fc;
+			return offset + prev_mod(fc, m->facets.nb_corners(c2f[corner_id]));
+		}
+
+		vec3 FacetsExtraConnectivityWithInvalidFacets::geom(index_t corner_id) {
+			return X(m)[dest(corner_id)] - X(m)[org(corner_id)];
+		}
+
+
+
+
+
+
+
+
+
+
         void halfedge_manip_example(Mesh* m){
                 FacetsExtraConnectivity fec(m);
                 FOR(c, m->facet_corners.nb()){// we can directly loop over each halfedges

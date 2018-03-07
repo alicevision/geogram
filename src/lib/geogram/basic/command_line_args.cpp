@@ -352,6 +352,12 @@ namespace {
             "sys:stats", false,
             "Display statistics on exit"
         );
+#ifdef GEO_OS_WINDOWS
+	declare_arg(
+	    "sys:show_win32_console", false,
+	    "Display MSDOS window"
+	);
+#endif	
     }
 
     /**

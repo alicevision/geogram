@@ -38,7 +38,11 @@
  */
 
 #include <exploragram/hexdom/intersect_tools.h>
-
+#include <exploragram/hexdom/mesh_utils.h>
+#define FPG_UNCERTAIN_VALUE 0
+#include <geogram/numerics/predicates/orient3d.h>
+#include <geogram/mesh/triangle_intersection.h>
+#include <geogram/mesh/mesh_io.h>
 namespace {
     using namespace GEO;
     
@@ -55,6 +59,7 @@ namespace {
 
 namespace GEO {
 
+
     const index_t quad_rand_split[2][3] = { { 0, 1, 2 },{ 0, 2, 3 } };    // random triangulation
     const index_t quad_split[4][3] = { { 0, 1, 2 },{ 0, 2, 3 },{ 1, 2, 3 },{ 1, 3, 0 } }; // convex hull
     const index_t diamon_split[12][3] = {                                 // surface and inside
@@ -70,6 +75,8 @@ namespace GEO {
         { 0, 1, 2 },{ 0, 2, 3 },{ 1, 2, 3 },{ 1, 3, 0 }
     };
     
+
+
 
     bool BBox::intersect(const BBox& b) const {
 	FOR(d, 3) {
@@ -185,11 +192,11 @@ namespace GEO {
     }
 
     void DynamicHBoxes::intersect(BBox& b, vector<index_t>& primitives) {
-	hbox.intersect(b, primitives);
-	FOR(i, moved.size()) {
+		hbox.intersect(b, primitives);
+		FOR(i, moved.size()) {
 	    if (movedbbox[i].intersect(b))
-		primitives.push_back(moved[i]);
-	}
+			primitives.push_back(moved[i]);
+		}
     }
 
     void DynamicHBoxes::update_bbox(index_t id, BBox b) {
@@ -203,6 +210,177 @@ namespace GEO {
 	moved.push_back(id);
 	movedbbox.push_back(b);
     }
+
+
+
+
+	static double tetra_volume(vec3 A, vec3 B, vec3 C, vec3 D) {
+		return dot(cross(B - A, C - A), D - A);
+	}
+
+	double tetra_volume_sign(vec3 A, vec3 B, vec3 C, vec3 D) {
+		double res = tetra_volume(A, B, C, D);
+		if (std::abs(res) > 1e-15) return res;
+		return dot(normalize(cross(normalize(B - A), normalize(C - A))), normalize(D - A));
+	}
+
+	bool same_sign(double a, double b) { return (a > 0) == (b > 0); }
+
+
+
+	 vector<BBox> facets_bbox(Mesh* m) {
+		vector<BBox> inboxes(m->facets.nb());
+		FOR(f, m->facets.nb()) {
+			index_t nbv = m->facets.nb_vertices(f);
+			FOR(fv, nbv)  inboxes[f].add(X(m)[m->facets.vertex(f, fv)]);
+		}
+		return inboxes;
+	 }
+
+
+
+
+		 FacetIntersect::FacetIntersect(Mesh* p_m) { m = p_m;
+			inboxes = facets_bbox(m);
+			hb.init(inboxes);
+		}
+
+		 static void save_conflict(std::string name, vec3 A0, vec3 B0, vec3 C0, vec3 A1, vec3 B1, vec3 C1) {
+			 Mesh conflict;
+			 conflict.vertices.create_vertices(6);
+			 conflict.facets.create_triangles(2);
+			 X(&conflict)[0] = A0; X(&conflict)[1] = B0; X(&conflict)[2] = C0;
+			 X(&conflict)[3] = A1; X(&conflict)[4] = B1; X(&conflict)[5] = C1;
+			 FOR(f, 2) FOR(lv, 3) conflict.facets.set_vertex(f, lv, 3 * f + lv);
+			 mesh_save(conflict, "C:/DATA/debug/" + name + "conflict.geogram");
+		 }
+    
+		 static bool polyintersect_both_triangulation(vector<vec3>& P, vector<vec3>& Q) {
+			 bool conflict = false;
+			 FOR(trP, 4) {
+				 FOR(trQ, 4) {
+					 if (trP > 0 && P.size() == 3) continue;
+					 if (trQ > 0 && Q.size() == 3) continue;
+					 vector<TriangleIsect> trash;
+					 conflict = conflict || triangles_intersections(
+						 P[quad_split[trP][0]], P[quad_split[trP][1]], P[quad_split[trP][2]],
+						 Q[quad_split[trQ][0]], Q[quad_split[trQ][1]], Q[quad_split[trQ][2]],
+						 trash
+					 );
+					 FOR(i, trash.size()) {
+						 //if (trash[i].first > 2 || trash[i].second > 2) conflict = true;
+					 }
+					 static int nb_intersects = 0;
+					 if (conflict) {
+						 nb_intersects++;
+						 //save_conflict("gna"+ String::to_string(nb_intersects), P[quad_split[trP][0]], P[quad_split[trP][1]], P[quad_split[trP][2]],
+						// Q[quad_split[trQ][0]], Q[quad_split[trQ][1]], Q[quad_split[trQ][2]]);
+						 return true;
+					 }
+				 }
+			 }
+			 return false;
+		 }
+		 bool polyintersect(vector<vec3>& P, vector<vec3>& Q) {
+			 geo_assert(P.size() == 3 || P.size() == 4);
+			 geo_assert(Q.size() == 3 || Q.size() == 4);
+			 
+			 // check for same facet			 
+			 if (P.size() == Q.size()) FOR(off, P.size()) {
+				 bool is_same = true;
+				 FOR(v, P.size()) {
+					 if ((P[v] - Q[(v + off) % P.size()]).length2() != 0) {
+						 is_same = false;
+						 break;
+					 }
+				 }
+				 if (is_same) return false;
+			 }
+			 return polyintersect_both_triangulation(P, Q);
+		 }
+
+		vector<index_t> FacetIntersect::get_intersections(vector<vec3>& P) {
+			vector<index_t> res; 
+			vector<index_t> primitives;
+			BBox request_bbox;
+			FOR(v, P.size())  request_bbox.add(P[v]);
+			request_bbox.dilate(1e-15);
+			hb.intersect(request_bbox, primitives);
+			FOR(i, primitives.size()) {
+				index_t opp_f = primitives[i];
+				vector<vec3> Q;
+				FOR(fv, m->facets.nb_vertices(opp_f)) 
+					Q.push_back(X(m)[m->facets.vertex(opp_f, fv)]);
+				if (polyintersect(P, Q) || polyintersect(Q,P)) 
+					res.push_back(opp_f);
+			}
+			return res;
+		}
+		vector<index_t> FacetIntersect::get_intersections(index_t& f) {
+			vector<vec3> verts(m->facets.nb_vertices(f));
+			FOR(v, m->facets.nb_vertices(f)) verts[v] = X(m)[m->facets.vertex(f,v)];
+			return get_intersections(verts);
+		}
+
+
+	 vector<index_t> get_intersecting_faces(Mesh* m) {
+		 vector<index_t> res;
+		 FacetIntersect finter(m);
+		 FOR(f, m->facets.nb()) {
+			// if ((f%50) ==0)plop(double(f) / double(m->facets.nb()));
+			 vector<index_t> opp = finter.get_intersections(f);
+			 FOR(i, opp.size()) {
+				 res.push_back(f);
+				 res.push_back(opp[i]);
+			 }
+		 }
+	 return res;
+	}
+
+
+
+
+	 void check_no_intersecting_faces(Mesh* m, bool allow_duplicated ) {
+		 vector<index_t> intersect = get_intersecting_faces(m);
+		 if (allow_duplicated) {
+			 index_t offpair = 0;
+			 while (offpair < intersect.size()) {
+				 index_t f0 = intersect[offpair];
+				 index_t f1 = intersect[offpair + 1];
+				 if (f0 != f1 && (facet_bary(m, f0) - facet_bary(m, f1)).length2() < 1e-15) {
+					 FOR(d, 2) std::swap(intersect[offpair + d], intersect[intersect.size() - 2 + d]);
+					 FOR(d, 2) intersect.pop_back();
+				 }
+				 else  offpair += 2;
+			 }
+		 }
+		if (intersect.empty()) return;
+		 Attribute<int> intersection(m->facets.attributes(), "intersection");
+		 FOR(f, m->facets.nb()) intersection[f] = 0;
+		 FOR(i, intersect.size()) intersection[intersect[i]] = 1;
+		 intersection[intersect[0]] = 2;
+		 intersection[intersect[1]] = 3;
+		 FOR(i, 2) plop(m->facets.nb_vertices(intersect[i]));
+		 FOR(i, 2) FOR(lv, m->facets.nb_vertices(intersect[i])) plop(m->facets.vertex(intersect[i], lv));
+		 FOR(i, 2) FOR(lv, m->facets.nb_vertices(intersect[i])) plop(X(m)[m->facets.vertex(intersect[i], lv)]);
+		 mesh_save(*m, "C:/DATA/debug/intersectingsurface.geogram");
+		 
+		 save_conflict("first",
+			 X(m)[m->facets.vertex(intersect[0], 0)],
+			 X(m)[m->facets.vertex(intersect[0], 1)],
+			 X(m)[m->facets.vertex(intersect[0], 2)],
+			 X(m)[m->facets.vertex(intersect[1], 0)],
+			 X(m)[m->facets.vertex(intersect[1], 1)],
+			 X(m)[m->facets.vertex(intersect[1], 2)]
+			 );
+		 Mesh conflict;
+		 conflict.vertices.create_vertices(6);
+		 conflict.facets.create_triangles(2);
+		 FOR(f, 2) FOR(lv, 3) X(&conflict)[3*f+lv] = X(m)[m->facets.vertex(intersect[f], lv)];
+		 FOR(f, 2) FOR(lv, 3) conflict.facets.set_vertex(f, lv, 3 * f + lv);
+		 mesh_save(conflict, "C:/DATA/debug/conflict.geogram");
+		 geo_assert_not_reached;
+	 }
 
     
 }

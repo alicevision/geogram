@@ -41,6 +41,7 @@
 #include <exploragram/hexdom/intersect_tools.h>
 #include <exploragram/hexdom/polygon.h>
 #include <exploragram/hexdom/mesh_inspector.h>
+#include <geogram/basic/geometry.h>
 #include <geogram/points/colocate.h>
 #include <geogram/mesh/triangle_intersection.h>
 #include <geogram/mesh/mesh_repair.h> //used in bourrin subdivide hex
@@ -59,101 +60,7 @@ void nico_assert(bool b) {
 
 namespace GEO {
 
-	static bool intersect_quad(Mesh* m, HBoxes &hb, vector<vec3>& Q, double shrink = 0) {
 
-		vec3 G = Poly3d(Q).barycenter();
-		FOR(v, 4)Q[v] = (1. - shrink)*Q[v] + shrink*G;
-		vec3 n = Poly3d(Q).normal();
-		double decal = 0;
-		FOR(cfv, 4) decal += .2*.25*(Q[cfv] - Q[next_mod(cfv, 4)]).length(); // .2*ave edge length
-		Q.push_back(G + decal*n);
-		Q.push_back(G - decal*n);
-
-		BBox b;
-		FOR(cfv, 6) b.add(Q[cfv]);
-
-		vector<index_t> primitives;
-		hb.intersect(b, primitives);
-
-		FOR(i, primitives.size()) {
-			index_t f = primitives[i];
-			vector<vec3> P;
-			FOR(fv, m->facets.nb_vertices(f))
-				P.push_back(X(m)[m->facets.vertex(f, fv)]);
-			nico_assert(P.size() < 5);
-
-			vector<TriangleIsect> trash;
-			FOR(diam, 12) {
-				if (P.size() == 3) {
-					if (triangles_intersections(P[0], P[1], P[2],
-						Q[diamon_split[diam][0]], Q[diamon_split[diam][1]], Q[diamon_split[diam][2]], trash)) return true;
-				}
-				else {
-					FOR(qu, 4)
-						if (triangles_intersections(P[quad_split[qu][0]], P[quad_split[qu][1]], P[quad_split[qu][2]],
-							Q[diamon_split[diam][0]], Q[diamon_split[diam][1]], Q[diamon_split[diam][2]], trash)) return true;
-				}
-			}
-		}
-		return false;
-	}
-
-
-	inline double tetra_volume(vec3 A, vec3 B, vec3 C, vec3 D) {
-		return dot(cross(B - A, C - A), D - A);
-	}
-
-	inline double tetra_volume_sign(vec3 A, vec3 B, vec3 C, vec3 D) {
-		double res = tetra_volume(A, B, C, D);
-		if (std::abs(res) > 1e-15) return res;
-		return dot(normalize(cross(normalize(B - A), normalize(C - A))), normalize(D - A));
-	}
-
-	inline bool same_sign(double a, double b) { return (a > 0) == (b > 0); }
-
-    /*
-	static bool canonical_order_set_A(vec3 A_ref, vec3 B_ref, vec3 C_ref, vec3& A, vec3& B, vec3& C) {
-		// h* gives the halfspace delimited by triangle Aref,Bref,Cref
-		double ha, hb, hc;
-		vec3 n = cross(B_ref - A_ref, C_ref - A_ref);
-		ha = dot(n, A - A_ref);
-		hb = dot(n, B - A_ref);
-		hc = dot(n, C - A_ref);
-		if (std::abs(ha) < 1e-15 || std::abs(hb) < 1e-15 || std::abs(hc) < 1e-15) {
-			ha = orient_3d_filter(A_ref.data(), B_ref.data(), C_ref.data(), A.data());
-			hb = orient_3d_filter(A_ref.data(), B_ref.data(), C_ref.data(), B.data());
-			hc = orient_3d_filter(A_ref.data(), B_ref.data(), C_ref.data(), C.data());
-		}
-		// avoid that B is alone on his side
-		if (!same_sign(hb, hc) && !same_sign(hb, ha)) {
-			std::swap(A, B);
-			std::swap(ha, hb);
-		}
-		// if all points are on the same side there is no intersection
-		if (same_sign(ha, hc)) return false;
-		// set A to be the vertex that is alone on his side
-		if (same_sign(hb, ha)) std::swap(A, C);
-		return true;
-	}
-
-	static bool naive_tri_tri_intersect(vec3 v0, vec3 v1, vec3 v2, vec3 u0, vec3 u1, vec3 u2) {
-
-		// the support planes of each triangles produces 2 halfspace.
-		// vertices order is changed such that v0 and u0 are alone in the halfspace of the other triangle
-		// if it is impossible, there is no intersection
-		if (!canonical_order_set_A(v0, v1, v2, u0, u1, u2)) return false;
-		if (!canonical_order_set_A(u0, u1, u2, v0, v1, v2))	return false;
-
-		if (orient_3d_filter(v0.data(), v1.data(), v2.data(), u0.data()) > 0)   std::swap(v1, v2);
-		if (orient_3d_filter(u0.data(), u1.data(), u2.data(), v0.data()) > 0)   std::swap(u1, u2);
-
-		if (orient_3d_filter(u0.data(), v1.data(), v0.data(), u1.data()) >= 0)    return false;
-		if (orient_3d_filter(u0.data(), v2.data(), v0.data(), u2.data()) <= 0)  return false;
-
-		return true;
-	}
-*/
-    
 	// Extra connectivity dedicaed to surfaces with triangles and quads only.
 	// Halfedges are indiced by 4* facet + local_id => requires padding for triangles
 	struct QuadExtraConnectivity {
@@ -203,7 +110,7 @@ namespace GEO {
 
 		bool valid(index_t h) { return h < 4 * m->facets.nb() && (h%4)<m->facets.nb_vertices(h/4); }
 
-	        index_t fsize(index_t e){ nico_assert(valid(e)); return m->facets.nb_vertices(face(e)); }
+		index_t fsize(index_t e){ nico_assert(valid(e)); return m->facets.nb_vertices(face(e)); }
 		void set_opp(index_t i, index_t j) { nico_assert(valid(i) && valid(j));  opp_h[i] = j; opp_h[j] = i; }
 		index_t face(index_t e) { nico_assert(valid(e)); return e / 4; }
 		index_t local_id(index_t e) { nico_assert(valid(e)); return e % 4; }
@@ -283,14 +190,8 @@ namespace GEO {
 				vec3 Nup = facet_normal(m, qem.face(cir));
 				if (qem.opp(cir) == NOT_AN_ID) { test_border.clear(); break; }
 				vec3 Ndown = facet_normal(m, qem.face(qem.opp(cir)));
-				if (dot(N, Nup) > .5 || dot(N, Ndown) < -.5) { 
-					//plop(N);
-					//plop(Nup); 
-					//plop(dot(N, Nup));
-					//plop(dot(N, Ndown)); 
-					//test_border.clear(); 
-					return false; 
-				}
+				if (dot(N, Nup) > .5 || dot(N, Ndown) < -.5) return false; 
+				
 
 
 				vec3 cir_dir = X(m)[qem.vertex(qem.next(cir))] - X(m)[qem.vertex(cir)];
@@ -326,13 +227,10 @@ namespace GEO {
 				sigma_angle += best_angle;
 
 				if (next == NOT_AN_ID || test_border.size() > 30) {
-					plop("fail");
-					//test_border.clear();
 					return false;
 				}
 				cir = next;
 			} while (cir != h);
-			//plop(sigma_angle);
 			if (sigma_angle < 0) return false;
 			return true;
 		}
@@ -357,7 +255,6 @@ namespace GEO {
 
 
 		bool can_easily_discard_current_edge_loop(vector<index_t>& test_border) {
-			plop(test_border.size());
 			if (test_border.size() < 3) return true;
 			if (!border.empty() && test_border.size() >= border.size()) return true;
 			if (test_border.size() == 4
@@ -375,9 +272,11 @@ namespace GEO {
 			vec3 best_N;
 			double best_cut_area = 1e20;
 
-			double ave_edge_length = 0;
-			FOR(f, m->facets.nb()) FOR(v, 4) ave_edge_length += (X(m)[m->facets.vertex(f, v)] - X(m)[m->facets.vertex(f, (v + 1) % 4)]).length();
-			ave_edge_length /= 4.*double(m->facets.nb());
+			// double ave_edge_length = get_facet_average_edge_size(m);  // BL: unused.
+			//0;
+			//FOR(f, m->facets.nb()) FOR(v, 4) ave_edge_length += (X(m)[m->facets.vertex(f, v)] - X(m)[m->facets.vertex(f, (v + 1) % 4)]).length();
+			//ave_edge_length /= 4.*double(m->facets.nb());
+			
 
 			// STEP 1: determine a valid cut along halfedges "border", its quadrangulation "quads", with vertices "pts[i]" (starting with vertices of "border")
 
@@ -386,15 +285,15 @@ namespace GEO {
 			int nb_border_success = 0;
 			Attribute<int> fail_c(m->facet_corners.attributes(), "fail_c");
 			FOR(h, 4 * m->facets.nb()) {
-				fail_c[m->facets.corner(h / 4, h % 4)] = 0;
 				if (!qem.valid(h)) continue;
+				fail_c[m->facets.corner(h / 4, h % 4)] = 0;
 				fail_c[m->facets.corner(h/4,h%4)] = 10;
 
 				if (visited[h]) continue;
 				fail_c[m->facets.corner(h / 4, h % 4)] = 20;
 
-				index_t f = qem.face(h);
-				if (qem.fsize(f)!=4) continue;
+				// index_t f = qem.face(h); // [BL: unused]
+				if (qem.fsize(h)!=4) continue;
 				fail_c[m->facets.corner(h / 4, h % 4)] = 30;
 
 				if (qem.opp(h) == NOT_AN_ID) continue;
@@ -409,15 +308,8 @@ namespace GEO {
 				
 			
 				// STEP 1.1 create the edge loop starting from h
-				if (!create_edge_loop(h, test_border)) {
-					//if (test_border.size()>1) {
-					//	index_t off_e = m->edges.create_edges(test_border.size());
-					//	FOR(e, test_border.size())  FOR(extr, 2) 
-					//		m->edges.set_vertex(off_e + e, extr, qem.vertex(test_border[(e + extr) % test_border.size()]));
-					//}
-					//return false;
-					continue;
-				}
+				if (!create_edge_loop(h, test_border))  continue;
+				
 				fail_c[m->facets.corner(h / 4, h % 4)] = 60;
 
 			
@@ -430,7 +322,7 @@ namespace GEO {
 				vector<vec3> test_pts;
 				vector<index_t> test_quads;
 				FOR(e, test_border.size()) test_pts.push_back(X(m)[qem.vertex(test_border[e])]);
-			
+
 
 				double cut_area = 0;
 				FOR(e, test_pts.size()) cut_area -= dot(cross(test_pts[e], test_pts[(e + 1) % test_pts.size()]), N);
@@ -439,29 +331,24 @@ namespace GEO {
 			
 
 				Poly3d p3(test_pts);
-				plop(test_pts.size());
-				std::cerr<<"\n=== try_quadrangulate    ====>";
 				nb_border_tried++;
 
 
 
 				if (!p3.try_quadrangulate(test_quads)) {
-					std::cerr << "FAIL\n";
 					continue;
 				} else {
-					std::cerr << "success\n";
 					nb_border_success++;
 					bool cut_will_intersect = false;
-					vector<BBox> inboxes(m->facets.nb());
-					FOR(ff, m->facets.nb()) FOR(fv, m->facets.nb_vertices(ff)) inboxes[ff].add(X(m)[m->facets.vertex(ff, fv)]);
-					HBoxes hb(inboxes);
+
+					FacetIntersect finter(m);
 					FOR(q, test_quads.size() / 4) {
 						vector<vec3> quad;
 						FOR(lc, 4) quad.push_back(test_pts[test_quads[4 * q + lc]]);
-						cut_will_intersect = cut_will_intersect || intersect_quad(m, hb, quad, 1e-5);
+						cut_will_intersect = cut_will_intersect || finter.get_intersections(quad).size()>0;
 					}
+
 					if (cut_will_intersect) {
-						plop("cannot split due to intersections");
 						continue;
 					}
 				}
@@ -473,7 +360,6 @@ namespace GEO {
 					test_quads.swap(quads);
 					best_cut_area = cut_area;
 					best_N = N;
-					//plop("\n-------------------last border is current winner------------------------\n");
 				}
 			}
 
@@ -481,7 +367,6 @@ namespace GEO {
 			plop(nb_border_success);
 
 			if (border.empty()) return false;
-
 
 			vector<index_t> upper_v;
 			vector<index_t> lower_v;
@@ -505,21 +390,17 @@ namespace GEO {
 			}	
 			FOR(e, border.size())
 				FOR(v, opp_fan[e].size())
-				//m->facet_corners.set_vertex(opp_fan[e][v], lower_v[next_mod(e, border.size())]);
-				qem.set_vertex(opp_fan[e][v], lower_v[next_mod(e, border.size())]);
-			//return true;
+					qem.set_vertex(opp_fan[e][v], lower_v[next_mod(e, border.size())]);
 		
 			if (pts.size() > border.size()) {
 				index_t off_v = m->vertices.create_vertices(2 * (pts.size() - border.size()));
 				FOR(i, pts.size() - border.size()) {
-					X(m)[off_v + 2 * i] = pts[border.size() + i];
-					X(m)[off_v + 2 * i + 1] = pts[border.size() + i];
+					FOR(d,2) X(m)[off_v + 2 * i + d] = pts[border.size() + i];
+
 					upper_v.push_back(off_v + 2 * i);
 					lower_v.push_back(off_v + 2 * i + 1);
 				}
 			}
-			FOR(v, lower_v.size()) X(m)[lower_v[v]] = X(m)[lower_v[v]] - .1*ave_edge_length *best_N;
-			
 			FOR(q, quads.size() / 4) {
 				m->facets.create_quad(
 					upper_v[quads[4 * q + 0]],
@@ -538,7 +419,6 @@ namespace GEO {
 
 			Attribute<int> date(m->edges.attributes(), "date");
 			if (!border.empty()) {
-				//m->edges.clear();
 				index_t off_e = m->edges.create_edges(border.size());
 				FOR(e, border.size()) {
 					date[off_e + e] = int(off_e);
@@ -546,9 +426,6 @@ namespace GEO {
 						m->edges.set_vertex(off_e + e, extr, qem.vertex(border[(e + extr) % border.size()]));
 				}
 			}
-			//return false;
-			//qem.check_integrity();
-
 			return true;
 
 		}
@@ -566,6 +443,7 @@ namespace GEO {
 		Mesh* newhex;
 		QuadExtraConnectivity qem;
 		DynamicHBoxes hb;                              //      -> a static BBox tree
+		FacetIntersect finter;
 		double ave_edge_length;
 		Attribute<bool> dead_face;
 
@@ -584,7 +462,7 @@ namespace GEO {
 		Attribute<bool> isquad;
 
 
-		VertexPuncher(Mesh* p_m, Mesh* p_newhex) {
+		VertexPuncher(Mesh* p_m, Mesh* p_newhex): finter(p_m) {
 			m = p_m;
 			newhex = p_newhex;
 			dead_face.bind(m->facets.attributes(), "dead_face");
@@ -731,7 +609,6 @@ namespace GEO {
 						v[3] = X(m)[qem.vertex(H[fid][2])];
 					}
 					vec3 n = Poly3d(v).normal();
-					//vec3 bary = Poly3d(v).barycenter();
 					FOR(lv, 4) if (dot(n, cross(normalize(v[(lv + 2) % 4] - v[(lv + 1) % 4]), normalize(v[(lv) % 4] - v[(lv + 1) % 4]))) < .1)
 						return true;
 
@@ -779,132 +656,25 @@ namespace GEO {
 
 		bool punch_will_produce_intersection() {
 			// check for geometric intersections
+			index_t Qv[3][4];
+			FOR(f, 3) Qv[f][0] =nv_punch_v;
+			FOR(f, 3) Qv[f][1] = qem.vertex(oppH[(f + 1) % 3][1]);
+			FOR(f, 3) Qv[f][2] = qem.vertex(oppH[(f + 1) % 3][2]);
+			FOR(f, 3) Qv[f][3] = qem.vertex(oppH[(f + 2) % 3][1]);
+
+
+			FOR(f0, 3)FOR(f1, 3) {
+				if (f0 >= f1) continue;
+				vector<vec3> Q0(4), Q1(4);
+				FOR(i, 4) Q0[i]= X(m)[Qv[f0][i]];
+				FOR(i, 4) Q1[i] = X(m)[Qv[f1][i]];
+				if (polyintersect(Q0, Q1)) return true;
+			}
 			FOR(fid, 3) {
-
-				// construct a little structure including the new face
 				vector<vec3> Q;
-
-				index_t Qv[4] = { nv_punch_v, qem.vertex(H[fid][2]),qem.vertex(H[next_mod(fid, 3)][1]),qem.vertex(H[next_mod(fid, 3)][2]) };
-				produce_diamon(Q, X(m)[Qv[0]], X(m)[Qv[1]], X(m)[Qv[2]], X(m)[Qv[3]], .1*ave_edge_length);
-
-
-				// get candidate quads for intersecting current new face
-				BBox b;
-				FOR(cfv, 6) b.add(Q[cfv]);
-
-				// scale B to include facets that have vertex too close, but do not necessary intersect
-				b.max = b.max + ave_edge_length * vec3(1, 1, 1);
-				b.min = b.min - ave_edge_length * vec3(1, 1, 1);
-
-				vector<index_t> primitives;
-				hb.intersect(b, primitives);
-			
-				FOR(primid, primitives.size()) {
-					index_t f = primitives[primid];
-					if (f == qem.face(H[0][0]) || f == qem.face(H[1][0]) || f == qem.face(H[2][0])) continue;
-					if (dead_face[f]) continue;
-
-					if (m->facets.nb_vertices(f) == 3) {
-						index_t Pv[3] = { m->facets.vertex(f, 0),m->facets.vertex(f, 1),m->facets.vertex(f, 2)};
-						vec3 P[3] = { X(m)[Pv[0]], X(m)[Pv[1]], X(m)[Pv[2]]};
-						// check that the new vertex is far enough to other pts
-						FOR(fv, 3) if (nv_punch_v == punch_v && m->facets.vertex(f, fv) != nv_punch_v
-							&& (P[fv] - X(m)[nv_punch_v]).length() < .25*ave_edge_length){
-							failt[punch_v] = geo_max(failt[punch_v], 70.);
-							return true;
-						}
-
-						// shrink shared elements, grow others
-						//bool shrink_Q[4] = { false, false, false, false };
-						//bool shrink_P[3] = { false, false, false};
-						//vec3 GQ = .25*(Q[0] + Q[1] + Q[2] + Q[3]);
-						//vec3 GP = .25*(P[0] + P[1] + P[2] );
-						//FOR(q, 4) FOR(p, 3)  if (Qv[q] == Pv[p]) { shrink_Q[q] = true; shrink_P[p] = true; }
-						//FOR(i, 4) if (shrink_Q[i]) Q[i] = .99 * Q[i] + .01 * GQ;
-						//FOR(i, 3) if (shrink_P[i]) P[i] = .99 * P[i] + .01 * GP;
-						//
-
-						// precise bbox filter
-						BBox ba; FOR(i, 3) ba.add(P[i]);
-						BBox bb; FOR(i, 6) bb.add(Q[i]);
-						if (!ba.intersect(bb)) continue;
-
-						// check for triangle / triangle intersections
-						FOR(qu, 16) {
-							vector<TriangleIsect> trash;
-							bool conflict = triangles_intersections(
-								Q[diamon_quad_split[qu][0]], Q[diamon_quad_split[qu][1]], Q[diamon_quad_split[qu][2]],
-								P[0], P[1], P[2],
-								trash
-							);
-							//conflict = naive_tri_tri_intersect(
-							//	Q[diamon_quad_split[qu][0]], Q[diamon_quad_split[qu][1]], Q[diamon_quad_split[qu][2]],
-							//	P[0], P[1], P[2]);
-
-							if (conflict) {
-								failt[punch_v] = geo_max(failt[punch_v], 80.);
-								return true;
-							}
-						}
-						continue;
-					}
-
-					vector<vec3> P;
-					index_t Pv[4] = { m->facets.vertex(f, 0),m->facets.vertex(f, 1),m->facets.vertex(f, 2),m->facets.vertex(f, 3) };
-					produce_diamon(P, X(m)[Pv[0]], X(m)[Pv[1]], X(m)[Pv[2]], X(m)[Pv[3]], .1*ave_edge_length);
-
-
-
-
-					// check that the new vertex is far enough to other pts
-					FOR(fv, 4) if (nv_punch_v == punch_v
-						&& m->facets.vertex(f, fv) != nv_punch_v
-						&& (P[fv] - X(m)[nv_punch_v]).length() < .25*ave_edge_length)
-					{
-						failt[punch_v] = geo_max(failt[punch_v], 70.);
-						return true;
-					}
-
-					// shrink shared elements, grow others
-					bool shrink_Q[4] = { false, false, false, false };
-					bool shrink_P[4] = { false, false, false, false };
-					vec3 GQ = .25*(Q[0] + Q[1] + Q[2] + Q[3]);
-					vec3 GP = .25*(P[0] + P[1] + P[2] + P[3]);
-					FOR(q, 4) FOR(p, 4)  if (Qv[q] == Pv[p]) { shrink_Q[q] = true; shrink_P[p] = true; }
-					FOR(i, 4) {
-						if (shrink_Q[i]) Q[i] = .99 * Q[i] + .01 * GQ;
-						if (shrink_P[i]) P[i] = .99 * P[i] + .01 * GP;
-					}
-
-					// precise bbox filter
-					BBox ba; FOR(pv, 6) ba.add(P[pv]);
-					BBox bb; FOR(pv, 6) bb.add(Q[pv]);
-					if (!ba.intersect(bb)) continue;
-
-					// check for triangle / triangle intersections
-					FOR(diam, 16) FOR(qu, 16) {
-						vector<TriangleIsect> trash;
-						bool conflict = triangles_intersections(
-							P[diamon_quad_split[qu][0]], P[diamon_quad_split[qu][1]], P[diamon_quad_split[qu][2]],
-							Q[diamon_quad_split[diam][0]], Q[diamon_quad_split[diam][1]], Q[diamon_quad_split[diam][2]],
-							trash
-						);
-						//conflict = naive_tri_tri_intersect(
-						//	P[diamon_quad_split[qu][0]], P[diamon_quad_split[qu][1]], P[diamon_quad_split[qu][2]],
-						//	Q[diamon_quad_split[diam][0]], Q[diamon_quad_split[diam][1]], Q[diamon_quad_split[diam][2]]);
-						
-						if (conflict){
-							index_t off = newhex->vertices.create_vertices(2);
-							X(newhex)[off] = Poly3d(Q).barycenter();
-							X(newhex)[off + 1] = Poly3d(P).barycenter();
-							newhex->edges.create_edge(off, off + 1);
-							{
-								failt[punch_v] = geo_max(failt[punch_v], 90.);
-								return true;
-							}
-						}
-					}
-				}
+				FOR(i, 4) Q.push_back(X(m)[Qv[fid][i]]);
+				if (finter.get_intersections(Q).size() > 0) return true;
+				continue;
 			}
 			return false;
 		}
@@ -923,8 +693,6 @@ namespace GEO {
 				
 				bool found_vertex_to_punch = false;
 				FOR(seed, 4 * m->facets.nb()) {
-					//qem.check_integrity();
-					//if (!qem.is_closed()) { plop(seed); plop("!qem.is_closed(), look at debug attrib"); return false; }
 					if (!qem.valid(seed)) continue;
 					if (qem.next_around_vertex(seed) < seed || qem.next_around_vertex(qem.next_around_vertex(seed)) < seed) continue;
 					punch_v = qem.vertex(seed);
@@ -1034,13 +802,14 @@ namespace GEO {
 						X(m)[punch_v] = old_vertex_position;
 						continue;
 					}
-				
+
 					// split vertex if needed (non manifold)
 					if (punch_v == nv_punch_v && v2nb_facets[punch_v] != 3) {
 						index_t nvv = m->vertices.create_vertex();
 						v2nb_facets[punch_v] -= 3;
 						v2nb_facets.push_back(3);
 						X(m)[punch_v] = old_vertex_position;
+						
 						X(m)[nvv] = new_vertex_position;
 						punch_v = nvv;
 						nv_punch_v = nvv;
@@ -1048,10 +817,11 @@ namespace GEO {
 				
 
 					FOR(f, 3) { v2nb_facets[qem.vertex(H[f][1])]--; v2nb_facets[qem.vertex(H[f][2])]++; }
-					//plop("create_new_hex()");
+					plop("create_new_hex()");
 					create_new_hex();
 					topo_punch();
 					FOR(lf, 3) hb.update_bbox(qem.face(H[lf][0]), facet_bbox(qem.face(H[lf][0])));
+					FOR(lf, 3) finter.hb.update_bbox(qem.face(H[lf][0]), facet_bbox(qem.face(H[lf][0])));
 					found_vertex_to_punch = true;
 
 					unglue_duplicates();
@@ -1065,6 +835,7 @@ namespace GEO {
 				}
 				plop("done");
 				finished = !found_vertex_to_punch;
+				
 			}
 
 		cleanup:
@@ -1083,6 +854,7 @@ namespace GEO {
 					}
 			}
 			m->facets.delete_elements(to_kill);
+			//check_no_intersecting_faces(m, true);
 			plop(nb_punchs);
 			return nb_punchs > 0;
 		}
@@ -1243,8 +1015,8 @@ namespace GEO {
 						double sign[3];
 						FOR(p, 3) sign[p] = tetra_volume_sign(P[p], P[(p + 1) % 3], O, O2);
 						if (!same_sign(sign[0], sign[1]) || !same_sign(sign[0], sign[2])) continue;
-						double c0 = tetra_volume(P[0], P[1], P[2], O);
-						double c1 = tetra_volume(P[0], P[1], P[2], O2);
+						double c0 = Geom::tetra_volume(P[0], P[1], P[2], O);
+						double c1 = Geom::tetra_volume(P[0], P[1], P[2], O2);
 						plop("intersection found");
 						packed_v[3 * v + 2] = O + (c0 / (c0 - c1))*(O2 - O);
 						ave_decal_length += (packed_v[3 * v + 2] - O).length();
@@ -1252,7 +1024,7 @@ namespace GEO {
 						break;
 					}
 
-					if (packed_v[3 * v + 2].length2() != 0) break;
+					// if (packed_v[3 * v + 2].length2() != 0) break; //[Bruno: never executed, there is the "break" before].
 				}
 			}
 			ave_decal_length /= double(nb_intersections);
@@ -1300,12 +1072,14 @@ namespace GEO {
 	}
 
 
+    /* [BL unused]
 	static void evaluate_edges_valence(Mesh* m) {
 		Attribute<int> edge_angle(m->facet_corners.attributes(), "edgeangle");
 		FOR(f, m->facets.nb()) FOR(h, 4) edge_angle[m->facets.corner(f, h)] = rand() % 3;
 
 	}
-
+    */
+    
 	static bool next_crunch(Mesh* m, Mesh* newhex, int nb_max_punch) {
 		GEO::Logger::out("HexDom")  << "next_crunch" <<  std::endl;
 		//newhex->clear();
@@ -1322,7 +1096,7 @@ namespace GEO {
 			iter++;
 		}
 
-		if (iter == 0) evaluate_edges_valence(m);
+		//if (iter == 0) evaluate_edges_valence(m);
 
 
 		plop(iter);
@@ -1334,6 +1108,7 @@ namespace GEO {
 			GEO::Logger::out("HexDom")  << "Try to Punch" <<  std::endl;
 			VertexPuncher punch(m, newhex);
 			if (punch.apply(nb_max_punch)) {
+				//check_no_intersecting_faces(m,true);
 				did_something = true;
 				if (nb_max_punch <= 0) return true;
 			}
@@ -1343,6 +1118,9 @@ namespace GEO {
 				break;
 			}
 		}
+
+
+
 		GEO::Logger::out("HexDom")  << "Try to cut" <<  std::endl;
 		static int cutit = 0;
 		CutSingularity cut(m);
@@ -1352,8 +1130,16 @@ namespace GEO {
 			plop(cutit);
 			cutit++;
 			//return false; // DEBUG TO REMOVE
+			//Attribute<vec3> real_geometry(m->vertices.attributes(), "real_geometry");
+			//FOR(v, m->vertices.nb()) geo_assert((real_geometry[v] - X(m)[v]).length2()<1e-15);
+			//return false;
+			//check_no_intersecting_faces(m,true);
 			return true;
 		}
+
+		Attribute<vec3> real_geometry(m->vertices.attributes(), "real_geometry");
+		FOR(v, m->vertices.nb()) real_geometry[v] = X(m)[v];
+		
 		GEO::Logger::out("HexDom")  << "------------------------" <<  std::endl;
 		GEO::Logger::out("HexDom")  << "CUT FAILED" <<  std::endl;
 		remove_scabs(m, newhex);
@@ -1480,28 +1266,26 @@ namespace GEO {
 		vector<vec3> P;
 		vector<double> dist_to_org;
 	};
-	inline double nint(double x) { return floor(x + .5); }
+	
+
+
+
+
 	void quadrangulate_easy_boundary(Mesh* m) {
 		plop("quadrangulate_easy_boundary");
 		QuadExtraConnectivity qem;
 		qem.init(m);
-
-
-		double ave_edge_length = 0;
-		FOR(f, m->facets.nb()) FOR(v, 4) ave_edge_length += (X(m)[m->facets.vertex(f, v)] - X(m)[m->facets.vertex(f, (v + 1) % 4)]).length();
-		ave_edge_length /= 4.*double(m->facets.nb());
-
-
-
+		double ave_edge_length = get_facet_average_edge_size(m);
+		
 
 		//mark charts
 		index_t nb_charts = 0;
-		Attribute<int> chart(m->facets.attributes(), "chart");
-		FOR(seed, m->facets.nb()) chart[seed] = -1;
+		Attribute<index_t> chart(m->facets.attributes(), "chart");
+		FOR(seed, m->facets.nb()) chart[seed] = index_t(-1);
 		FOR(seed, m->facets.nb()) {
-			if (chart[seed] != -1) continue;
+		    if (chart[seed] != index_t(-1)) continue;
 			if (m->facets.nb_vertices(seed)==4) continue;
-			chart[seed] = int(nb_charts);
+			chart[seed] = nb_charts;
 			vector<index_t> stack;
 			stack.push_back(seed);
 			while (!stack.empty()) {
@@ -1511,9 +1295,9 @@ namespace GEO {
 					index_t h = 4 * f + e;
 					index_t fopp = qem.face (qem.opp(h));
 					if (qem.fsize(qem.opp(h)) == 4) continue;
-					if (chart[fopp] != -1) continue;
+					if (chart[fopp] != index_t(-1)) continue;
 					stack.push_back(fopp);
-					chart[fopp] = int(nb_charts);
+					chart[fopp] = nb_charts;
 				}
 			}
 			nb_charts++;
@@ -1523,15 +1307,15 @@ namespace GEO {
 		vector<int> subchart_to_charts;
 
 		//mark sub charts
-		index_t nb_subcharts = 0;
+		int nb_subcharts = 0;
 		Attribute<int> subchart(m->facets.attributes(), "subchart");
 		FOR(seed, m->facets.nb()) subchart[seed] = -1;
 		FOR(seed, m->facets.nb()) {
 			if (subchart[seed] != -1) continue;
 			if (m->facets.nb_vertices(seed) == 4) continue;
-			subchart[seed] = int(nb_subcharts);
+			subchart[seed] = nb_subcharts;
 			chart_to_subcharts[chart[seed]] .push_back(subchart[seed]);
-			subchart_to_charts.push_back(chart[seed]);
+			subchart_to_charts.push_back(int(chart[seed]));
 
 			vector<index_t> stack;
 			stack.push_back(seed);
@@ -1547,12 +1331,11 @@ namespace GEO {
 					if (subchart[fopp] != -1) continue;
 					if (dot(n_f, n_fopp) < cos(M_PI / 4.)) continue;// hard edge detected
 					stack.push_back(fopp);
-					subchart[fopp] = int(nb_subcharts);
+					subchart[fopp] = nb_subcharts;
 				}
 			}
 			nb_subcharts++;
 		}
-	
 		// try to quadrangulate each subchart
 		vector<vector<vector<index_t> > > quads(nb_charts);
 		vector<vector<vector<vec3> > > pts(nb_charts);
@@ -1567,16 +1350,16 @@ namespace GEO {
 			// gather halfedges in border
 			{
 				FOR(h, 4 * m->facets.nb()) if (qem.valid(h))
-				    if (index_t(subchart[qem.face(h)]) == sub
-					&& index_t(subchart[qem.face(qem.opp(h))]) != sub)
-						border.push_back(h);
+				    if (subchart[qem.face(h)] == int(sub)
+					&& subchart[qem.face(qem.opp(h))] != int(sub))
+					border.push_back(h);
 				if (border.size() < 4) continue;
 			}
 			// order border halfedges
 			{
 				// do not start with an hardedge
 				FOR(cur, border.size()) if (qem.fsize(qem.opp(border[cur])) == 4) std::swap(border[0], border[cur]);
-				if (qem.fsize(qem.opp(border[0])) == 0) continue;
+				if (qem.fsize(qem.opp(border[0])) !=4) continue;
 				//link them
 				for (index_t cur = 0; cur < border.size() - 1; cur++)
 					for (index_t next = cur + 1; next < border.size(); next++)
@@ -1590,30 +1373,32 @@ namespace GEO {
 					topodisk = topodisk && (qem.vertex(qem.next(border[cur])) == qem.vertex(border[cur + 1]));
 				if (!topodisk) { plop(topodisk); continue; }
 			}
-			/*DEBUG*/FOR(cur,border.size()) order[qem.corner(border[cur])] = int(cur);
-
+			/*DEBUG*/FOR(cur,border.size()) order[qem.corner(border[cur])] = int(cur+10);
+			
 			// constuct the problem.
 			int chartid = subchart_to_charts[sub];
 			vector<vec3> l_pts;
-			//1/ assumes that there is no hardedges
-			//FOR(cur, border.size()) l_pts.push_back(X(m)[qem.vertex(border[cur])]);
-			//2/ with hardedges
 
 			vector<vec3> edge_org;
 			vector<bool> hardedge;
 			index_t offset = 0;
 			index_t N = border.size();
 			FOR(cur, N) {
+				edge_org.push_back(X(m)[qem.vertex(border[cur])]);
+				if (cur == 0) {
+					hardedge.push_back(false);
+					continue;
+				}
 				hardedge.push_back(qem.fsize(qem.opp(border[cur])) != 4
 					&& subchart[qem.face(qem.opp(border[cur]))] == subchart[qem.face(qem.opp(border[cur - 1]))]);
 				if (!hardedge.back()) offset = cur;
-				edge_org.push_back(X(m)[qem.vertex(border[cur])]);
 			}
 			{vector<vec3> tmp(N); FOR(cur, N) tmp[cur] = edge_org[(cur + offset) % N]; edge_org = tmp; }
 			{vector<bool> tmp(N); FOR(cur, N) tmp[cur] = hardedge[(cur + offset) % N]; hardedge = tmp; }
 
 			index_t i = 0;
 			while (i < N) {
+				//plop(i);
 				l_pts.push_back(edge_org[i]);
 				if (!hardedge[i])
 				{
@@ -1621,34 +1406,20 @@ namespace GEO {
 				} else {
 					Polyline poly;
 					while (i < N+1 && hardedge[i%N]) {
-						plop(i);
+						
 						poly.P.push_back(edge_org[i%N]);
 						i++;
 					}
 					plop(i);
 					plop(poly.length());
 					plop(ave_edge_length);
-					index_t nb_seg = index_t(2.0 * nint(0.5*poly.length() / ave_edge_length));
-					nb_seg = geo_max(1u, nb_seg);
-					//FOR(s, nb_seg) l_pts.push_back(poly.interpolate(double(s + 1) / double(nb_seg) - .001));
-					
+					int nb_seg = int(2 * nint(0.5*poly.length() / ave_edge_length));
+					nb_seg = geo_max(1, nb_seg);
 					FOR(s, nb_seg - 1) plop(poly.interpolate(double(s + 1) / double(nb_seg) - .001));
-					//FOR(s, nb_seg - 1) l_pts.push_back(poly.interpolate(double(s + 1) / double(nb_seg) - .001));
+				
 				}
 			}
-			plop("border completed");
-
-			//FOR(cur, border.size()) {
-			//	//if (cur == 0) {
-			//	//	l_pts.push_back(X(m)[qem.vertex(border[cur])]);
-			//	//	continue;
-			//	//}
-			//	if (qem.fsize(qem.opp(border[cur])) != 4
-			//		&& subchart[qem.face(qem.opp(border[cur]))] == subchart[qem.face(qem.opp(border[cur - 1]))])
-			//		continue;
-			//	l_pts.push_back(X(m)[qem.vertex(border[cur])]);
-			//}
-
+			//plop("border completed");
 
 			vector<index_t> l_quads;
 			if (Poly3d(l_pts).try_quadrangulate(l_quads)) {
@@ -1656,8 +1427,13 @@ namespace GEO {
 				FOR(l, chart_to_subcharts[chartid].size())
 				    if (chart_to_subcharts[chartid][l] == int(sub))
 					loc_sub = int(l);
+
+				FOR(p, l_pts.size()) plop(l_pts[p]);
+				FOR(p, l_quads.size()) plop(l_quads[p]);
+
 				pts[chartid][loc_sub] = l_pts;
 				quads[chartid][loc_sub] = l_quads;
+
 			}
 		}
 
@@ -1666,10 +1442,14 @@ namespace GEO {
 		vector<bool> chart_remesh_is_ok(nb_charts, true);
 		FOR(chartid, nb_charts)  FOR(lsub, pts[chartid].size())
 			chart_remesh_is_ok[chartid] = chart_remesh_is_ok[chartid] && !pts[chartid][lsub].empty();
+		plop("gna");
 
 		vector<index_t> to_kill(m->facets.nb(),false);
-		FOR(f, m->facets.nb()) if (chart[f]>=0) to_kill[f] = chart_remesh_is_ok[index_t(chart[f])];
+		FOR(f, m->facets.nb()) if (chart[f]!=NOT_AN_ID) to_kill[f] = chart_remesh_is_ok[chart[f]];
+		plop("gna");
 
+		Attribute<int> kill2(m->facets.attributes(), "kill2");
+		FOR(f, m->facets.nb()) kill2[f] = int(to_kill[f]);
 
 		FOR(chartid, nb_charts) {
 			if (!chart_remesh_is_ok[chartid]) continue;
@@ -1682,6 +1462,9 @@ namespace GEO {
 					FOR(lv,4) m->facets.set_vertex(off_f + q,lv,off_v+quads[chartid][lsub][4*q+lv]);
 			}
 		}
+
+
+
 		to_kill.resize(m->facets.nb(),false);
 		m->facets.delete_elements(to_kill);
 
@@ -1689,11 +1472,23 @@ namespace GEO {
 		vector<index_t> to_kill_v(m->vertices.nb(), 0);
 		vector<index_t> old2new(m->vertices.nb());
 		Geom::colocate(m->vertices.point_ptr(0), 3, m->vertices.nb(), old2new, 1e-15);
+
+
+		//FOR(f, m->facets.nb()) FOR(lv, m->facets.nb_vertices(f))
+		//	if(old2new[m->facets.vertex(f, lv)]
+		//		== old2new[m->facets.vertex(f, (lv + 1) % m->facets.nb_vertices(f))])
+		//{	Attribute<int> crush(m->facets.attributes(), "crush");
+		//crush[f] = 1;
+		//plop(f); plop(m->facets.vertex(f, lv)); return;
+		//}
+
+		
 		FOR(f, m->facets.nb()) FOR(fv, m->facets.nb_vertices(f)) m->facets.set_vertex(f, fv, old2new[m->facets.vertex(f, fv)]);
 		FOR(v, m->vertices.nb()) if (old2new[v] != v) to_kill_v[v] = NOT_AN_ID;
 		m->vertices.delete_elements(to_kill_v);
 
 	}
+	
 	void prepare_crunch(Mesh* m, bool subdivide, bool revert) {
 		if (subdivide) bourrin_quadrangulate_facets(m);
 		if (revert) FOR(f, m->facets.nb()) {
@@ -1704,12 +1499,12 @@ namespace GEO {
 		quadrangulate_easy_boundary(m);
 	}
 	void hex_crunch(Mesh* m, Mesh* hex) {
-		//subdivide
-		//bourrin_subdivide_hexes(hex);
-		//prepare_crunch(m, true, true);
+	        geo_argused(hex);
+		check_no_intersecting_faces(m, false);
 		prepare_crunch(m, false, true);
-		//next_crunch(m, hex, 1);
-		while (next_crunch(m, hex, 10000));
+		plop("prepare_crunch done");
+		plop(get_intersecting_faces(m).size());
+		return;
 	}
 
 

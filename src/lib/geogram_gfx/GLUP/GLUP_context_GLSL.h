@@ -72,6 +72,12 @@ namespace GLUP {
      */
     class Context_GLSL150 : public Context {
     public:
+
+        /**
+         * \brief Context_GLSL150 constructor.
+         */
+	Context_GLSL150();
+	
         /**
          * \copydoc Context::profile_name()
          */
@@ -169,6 +175,9 @@ namespace GLUP {
         virtual void get_geometry_shader_layout(
             std::vector<GLSL::Source>& sources                        
         );
+
+      protected:
+	bool is_intel_graphics_;
     };
 
     /*********************************************************************/

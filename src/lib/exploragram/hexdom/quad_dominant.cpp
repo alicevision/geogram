@@ -226,9 +226,9 @@ namespace GEO {
                     if (to-from > 1000) continue;
                     for (double iso = from; iso < to; iso += 1.) {
                         double c = (iso - v[0]) / (v[1] - v[0]); // v[0] is far from v[1] (U was pre-snapped to integers with .05 tolerance)
- 		        if (!Numeric::is_nan(c) && c > 0 && c < 1) {
-                            vec2 u = lU[0] + c*(lU[1] - lU[0]);
-                            u[coord] = iso;
+                        if (!Numeric::is_nan(c) && c > 0 && c < 1) {
+                            // vec2 u = lU[0] + c*(lU[1] - lU[0]);
+                            // u[coord] = iso;
                             coeff.push_back(c);
                         }
                     }
@@ -342,12 +342,16 @@ namespace GEO {
             Attribute<index_t> orig_tri_fid(m->facets.attributes(), "orig_tri_fid");
             FOR(i, m->facets.nb()  ) orig_tri_fid[i] = i;
             FOR(v, m->vertices.nb()) resp_facet[v] = NOT_AN_ID;
-        }
+        
+			check_no_intersecting_faces(m);
+		}
+
+
 
         Mesh m_bak;
         m_bak.copy(*m);
 
-        for(;;) {
+        while (1) {
             split_edges_by_iso_uvs(m, uv_name, singular_name);
             facets_split(m, uv_name, singular_name);
 
@@ -366,10 +370,10 @@ namespace GEO {
                 Attribute<index_t> singular(m_bak.facets.attributes(), singular_name);
                 Attribute<index_t> resp_facet(m->vertices.attributes(), "resp_facet");
 
-                FOR(i, fails.size()) {
-                    FOR(j, 3) {
-                        index_t f = resp_facet[m->facets.vertex(fails[i], j)];
-                        if (NOT_AN_ID!=f) singular[f] = true;
+				FOR(i, fails.size()) {
+					FOR(j, 3) {
+						index_t f = resp_facet[m->facets.vertex(fails[i], j)];
+						if (NOT_AN_ID!=f) singular[f] = true;
                     }
                 }
             }
@@ -771,6 +775,88 @@ namespace GEO {
     }
  
     
+
+
+      static void sample_triangle(vec3 *ABC, double eps, vector<vec3>& samples) {
+		double max_edge_length = 0;
+		FOR(p, 3) max_equal(max_edge_length, (ABC[(p + 1) % 3] - ABC[p]).length());
+		index_t nb_steps = 10;
+		if (eps>0) min_equal(nb_steps, index_t(max_edge_length / eps + 2));
+
+		FOR(i, nb_steps)FOR(j, nb_steps - i) {
+			double u = double(i) / double(nb_steps - 1);
+			double v = double(j) / double(nb_steps - 1);
+			samples.push_back(ABC[0] + u*(ABC[1] - ABC[0]) + v*(ABC[2] - ABC[0]));
+		}
+	}
+	//double upper_bound_min_dist2_to_triangles(vec3 P, vector<vec3>& triangles) {
+	//	vec3 closest_point;
+	//	double l0, l1, l2;
+	//	double min_dist2 = 1e20;
+	//	FOR(t, triangles.size() / 3)
+	//		min_equal(min_dist2,
+	//			Geom::point_triangle_squared_distance<vec3>(P,
+	//				triangles[t * 3], triangles[t * 3 + 1], triangles[t * 3 + 2], closest_point, l0, l1, l2)
+	//		);
+	//	return min_dist2;
+	//}
+
+	static vector<index_t> facets_having_a_point_further_than_eps(Mesh* m,Mesh* ref,double epsilon) {
+	
+		vector<index_t> res;
+
+		vector<BBox> inboxes = facets_bbox(ref);
+		DynamicHBoxes hb;  hb.init(inboxes);
+
+		FOR(f, m->facets.nb()) {
+			bool fail = false;
+			vector<vec3> samples;
+			vec3 ABC[3];
+			FOR(lv,3) ABC[lv] = X(m)[m->facets.vertex(f,lv)];
+			sample_triangle(ABC, epsilon / 2., samples);
+			if (m->facets.nb_vertices(f) == 4) {
+				FOR(lv, 3) ABC[lv] = X(m)[m->facets.vertex(f, (lv+2)%3)];
+				sample_triangle(ABC, epsilon / 2., samples);
+			}
+
+
+			FOR(p, samples.size()) {
+				vec3 P = samples[p];
+
+				double min_dist2 = 1e20;
+
+				BBox bbox; bbox.add(P); bbox.dilate(epsilon/2.);
+				vector<index_t> prim;
+				hb.intersect(bbox, prim);
+				FOR(fid, prim.size()) {
+					index_t other_f = prim[fid];
+					vec3 closest_point;
+					double l0, l1, l2;
+					min_equal(min_dist2, Geom::point_triangle_squared_distance<vec3>(P,
+						X(ref)[ref->facets.vertex(other_f, 0)],
+						X(ref)[ref->facets.vertex(other_f, 1)],
+						X(ref)[ref->facets.vertex(other_f, 2)],
+						closest_point, l0, l1, l2));
+
+					if (ref->facets.nb_vertices(other_f) == 4) {
+						min_equal(min_dist2, Geom::point_triangle_squared_distance<vec3>(P,
+							X(ref)[ref->facets.vertex(other_f, 0)],
+							X(ref)[ref->facets.vertex(other_f, 2)],
+							X(ref)[ref->facets.vertex(other_f, 3)],
+							closest_point, l0, l1, l2));
+					}
+				}
+			
+				if (::sqrt(min_dist2) > epsilon / 2.) {
+					fail = true;
+					break;
+				}
+			}
+			if (fail) res.push_back(f);
+		}
+		return res;
+	}
+
     // Attention, sub-functions of this function need to access to attributes "chart" and "singular"
     void simplify_quad_charts(Mesh* m) {
         std::string msg;
@@ -778,45 +864,90 @@ namespace GEO {
 
         Mesh m_bak;
         m_bak.copy(*m);
-
+		double epsilon = 0;// .4*get_facet_average_edge_size(&m_bak);
+		//epsilon = 0;
         vector<BBox> locked_regions;
-        for(;;) {
-            {
-                Attribute<index_t> chart(m->facets.attributes(), "chart");
-                Attribute<index_t> undo(m->facets.attributes(), "undo");
-                Attribute<bool> verts_to_remove(m->vertices.attributes(), "verts_to_remove");
-                plop("try_simplify(m, chart, verts_to_remove, undo)");
-                try_simplify(m, chart, verts_to_remove, undo);
-                plop("try_export_quadtri_from_charts(m, locked_regions)");
-                try_export_quadtri_from_charts(m, locked_regions);
+//        int cnt = 0;
+        while (1) {
+			vector<index_t> invalid_m ;
+			vector<index_t> invalid_bak ;
+			vector<index_t> intersections;
+			{
+				Attribute<index_t> chart(m->facets.attributes(), "chart");
+				Attribute<index_t> undo(m->facets.attributes(), "undo");
+                FOR(fid, m->facets.nb()) {
+                    undo[fid] = NOT_AN_ID;
+                }
+				Attribute<bool> verts_to_remove(m->vertices.attributes(), "verts_to_remove");
+				plop("try_simplify(m, chart, verts_to_remove, undo)");
+				try_simplify(m, chart, verts_to_remove, undo);
+				plop("try_export_quadtri_from_charts(m, locked_regions)");
+				try_export_quadtri_from_charts(m, locked_regions);
 
-                plop("check for intersections");
-                plop(m->facets.nb());
-
-                vector<index_t> intersections;
-                find_self_intersections(m, intersections);
-                if (!intersections.size()) break;
-
+				plop("check for intersections");
+				plop(m->facets.nb());
+				find_self_intersections(m, intersections);
                 FOR(f, intersections.size()) {
-                    if (3==m->facets.nb_vertices(f)) {
-                        if (undo[intersections[f]]!=NOT_AN_ID) verts_to_remove[undo[intersections[f]]] = false;
+                    if (3 == m->facets.nb_vertices(f)) {
+                        if (undo[intersections[f]] != NOT_AN_ID) verts_to_remove[undo[intersections[f]]] = false;
+//                        GEO::Logger::out("HexDom")  << intersections[f] << " " << undo[intersections[f]] <<  std::endl;
                     } else {
-                        geo_assert(4==m->facets.nb_vertices(f));
+                        geo_assert(4 == m->facets.nb_vertices(f));
                         BBox inbox;
                         FOR(fv, 4) {
                             inbox.add(X(m)[m->facets.vertex(intersections[f], fv)]);
                         }
                         locked_regions.push_back(inbox);
                     }
+//                  Attribute<bool> gna(m->facets.attributes(), "gna");
+//                  gna[intersections[f]] = true;
                 }
-            }
-            plop("conflict detected");
+				//intersections.clear();// HACK (simulation de quadhex)
+
+				if (epsilon > 0) {
+					plop("check for Hausdorff distance --- dist to init mesh");
+					invalid_m = facets_having_a_point_further_than_eps(m, &m_bak, epsilon);
+					plop(invalid_m.size());
+					FOR(i, invalid_m.size()) {
+						if (3 == m->facets.nb_vertices(invalid_m[i])) {
+							if (undo[invalid_m[i]] != NOT_AN_ID) verts_to_remove[undo[invalid_m[i]]] = false;
+						}
+						else {
+							BBox inbox;
+							FOR(fv, 4) {
+								inbox.add(X(m)[m->facets.vertex(invalid_m[i], fv)]);
+							}
+							locked_regions.push_back(inbox);
+						}
+					}
+
+					plop("check for Hausdorff distance --- dist to new mesh");
+					invalid_bak = facets_having_a_point_further_than_eps(&m_bak, m, epsilon);
+					plop(invalid_bak.size());
+
+					FOR(i, invalid_bak.size()) FOR(lv, 3)
+						verts_to_remove[m_bak.facets.vertex(invalid_bak[i], lv)] = false;
+				}
+			}
+
+
+			if (intersections.empty() && invalid_m.empty() && invalid_bak.empty()) break;
+
+			plop("conflict detected");
             {
                 Attribute<bool> m_verts_to_remove(m->vertices.attributes(), "verts_to_remove");
                 Attribute<bool> m_bak_verts_to_remove(m_bak.vertices.attributes(), "verts_to_remove");
                 geo_assert(m->vertices.nb() == m_bak.vertices.nb());
                 FOR(v, m->vertices.nb()) m_bak_verts_to_remove[v] = m_verts_to_remove[v];
             }
+
+//          char filename[1024], filename2[1024];
+//          sprintf(filename,  "/home/ssloy/tmp/hexdom_nightly/geogram/zdebug%i_bak.geogram", cnt);
+//          sprintf(filename2, "/home/ssloy/tmp/hexdom_nightly/geogram/zdebug%i_simp.geogram", cnt);
+//          cnt++;
+//          mesh_save(m_bak, filename);
+//          mesh_save(*m, filename2);
+
             m->copy(m_bak);
         }
         kill_isolated_vertices(m);
