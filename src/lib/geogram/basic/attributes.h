@@ -76,7 +76,9 @@ namespace GEO {
         /**
          * \brief Creates a new uninitialied AttributeStore.
          */
-        AttributeStoreObserver() : base_addr_(nil), size_(0), dimension_(0) {
+        AttributeStoreObserver() :
+	   base_addr_(nil), size_(0), dimension_(0),
+	   disconnected_(false) {
         }
 
         /**
@@ -120,21 +122,42 @@ namespace GEO {
             return size_ * dimension_;
         }
 
+	/**
+	 * \brief Registers this observer to an AttributeStore.
+	 * \param[in] store a pointer to the AttributeStore.
+	 */
         void register_me(AttributeStore* store);
-        
+
+	/**
+	 * \brief Unregisters this observer from an AttributeStore.
+	 * \param[in] store a pointer to the AttributeStore.
+	 */
         void unregister_me(AttributeStore* store);
 
-        
+	/**
+	 * \brief Disconnects this AttributeStoreObserver from its 
+	 *  AttributeStore.
+	 * \details This function is called whenever the AttributeManager is
+	 *  destroyed before the Attributes (can occur when using Lua scripting
+	 *  with Attribute wrapper objects).
+	 */
+	void disconnect() {
+	    base_addr_ = nil;
+	    size_ = 0;
+	    dimension_ = 0;
+	    disconnected_ = true;
+	}
+	
     protected:
         Memory::pointer base_addr_;
         index_t size_;
         index_t dimension_;
+	bool disconnected_;
     };
 
 
     /*********************************************************************/
 
-    class AttributeStore;
 
     /**
      * \brief Internal class for creating an AttributeStore
@@ -902,7 +925,7 @@ namespace GEO {
          * \retval false otherwise
          */
         bool is_bound() const {
-            return (store_ != nil);
+            return (store_ != nil && !disconnected_);
         }
 
         /**
@@ -911,7 +934,12 @@ namespace GEO {
          */
         void unbind() {
             geo_assert(is_bound());
-            unregister_me(store_);
+	    // If the AttributeManager was destroyed before, do not
+	    // do anything. This can occur in Lua scripting when using
+	    // Attribute wrapper objects.
+	    if(!disconnected_) {
+		unregister_me(store_);
+	    }
             manager_ = nil;
             store_ = nil;
         }

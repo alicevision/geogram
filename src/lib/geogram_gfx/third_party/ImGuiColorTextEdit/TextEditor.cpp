@@ -165,6 +165,18 @@ std::string TextEditor::GetText(const Coordinates & aStart, const Coordinates & 
 	return result;
 }
 
+std::string TextEditor::GetLine(int l) const {
+    std::string result;
+    if(l >= int(mLines.size())) {
+	return result;
+    }
+    const Line& line = mLines[l];
+    for(int i=0; i<int(line.size()); ++i) {
+	result.push_back(line[i].mChar);
+    }
+    return result;
+}
+
 TextEditor::Coordinates TextEditor::GetActualCursorCoordinates() const
 {
 	return SanitizeCoordinates(mState.mCursorPosition);
@@ -381,6 +393,7 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 	mBreakpoints = std::move(btmp);
 
 	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
+
 }
 
 void TextEditor::RemoveLine(int aIndex)
@@ -547,6 +560,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		    if (ctrl && !shift && !alt && ImGui::IsKeyPressed('C') && !HasSelection()) {
 			callback_(TEXT_EDITOR_STOP, callback_client_data_);			
 		    }
+		    if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(GLFW_KEY_TAB)) {
+			callback_(TEXT_EDITOR_COMPLETION, callback_client_data_);
+		    }
 		}
 		
 		if (!IsReadOnly())
@@ -657,15 +673,15 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				if (ImGui::IsMouseHoveringRect(lineStartScreenPos, end))
 				{
+				         // [Bruno Levy] changed font and color for error messages.
 					ImGui::BeginTooltip();
+					ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
 					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
 					ImGui::Text("Error at line %d:", errorIt->first);
-//					ImGui::PopStyleColor();
 					ImGui::Separator();
-// [Bruno Levy] I'm using the Light style, and yellow on white is not very legible.					
-//					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.2f, 1.0f));
 					ImGui::Text("%s", errorIt->second.c_str());
 					ImGui::PopStyleColor();
+					ImGui::PopFont();					
 					ImGui::EndTooltip();
 				}
 			}
@@ -739,6 +755,23 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			++lineNo;
 		}
 
+		// [Bruno Levy] My tooltips (work in progress)
+		if(ImGui::IsWindowHovered() && callback_ != nil) {
+		    ImVec2 mouse = ImGui::GetMousePos();
+		    ImVec2 origin = ImGui::GetCursorScreenPos();
+		    if(mouse.y > origin.y) {
+			Coordinates coord = ScreenPosToCoordinates(ImGui::GetMousePos());
+			// Display tooltip only if there is not already an error tooltip
+			// to display.
+			if(mErrorMarkers.find(coord.mLine + 1) ==  mErrorMarkers.end()) {
+			    word_context_ = GetWordContextAt(coord);
+			    if(!word_context_.empty() && word_context_ != " ") {
+				callback_(TEXT_EDITOR_TOOLTIP, callback_client_data_);
+			    }
+			}
+		    }
+		}
+		
 		/* // [Bruno Levy] Commented-out (just get 'built-in function', not very interesting).
 		   // TODO: try getting meta-information from GOM and displaying it in tooltips.
 		auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -802,6 +835,10 @@ void TextEditor::SetText(const std::string & aText)
 	mUndoBuffer.clear();
 
 	Colorize();
+	
+	if(callback_ != nil) {
+	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
+	}
 }
 
 void TextEditor::EnterCharacter(Char aChar)
@@ -857,6 +894,10 @@ void TextEditor::EnterCharacter(Char aChar)
 
 	Colorize(coord.mLine - 1, 3);
 	EnsureCursorVisible();
+
+	if(callback_ != nil) {
+	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
+	}
 }
 
 void TextEditor::SetReadOnly(bool aValue)
@@ -935,6 +976,10 @@ void TextEditor::DeleteSelection()
 	SetSelection(mState.mSelectionStart, mState.mSelectionStart);
 	SetCursorPosition(mState.mSelectionStart);
 	Colorize(mState.mSelectionStart.mLine, 1);
+
+	if(callback_ != nil) {
+	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
+	}
 }
 
 void TextEditor::MoveUp(int aAmount, bool aSelect)
@@ -1338,6 +1383,10 @@ void TextEditor::Paste()
 		u.mAfter = mState;
 		AddUndo(u);
 	}
+
+	if(callback_ != nil) {
+	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
+	}
 }
 
 bool TextEditor::CanUndo() const
@@ -1377,8 +1426,8 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 	0xffaaaaaa, // Identifier
 	0xff9bc64d, // Known identifier
 	0xffc040a0, // Preproc identifier
-	0xff206020, // Comment (single line)
-	0xff406020, // Comment (multi line)
+	0xff20A020, // Comment (single line) [BL]: A0 instead of 60, else it's too dark.
+	0xff40A020, // Comment (multi line)  [BL]: A0 instead of 60, else it's too dark.
 	0xff101010, // Background
 	0xffe0e0e0, // Cursor
 	0x80a06020, // Selection
@@ -1415,7 +1464,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 	0xff405020, // Comment (multi line)
 	0xffffffff, // Background
 	0xff000000, // Cursor
-	0x80600000, // Selection
+	0x80600000, // Selection  
         0xa00010ff, // ErrorMarker
 	0x80f08000, // Breakpoint
 	0xff505000, // Line number
@@ -2101,3 +2150,98 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::Lua()
 	}
 	return langDef;
 }
+
+/****************************************************/
+
+// [Bruno Levy] additional function for finding the context for tooltips
+//
+// TODO: more subtle detection of function parameters versus result of
+// function call, depending of where the mouse pointer is.
+
+bool TextEditor::IsWordContextBoundary(char c) const {
+    return
+	c == ' '  ||
+	c == '\t' ||
+	c == ','  ||
+	c == '('  ||
+	c == ')'  ||
+	c == '='  ;
+    ;
+}
+
+TextEditor::Coordinates TextEditor::FindWordContextStart(const Coordinates& aFrom) const {
+    Coordinates at = aFrom;
+    if (at.mLine >= (int)mLines.size()) {
+	return at;
+    }
+	    
+    auto& line = mLines[at.mLine];
+	    
+    if (at.mColumn >= (int)line.size()) {
+	return at;
+    }
+
+    while (at.mColumn > 0) {
+	if(IsWordContextBoundary(line[at.mColumn - 1].mChar)) {
+	    break;
+	}
+	--at.mColumn;
+    }
+    return at;
+}
+
+TextEditor::Coordinates TextEditor::FindWordContextEnd(const Coordinates& aFrom) const {
+    Coordinates at = aFrom;
+    if (at.mLine >= (int)mLines.size()) {
+	return at;
+    }
+
+    auto& line = mLines[at.mLine];
+
+    if (at.mColumn >= (int)line.size()) {
+	return at;
+    }
+
+    while (at.mColumn < (int)line.size()) {
+	if(IsWordContextBoundary(line[at.mColumn].mChar)) {
+	    break;
+	}
+	++at.mColumn;
+    }
+    return at;
+}
+
+std::string TextEditor::GetWordContextAt(const Coordinates & aCoords) const {
+    std::string r;
+
+    if(aCoords.mLine >= int(mLines.size())) {
+	return r;
+    }
+    
+    // Test if we are inside a comment
+    {
+	int pos = -1;
+	const Line& L = mLines[aCoords.mLine];
+	for(int i=0; i+1 < int(L.size()); ++i) {
+	    if(L[i].mChar == '-' && L[i+1].mChar == '-') {
+		pos = i;
+		break;
+	    }
+	}
+	if(pos != -1 && aCoords.mColumn > pos) {
+	    return r;
+	}
+    }
+    
+    auto start = FindWordContextStart(aCoords);
+    auto end = FindWordContextEnd(aCoords);
+    for (auto it = start; it < end; Advance(it)) {
+	r.push_back(mLines[it.mLine][it.mColumn].mChar);
+    }
+    return r;
+}
+
+
+
+
+

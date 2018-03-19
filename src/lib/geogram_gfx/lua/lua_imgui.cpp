@@ -494,6 +494,27 @@ namespace {
 	ImGui::ShowStyleEditor(nil);
 	return 0;
     }
+
+    int wrapper_PushFont(lua_State* L) {
+	if(lua_gettop(L) != 1) {
+	    return luaL_error(
+		L, "'imgui.PushFont()' invalid number of arguments"
+	    );
+	}
+	if(!lua_isinteger(L,1)) {
+	    return luaL_error(
+		L, "'imgui.PushFont()' argument is not an integer"
+	    );
+	}
+	int idx = int(lua_tointeger(L,1));
+	if(idx < 0 || idx >= ImGui::GetIO().Fonts->Fonts.size()) {
+	    return luaL_error(
+		L, "'imgui.PushFont()' invalid font index"
+	    );
+	}
+	ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[idx]);
+	return 0;
+    }
     
 }
 
@@ -572,6 +593,11 @@ void init_lua_imgui(lua_State* L) {
     lua_pushliteral(L,"ShowStyleEditor");
     lua_pushcfunction(L,wrapper_ShowStyleEditor);
     lua_settable(L,-3);
+
+    lua_pushliteral(L,"PushFont");
+    lua_pushcfunction(L,wrapper_PushFont);
+    lua_settable(L,-3);
+
     
     lua_pop(L,1);
 }

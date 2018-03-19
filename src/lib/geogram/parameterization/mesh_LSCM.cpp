@@ -506,12 +506,12 @@ namespace {
 	    for(i=0; i<mesh_.vertices.nb(); i++) {
 		const vec3& p = Geom::mesh_vertex(mesh_,i);
 		xmin = std::min(p.x, xmin);
-		ymin = std::min(p.y, xmin);
-		zmin = std::min(p.z, xmin);
+		ymin = std::min(p.y, ymin);
+		zmin = std::min(p.z, zmin);
 		
-		xmax = std::max(p.x, xmin);
-		ymax = std::max(p.y, xmin);
-		zmax = std::max(p.z, xmin);
+		xmax = std::max(p.x, xmax);
+		ymax = std::max(p.y, ymax);
+		zmax = std::max(p.z, zmax);
 	    }
 	    
 	    double dx = xmax - xmin;
@@ -521,7 +521,7 @@ namespace {
 	    vec3 V1,V2;
 	    
 	    // Find shortest bbox axis
-	    if(dx < dy && dx < dz) {
+	    if(dx <= dy && dx <= dz) {
 		if(dy > dz) {
 		    V1 = vec3(0,1,0);
 		    V2 = vec3(0,0,1);
@@ -529,7 +529,7 @@ namespace {
 		    V2 = vec3(0,1,0);
 		    V1 = vec3(0,0,1);
 		}
-	    } else if(dy < dx && dy < dz) {
+	    } else if(dy <= dx && dy <= dz) {
 		if(dx > dz) {
 		    V1 = vec3(1,0,0);
 		    V2 = vec3(0,0,1);
@@ -537,7 +537,7 @@ namespace {
 		    V2 = vec3(1,0,0);
 		    V1 = vec3(0,0,1);
 		}
-	    } else if(dz < dx && dz < dy) {
+	    } else if(dz <= dx && dz <= dy) {
 		if(dx > dy) {
 		    V1 = vec3(1,0,0);
 		    V2 = vec3(0,1,0);

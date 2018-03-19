@@ -2,7 +2,7 @@
 if(NOT DEFINED GEOGRAM_SOURCE_DIR)
    set(GEOGRAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
-
+message(STATUS "GEOGRAM_SOURCE_DIR: ${GEOGRAM_SOURCE_DIR}")
 if(EXISTS ${GEOGRAM_SOURCE_DIR}/CMakeOptions.txt)
    message(STATUS "Using local options file: ${GEOGRAM_SOURCE_DIR}/CMakeOptions.txt")
    include(${GEOGRAM_SOURCE_DIR}/CMakeOptions.txt)

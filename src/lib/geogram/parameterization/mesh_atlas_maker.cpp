@@ -177,7 +177,8 @@ namespace {
 	    
 	    // Ignore problems for small charts.
 	    // TODO: check if we can remove that
-	    // (unfortunately, does not seems so...)
+	    // (unfortunately, does not seems so...
+//	    if(false)
 	    if(!OK && chart.facets.size() <= 10) {
 		if(verbose_) {
 		    Logger::out("ParamValidator")

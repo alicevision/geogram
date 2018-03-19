@@ -4139,7 +4139,146 @@ namespace GEO {
 	}
 	
     };
-    
+
+    /************************************************************************/
+
+    /**
+     * \brief Mesh IO Handler for OpenVolumeMesh file format.
+     * \details Saves a polyhedral mesh stored in a surfacic mesh that
+     *  has all cell boundaries and a vertex_id vertex attribute and cell_id
+     *  facet attribute. Note: the implementation is pretty inefficient (uses
+     *  tables).
+     */
+    class FluentIOHandler : public MeshIOHandler {
+    private:
+	enum {
+	    XF_COMMENT = 0,
+	    XF_HEADER = 1,
+	    XF_DIMENSION = 2,
+	    XF_NODE = 10,
+	    XF_CELL = 12
+	};
+    public:
+	/**
+	 * \copydoc MeshIOHandler::load()
+	 */
+        virtual bool load(
+            const std::string& filename, Mesh& M,
+            const MeshIOFlags& ioflags
+        ) {
+	    geo_argused(filename);
+	    geo_argused(M);
+	    geo_argused(ioflags);
+	    Logger::err("I/O")
+		<< "load() not implemented yet for Fluent file format"
+		<< std::endl;
+	    return false;
+	}
+
+	/**
+	 * \copydoc MeshIOHandler::save()
+	 */
+	virtual bool save(
+            const Mesh& M, const std::string& filename,
+            const MeshIOFlags& ioflags = MeshIOFlags()
+	) {
+	    geo_argused(ioflags);
+	    std::ofstream out(filename.c_str());
+	    if(!out) {
+		Logger::err("I/O")
+		    << "save(): could not create file: " << filename
+		    << std::endl;
+		return false;
+	    }
+
+	    /*************************************************************/
+	    
+	    out << "("
+		<< XF_HEADER
+		<< " \" Geogram/Vorpaline"
+		<< " ver:" << Environment::instance()->get_value("version")
+		<< " rel:" << Environment::instance()->get_value("release_date")
+		<< " SVN:" << Environment::instance()->get_value("SVN revision")
+		<< "\")"
+		<< std::endl;
+
+            std::vector<std::string> args;
+            CmdLine::get_args(args);
+	    for(index_t i=0; i<index_t(args.size()); ++i) {
+		out << "("
+		    << XF_COMMENT
+		    << "\" CmdLine:"
+		    << args[i]
+		    << "\")"
+		    << std::endl;
+	    }
+
+	    index_t dim = M.vertices.dimension();
+	    if(dim > 3) {
+		dim = 3;
+	    }
+	    
+	    out << "("
+		<< XF_DIMENSION
+		<< " "
+		<< dim
+		<< ")"
+		<< std::endl;
+
+	    /*************************************************************/
+	    
+	    // Declare the total number of nodes
+	    out << "("
+		<< XF_NODE
+		<< " ("
+		<< 0 << " "           // zone-id
+		<< 1 << " "           // first index
+		
+		<< std::hex
+		<< M.vertices.nb()    // last index in hexa (?!?)
+		<< std::dec << " "   
+
+		<< 0 << " "           // type
+		<< "))"
+		<< std::endl;
+
+	    // Now declare a zone with nodes.
+	    out << "("
+		<< XF_NODE
+		<< " ("
+		<< 1 << " "           // zone-id
+		<< 1 << " "           // first index
+		
+		<< std::hex
+		<< M.vertices.nb()    // last index in hexa (?!?)
+		<< std::dec << " "   
+
+		<< 1   << " "         // type
+		<< dim << " "         // ND
+		<< ")("
+		<< std::endl;
+
+	    for(index_t v=0; v<M.vertices.nb(); ++v) {
+		double point[3];
+		get_mesh_point(M, v, point, dim);
+		for(index_t i=0; i<dim; ++i) {
+		    out << point[i] << " ";
+		}
+		out << std::endl;
+	    }
+	    
+	    out << "))" << std::endl;
+
+	    /*************************************************************/
+
+	    
+	    
+	    /*************************************************************/
+	    
+	    return true;
+	}	
+    private:
+    };
     
 }
 
@@ -4329,6 +4468,7 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb");
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb1");
         geo_register_MeshIOHandler_creator(OVMIOHandler, "ovm");
+        geo_register_MeshIOHandler_creator(FluentIOHandler, "msh");	
     }
 
     

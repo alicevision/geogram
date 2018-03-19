@@ -817,12 +817,12 @@ protected:
         for(i=0; i<mesh_->vertex.size(); i++) {
             const Vertex& v = mesh_->vertex[i];
             xmin = std::min(v.point.x, xmin);
-            ymin = std::min(v.point.y, xmin);
-            zmin = std::min(v.point.z, xmin);
+            ymin = std::min(v.point.y, ymin);
+            zmin = std::min(v.point.z, zmin);
 
-            xmax = std::max(v.point.x, xmin);
-            ymax = std::max(v.point.y, xmin);
-            zmax = std::max(v.point.z, xmin);
+            xmax = std::max(v.point.x, xmax);
+            ymax = std::max(v.point.y, ymax);
+            zmax = std::max(v.point.z, zmax);
         }
 
         double dx = xmax - xmin;
@@ -832,7 +832,7 @@ protected:
         vec3 V1,V2;
 
         // Find shortest bbox axis
-        if(dx < dy && dx < dz) {
+        if(dx <= dy && dx <= dz) {
             if(dy > dz) {
                 V1 = vec3(0,1,0);
                 V2 = vec3(0,0,1);
@@ -840,7 +840,7 @@ protected:
                 V2 = vec3(0,1,0);
                 V1 = vec3(0,0,1);
             }
-        } else if(dy < dx && dy < dz) {
+        } else if(dy <= dx && dy <= dz) {
             if(dx > dz) {
                 V1 = vec3(1,0,0);
                 V2 = vec3(0,0,1);
@@ -848,7 +848,7 @@ protected:
                 V2 = vec3(1,0,0);
                 V1 = vec3(0,0,1);
             }
-        } else if(dz < dx && dz < dy) {
+        } else if(dz <= dx && dz <= dy) {
             if(dx > dy) {
                 V1 = vec3(1,0,0);
                 V2 = vec3(0,1,0);

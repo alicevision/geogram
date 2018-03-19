@@ -56,7 +56,7 @@ namespace GEO {
     }
     
     void AttributeStoreObserver::unregister_me(AttributeStore* store) {
-        store->unregister_observer(this);        
+        store->unregister_observer(this);
     }
 
     /******************************************************************/
@@ -107,9 +107,15 @@ namespace GEO {
     }
     
     AttributeStore::~AttributeStore() {
-        // It is illegal to keep an Attribute<> active
-        // when the object it is bound to is destroyed.
-        geo_assert(!has_observers());
+	// Disconnect all the attributes, for the special case where
+	// the AttributeStore is destroyed before the Attributes, can
+	// occur for instance when using Lua scripting with Attribute wrapper
+	// objects.
+	for(std::set<AttributeStoreObserver*>::iterator
+		it = observers_.begin(); it!=observers_.end(); ++it
+        ) {
+	    (*it)->disconnect();
+	}
     }
 
     void AttributeStore::register_observer(AttributeStoreObserver* observer) {
