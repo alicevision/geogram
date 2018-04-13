@@ -295,7 +295,7 @@ namespace GEOGen {
             index_t conflict_begin, conflict_end;
 
             // Phase I: Determine the conflict zone and chain the triangles
-            // Note: they are not immediatly deleted, since we need the
+            // Note: they are not immediately deleted, since we need the
             // geometric information in the triangles to compute the new
             // intersections.
             get_conflict_list<DIM>(
@@ -596,7 +596,7 @@ namespace GEOGen {
         /**
          * \brief Gets the id of a triangle.
          * \details Each triangle of a ConvexCell has an id, that can
-         * be used to maintain the correspondance with a vertex in the Mesh.
+         * be used to maintain the correspondence with a vertex in the Mesh.
          * \return The id of triangle \p t.
          */
         signed_index_t triangle_id(index_t t) const {
@@ -607,7 +607,7 @@ namespace GEOGen {
         /**
          * \brief Sets the id of a triangle.
          * \details Each triangle of a ConvexCell has an id, that can
-         * be used to maintain the correspondance with a vertex in the Mesh.
+         * be used to maintain the correspondence with a vertex in the Mesh.
          */
         void set_triangle_id(index_t t, signed_index_t id) {
             geo_debug_assert(triangle_is_valid(t));
@@ -617,7 +617,7 @@ namespace GEOGen {
         /**
          * \brief Gets the id of a vertex.
          * \details Each vertex of a ConvexCell has an id, that can
-         * be used to maintain the correspondance with a facet in the Mesh.
+         * be used to maintain the correspondence with a facet in the Mesh.
          */
         signed_index_t vertex_id(index_t v) const {
             geo_debug_assert(v != NO_VERTEX);
@@ -628,7 +628,7 @@ namespace GEOGen {
         /**
          * \brief Sets the id of a vertex.
          * \details Each vertex of a ConvexCell has an id, that can
-         * be used to maintain the correspondance with a facet in the Mesh.
+         * be used to maintain the correspondence with a facet in the Mesh.
          */
         void set_vertex_id(index_t v, signed_index_t id) {
             geo_debug_assert(v != NO_VERTEX);

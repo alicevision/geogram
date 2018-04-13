@@ -247,7 +247,7 @@ namespace GEO {
             // TODO: try to better understand the formula and
             // determine why there are these sqrt's
             // (probably due to the relation between the
-            //  user-provided density and the one acheived
+            //  user-provided density and the one achieved
             //  by CVT), but I'm pretty sure that the formula
             //  is correct (at least, dimensions match).
             // Note: the ::fabs() are there to avoid numerical

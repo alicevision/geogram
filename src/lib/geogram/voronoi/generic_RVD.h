@@ -682,11 +682,11 @@ namespace GEOGen {
          *  where the parameters are as follows:
          *    - v is the index of the current Voronoi cell
          *    (or Delaunay vertex)
-         *    - v_adj is the index of the Voronoi cell adjacent to t accross
+         *    - v_adj is the index of the Voronoi cell adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    adjacent to v or -1 if current face is a tetrahedron facet
          *    - t is the index of the current tetrahedron
-         *    - t_adj is the index of the tetrahedron adjacent to t accross
+         *    - t_adj is the index of the tetrahedron adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    - v1,v2 and v3 are the three vertices of the facet on the
          *    border of the restricted Voronoi cell.
@@ -877,11 +877,11 @@ namespace GEOGen {
          *  where the parameters are as follows:
          *    - v is the index of the current Voronoi cell
          *    (or Delaunay vertex)
-         *    - v_adj is the index of the Voronoi cell adjacent to t accross
+         *    - v_adj is the index of the Voronoi cell adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    adjacent to v or -1 if current face is a tetrahedron facet
          *    - t is the index of the current tetrahedron
-         *    - t_adj is the index of the tetrahedron adjacent to t accross
+         *    - t_adj is the index of the tetrahedron adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    - v0,v1,v2 and v3 are the four vertices of tetrahedron.
          */
@@ -1215,11 +1215,11 @@ namespace GEOGen {
          *  where the parameters are as follows:
          *    - v is the index of the current Voronoi cell
          *    (or Delaunay vertex)
-         *    - v_adj is the index of the Voronoi cell adjacent to t accross
+         *    - v_adj is the index of the Voronoi cell adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    adjacent to v or -1 if current face is a tetrahedron facet
          *    - t is the index of the current tetrahedron
-         *    - t_adj is the index of the tetrahedron adjacent to t accross
+         *    - t_adj is the index of the tetrahedron adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    - v1,v2 and v3 are the three vertices of the facet on the
          *    border of the restricted Voronoi cell.
@@ -1253,11 +1253,11 @@ namespace GEOGen {
          *  where the parameters are as follows:
          *    - v is the index of the current Voronoi cell
          *    (or Delaunay vertex)
-         *    - v_adj is the index of the Voronoi cell adjacent to t accross
+         *    - v_adj is the index of the Voronoi cell adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    adjacent to v or -1 if current face is a tetrahedron facet
          *    - t is the index of the current tetrahedron
-         *    - t_adj is the index of the tetrahedron adjacent to t accross
+         *    - t_adj is the index of the tetrahedron adjacent to t accros
          *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
          *    - v0,v1,v2 and v3 are the four vertices of tetrahedron.
          */

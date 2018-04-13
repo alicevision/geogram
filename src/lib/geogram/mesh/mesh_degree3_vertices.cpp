@@ -106,7 +106,7 @@ namespace {
      * \param[in] t the index of the triangle
      * \param[in] le the local index (0,1 or 2) of the edge in \p t, using
      *  standard triangle numerotation (edge i is opposite to vertex i).
-     * \return the global index of the triangle adjacent to \p t accross
+     * \return the global index of the triangle adjacent to \p t accros
      *  edge \p le in \p M
      * \note Everywhere else in Vorpaline, triangle edge numerotation is
      *  different from standard triangle numerotation used here.

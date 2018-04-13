@@ -60,7 +60,7 @@ namespace GEO {
     /**
      * \brief A piece of a mesh.
      * \details Stores a list of facet indices. The mesh it belongs
-     *  to is suppoed to have an Attribute<index_t> attached to the
+     *  to is supposed to have an Attribute<index_t> attached to the
      *  facets and indicating the id of the chart for each facet.
      */
     struct Chart {

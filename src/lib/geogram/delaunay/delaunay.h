@@ -379,7 +379,7 @@ namespace GEO {
          *  local facet index.
          * \param[in] c cell index
          * \param[in] lf local facet index
-         * \return the index of the cell adjacent to \p c accross
+         * \return the index of the cell adjacent to \p c accros
          *  facet \p lf if it exists, or -1 if on border
          */
         signed_index_t cell_adjacent(index_t c, index_t lf) const {
@@ -407,7 +407,7 @@ namespace GEO {
         }
         
         /**
-         * \brief Retreives a local vertex index from cell index
+         * \brief Retrieves a local vertex index from cell index
          *  and global vertex index.
          * \param[in] c cell index
          * \param[in] v global vertex index
@@ -426,11 +426,11 @@ namespace GEO {
         }
 
         /**
-         * \brief Retreives a local facet index from two adacent
+         * \brief Retrieves a local facet index from two adacent
          *  cell global indices.
          * \param[in] c1 global index of first cell
          * \param[in] c2 global index of second cell
-         * \return the local index of the face accross which
+         * \return the local index of the face accros which
          *  \p c2 is adjacent to \p c1
          * \pre cell \p c1 and cell \p c2 are adjacent
          */

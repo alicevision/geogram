@@ -800,7 +800,7 @@ namespace GEO {
             }
 
             if(!ok) {
-                //  At this point, this thread did not succesfully
+                //  At this point, this thread did not successfully
                 // acquire all the tets in the conflict zone, so
                 // we need to rollback.
                 release_tets();
@@ -1753,7 +1753,7 @@ namespace GEO {
          * \param[in] t1 index of the first tetrahedron
          * \param[in] lf1 local facet index (0,1,2 or 3) in t1
          * \param[in] t2 index of the tetrahedron
-         *  adjacent to \p t1 accross \p lf1
+         *  adjacent to \p t1 accros \p lf1
          */
         void set_tet_adjacent(index_t t1, index_t lf1, index_t t2) {
             geo_debug_assert(t1 < max_t());
@@ -1765,7 +1765,7 @@ namespace GEO {
         }
         
         /**
-         * \brief Finds the index of the facet accross which t1 is 
+         * \brief Finds the index of the facet accros which t1 is 
          *  adjacent to t2_in.
          * \param[in] t1 first tetrahedron
          * \param[in] t2_in second tetrahedron
@@ -2039,7 +2039,7 @@ namespace GEO {
         /**
          * \brief Finds the index of an integer in an array of four integers.
          * \param[in] T a const pointer to an array of four integers
-         * \param[in] v the integer to retreive in \p T
+         * \param[in] v the integer to retrieve in \p T
          * \return the index (0,1,2 or 3) of \p v in \p T
          * \pre The four entries of \p T are different and one of them is
          *  equal to \p v.
@@ -2058,7 +2058,7 @@ namespace GEO {
             index_t result = index_t(
                 (T[1] == v) | ((T[2] == v) * 2) | ((T[3] == v) * 3)
             );
-            // Sanity check, important if it was T[0], not explicitely
+            // Sanity check, important if it was T[0], not explicitly
             // tested (detects input that does not meet the precondition).
             geo_debug_assert(T[result] == v);
             return result; 
@@ -2295,14 +2295,14 @@ namespace GEO {
             // Replace in new_t the vertex opposite to t1fbord with v
             set_tet_vertex(new_t, t1fbord, v);
             
-            // Connect new_t with t1's neighbor accross t1fbord
+            // Connect new_t with t1's neighbor accros t1fbord
             {
                 index_t tbord = index_t(tet_adjacent(t1,t1fbord));
                 set_tet_adjacent(new_t, t1fbord, tbord);
                 set_tet_adjacent(tbord, find_tet_adjacent(tbord,t1), new_t);
             }
             
-            //  Lookup new_t's neighbors accross its three other
+            //  Lookup new_t's neighbors accros its three other
             // facets and connect them
             for(t1ft2=0; t1ft2<4; ++t1ft2) {
                 
@@ -2943,7 +2943,7 @@ namespace GEO {
         
         if(benchmark_mode_) {
             if(nb_sequential_points != 0) {
-                Logger::out("PDEL") << "Local thread memory overflow occured:"
+                Logger::out("PDEL") << "Local thread memory overflow occurred:"
                                     << std::endl;
                 Logger::out("PDEL") << nb_sequential_points
                                     << " points inserted in sequential mode"

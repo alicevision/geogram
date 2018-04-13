@@ -162,7 +162,7 @@ namespace GEO {
          * \details On exit, the norm of the vector nearest to \p N in
          *   \p frame has a norm equal to \p s.
          * \param[in,out] frame the frame, as an array of 9 doubles
-         * \param[in] N the vector to be scaled (retreived in the frame)
+         * \param[in] N the vector to be scaled (retrieved in the frame)
          * \param[in] s scaling factor
          */
         static void scale_frame_vector(double* frame, const vec3& N, double s); 

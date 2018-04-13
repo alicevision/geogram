@@ -236,7 +236,7 @@ namespace {
     protected:
 
         /**
-         * \brief Initalizes the combinatorial data
+         * \brief Initializes the combinatorial data
          *  structures and deletes all facets incident
          *  to a non-manifold edge.
          */
@@ -1331,7 +1331,7 @@ namespace {
              * \brief Gets the index of the adjacent seed associated with
              *  this vertex.
              * \details Each vertex stores combinatorial information, i.e.
-             *  the index of the adjacent Voronoi seed accross the edge
+             *  the index of the adjacent Voronoi seed accros the edge
              *  starting from this vertex
              * \return the index of the adjacent Voronoi seed
              */
@@ -1343,7 +1343,7 @@ namespace {
              * \brief Sets the index of the adjacent seed associated with
              *  this vertex.
              * \details Each vertex stores combinatorial information, i.e.
-             *  the index of the adjacent Voronoi seed accross the edge
+             *  the index of the adjacent Voronoi seed accros the edge
              *  starting from this vertex
              * \param[in] x the index of the adjacent Voronoi seed
              */
@@ -1812,7 +1812,7 @@ namespace {
          *  the intersection between a disk and the Voronoi cell
          *  of a point.
          * \details The temporary work variables provided by the caller
-         *  make it possible to reuse memory accross multiple calls to this
+         *  make it possible to reuse memory accros multiple calls to this
          *  function and thus avoid multiple dynamic memory allocations.
          * \param[in] i index of the point that determines the Voronoi cell.
          * \param[out] P result
@@ -1836,7 +1836,7 @@ namespace {
          *  the intersection between a disk and the Voronoi cell
          *  of a point.
          * \details The temporary work variables provided by the caller
-         *  make it possible to reuse memory accross multiple calls to this
+         *  make it possible to reuse memory accros multiple calls to this
          *  function and thus avoid multiple dynamic memory allocations.
          * \param[in] i index of the point that determines the Voronoi cell.
          * \param[in] N normal vector at point \p i

@@ -327,7 +327,7 @@ namespace GEOGen {
             } while(H != v2h[v]);
             
             // Note: va[] order is different, because of
-            //   Mesh numbering -> Triangulation numering
+            //   Mesh numbering -> Triangulation numbering
             // conversion !
             create_triangle(
                 mesh->vertices.point_ptr(v), 1.0,

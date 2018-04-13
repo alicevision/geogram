@@ -631,7 +631,7 @@ namespace GEOGen {
             if(nb_boundary_facets() == 2) {
                 // If *this is on the intersection of two boundary facets,
                 // then *this is on
-                // a boundary edge, and we need to retreive the indices of the
+                // a boundary edge, and we need to retrieve the indices of the
                 // two extremities of this boundary edge.
 
                 index_t nb1 = v1.nb_boundary_facets();

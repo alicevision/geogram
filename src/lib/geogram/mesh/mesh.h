@@ -68,7 +68,7 @@ namespace GEO {
     /**
      * \brief Base class for mesh sub-element storage.
      * \details Sub-elements are those that cannot exist
-     *  independantly (such as MeshFacetCorner, MeshCellCorner
+     *  independently (such as MeshFacetCorner, MeshCellCorner
      *  and MeshCellFacet).
      * \relates Mesh
      */

@@ -593,7 +593,7 @@ namespace GEO {
 	 *  vertices
 	 * \param[in] connected_comp_priority if true, generate polyhedron 
 	 *  intersections associated with the same Voronoi seed in order.
-	 * \param[in] parallel if true, tentatively parallize computation.
+	 * \param[in] parallel if true, tentatively parallelize computation.
 	 */
 	virtual void for_each_polyhedron(
 	    RVDPolyhedronCallback& callback,
@@ -613,7 +613,7 @@ namespace GEO {
 	 *  vertices
 	 * \param[in] connected_comp_priority if true, generate polyhedron 
 	 *  intersections associated with the same Voronoi seed in order.
-	 * \param[in] parallel if true, tentatively parallize computation.
+	 * \param[in] parallel if true, tentatively parallelize computation.
 	 */
 	virtual void for_each_polygon(
 	    RVDPolygonCallback& callback,

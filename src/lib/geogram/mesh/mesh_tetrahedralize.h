@@ -76,7 +76,7 @@ namespace GEO {
      * \param[in] keep_regions if set, then all internal regions are kept, and
      *  a region cell attribute is created, else only tetrahedra in the outermost
      *  region are kept.
-     * \retval true if the mesh was sucessfuly tetrahedralized
+     * \retval true if the mesh was successfuly tetrahedralized
      * \retval false otherwise
      * \note needs a constrained Delaunay algorithm to work (geogram needs
      *  to be compiled with mg-tetra or tetgen).

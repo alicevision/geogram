@@ -123,7 +123,7 @@ NLAPI void NLAPIENTRY nlDeleteMatrix(NLMatrix M);
 /**
  * \brief Computes a matrix x vector product
  * \param[in] M the matrix
- * \param[in] x the vector to be multipled by the matrix
+ * \param[in] x the vector to be multiplied by the matrix
  * \param[out] y the result
  */
 NLAPI void NLAPIENTRY nlMultMatrixVector(
@@ -686,7 +686,7 @@ NLAPI NLuint NLAPIENTRY nlMatrixNNZ(NLMatrix M);
 
 /**
  * \brief Factorizes a matrix.
- * \details The corresponding extension needs to be sucessfully initialized
+ * \details The corresponding extension needs to be successfully initialized
  *  before calling this function.
  * \param[in] M the input matrix
  * \param[in] solver a direct solver, i.e., one of:

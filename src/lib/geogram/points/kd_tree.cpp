@@ -237,7 +237,7 @@ namespace GEO {
         // TODO: optimized version that uses the fact that
         // we know that query_point is in the search data
         // structure already.
-        // (I tryed something already, see in the Attic, 
+        // (I tried something already, see in the Attic, 
         //  but it did not give any significant speedup).
         get_nearest_neighbors(
             nb_neighbors, point_ptr(q_index), 

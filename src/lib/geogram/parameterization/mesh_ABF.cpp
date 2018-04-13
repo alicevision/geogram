@@ -832,7 +832,7 @@ namespace GEO {
 	ABFPlusPlus ABF(M);
 	ABF.set_verbose(verbose);
 	ABF.parameterize(); // This computes the "angle" attribute.
-	// Now use LSCM to retreive (u,v) coordinates from the angles.
+	// Now use LSCM to retrieve (u,v) coordinates from the angles.
 	mesh_compute_LSCM(M, attribute_name, false, "angle");
 	M.facet_corners.attributes().delete_attribute_store("angle");
     }

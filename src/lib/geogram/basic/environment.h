@@ -56,7 +56,7 @@
 /**
  * \file geogram/basic/environment.h
  * \brief Provides a mechanism to store global
- *  variables, retreive them by their names and
+ *  variables, retrieve them by their names and
  *  attach observers to them.
  */
 

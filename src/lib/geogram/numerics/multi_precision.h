@@ -88,10 +88,10 @@ namespace GEO {
     }
 
     /**
-     * \brief Substracts two doubles into a length 2 expansion.
+     * \brief Subtracts two doubles into a length 2 expansion.
      * \details By Jonathan Shewchuk.
      * \param[in] a first number.
-     * \param[in] b the number to substract from \p a.
+     * \param[in] b the number to subtract from \p a.
      * \param[out] x high-magnitude component of the result.
      * \param[out] y low-magnitude component of the result.
      * \relates expansion
@@ -110,8 +110,8 @@ namespace GEO {
      * computing a product.
      * \details By Jonathan Shewchuk.
      * \param[in] a input number.
-     * \param[out] ahi splitted number, high-magnitude part.
-     * \param[out] alo splitted number, low-magnitude part.
+     * \param[out] ahi split number, high-magnitude part.
+     * \param[out] alo split number, low-magnitude part.
      * \relates expansion
      */
     inline void split(double a, double& ahi, double& alo) {
@@ -940,9 +940,9 @@ namespace GEO {
         }
 
         /**
-         * \brief Assigns the lenght of a vector to this expansion 
+         * \brief Assigns the length of a vector to this expansion 
          *  (should not be used by client code). Do not call this
-         *  function directy, use expansion_length2() macro instead.
+         *  function directly, use expansion_length2() macro instead.
          * \param[in] x , y , z coordinates of the vector
          * \return the new value of this expansion, with the squared
          *  length of [x,y,z]

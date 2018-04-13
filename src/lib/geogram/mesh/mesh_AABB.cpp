@@ -147,7 +147,7 @@ namespace {
     }
 
     /**
-     * \brief Computes the hiearchy of bounding boxes recursively.
+     * \brief Computes the hierarchy of bounding boxes recursively.
      * \details This function is generic and can be used to compute
      *  a bbox hierarchy of arbitrary elements.
      * \param[in] M the mesh

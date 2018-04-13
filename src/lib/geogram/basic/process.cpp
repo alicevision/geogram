@@ -134,7 +134,7 @@ namespace {
          * for the property.
          * \param[in] name name of the property
          * \param[in] value value of the property
-         * \retval true if the property was sucessfully set
+         * \retval true if the property was successfully set
          * \retval false otherwise
          * \see Environment::set_value()
          */

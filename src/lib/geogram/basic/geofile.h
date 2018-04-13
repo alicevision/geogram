@@ -514,7 +514,7 @@ namespace GEO {
          * \details Checks that I/O was completed and throws a
          *  GeoFileException if the file is truncated.
          * \param[in] x the integer
-         * \param[in] comment an optionnal comment string, written to
+         * \param[in] comment an optional comment string, written to
          *  ASCII geofiles
          */
         void write_int(index_t x, const char* comment = nil);
@@ -532,7 +532,7 @@ namespace GEO {
          * \details Checks that I/O was completed and throws a
          *  GeoFileException if the file is truncated.
          * \param[in] s a const reference to the string
-         * \param[in] comment an optionnal comment string, written to
+         * \param[in] comment an optional comment string, written to
          *  ASCII geofiles
          */
         void write_string(const std::string& s, const char* comment = nil);

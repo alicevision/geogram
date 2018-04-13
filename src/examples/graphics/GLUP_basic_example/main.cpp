@@ -852,7 +852,7 @@ namespace {
 
 static void overlay() {
     // Displays ImGui demo window.
-    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
     ImGui::ShowDemoWindow();
 }
 

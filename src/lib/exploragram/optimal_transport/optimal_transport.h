@@ -41,6 +41,19 @@
 #define H_EXPLORAGRAM_OPTIMAL_TRANSPORT_OPTIMAL_TRANSPORT_H
 
 #include <exploragram/basic/common.h>
+
+namespace GEO {
+    /**
+     * \brief Specifies the linear solver to be used
+     *  with OptimalTransport.
+     */
+    enum OTLinearSolver {
+	OT_PRECG, OT_SUPERLU, OT_CHOLMOD
+    };
+}
+
+#ifndef GOMGEN
+
 #include <geogram/mesh/mesh.h>
 #include <geogram/voronoi/RVD.h>
 #include <geogram/delaunay/delaunay.h>
@@ -54,6 +67,7 @@
 
 namespace GEO {
     class CentroidalVoronoiTesselation;
+
 
     /**
      * \brief Computes semi-discrete optimal transport maps.
@@ -255,16 +269,13 @@ namespace GEO {
 
 	/**
 	 * \brief Specifies whether a direct solver should be used.
-	 * \param[in] x true if a direct solver should be used, false
-	 *  otherwise. Default is false.
-	 * \details The used direct solver is SUPERLU (if OpenNL extension
-	 *  is available) and the iterative solver the Jacobi-preconditioned
-	 *  conjugate gradient. The direct solver is recommended only for
+	 * \param[in] solver one of OT_PRECG (default), OT_SUPERLU, OT_CHOLMOD.
+	 * \details The direct solvers (OT_SUPERLU, OT_CHOLMOD) are recommended only for
 	 *  surfacic data, since the sparse factors become not so sparse when
 	 *  volumetric meshes are considered.
 	 */
-	void set_use_direct_solver(bool x) {
-	    use_direct_solver_ = x;
+	void set_linear_solver(OTLinearSolver solver) {
+	    linear_solver_ = solver;
 	}
 	
         /**
@@ -773,8 +784,8 @@ namespace GEO {
 	/** \brief starting number of steplength divisions */
 	index_t linesearch_init_iter_;
 
-	/** \brief if true, uses a direct solver (SUPERLU) */
-	bool use_direct_solver_;
+	/** \brief one of OT_PRECG, OT_SUPERLU, OT_CHOLMOD. */
+	OTLinearSolver linear_solver_;
 
 	/** \brief if set, pointer to the air particles. */
 	const double* air_particles_;
@@ -801,5 +812,7 @@ namespace GEO {
     };
 
 }
+
+#endif
 
 #endif

@@ -146,7 +146,7 @@ namespace GEO {
 
         typedef vecng<DIM, double> Point;
 
-        // To ensure reproducibility accross successive
+        // To ensure reproducibility accros successive
         // runs, reset the random number generator.
         Numeric::random_reset();
 
@@ -313,7 +313,7 @@ namespace GEO {
 
         typedef vecng<DIM, double> Point;
 
-        // To ensure reproducibility accross successive
+        // To ensure reproducibility accros successive
         // runs, reset the random number generator.
         Numeric::random_reset();
 

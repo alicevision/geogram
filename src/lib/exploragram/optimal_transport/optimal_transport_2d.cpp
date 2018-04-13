@@ -682,8 +682,17 @@ namespace GEO {
 	    false
 	);
 
-        //OTM.set_regularization(1e-3);
-	//OTM.set_use_direct_solver(true);
+	static bool initialized = false;
+	static bool has_cholmod = false;
+	if(!initialized) {
+	    initialized = true;
+	    has_cholmod = (nlInitExtension("CHOLMOD") == NL_TRUE);
+	}
+	if(has_cholmod) {
+	    OTM.set_regularization(1e-3);
+	    OTM.set_linear_solver(OT_CHOLMOD);
+	}
+	
         OTM.set_Newton(true);
 	OTM.set_air_particles(
 	    nb_air_particles, air_particles, air_particles_stride, air_fraction

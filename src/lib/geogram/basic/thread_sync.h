@@ -261,7 +261,7 @@ namespace GEO {
 
             /**
              * \brief Releases a spinlock at a given index
-             * \details Makes spinlock at index \p i availabe to other threads.
+             * \details Makes spinlock at index \p i available to other threads.
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
@@ -355,7 +355,7 @@ namespace GEO {
 
             /**
              * \brief Releases a spinlock at a given index
-             * \details Makes spinlock at index \p i availabe to other threads.
+             * \details Makes spinlock at index \p i available to other threads.
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
@@ -455,7 +455,7 @@ namespace GEO {
 
             /**
              * \brief Releases a spinlock at a given index
-             * \details Makes spinlock at index \p i availabe to other threads.
+             * \details Makes spinlock at index \p i available to other threads.
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {
@@ -559,7 +559,7 @@ namespace GEO {
 
             /**
              * \brief Releases a spinlock at a given index
-             * \details Makes spinlock at index \p i availabe to other threads.
+             * \details Makes spinlock at index \p i available to other threads.
              * \param[in] i index of the spinlock
              */
             void release_spinlock(index_t i) {

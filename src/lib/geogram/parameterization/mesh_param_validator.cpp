@@ -268,7 +268,7 @@ namespace GEO {
             bool is_left = (y2 < y1) ^ ccw;
 
             // I want the set of lit pixels to be
-            // independant from the order of the 
+            // independent from the order of the 
             // extremities.
             bool swp = false;
             if(y2 == y1) {

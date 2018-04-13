@@ -629,7 +629,7 @@ namespace {
      * \brief Computes the difference of two expansions, eliminating zero
      *  components from the output expansion
      * \param[in] e first expansion
-     * \param[in] f second expansion to be substracted from e
+     * \param[in] f second expansion to be subtracted from e
      * \param[out] h the result \p e - \p f
      * \details Sets \p h = (\p e - \p f). \p h cannot be \p e or \p f.
      *  This function is adapted from Jonathan Shewchuk's code.

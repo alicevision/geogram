@@ -73,7 +73,7 @@ namespace GEO {
      * SystemStopwatch provides functions to get or print the time
      * elapsed since its construction. The times computed by
      * SystemStopwatch are expressed as system ticks, which is a system
-     * dependant unit. SystemStopwatch prints three different times:
+     * dependent unit. SystemStopwatch prints three different times:
      *
      * - real time: the really elapsed time (depends on the load of the
      *   machine, i.e. on the others programs that are executed at the

@@ -103,7 +103,7 @@ namespace GEO {
          *  both geometric and symbolic forms
          * \param[in] t the triangle or tetrahedron of the background mesh
          * \param[in] t_adj the background mesh tetrahedron adjacent to this
-         *  integration simplex accross (\p v0, \p v1, \p v2) or index_t(-1)
+         *  integration simplex accros (\p v0, \p v1, \p v2) or index_t(-1)
          *  if no such tetrahedron exists.
          * \param[in] v_adj if (\p v0, \p v1, \p v2) is supported by a bisector,
          *  the index of the other extremity of the bisector, else index_t(-1)

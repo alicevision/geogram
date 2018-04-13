@@ -206,7 +206,8 @@ namespace GEO {
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoTitleBar             
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoScrollbar	    
         );
         if(progress_) {
             if(ImGui::Button("cancel")) {
@@ -535,7 +536,7 @@ namespace GEO {
 
 	ImGui::Text(">>>");
 	ImGui::SameLine();
-	ImGui::PushItemWidth(-1);
+	ImGui::PushItemWidth(-20);
         if(ImGui::InputText(
 	       "##CommandInput", input_buf_, geo_imgui_string_length,
 	       ImGuiInputTextFlags_EnterReturnsTrue |
@@ -1490,11 +1491,11 @@ namespace GEO {
 	    h -= MENU_HEIGHT();
 	    ImGui::SetNextWindowPos(
 		ImVec2(0.0f, float(MENU_HEIGHT())),
-		fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once
+		fixed_layout_ ? ImGuiCond_Always : ImGuiCond_Once
 	    );
 	    ImGui::SetNextWindowSize(
 		ImVec2(float(w), float(h)),
-		fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once		
+		fixed_layout_ ? ImGuiCond_Always : ImGuiCond_Once		
 	    );
 	    text_editor_.draw();
 	    if(console_visible_) {
@@ -1539,20 +1540,20 @@ namespace GEO {
 	if(fixed_layout_) {
 	    ImGui::SetNextWindowPos(
 		ImVec2(0.0f, float(MENU_HEIGHT())),
-		ImGuiSetCond_Always 
+		ImGuiCond_Always 
 	    );
 	    ImGui::SetNextWindowSize(
 		ImVec2(float(PANE_WIDTH()), float(h)),
-		ImGuiSetCond_Always 
+		ImGuiCond_Always 
 	    );
 	} else {
 	    ImGui::SetNextWindowPos(
 		ImVec2(float(MENU_HEIGHT()), 2.0f*float(MENU_HEIGHT())),
-		ImGuiSetCond_Once			    
+		ImGuiCond_Once			    
 	    );
 	    ImGui::SetNextWindowSize(
 		ImVec2(float(PANE_WIDTH()), float(h)/2.0f),
-		ImGuiSetCond_Once			    	    
+		ImGuiCond_Once			    	    
 	    );
 	}
 
@@ -1561,11 +1562,11 @@ namespace GEO {
         if(Command::current() != nil) {
             ImGui::SetNextWindowPos(
                 ImVec2(0.0f, float(MENU_HEIGHT()+h+1)),
-                ImGuiSetCond_Always
+                ImGuiCond_Always
             );
             ImGui::SetNextWindowSize(
                 ImVec2(float(PANE_WIDTH()), float(h-1)),
-                ImGuiSetCond_Always
+                ImGuiCond_Always
             );
             draw_command();
         }
@@ -1584,12 +1585,12 @@ namespace GEO {
 
         ImGui::SetNextWindowPos(
             ImVec2(float(w-PANE_WIDTH()), float(MENU_HEIGHT())),
-	    fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once	    
+	    fixed_layout_ ? ImGuiCond_Always : ImGuiCond_Once	    
         );
         
         ImGui::SetNextWindowSize(
             ImVec2(float(PANE_WIDTH()), float(h)),
-	    fixed_layout_ ? ImGuiSetCond_Always : ImGuiSetCond_Once	    
+	    fixed_layout_ ? ImGuiCond_Always : ImGuiCond_Once	    
         );
         
         draw_object_properties_window();
@@ -1715,11 +1716,11 @@ namespace GEO {
 	if(fixed_layout_) {
 	    ImGui::SetNextWindowPos(
 		ImVec2(0.0f, float(h)),
-		ImGuiSetCond_Always 
+		ImGuiCond_Always 
 	    );
 	    ImGui::SetNextWindowSize(
 		ImVec2(float(w),float(CONSOLE_HEIGHT())),
-		ImGuiSetCond_Always 
+		ImGuiCond_Always 
 	    );
 	} else {
 	    ImGui::SetNextWindowPos(
@@ -1743,11 +1744,11 @@ namespace GEO {
         glup_viewer_get_screen_size(&w, &h);
         ImGui::SetNextWindowPos(
             ImVec2(0.0f, float(h-STATUS_HEIGHT())),
-            ImGuiSetCond_Always
+            ImGuiCond_Always
         );
         ImGui::SetNextWindowSize(
             ImVec2(float(w),float(STATUS_HEIGHT()-1)),
-            ImGuiSetCond_Always
+            ImGuiCond_Always
         );
         status_bar_->draw();
     }

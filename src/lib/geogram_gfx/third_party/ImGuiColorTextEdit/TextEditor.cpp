@@ -474,7 +474,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
         //[Bruno Levy] commented-out (I prefer to use default style)
         // ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoMove);
+	//[Bruno Levy] added 'NoNav' flag
+	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoNav);
 
 	ImGui::PushAllowKeyboardFocus(true);
 

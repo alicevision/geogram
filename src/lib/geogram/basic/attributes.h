@@ -760,7 +760,7 @@ namespace GEO {
         
         /**
          * \brief Binds an AttributeStore with the specified name.
-         *  Ownership of this AttributeStore is transfered to
+         *  Ownership of this AttributeStore is transferred to
          *  the AttributesManager.
          * \param[in] name the name 
          * \param[in] as a pointer to the AttributeStore to be bound
@@ -897,7 +897,7 @@ namespace GEO {
     public:
 
         /**
-         * \brief Creates an unitialized (unbound) Attribute.
+         * \brief Creates an uninitialized (unbound) Attribute.
          */
         AttributeBase() :
             manager_(nil),
@@ -905,10 +905,10 @@ namespace GEO {
         }
         
         /**
-         * \brief Creates or retreives a persistent attribute attached to 
+         * \brief Creates or retrieves a persistent attribute attached to 
          *  a given AttributesManager.
          * \details If the attribute already exists with the specified 
-         *  name in the AttributesManager then it is retreived, else
+         *  name in the AttributesManager then it is retrieved, else
          *  it is created and bound to the name.
          * \param[in] manager a reference to the AttributesManager
          * \param[in] name name of the attribute
@@ -947,7 +947,7 @@ namespace GEO {
         /**
          * \brief Binds this Attribute to an AttributesManager.
          * \details If the attribute already exists with the specified 
-         *  name in the AttributesManager then it is retreived, else
+         *  name in the AttributesManager then it is retrieved, else
          *  it is created and bound to the name.
          * \param[in] manager a reference to the AttributesManager
          * \param[in] name name of the attribute
@@ -1036,9 +1036,9 @@ namespace GEO {
         /**
          * \brief Attribute destructor
          * \details 
-         *  The attribute is not destroyed, it can be retreived later 
+         *  The attribute is not destroyed, it can be retrieved later 
          *  by binding with the same name. To destroy the attribute,
-         *  use detroy() instead.
+         *  use destroy() instead.
          */
         ~AttributeBase() {
             if(is_bound()) {
@@ -1154,16 +1154,16 @@ namespace GEO {
         typedef AttributeBase<T> superclass;
 
         /**
-         * \brief Creates an unitialized (unbound) Attribute.
+         * \brief Creates an uninitialized (unbound) Attribute.
          */
         Attribute() : superclass() {
         }
         
         /**
-         * \brief Creates or retreives a persistent attribute attached to 
+         * \brief Creates or retrieves a persistent attribute attached to 
          *  a given AttributesManager.
          * \details If the attribute already exists with the specified 
-         *  name in the AttributesManager then it is retreived, else
+         *  name in the AttributesManager then it is retrieved, else
          *  it is created and bound to the name.
          * \param[in] manager a reference to the AttributesManager
          * \param[in] name name of the attribute
@@ -1406,7 +1406,7 @@ namespace GEO {
     /*********************************************************************/
 
     /**
-     * \brief Base class to forbid some instanciations
+     * \brief Base class to forbid some instantiations
      *  of Attribute
      */
     class NotImplementedAttribute {
@@ -1555,7 +1555,7 @@ namespace GEO {
         
         /**
          * \brief ReadOnlyScalarAttributeAdapter constructor.
-         * \details Retreives a persistent attribute attached to 
+         * \details Retrieves a persistent attribute attached to 
          *  a given AttributesManager.
          * \param[in] manager a reference to the AttributesManager
          * \param[in] name name of the attribute with an optional index,
@@ -1608,9 +1608,9 @@ namespace GEO {
         /**
          * \brief ReadonlyScalarAttributeAdapter destructor
          * \details 
-         *  The attribute is not destroyed, it can be retreived later 
+         *  The attribute is not destroyed, it can be retrieved later 
          *  by binding with the same name. To destroy the attribute,
-         *  use detroy() instead.
+         *  use destroy() instead.
          */
         ~ReadOnlyScalarAttributeAdapter() {
             if(is_bound()) {

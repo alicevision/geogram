@@ -729,7 +729,7 @@ namespace {
          * \param[in] M the mesh in which the elements reside
          * \param[in] begin an iterator that points to the
          *  first element of the sequence
-         * \param[in] end an interator that points one position past the
+         * \param[in] end an iterator that points one position past the
          *  last element of the sequence
          * \param[in] limit subsequences smaller than limit are left unsorted
          * \tparam COORDX the first coordinate, can be 0,1 or 2. The second
@@ -775,8 +775,8 @@ namespace {
          *  of indices that refer to the elements is sorted. 
          *  This function uses a multithreaded implementation.
          * \param[in] M the mesh in which the elements to sort reside
-         * \param[in] b an interator to the first index to be sorted
-         * \param[in] e an interator one position past the last index 
+         * \param[in] b an iterator to the first index to be sorted
+         * \param[in] e an iterator one position past the last index 
          *  to be sorted
          * \param[in] limit subsequences smaller than limit are left unsorted
          */
@@ -909,7 +909,7 @@ namespace {
          * \param[in] M the mesh in which the elements reside
          * \param[in] begin an iterator that points to the
          *  first element of the sequence
-         * \param[in] end an interator that points one position past the
+         * \param[in] end an iterator that points one position past the
          *  last element of the sequence
          * \param[in] limit subsequences smaller than limit are left unsorted
          * \tparam COORDX the first coordinate, can be 0,1 or 2. The second
@@ -946,8 +946,8 @@ namespace {
          *  of indices that refer to the elements is sorted. 
          *  This function uses a multithreaded implementation.
          * \param[in] M the mesh in which the elements to sort reside
-         * \param[in] b an interator to the first index to be sorted
-         * \param[in] e an interator one position past the last index 
+         * \param[in] b an iterator to the first index to be sorted
+         * \param[in] e an iterator one position past the last index 
          *  to be sorted
          * \param[in] limit subsequences smaller than limit are left unsorted
          */

@@ -56,7 +56,7 @@
    Disables the warning caused by passing 'this' as an argument while
    construction is not finished (in LoggerStream ctor).
    As LoggerStreamBuf only stores the pointer for later use, so we can
-   ignore the fact that 'this' is not completly formed yet.
+   ignore the fact that 'this' is not completely formed yet.
  */
 #ifdef GEO_OS_WINDOWS
 #pragma warning(disable:4355)

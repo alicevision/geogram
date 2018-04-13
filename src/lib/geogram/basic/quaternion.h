@@ -60,7 +60,7 @@
 namespace GEO {
 
    /**
-    * \brief Quaternions are usefull for representing rotations. 
+    * \brief Quaternions are useful for representing rotations. 
     * \details This class is inspired by an implementation written 
     * by Paul Rademacher, in his glui library.
     */

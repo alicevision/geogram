@@ -751,7 +751,7 @@ namespace GEO {
 
         // A small optimization: if the point to be inserted
         // is on some faces of the located triangle, insert
-        // the neighbors accross those edges in the conflict list.
+        // the neighbors accros those edges in the conflict list.
         // It saves a couple of calls to the predicates in this
         // specific case (combinatorics are in general less 
         // expensive than the predicates).

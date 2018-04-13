@@ -320,7 +320,7 @@ namespace GEO {
                 ImGui::scaling()*400.0f,
                 ImGui::scaling()*400.0f
             ),
-            ImGuiSetCond_Once
+            ImGuiCond_Once
         );
 
         ImGui::Begin(

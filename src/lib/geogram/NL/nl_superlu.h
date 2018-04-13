@@ -75,7 +75,7 @@ NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_SUPERLU(
  * \brief Initializes the SUPERLU extension
  * \details This dynamically loads the SuperLU 
  *  library available in the system (if available) and
- *  retreives the symbols in there. It supports SuperLU 5.x.
+ *  retrieves the symbols in there. It supports SuperLU 5.x.
  * \retval NL_TRUE if SUPERLU could be successfully
  *   dynamically loaded and all functions could be
  *   found in it.

@@ -184,7 +184,7 @@ namespace GEO {
         /**
          * \brief Default memory alignment for efficient vector operations
          * \details The memory alignment is given in bytes. Here is a list of
-         * commonly used alignement values for various architectures:
+         * commonly used alignment values for various architectures:
          * - SSE: 16
          * - AVX: 32
          * - AVX-512: 64
@@ -369,7 +369,7 @@ namespace GEO {
 #if __GNUC__ >= 4 && __GNUC_MINOR__ >= 7
 #define geo_assume_aligned(var, alignment) \
         *(void**) (&var) = __builtin_assume_aligned(var, alignment)
-        // the GCC way of specifiying that a pointer is aligned returns
+        // the GCC way of specifying that a pointer is aligned returns
         // the aligned pointer (I can't figure out why). It needs to be
         // affected otherwise it is not taken into account (verified by
         // looking at the output of gcc -S)

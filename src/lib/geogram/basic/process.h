@@ -130,7 +130,7 @@ namespace GEO {
 
     private:
         /**
-         * \brief Sets the indentifier of this thread.
+         * \brief Sets the identifier of this thread.
          * \details This function is meant to be called
          *  by the thread manager for each created thread.
          * \param[in] id_in the identifier of this thread.
@@ -142,7 +142,7 @@ namespace GEO {
         /**
          * \brief Specifies the current instance, used by current().
          * \details Stores the specified thread in the thread-local-storage
-         *   static variable so that current() can retreive it. 
+         *   static variable so that current() can retrieve it. 
          *   Should be called by the ThreadManager right before launching 
          *   the threads.
          * \param[in] thread a pointer to the thread currently executed
@@ -306,7 +306,7 @@ namespace GEO {
         /**
          * \brief Specifies the current instance, used by current().
          * \details Stores the specified thread in the thread-local-storage
-         *   static variable so that current() can retreive it. 
+         *   static variable so that current() can retrieve it. 
          *   Should be called by the ThreadManager right before launching 
          *   the threads.
          * \param[in] thread a pointer to the thread currently executed

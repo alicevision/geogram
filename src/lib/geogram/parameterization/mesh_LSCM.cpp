@@ -147,7 +147,7 @@ namespace {
 		    spectral_ = false;
 		}
 	    } else {
-		if(nlInitExtension("CHOLMOD")) {
+		if(false && nlInitExtension("CHOLMOD")) {
 		    if(verbose_) {
 			Logger::out("LSCM") << "using CHOLMOD"
 					    << std::endl;

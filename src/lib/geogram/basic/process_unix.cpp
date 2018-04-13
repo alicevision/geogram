@@ -199,7 +199,7 @@ namespace {
         static void* run_thread(void* thread_in) {
             Thread* thread = reinterpret_cast<Thread*>(thread_in);
             // Sets the thread-local-storage instance pointer, so
-            // that Thread::current() can retreive it.
+            // that Thread::current() can retrieve it.
             set_current_thread(thread);
             thread->run();
             return nil;

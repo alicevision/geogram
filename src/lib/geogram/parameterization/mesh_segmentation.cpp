@@ -222,7 +222,7 @@ namespace {
         vec3 center = axes.center() ;
 
         // If these facets do not exist (for instance, in the case
-        //  of a torus), find two facets far away one from eachother
+        //  of a torus), find two facets far away one from each other
         //  along the longest axis.
         // vec3 X = axes.axis(2 - axis) ;
 	vec3 X = axes.axis(axis) ;	

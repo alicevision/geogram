@@ -242,6 +242,8 @@ namespace GEO {
 
 #if defined(__clang__)
 #  define GEO_COMPILER_CLANG
+#elif defined(__GNUC__)
+#  define GEO_COMPILER_GCC
 #else
 #  error "Unsupported compiler"
 #endif

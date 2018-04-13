@@ -447,8 +447,8 @@ namespace {
     void overlay() {
         static int border_shape = 0;
         
-        ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiSetCond_Once);
-        ImGui::SetNextWindowSize(ImVec2(180, 320), ImGuiSetCond_Once);
+        ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_Once);
+        ImGui::SetNextWindowSize(ImVec2(180, 320), ImGuiCond_Once);
 
         ImGui::Begin("Delaunay");
 

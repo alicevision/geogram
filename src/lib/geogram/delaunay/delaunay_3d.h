@@ -775,7 +775,7 @@ namespace GEO {
          * \param[in] t1 index of the first tetrahedron
          * \param[in] lf1 local facet index (0,1,2 or 3) in t1
          * \param[in] t2 index of the tetrahedron
-         *  adjacent to \p t1 accross \p lf1
+         *  adjacent to \p t1 accros \p lf1
          */
         void set_tet_adjacent(index_t t1, index_t lf1, index_t t2) {
             geo_debug_assert(t1 < max_t());
@@ -785,7 +785,7 @@ namespace GEO {
         }
         
         /**
-         * \brief Finds the index of the facet accross which t1 is 
+         * \brief Finds the index of the facet accros which t1 is 
          *  adjacent to t2_in.
          * \param[in] t1 first tetrahedron
          * \param[in] t2_in second tetrahedron
@@ -1021,7 +1021,7 @@ namespace GEO {
         /**
          * \brief Finds the index of an integer in an array of four integers.
          * \param[in] T a const pointer to an array of four integers
-         * \param[in] v the integer to retreive in \p T
+         * \param[in] v the integer to retrieve in \p T
          * \return the index (0,1,2 or 3) of \p v in \p T
          * \pre The four entries of \p T are different and one of them is
          *  equal to \p v.
@@ -1040,7 +1040,7 @@ namespace GEO {
             index_t result = index_t(
                 (T[1] == v) | ((T[2] == v) * 2) | ((T[3] == v) * 3)
             );
-            // Sanity check, important if it was T[0], not explicitely
+            // Sanity check, important if it was T[0], not explicitly
             // tested (detects input that does not meet the precondition).
             geo_debug_assert(T[result] == v);
             return result; 

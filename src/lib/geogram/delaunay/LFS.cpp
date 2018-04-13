@@ -72,7 +72,7 @@ namespace {
      * \param[out] squared_radius computed squared radius of the tetrahedron
      * \param[out] dihedral_angles if non-NULL, 
      *   computed dihedral angles of the tetrahedron
-     * \return true if successfull, false otherwise 
+     * \return true if successful, false otherwise 
      *  (for instance, if the tetrahedron is flat).
      */
     bool tetra_circumcenter_squaredradius(

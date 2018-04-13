@@ -207,7 +207,6 @@ namespace {
 	ImGui::PopID();
 	return result;
     }
-    
 }
 
 namespace ImGui {
@@ -238,7 +237,7 @@ namespace ImGui {
 	const char* filename,
 	ImGuiExtFileDialogFlags flags
     ) {
-	initialize();
+	initialize();	
 	GEO::FileDialog* dlg = nil;
 	if(file_dialogs.find(label) == file_dialogs.end()) {
 	    file_dialogs[label] = new GEO::FileDialog();

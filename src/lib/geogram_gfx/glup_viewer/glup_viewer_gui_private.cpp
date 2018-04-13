@@ -29,7 +29,7 @@
 #include <geogram_gfx/full_screen_effects/unsharp_masking.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl3.h>
-#include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
+#include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl2.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
 #include <geogram_gfx/third_party/imgui_fonts/roboto_medium.h>
 #include <geogram_gfx/third_party/imgui_fonts/cousine_regular.h>
@@ -96,6 +96,9 @@ void glup_viewer_gui_update() {
 /***************************************************************************/
 
 void glup_viewer_gui_init(GLFWwindow* w) {
+
+    ImGui::CreateContext();
+    
 #ifdef GEO_GL_LEGACY        
     vanillaGL = (strcmp(glupCurrentProfileName(), "VanillaGL") == 0);
     if(vanillaGL) {
@@ -144,6 +147,7 @@ void glup_viewer_gui_cleanup() {
     {
         ImGui_ImplGlfwGL3_Shutdown();        
     }
+    ImGui::DestroyContext();
 }
 
 
@@ -164,6 +168,14 @@ void glup_viewer_gui_end_frame() {
     if(overlay_func != nil) {
         overlay_func();
         ImGui::Render();
+#ifdef GEO_GL_LEGACY            	
+	if(vanillaGL) {
+	    ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
+	} else
+#endif	    
+	{
+	    ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+	}
     }
     glup_viewer_gui_locked = false;
     // We flush the queued command here, once ImGui::Render() was

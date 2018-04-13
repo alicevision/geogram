@@ -722,7 +722,22 @@ void register_embedded_bib_file() {
         "  bibsource = {dblp computer science bibliography, http://dblp.org} \n"
         "} \n"
         " \n"
-        " \n"
+        "@article{DBLP:journals/corr/MerigotMT17, \n"
+        "  author    = {Quentin M{\\'{e}}rigot and \n"
+        "               Jocelyn Meyron and \n"
+        "               Boris Thibert}, \n"
+        "  title     = {An algorithm for optimal transport between a simplex soup and a point \n"
+        "               cloud}, \n"
+        "  journal   = {CoRR}, \n"
+        "  volume    = {abs/1707.01337}, \n"
+        "  year      = {2017}, \n"
+        "  url       = {http://arxiv.org/abs/1707.01337}, \n"
+        "  archivePrefix = {arXiv}, \n"
+        "  eprint    = {1707.01337}, \n"
+        "  timestamp = {Sat, 05 Aug 2017 14:56:07 +0200}, \n"
+        "  biburl    = {https://dblp.org/rec/bib/journals/corr/MerigotMT17}, \n"
+        "  bibsource = {dblp computer science bibliography, https://dblp.org} \n"
+        "} \n"
      );
 
 }

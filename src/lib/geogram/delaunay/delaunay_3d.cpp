@@ -785,7 +785,7 @@ namespace GEO {
 
         // A small optimization: if the point to be inserted
         // is on some faces of the located tetrahedron, insert
-        // the neighbors accross those faces in the conflict list.
+        // the neighbors accros those faces in the conflict list.
         // It saves a couple of calls to the predicates in this
         // specific case (combinatorics are in general less 
         // expensive than the predicates).
@@ -900,14 +900,14 @@ namespace GEO {
         // Replace in new_t the vertex opposite to t1fbord with v
         set_tet_vertex(new_t, t1fbord, v);
 
-        // Connect new_t with t1's neighbor accross t1fbord
+        // Connect new_t with t1's neighbor accros t1fbord
         {
             index_t tbord = index_t(tet_adjacent(t1,t1fbord));
             set_tet_adjacent(new_t, t1fbord, tbord);
             set_tet_adjacent(tbord, find_tet_adjacent(tbord,t1), new_t);
         }
             
-        //  Lookup new_t's neighbors accross its three other
+        //  Lookup new_t's neighbors accros its three other
         // facets and connect them
         for(t1ft2=0; t1ft2<4; ++t1ft2) {
             

@@ -60,9 +60,7 @@ namespace GEO {
     /**
      * \brief Determines the operating mode of mesh_repair().
      * The flags can be combined with the 'bitwise or' (|) operator.
-     * MESH_REPAIR_DEFAULT fits most uses. MESH_REPAIR_EVERYTHING
-     * activates more costly operations (i.e. optimal resolution of
-     * Moebius-strip-like configurations).
+     * MESH_REPAIR_DEFAULT fits most uses. 
      */
     enum MeshRepairMode {
         MESH_REPAIR_TOPOLOGY = 0,     

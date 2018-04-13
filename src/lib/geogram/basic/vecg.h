@@ -260,7 +260,7 @@ namespace GEO {
 
         /**
          * \brief Subtracts a vector in place
-         * \details Substracts coordinates of vector \p v from this vector
+         * \details Subtracts coordinates of vector \p v from this vector
          * coordinates
          * \param[in] v another vector
          * \return a reference to this vector
@@ -322,8 +322,8 @@ namespace GEO {
         }
 
         /**
-         * \brief Substracts 2 vectors
-         * \details Builds a vector by substracting coordinates of vector \p v
+         * \brief Subtracts 2 vectors
+         * \details Builds a vector by subtracting coordinates of vector \p v
          * to coordinates of this vector.
          * \param[in] v another vector
          * \return the result vector (\p this - \p v)

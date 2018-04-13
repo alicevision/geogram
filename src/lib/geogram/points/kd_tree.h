@@ -119,7 +119,7 @@ namespace GEO {
              * Initializes neighbors_sq_dist[0..nb_neigh-1]
              * to Numeric::max_float64() and neighbors[0..nb_neigh-1]
              * to index_t(-1).
-             * \param[in] nb_neighbors_in number of neighbors to retreive
+             * \param[in] nb_neighbors_in number of neighbors to retrieve
              * \param[in] user_neighbors_in storage for the neighbors, allocated
              *  and managed by caller, with space for nb_neighbors_in integers
              * \param[in] user_neighbors_sq_dist_in storage for neighbors 
@@ -317,7 +317,7 @@ namespace GEO {
 	 *   managed by client code (typically on the stack).
 	 * \param[out] box_dist the squared distance between the query point and
 	 *   the box.
-	 * \param[in] query_point a const pointer to the coordinates ot
+	 * \param[in] query_point a const pointer to the coordinates of
 	 *   the query point.
 	 */
 	void init_bbox_and_bbox_dist_for_traversal(
@@ -362,7 +362,7 @@ namespace GEO {
 	 *  to the points in the left child of \p n and [m,e-1] 
 	 *  corresponds to the points in the right child of \p n.
 	 * \param[out] splitting_val The coordinate value that separates points
-	 *  in the left and right childs.
+	 *  in the left and right children.
 	 */
 	virtual void get_node(
 	    index_t n, index_t b, index_t e,
@@ -493,7 +493,7 @@ namespace GEO {
 
         /**
          * \brief Computes the coordinate along which a point
-         *   sequence will be splitted.
+         *   sequence will be split.
          * \param[in] b first index of the point sequence
          * \param[in] e one position past the last index of the point sequence
          */
@@ -629,7 +629,7 @@ namespace GEO {
          *  Allocated and managed by caller.
          *  Modified by the function and restored on exit.
 	 * \param[out] m the point index.
-	 * \param[out] cut_dim the coordinate along which the node is splitted.
+	 * \param[out] cut_dim the coordinate along which the node is split.
 	 * \param[out] cut_val the splitting value.
          */
         virtual void split_kd_node(

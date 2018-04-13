@@ -494,7 +494,7 @@ namespace GEO {
          * \brief Checks if a client is registered
          * \param[in] client a logger client
          * \retval true if \p client is registered to the Logger
-         * \retval false othwerwise
+         * \retval false otherwise
          */
         bool is_client(LoggerClient* client) const;
 
@@ -513,7 +513,7 @@ namespace GEO {
         /**
          * \brief Checks the quiet mode
          * \retval true if the quiet mode is on
-         * \retval false othwerwise
+         * \retval false otherwise
          */
         bool is_quiet() const {
             return quiet_;
@@ -535,7 +535,7 @@ namespace GEO {
         /**
          * \brief Checks the minimal mode
          * \retval true if the minimal mode is on
-         * \retval false othwerwise
+         * \retval false otherwise
          */
         bool is_minimal() const {
             return minimal_;
@@ -556,7 +556,7 @@ namespace GEO {
         /**
          * \brief Checks the console pretty mode
          * \retval true if the console pretty mode is on
-         * \retval false othwerwise
+         * \retval false otherwise
          */
         bool is_pretty() const {
             return pretty_;

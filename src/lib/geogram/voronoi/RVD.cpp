@@ -65,7 +65,7 @@
  * Level 1: RestrictedVoronoiDiagram is the abstract API seen from client code
  * Level 2: RVD_Nd_Impl<DIM> implements RestrictedVoronoiDiagram
  * Level 3: RVD_Nd_Impl<DIM>::GenRestrictedVoronoiDiagram is
- *  an instanciation of GEOGen::RestrictedVoronoiDiagram (from generic_RVD.h)
+ *  an instantiation of GEOGen::RestrictedVoronoiDiagram (from generic_RVD.h)
  *
  * Warning: there are approx. 1000 lines of boring code ahead.
  */
@@ -458,12 +458,12 @@ namespace {
              * \brief The callback called for each integration simplex.
              * \param[in] v index of current center vertex
              * \param[in] v_adj (unused here) is the index of the Voronoi cell
-             *  adjacent to t accross facet (\p v1, \p v2, \p v3) or
+             *  adjacent to t accros facet (\p v1, \p v2, \p v3) or
              *  -1 if it does not exists
              *  \param[in] t (unused here) is the index of the current
              *   tetrahedron
              *  \param[in] t_adj (unused here) is the index of the
-             *   tetrahedron adjacent to t accross facet (\p v1, \p v2, \p v3)
+             *   tetrahedron adjacent to t accros facet (\p v1, \p v2, \p v3)
              *   or -1 if it does not exists
              * \param[in] p0 first vertex of current integration simplex
              * \param[in] p1 second vertex of current integration simplex
@@ -823,12 +823,12 @@ namespace {
              * \brief The callback called for each integration simplex.
              * \param[in] v index of current center vertex
              * \param[in] v_adj (unused here) is the index of the Voronoi cell
-             *  adjacent to t accross facet (\p v1, \p v2, \p v3) or
+             *  adjacent to t accros facet (\p v1, \p v2, \p v3) or
              *  -1 if it does not exists
              *  \param[in] t (unused here) is the index of the current
              *   tetrahedron
              *  \param[in] t_adj (unused here) is the index of the
-             *   tetrahedron adjacent to t accross facet (\p v1, \p v2, \p v3)
+             *   tetrahedron adjacent to t accros facet (\p v1, \p v2, \p v3)
              *   or -1 if it does not exists
              * \param[in] p1 first vertex of current integration simplex
              * \param[in] p2 second vertex of current integration simplex
@@ -963,10 +963,10 @@ namespace {
              * \brief The callback called for each volumetric
              *   integration simplex.
              * \param[in] v index of current center vertex
-             * \param[in] v_adj index of the Voronoi cell adjacent to t accross
+             * \param[in] v_adj index of the Voronoi cell adjacent to t accros
              *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
              * \param[in] t index of the current tetrahedron
-             * \param[in] t_adj index of the tetrahedron adjacent to t accross
+             * \param[in] t_adj index of the tetrahedron adjacent to t accros
              *    facet (\p v1, \p v2, \p v3) or -1 if it does not exists
              * \param[in] v1 first vertex of current integration simplex
              * \param[in] v2 second vertex of current integration simplex
@@ -1066,7 +1066,7 @@ namespace {
         /**
          * \brief Adapter class used internally to implement for_each_polygon()
          * \details Gets the current triangle from the RVD and passes it back
-	 *  to the callback. It is needed becase GenericRVD::for_each_polygon()
+	 *  to the callback. It is needed because GenericRVD::for_each_polygon()
 	 *  does not pass the current triangle.
          */
 	// TODO: pass it through all the callbacks, because it is ridiculous:
@@ -1309,12 +1309,12 @@ namespace {
              * \brief The callback called for each integration simplex.
              * \param[in] v index of current center vertex
              * \param[in] v_adj (unused here) is the index of the Voronoi cell
-             *  adjacent to t accross facet (\p v1, \p v2, \p v3) or
+             *  adjacent to t accros facet (\p v1, \p v2, \p v3) or
              *  -1 if it does not exists
              *  \param[in] t (unused here) is the index of the current
              *   tetrahedron
              *  \param[in] t_adj (unused here) is the index of the
-             *   tetrahedron adjacent to t accross facet (\p v1, \p v2, \p v3)
+             *   tetrahedron adjacent to t accros facet (\p v1, \p v2, \p v3)
              *   or -1 if it does not exists
              * \param[in] v1 first vertex of current integration simplex
              * \param[in] v2 second vertex of current integration simplex
@@ -1365,12 +1365,12 @@ namespace {
              * \brief The callback called for each tetrahedron
              * \param[in] v index of current center vertex
              * \param[in] v_adj (unused here) is the index of the Voronoi cell
-             *  adjacent to t accross facet (\p v1, \p v2, \p v3) or
+             *  adjacent to t accros facet (\p v1, \p v2, \p v3) or
              *  -1 if it does not exists
              *  \param[in] t (unused here) is the index of the current
              *   tetrahedron
              *  \param[in] t_adj (unused here) is the index of the
-             *   tetrahedron adjacent to t accross facet (\p v1, \p v2, \p v3)
+             *   tetrahedron adjacent to t accros facet (\p v1, \p v2, \p v3)
              *   or -1 if it does not exists
              * \param[in] v1 first vertex of current tetrahedron
              * \param[in] v2 second vertex of current tetrahedron
@@ -1411,7 +1411,7 @@ namespace {
 
         protected:
             /**
-             * \brief Retreives the index of a vertex given its symbolic
+             * \brief Retrieves the index of a vertex given its symbolic
              * representation.
              * \param[in] center_vertex_id index of current Voronoi seed
              * \param[in] v symbolic and geometric representation of the vertex

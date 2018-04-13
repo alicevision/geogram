@@ -123,8 +123,8 @@ namespace GEO {
         expansion_nt& operator+= (const expansion_nt& rhs);
 
         /**
-         * \brief Substracts an expansion_nt to this expansion_nt
-         * \param[in] rhs the expansion_nt to be substracted
+         * \brief Subtracts an expansion_nt to this expansion_nt
+         * \param[in] rhs the expansion_nt to be subtracted
          * \return the new value of this expansion_nt
          */
         expansion_nt& operator-= (const expansion_nt& rhs);
@@ -144,8 +144,8 @@ namespace GEO {
         expansion_nt& operator+= (double rhs);
 
         /**
-         * \brief Substracts a double from this expansion_nt
-         * \param[in] rhs the double to be substracted from this expansion_nt
+         * \brief Subtracts a double from this expansion_nt
+         * \param[in] rhs the double to be subtracted from this expansion_nt
          * \return the new value of this expansion_nt
          */
         expansion_nt& operator-= (double rhs);
@@ -171,7 +171,7 @@ namespace GEO {
 
         /**
          * \brief Computes the difference between two expansion_nt%s
-         * \param[in] rhs the expansion_nt to be substracted from
+         * \param[in] rhs the expansion_nt to be subtracted from
          *  this expansion_nt
          * \return the difference between this expansion_nt and \p rhs
          */
@@ -420,7 +420,7 @@ namespace GEO {
     /**
      * \brief Computes the difference between a double and an expansion_nt
      * \param[in] a the double
-     * \param[in] b the expansion_nt to be substracted
+     * \param[in] b the expansion_nt to be subtracted
      * \return an expansion_nt that represents \p a - \p b
      * \relates expansion_nt
      */
@@ -811,8 +811,8 @@ namespace GEO {
 	}
 
         /**
-         * \brief Substracts a rational_nt to this rational_nt
-         * \param[in] rhs the rational_nt to be substracted
+         * \brief Subtracts a rational_nt to this rational_nt
+         * \param[in] rhs the rational_nt to be subtracted
          * \return the new value of this rational_nt
          */
         rational_nt& operator-= (const rational_nt& rhs) {
@@ -858,8 +858,8 @@ namespace GEO {
 	}
 
         /**
-         * \brief Substracts a double from this rational_nt
-         * \param[in] rhs the double to be substracted from this rational_nt
+         * \brief Subtracts a double from this rational_nt
+         * \param[in] rhs the double to be subtracted from this rational_nt
          * \return the new value of this rational_nt
          */
         rational_nt& operator-= (double rhs) {
@@ -915,7 +915,7 @@ namespace GEO {
 
         /**
          * \brief Computes the difference between two rational_nt%s
-         * \param[in] rhs the rational_nt to be substracted from
+         * \param[in] rhs the rational_nt to be subtracted from
          *  this rational_nt
          * \return the difference between this rational_nt and \p rhs
          */
@@ -1162,7 +1162,7 @@ namespace GEO {
     /**
      * \brief Computes the difference between a double and a rational_nt
      * \param[in] a the double
-     * \param[in] b the rational_nt to be substracted
+     * \param[in] b the rational_nt to be subtracted
      * \return a rational_nt that represents \p a - \p b
      * \relates rational_nt
      */

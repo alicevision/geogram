@@ -1035,7 +1035,7 @@ typedef struct {
     NLMatrix M;
 
     /**
-     * \brief NL_TRUE if memory ownership was transfered,
+     * \brief NL_TRUE if memory ownership was transferred,
      *  NL_FALSE otherwise.
      */
     NLboolean owns_M;
@@ -1046,7 +1046,7 @@ typedef struct {
     NLMatrix N;
 
     /**
-     * \brief NL_TRUE if memory ownership was transfered,
+     * \brief NL_TRUE if memory ownership was transferred,
      *  NL_FALSE otherwise.
      */
     NLboolean owns_N;

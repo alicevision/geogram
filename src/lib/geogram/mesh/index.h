@@ -86,7 +86,7 @@ namespace GEO {
         };
 
         /**
-         * \brief Creates an unitialized basic_bindex.
+         * \brief Creates an uninitialized basic_bindex.
          */
         basic_bindex() {
         }

@@ -733,7 +733,7 @@ typedef void* NLContext;
  *  alternative solvers, such as SuperLU (sparse direct solver) and CNC 
  *  (iterative solver on the GPU). This function tests whether an extension 
  *  is supported, and initializes what needs to be initialized in the extention.
- * \retval NL_TRUE if the extension is supported and could be sucessfully 
+ * \retval NL_TRUE if the extension is supported and could be successfully 
  *   initialized
  * \retval NL_FALSE otherwise
  */

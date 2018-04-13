@@ -614,7 +614,7 @@ namespace GEO {
             }
         }
         
-        // find the max heigth in the range  [xpos,  xpos + width]
+        // find the max height in the range  [xpos,  xpos + width]
         double max_height(int xpos, int width, ChartBBox& rect){
             double result = 0;
             for (int i=xpos; i<xpos+width; i++) {
@@ -766,7 +766,7 @@ namespace GEO {
         }
 
         // use the tetris packer (more efficient for large dataset)
-        // set some application dependant const
+        // set some application dependent const
         TetrisPacker pack(mesh);  
         pack.set_image_size_in_pixels(image_size_in_pixels());
         pack.set_margin_width_in_pixels(margin_width_in_pixels());

@@ -275,7 +275,7 @@ namespace GEO {
      * \brief Gets the sign of a value
      * \details Returns -1, 0, or 1 whether value \p x is resp. negative, zero
      * or positive. The function uses operator<() and operator>() to compare
-     * the value agains to 0 (zero). The integer constant zero must make
+     * the value to 0 (zero). The integer constant zero must make
      * senses for the type of the value, or T must be constructible from
      * integer constant zero.
      * \param[in] x the value to test
@@ -292,7 +292,7 @@ namespace GEO {
 
     /**
      * \brief Gets the absolute value of a value
-     * \details The function uses operator< to compare the value againts 0
+     * \details The function uses operator< to compare the value to 0
      * (zero). The integer constant zero and unary minus operator must 
      * both make sense for the type of the value, or T must be 
      * constructible from integer constant zero.

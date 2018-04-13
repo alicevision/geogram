@@ -676,7 +676,7 @@ namespace GEO {
          * \brief Gets the index of a triangle adjacent to another one.
          * \param[in] t index of the triangle
          * \param[in] le local edge (0,1,2) index in \p t
-         * \return the triangle adjacent to \p t accross edge \p le
+         * \return the triangle adjacent to \p t accros edge \p le
          */
         signed_index_t triangle_adjacent(index_t t, index_t le) const {
             geo_debug_assert(t < max_t());
@@ -690,7 +690,7 @@ namespace GEO {
          * \param[in] t1 index of the first triangle
          * \param[in] le1 local facet index (0,1,2) in t1
          * \param[in] t2 index of the triangle
-         *  adjacent to \p t1 accross \p lf1
+         *  adjacent to \p t1 accros \p lf1
          */
         void set_triangle_adjacent(index_t t1, index_t le1, index_t t2) {
             geo_debug_assert(t1 < max_t());
@@ -701,7 +701,7 @@ namespace GEO {
         }
         
         /**
-         * \brief Finds the index of the edge accross which t1 is 
+         * \brief Finds the index of the edge accros which t1 is 
          *  adjacent to t2_in.
          * \param[in] t1 first triangle
          * \param[in] t2_in second triangle
@@ -848,7 +848,7 @@ namespace GEO {
         /**
          * \brief Finds the index of an integer in an array of three integers.
          * \param[in] T a const pointer to an array of three integers
-         * \param[in] v the integer to retreive in \p T
+         * \param[in] v the integer to retrieve in \p T
          * \return the index (0,1 or 2) of \p v in \p T
          * \pre The three entries of \p T are different and one of them is
          *  equal to \p v.
@@ -861,7 +861,7 @@ namespace GEO {
             // generating branching instructions.
             // Thank to Laurent Alonso for this idea.
             index_t result = index_t( (T[1] == v) | ((T[2] == v) * 2) );
-            // Sanity check, important if it was T[0], not explicitely
+            // Sanity check, important if it was T[0], not explicitly
             // tested (detects input that does not meet the precondition).
             geo_debug_assert(T[result] == v);
             return result; 

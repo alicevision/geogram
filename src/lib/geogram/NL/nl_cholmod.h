@@ -73,7 +73,7 @@ NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize_CHOLMOD(
  * \brief Initializes the CHOLMOD extension
  * \details This dynamically loads the Cholmod 
  *  library available in the system (if available) and
- *  retreives the symbols in there. 
+ *  retrieves the symbols in there. 
  * \retval NL_TRUE if CHOLMOD could be successfully
  *   dynamically loaded and all functions could be
  *   found in it.

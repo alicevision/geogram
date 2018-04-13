@@ -378,7 +378,7 @@ namespace GEO {
     );
     
     /**
-     * \brief Computes the average edge lengh in a surface.
+     * \brief Computes the average edge length in a surface.
      * \param[in] M a const reference to a surface mesh
      * \return the average edge length
      */

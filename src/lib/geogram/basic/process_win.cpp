@@ -159,7 +159,7 @@ namespace {
         static DWORD WINAPI run_thread(LPVOID p) {
             Thread* thread = (*reinterpret_cast<Thread_var*>(p));
             // Sets the thread-local-storage instance pointer, so
-            // that Thread::current() can retreive it.
+            // that Thread::current() can retrieve it.
             set_current_thread(thread);
             thread->run();
             return 0;
@@ -440,7 +440,7 @@ namespace {
     /**
      * Catches runtime check exceptions
      *
-     * Example: the following code throws a "unitialized variable"
+     * Example: the following code throws a "uninitialized variable"
      * exception.
      * \code
      * float a;
@@ -540,7 +540,7 @@ namespace GEO {
             // Get the pid of this process
             DWORD processId = GetCurrentProcessId();
 
-            // then modify its privileges to allow full acces
+            // then modify its privileges to allow full access
             HANDLE hHandle;
 
             hHandle = ::OpenProcess(PROCESS_QUERY_INFORMATION, 0, processId);

@@ -133,7 +133,7 @@ namespace GEO {
 	linesearch_maxiter_ = 100;
 	linesearch_init_iter_ = 0;
 
-	use_direct_solver_ = false;
+	linear_solver_ = OT_PRECG;
 
 	nb_air_particles_ = 0;
 	air_particles_ = nil;
@@ -823,12 +823,18 @@ namespace GEO {
     void OptimalTransportMap::new_linear_system(index_t n, double* x) {
         nlNewContext();
             
-        if(use_direct_solver_) {
-            use_direct_solver_ = (
-		use_direct_solver_ && (nlInitExtension("SUPERLU") == NL_TRUE)
-	    );
-	    if(!use_direct_solver_) {
-		Logger::warn("OTM") << "Could not initialize SUPERLU OpenNL extension"
+        if(linear_solver_ != OT_PRECG) {
+	    if(linear_solver_ == OT_SUPERLU) {
+		if(nlInitExtension("SUPERLU") != NL_TRUE) {
+		    linear_solver_ = OT_PRECG;
+		}
+	    } else if(linear_solver_ == OT_CHOLMOD) {
+		if(nlInitExtension("CHOLMOD") != NL_TRUE) {
+		    linear_solver_ = OT_PRECG;
+		}
+	    }
+	    if(linear_solver_ == OT_PRECG) {
+		Logger::warn("OTM") << "Could not initialize OpenNL extension"
 				    << std::endl;
 		Logger::warn("OTM") << "Falling back to conjugate gradient"
 				    << std::endl;
@@ -840,15 +846,21 @@ namespace GEO {
 	}
 	
         nlSolverParameteri(NL_NB_VARIABLES, NLint(n));
-        if(use_direct_solver_) {
-            nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);
-        } else {
-            nlSolverParameteri(NL_SOLVER, NL_CG);
-            nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
-            nlSolverParameteri(NL_SYMMETRIC, NL_TRUE);
-            nlSolverParameterd(NL_THRESHOLD, linsolve_epsilon_);
-            nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));                
-        }
+	switch(linear_solver_) {
+	    case OT_PRECG:
+		nlSolverParameteri(NL_SOLVER, NL_CG);
+		nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
+		nlSolverParameteri(NL_SYMMETRIC, NL_TRUE);
+		nlSolverParameterd(NL_THRESHOLD, linsolve_epsilon_);
+		nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));                
+		break;
+	    case OT_SUPERLU:
+		nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);		
+		break;
+	    case OT_CHOLMOD:
+		nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT);		
+		break;
+	}
 
 	nlEnable(NL_VARIABLES_BUFFER);
         nlBegin(NL_SYSTEM);

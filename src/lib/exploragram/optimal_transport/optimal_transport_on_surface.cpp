@@ -44,6 +44,8 @@
 #include <geogram/basic/geometry_nd.h>
 #include <geogram/basic/stopwatch.h>
 
+#include <geogram/bibliography/bibliography.h>
+
 namespace {
     using namespace GEO;
 
@@ -87,7 +89,6 @@ namespace {
 		return;
 	    }
 	    
-	    geo_argused(t);
 	    double m, mgx, mgy, mgz;
 	    compute_m_and_mg(P, m, mgx, mgy, mgz);
 
@@ -116,7 +117,7 @@ namespace {
 	    
 	    if(Newton_step_) {
 		// Spinlocks are managed internally by update_Hessian().
-		update_Hessian(P, v);
+		update_Hessian(P, v, t);
 	    }
 
 
@@ -176,14 +177,38 @@ namespace {
 	}	
 
 	/**
+	 * \brief Gets the unit normal vector to a facet.
+	 */
+	vec3 facet_normal(index_t t) const {
+	    Mesh& M = OTM_->mesh();
+	    index_t i = M.facets.vertex(t,0);
+	    index_t j = M.facets.vertex(t,1);
+	    index_t k = M.facets.vertex(t,2);	    
+	    const double* p0 = M.vertices.point_ptr(i);
+	    const double* p1 = M.vertices.point_ptr(j);
+	    const double* p2 = M.vertices.point_ptr(k);
+	    double x1 = p1[0] - p0[0];
+	    double y1 = p1[1] - p0[1];
+	    double z1 = p1[2] - p0[2];
+	    double x2 = p2[0] - p0[0];
+	    double y2 = p2[1] - p0[1];
+	    double z2 = p2[2] - p0[2];
+	    double x = y1*z2 - z1*y2;
+	    double y = z1*x2 - x1*z2;
+	    double z = x1*y2 - y1*x2;
+	    return vec3(x,y,z);
+	}
+	
+	/**
 	 * \brief Updates the Hessian according to the current intersection
 	 *  polygon.
 	 * \param[in] P a const reference to the current intersection polygon.
 	 * \param[in] i the current seed
+	 * \param[in] t the current mesh facet
 	 */
-	void update_Hessian(
-	    const GEOGen::Polygon& P, index_t i
-	) const {
+	void update_Hessian(const GEOGen::Polygon& P, index_t i, index_t t) const {
+
+	    vec3 N = normalize(facet_normal(t));
 
 	    // The coefficient of the Hessian associated to a pair of
 	    // adjacent cells Lag(i),Lag(j) is :
@@ -202,9 +227,13 @@ namespace {
 		index_t j = index_t(P.vertex(k2).adjacent_seed());
 		if(j != index_t(-1)) {
 		    const double* pj = OTM_->point_ptr(j);
-		    double hij =
-			edge_mass(P.vertex(k1), P.vertex(k2)) /
-			(2.0 * GEO::Geom::distance(pi,pj,3)) ;
+
+		    vec3 pij(pj[0] - pi[0],pj[1] - pi[1],pj[2] - pi[2]);
+		    // Remove from pij the part that is normal to the current polygon.
+		    pij -= dot(pij,N)*N;
+		    double lij = length(pij);
+		    
+		    double hij = edge_mass(P.vertex(k1), P.vertex(k2)) / (2.0 * lij);
 
 		    // -hij because we maximize F <=> minimize -F
 		    if(hij != 0.0) {
@@ -369,9 +398,10 @@ namespace GEO {
 	    mesh,
 	    (delaunay == "default") ? "BPOW" : delaunay,
 	    BRIO
-        ) {
+    ) {
 	callback_ = new SurfaceOTMPolygonCallback(this);
 	total_mass_ = total_mesh_mass();
+        geo_cite("DBLP:journals/corr/MerigotMT17");
     }
 
     OptimalTransportMapOnSurface::~OptimalTransportMapOnSurface() {
@@ -491,8 +521,17 @@ namespace GEO {
 	    false
 	);
 
-	//OTM.set_regularization(1e-3);
-	//OTM.set_use_direct_solver(true);
+	static bool initialized = false;
+	static bool has_cholmod = false;
+	if(!initialized) {
+	    initialized = true;
+	    has_cholmod = (nlInitExtension("CHOLMOD") == NL_TRUE);
+	}
+	if(has_cholmod) {
+	    OTM.set_regularization(1e-3);
+	    OTM.set_linear_solver(OT_CHOLMOD);
+	}
+	
         OTM.set_Newton(true);
         OTM.set_points(nb_points, points);
         OTM.set_epsilon(0.01);
