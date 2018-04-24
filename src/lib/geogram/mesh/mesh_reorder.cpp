@@ -52,6 +52,7 @@
 #include <geogram/basic/logger.h>
 #include <geogram/bibliography/bibliography.h>
 #include <algorithm>
+#include <random>
 
 namespace {
 
@@ -1285,7 +1286,9 @@ namespace GEO {
         for(index_t i = 0; i < nb_vertices; ++i) {
             sorted_indices[i] = i;
         }
-        std::random_shuffle(sorted_indices.begin(), sorted_indices.end());
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(sorted_indices.begin(), sorted_indices.end(), g);
         compute_BRIO_order_recursive(
             nb_vertices, vertices,
 	    dimension, stride,

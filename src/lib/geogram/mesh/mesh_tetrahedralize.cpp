@@ -53,6 +53,7 @@
 #include <geogram/delaunay/delaunay_tetgen.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/command_line.h>
+#include <fstream>
 
 namespace GEO {
 

@@ -411,7 +411,7 @@ namespace {
                 arg_scalars_ = m;
                 spinlocks_.resize(delaunay_->nb_vertices());
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
             }
@@ -526,7 +526,7 @@ namespace {
                 arg_scalars_ = m;
                 spinlocks_.resize(delaunay_->nb_vertices());
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
             }
@@ -770,7 +770,7 @@ namespace {
                     part(t).funcval_ = 0.0;
                 }
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
                 for(index_t t = 0; t < nb_parts(); t++) {
@@ -906,7 +906,7 @@ namespace {
                     part(t).funcval_ = 0.0;
                 }
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
                 for(index_t t = 0; t < nb_parts(); t++) {
@@ -1050,7 +1050,7 @@ namespace {
                 }
 
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
 
@@ -1127,7 +1127,7 @@ namespace {
 		polygon_callback_->set_spinlocks(&spinlocks_);
 		// Note: callback begin()/end() is called in for_each_polygon()
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
 		polygon_callback_->set_spinlocks(nil);
@@ -1154,7 +1154,7 @@ namespace {
 		// Note: callback begin()/end() is
 		// called in for_each_polyhedron()		
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
+                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
                     0, nb_parts()
                 );
 		polyhedron_callback_->set_spinlocks(nil);
@@ -2546,11 +2546,11 @@ namespace GEO {
     ) {
 
 	geo_cite("DBLP:journals/tog/EdelsbrunnerM90");
-	geo_cite("DBLP:conf/compgeom/Shewchuk96");
-	geo_cite("meyer:inria-00344297");
-	geo_cite("DBLP:conf/gmp/YanWLL10");
-	geo_cite("DBLP:journals/cad/YanWLL13");
-	geo_cite("DBLP:journals/cad/Levy16");
+  geo_cite("DBLP:conf/compgeom/Shewchuk96");
+  geo_cite("meyer:inria-00344297");
+  geo_cite("DBLP:conf/gmp/YanWLL10");
+  geo_cite("DBLP:journals/cad/YanWLL13");
+  geo_cite("DBLP:journals/cad/Levy16");
 	
         delaunay->set_stores_neighbors(true);
         RestrictedVoronoiDiagram* result = nil;
@@ -2585,9 +2585,9 @@ namespace GEO {
             default:
                 geo_assert_not_reached;
         }
-        if(CmdLine::get_arg("algo:predicates") == "exact") {
-            result->set_exact_predicates(true);
-        } 
+        //if(CmdLine::get_arg("algo:predicates") == "exact") {
+        //    result->set_exact_predicates(true);
+        //} 
         return result;
     }
 

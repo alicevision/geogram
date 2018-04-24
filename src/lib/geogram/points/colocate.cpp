@@ -241,7 +241,7 @@ namespace GEO {
             old2new.resize(nb_points, index_t(-1));
             Colocate colocate_obj(NN, old2new, tolerance);
 	    
-            if(CmdLine::get_arg_bool("sys:multithread")) {
+            if(true /*CmdLine::get_arg_bool("sys:multithread")*/) {
                 parallel_for(colocate_obj, 0, nb_points, 1, true);
             } else {
                 for(index_t i = 0; i < nb_points; i++) {

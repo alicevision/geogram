@@ -56,6 +56,7 @@
 #include <geogram/basic/stopwatch.h>
 #include <geogram/basic/progress.h>
 #include <geogram/bibliography/bibliography.h>
+#include <fstream>
 
 /****************************************************************************/
 

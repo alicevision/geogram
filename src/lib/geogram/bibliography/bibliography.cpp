@@ -49,6 +49,7 @@
 #include <geogram/basic/logger.h>
 #include <geogram/basic/stopwatch.h>
 #include <string>
+#include <fstream>
 
 namespace {
     using namespace GEO;
@@ -114,7 +115,7 @@ namespace GEO {
 		    out << "\\title{Geogram Bibliography Report}" << std::endl;
 		    out << "\\date{\\today}" << std::endl;
 		    out << "\\author{Geogram ver. "
-			<< Environment::instance()->get_value("version")
+			//<< Environment::instance()->get_value("version")
 			<< " citation subsystem"
 			<< "}"
 			<< std::endl;

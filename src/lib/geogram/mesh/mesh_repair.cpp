@@ -1117,7 +1117,8 @@ namespace GEO {
             (mode & MESH_REPAIR_RECONSTRUCT) != 0
         ) {
             double Marea = Geom::mesh_area(M,3);
-            remove_small_connected_components(
+            assert(0);
+            /*remove_small_connected_components(
                 M, 
                 CmdLine::get_arg_percent("co3ne:min_comp_area",Marea),
                 CmdLine::get_arg_uint("co3ne:min_comp_facets")
@@ -1134,7 +1135,7 @@ namespace GEO {
                 M, 
                 CmdLine::get_arg_percent("co3ne:min_comp_area",Marea),
                 CmdLine::get_arg_uint("co3ne:min_comp_facets")
-            );
+            );*/
 
             // We need to do that one more time after removing the
             // small component, to ensure that everything is correct.

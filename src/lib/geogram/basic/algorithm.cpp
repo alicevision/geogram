@@ -52,9 +52,9 @@ namespace GEO {
         static bool initialized = false;
         static bool result = false;
         if(!initialized) {
-            result =
-                CmdLine::get_arg_bool("sys:multithread") &&
-                CmdLine::get_arg_bool("algo:parallel");
+            result = true;
+                //CmdLine::get_arg_bool("sys:multithread") &&
+                //CmdLine::get_arg_bool("algo:parallel");
             initialized = true;
         }
         return result;

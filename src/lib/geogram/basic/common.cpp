@@ -82,10 +82,10 @@ namespace GEO {
 #endif
 
 #ifndef GEOGRAM_PSM						
-        Environment* env = Environment::instance();
-        env->set_value("version", VORPALINE_VERSION);
-        env->set_value("release_date", VORPALINE_BUILD_DATE);
-        env->set_value("SVN revision", VORPALINE_SVN_REVISION);        
+        //Environment* env = Environment::instance();
+        //env->set_value("version", VORPALINE_VERSION);
+        //env->set_value("release_date", VORPALINE_BUILD_DATE);
+        //env->set_value("SVN revision", VORPALINE_SVN_REVISION);        
 #endif
 	
         Logger::initialize();
@@ -159,7 +159,7 @@ namespace GEO {
         Process::terminate();
         CmdLine::terminate();
         Logger::terminate();
-        Environment::terminate();
+        //Environment::terminate();
     }
 }
 

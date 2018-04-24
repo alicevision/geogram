@@ -150,13 +150,13 @@ namespace {
         /** \copydoc GEO::ProgressClient::begin() */
         virtual void begin() {
             const ProgressTask* task = Progress::current_task();
-            CmdLine::ui_progress(task->task_name(), 0, 0);
+            //CmdLine::ui_progress(task->task_name(), 0, 0);
         }
 
         /** \copydoc GEO::ProgressClient::progress(index_t,index_t) */
         virtual void progress(index_t step, index_t percent) {
             const ProgressTask* task = Progress::current_task();
-            CmdLine::ui_progress(task->task_name(), step, percent);
+            //CmdLine::ui_progress(task->task_name(), step, percent);
         }
 
         /** \copydoc GEO::ProgressClient::end(bool) */
@@ -164,11 +164,11 @@ namespace {
             const ProgressTask* task = Progress::current_task();
             double elapsed = SystemStopwatch::now() - task->start_time();
             if(canceled) {
-                CmdLine::ui_progress_canceled(
-                    task->task_name(), elapsed, task->percent()
-                );
+              //CmdLine::ui_progress_canceled(
+              //      task->task_name(), elapsed, task->percent()
+              //  );
             } else {
-                CmdLine::ui_progress_time(task->task_name(), elapsed);
+              //  CmdLine::ui_progress_time(task->task_name(), elapsed);
             }
         }
 

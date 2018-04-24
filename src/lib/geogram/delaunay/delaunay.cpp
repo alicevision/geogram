@@ -161,7 +161,7 @@ namespace GEO {
 
         std::string name = name_in;
         if(name == "default") {
-            name = CmdLine::get_arg("algo:delaunay");
+            //name = CmdLine::get_arg("algo:delaunay");
         }
 
         try {
@@ -283,7 +283,7 @@ namespace GEO {
             }
         }
         parallel_for(
-            parallel_for_member_callback(this, &Delaunay::store_neighbors_CB),
+            std::bind(&Delaunay::store_neighbors_CB, this, std::placeholders::_1),
             0, nb_vertices(), 1, true
         );
     }

@@ -225,10 +225,10 @@ namespace GEO {
             cell_neigh_stride_ = 4;
         }
         cur_stamp_ = 0;
-        debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay");
-        verbose_debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay_verbose");
+        debug_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay");
+        verbose_debug_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay_verbose");
         debug_mode_ = (debug_mode_ || verbose_debug_mode_);
-        benchmark_mode_ = CmdLine::get_arg_bool("dbg:delaunay_benchmark");
+        benchmark_mode_ = false;// CmdLine::get_arg_bool("dbg:delaunay_benchmark");
     }
 
     Delaunay3d::~Delaunay3d() {
