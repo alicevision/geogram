@@ -91,7 +91,7 @@ namespace GEO {
         Logger::initialize();
         Process::initialize();
         Progress::initialize();
-        CmdLine::initialize();
+        //CmdLine::initialize();
         PCK::initialize();
         Delaunay::initialize();
 
@@ -140,7 +140,7 @@ namespace GEO {
     }
 
     void terminate() {
-        if(
+        /*if(
             CmdLine::arg_is_declared("sys:stats") &&
             CmdLine::get_arg_bool("sys:stats") 
         ) {
@@ -149,7 +149,7 @@ namespace GEO {
             Process::show_stats();
         }
 
-        PCK::terminate();
+        PCK::terminate();*/
 	
 #ifndef GEOGRAM_PSM					
 	Biblio::terminate();
@@ -157,7 +157,7 @@ namespace GEO {
 	
         Progress::terminate();
         Process::terminate();
-        CmdLine::terminate();
+        //CmdLine::terminate();
         Logger::terminate();
         //Environment::terminate();
     }

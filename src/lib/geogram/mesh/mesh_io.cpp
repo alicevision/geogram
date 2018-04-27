@@ -415,7 +415,7 @@ namespace GEO {
             bind_attributes(M, ioflags, false);
             
             std::vector<std::string> args;
-            CmdLine::get_args(args);
+            //CmdLine::get_args(args);
             for(index_t i = 0; i < args.size(); ++i) {
                 out << "# vorpaline " << args[i] << std::endl;
             }
@@ -875,7 +875,7 @@ namespace GEO {
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
         ) {
-            bool use_doubles = CmdLine::get_arg_bool("sys:use_doubles");
+            bool use_doubles = true; // CmdLine::get_arg_bool("sys:use_doubles");
             int64_t mesh_file_handle = GmfOpenMesh(
                 const_cast<char*>(filename.c_str()), GmfWrite,
                 (use_doubles ? GmfDouble : GmfFloat), 3
@@ -1100,7 +1100,7 @@ namespace GEO {
             if(FileSystem::extension(filename) == "mesh") {
                 FILE* f = fopen(filename.c_str(), "a");
                 std::vector<std::string> args;
-                CmdLine::get_args(args);
+                //CmdLine::get_args(args);
                 for(index_t i = 0; i < args.size(); i++) {
                     fprintf(f, "# vorpaline %s\n", args[i].c_str());
                 }
@@ -1798,7 +1798,7 @@ namespace GEO {
             }
 
             std::vector<std::string> args;
-            CmdLine::get_args(args);
+            //CmdLine::get_args(args);
             for(index_t i = 0; i < args.size(); i++) {
                 ply_add_comment(oply, ("vorpaline " + args[i]).c_str());
             }
@@ -3006,7 +3006,7 @@ namespace GEO {
                 if(save_command_line) {
                     // Save command line in file
                     std::vector<std::string> args;
-                    CmdLine::get_args(args);
+                    //CmdLine::get_args(args);
                     out.write_command_line(args);
                 }
                 
@@ -3203,7 +3203,7 @@ namespace GEO {
             try {
                 OutputGeoFile out(
                     filename,
-                    index_t(CmdLine::get_arg_int("sys:compression_level"))
+                    1 //index_t(CmdLine::get_arg_int("sys:compression_level"))
                 );
                 result = save(M, out, ioflags, true);
             }  catch(const GeoFileException& exc) {
