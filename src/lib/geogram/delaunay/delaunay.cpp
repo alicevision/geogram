@@ -67,6 +67,7 @@
 #include <geogram/basic/algorithm.h>
 
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 namespace {

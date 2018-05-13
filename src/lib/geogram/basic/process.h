@@ -6,7 +6,9 @@
 #include <geogram/basic/numeric.h>
 #include <geogram/basic/thread_sync.h>
 #include <algorithm>
+#ifdef WIN32
 #include <execution>
+#endif
 #include <numeric>
 #include <cassert>
 
@@ -38,11 +40,11 @@ namespace Process {
 
 
 template <class Functor>
-void parallel_for(Functor& ff,
-                  index_t  st,
-                  index_t  end,
-                  index_t  threads_per_core = 1,
-                  bool     interleaved = false)
+void parallel_for(Functor&& ff,
+                  index_t   st,
+                  index_t   end,
+                  index_t   threads_per_core = 1,
+                  bool      interleaved = false)
 {
   if (st == end) {
     return;

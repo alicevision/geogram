@@ -60,6 +60,8 @@
 #include <geogram/basic/algorithm.h>
 #include <geogram/bibliography/bibliography.h>
 
+#include <functional>
+
 /*
  * There are three levels of implementation:
  * Level 1: RestrictedVoronoiDiagram is the abstract API seen from client code
