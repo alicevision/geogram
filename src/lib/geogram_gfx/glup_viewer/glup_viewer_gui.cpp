@@ -165,7 +165,6 @@ namespace {
         }
         return result;
     }
-
 }
 
 namespace GEO {

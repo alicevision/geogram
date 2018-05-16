@@ -680,13 +680,13 @@ namespace GEO {
         /**
          * \brief Stores for each vertex v a cell incident to v.
          */
-        void update_v_to_cell();
+        virtual void update_v_to_cell();
 
         /**
          * \brief Updates the circular incident cell lists.
          * \details Used by next_around_vertex().
          */
-        void update_cicl();
+        virtual void update_cicl();
 
         /**
          * \brief Computes the stored neighbor lists.

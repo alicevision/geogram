@@ -211,7 +211,13 @@ namespace GEO {
         w_did_not_change_ = false;
 
 	if(max_iterations == 0) {
+	    if(Laguerre_centroids_ != nil) {
+		callback_->set_Laguerre_centroids(Laguerre_centroids_);
+	    }
 	    funcgrad(n,weights_.data(),fk,gk.data());
+	    if(Laguerre_centroids_ != nil) {
+		callback_->set_Laguerre_centroids(nil);
+	    }
 	}
 
 	// Inner iteration control for linesearch
@@ -852,7 +858,8 @@ namespace GEO {
 		nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
 		nlSolverParameteri(NL_SYMMETRIC, NL_TRUE);
 		nlSolverParameterd(NL_THRESHOLD, linsolve_epsilon_);
-		nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));                
+		nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));
+
 		break;
 	    case OT_SUPERLU:
 		nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);		
@@ -861,8 +868,8 @@ namespace GEO {
 		nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT);		
 		break;
 	}
-
 	nlEnable(NL_VARIABLES_BUFFER);
+	nlEnable(NL_NO_VARIABLES_INDIRECTION); 
         nlBegin(NL_SYSTEM);
 	nlBindBuffer(NL_VARIABLES_BUFFER, 0, x, NLuint(sizeof(double)));
         nlBegin(NL_MATRIX);

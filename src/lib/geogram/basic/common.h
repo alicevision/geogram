@@ -219,8 +219,8 @@ namespace GEO {
 
 #if defined(_MSC_VER)
 #  define GEO_COMPILER_MSVC
-#else
-#  error "Unsupported compiler"
+#elif defined(__MINGW32__) || defined(__MINGW64__)
+#  define GEO_COMPILER_MINGW
 #endif
 
 #if defined(_WIN64)
@@ -266,9 +266,11 @@ namespace GEO {
 
 // =============================== Unsupported =============================
 #else
-
 #error "Unsupported operating system"
+#endif
 
+#if defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG) || defined(GEO_COMPILER_MINGW)
+#define GEO_COMPILER_GCC_FAMILY
 #endif
 
 #ifdef DOXYGEN_ONLY

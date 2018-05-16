@@ -445,7 +445,7 @@ namespace GEO {
                 geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 index_t b = i & 31;
-                while(atomic_bittestandset_x86(&spinlocks_[w], b)) {
+                while(atomic_bittestandset_x86(&spinlocks_[w], Numeric::uint32(b))) {
                     // Intel recommends to have a PAUSE asm instruction
                     // in the spinlock loop. It is generated using the
                     // following intrinsic function of GCC.
@@ -464,7 +464,7 @@ namespace GEO {
                 index_t b = i & 31;
                 // Note: we need here to use a synchronized bit reset
                 // since &= is not atomic.
-                atomic_bittestandreset_x86(&spinlocks_[w], b);
+                atomic_bittestandreset_x86(&spinlocks_[w], Numeric::uint32(b));
             }
 
         private:

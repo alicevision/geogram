@@ -354,6 +354,68 @@ NLAPI void NLAPIENTRY nlCRSMatrixConstruct(
 NLAPI void NLAPIENTRY nlCRSMatrixConstructSymmetric(
     NLCRSMatrix* M, NLuint n, NLuint nnz
 );
+
+
+/**
+ * \brief Constructs a new NLCRSMatrix with only the pattern.
+ * \details This function should be used when the number of coefficients
+ *  in each row is not known in advance.
+ * \param[in,out] M pointer to an uninitialized NLCRSMatrix
+ * \param[in] m number of rows
+ * \param[in] n number of columns
+ * \param[in] nnz number of non-zero coefficientsz
+ * \param[in] nslices number of slices, used by parallel spMv
+ *  (typically, nslices = number of cores)
+ * \relates NLCRSMatrix
+ */
+NLAPI void NLAPIENTRY nlCRSMatrixConstructPattern(
+    NLCRSMatrix* M, NLuint m, NLuint n
+);
+
+/**
+ * \brief Constructs a new NLCRSMatrix with symmetric storage
+ * \details This function should be used when the number of coefficients
+ *  in each row is not known in advance.
+ * \param[in,out] M pointer to an uninitialized NLCRSMatrix
+ * \param[in] n number of rows and columns
+ * \param[in] nnz number of non-zero coefficients
+ * \relates NLCRSMatrix
+ */
+NLAPI void NLAPIENTRY nlCRSMatrixConstructPatternSymmetric(
+    NLCRSMatrix* M, NLuint n
+);
+
+/**
+ * \brief Specifies the number of non-zero entries in the row of a 
+ *  matrix that was constructed by nlCRSMatrixConstructPattern() or
+ *  nlCRSMatrixConstructPatternSymmetric().
+ */
+NLAPI void NLAPIENTRY nlCRSMatrixPatternSetRowLength(
+    NLCRSMatrix* M, NLuint i, NLuint n
+);
+
+
+/**
+ * \brief Intializes a NLCRSMatrix from the pattern (row
+ *  lengths).
+ * \param[in] M a pointer to the NLCRSMatrix to be compiled.
+ */
+NLAPI void NLAPIENTRY nlCRSMatrixPatternCompile(NLCRSMatrix* M);    
+
+/**
+ * \brief Adds a coefficient to an NLSparseMatrix
+ * \details Performs the following operation:
+ *  \$ a_{i,j} \leftarrow a_{i,j} + \mbox{value} \$
+ * \param[in,out] M a pointer to an NLSparseMatrix
+ * \param[in] i index of the row
+ * \param[in] j index of the column
+ * \param[in] value the coefficient to be added
+ * \relates NLSparseMatrix
+ */
+NLAPI void NLAPIENTRY nlCRSMatrixAdd(
+    NLCRSMatrix* M, NLuint i, NLuint j, NLdouble value
+);
+
     
 /**
  * \brief Loads a NLCRSMatrix from a file

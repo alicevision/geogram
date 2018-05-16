@@ -420,7 +420,7 @@ namespace GEO {
             }
             geo_debug_assert(work_begin_ != -1);
             geo_debug_assert(work_end_ != -1);
-            return index_t(geo_max(work_end_ - work_begin_ + 1,0));
+            return geo_max(index_t(work_end_ - work_begin_ + 1),index_t(0));
         }
 
         /**

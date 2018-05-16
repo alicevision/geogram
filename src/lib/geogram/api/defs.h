@@ -110,6 +110,26 @@ typedef int GeoMesh;
  */
 typedef unsigned char geo_coord_index_t;
 
+
+// if GARGANTUA is defined, then geogram is compiled with 64 bit indices.
+#ifdef GARGANTUA
+
+#include <stdint.h>
+
+/**
+ * \brief Represents indices.
+ * \details Used by the C API.
+ */
+typedef uint64_t geo_index_t;
+
+/**
+ * \brief Represents possibly negative indices.
+ * \details Used by the C API.
+ */
+typedef int64_t geo_signed_index_t;
+
+#else
+
 /**
  * \brief Represents indices.
  * \details Used by the C API.
@@ -121,6 +141,8 @@ typedef unsigned int geo_index_t;
  * \details Used by the C API.
  */
 typedef int geo_signed_index_t;
+
+#endif
 
 /**
  * \brief Represents floating-point coordinates.

@@ -65,6 +65,31 @@ namespace GEO {
      */
     namespace PCK {
 
+	/**
+	 * \brief Mode for symbolic perturbations.
+	 */
+	enum SOSMode {SOS_ADDRESS, SOS_LEXICO };
+
+	/**
+	 * \brief Sets the current mode for handling symbolic perturbations 
+	 *  (SOS for Simulation Of Simplicity).
+	 * \param[in] m one of SOS_ADDRESS, SOS_LEXICO
+	 * \details If SOS_ADDRESS mode is used, then points are supposed
+	 *  to be allocated in a fixed array, and the same point always
+	 *  designated by the same address. If SOS_LEXICO is used then points
+	 *  are sorted in lexicographic order for computing the symbolic 
+	 *  perturbation. SOS_LEXICO works for points that are generated
+	 *  dynamically (with no fixed address).
+	 */
+	void GEOGRAM_API set_SOS_mode(SOSMode m);
+
+	/**
+	 * \brief Gets the current mode for handling symbolic perturbations.
+	 * \return one of SOS_ADDRESS, SOS_LEXICO
+	 * \see set_SOS_mode()
+	 */
+	SOSMode GEOGRAM_API get_SOS_mode();
+	
         /**
          * \brief Computes the side of a point (given directly)
          *  relative to a bisector.
@@ -161,6 +186,8 @@ namespace GEO {
          *  and \p p3
          * \param[in] q0 , q1 , q2 vertices of the triangle
          *  (that defines the intersection q)
+	 * \param[in] SOS if true, do the symbolic perturbation in the degenerate
+	 *  case
          * \retval POSITIVE if d(p0 hp0,q) < d(p3 hp3, q)
          * \retval NEGATIVE if d(p0 hp0,q) > d(p3 hp3, q)
          * \retval perturb() if d(p0 hp0,q) = d(p3 hp3, q),
@@ -171,7 +198,8 @@ namespace GEO {
             const double* p0, const double* p1, 
             const double* p2, const double* p3,
             double h0, double h1, double h2, double h3,
-            const double* q0, const double* q1, const double* q2
+            const double* q0, const double* q1, const double* q2,
+	    bool SOS=true
         );
         
         /**
@@ -345,6 +373,8 @@ namespace GEO {
          * \param[in] p3 the point to be tested
          * \param[in] h0 , h1 , h2 lifted coordinate of the triangle vertices
          * \param[in] h3 lifted coordinate of the point to be tested
+	 * \param[in] SOS if true, do the symbolic perturbation in the degenerate
+	 *  cases
          * \retval POSITIVE whenever (\p p3, \p h3) is inside the 
          *  circumscribed circle of the triangle (\p p0,\p h0) (\p p1,\p h1), 
          *  (\p p2, \p h2)
@@ -362,7 +392,8 @@ namespace GEO {
         Sign GEOGRAM_API in_circle_3dlifted_SOS(
             const double* p0, const double* p1, const double* p2,
             const double* p3,
-            double h0, double h1, double h2, double h3
+            double h0, double h1, double h2, double h3,
+	    bool SOS=true
         );
         
         /**

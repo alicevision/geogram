@@ -97,22 +97,38 @@ static void nlJacobiPreconditionerMult(
     nlHostBlas()->flops += (NLulong)(M->n);    
 }
 
-NLMatrix nlNewJacobiPreconditioner(NLMatrix M_in) {
-    NLSparseMatrix* M = NULL;
+NLMatrix nlNewJacobiPreconditioner(NLMatrix M) {
+    NLSparseMatrix* M_dyn = NULL;
+    NLCRSMatrix* M_CRS = NULL;
     NLJacobiPreconditioner* result = NULL;
-    NLuint i;
-    nl_assert(M_in->type == NL_MATRIX_SPARSE_DYNAMIC);
-    nl_assert(M_in->m == M_in->n);
-    M = (NLSparseMatrix*)M_in;
-    result = NL_NEW(NLJacobiPreconditioner);
+    NLuint i,jj;
+    nl_assert(
+	M->type == NL_MATRIX_SPARSE_DYNAMIC ||
+	M->type == NL_MATRIX_CRS
+    );
+    nl_assert(M->m == M->n);
+    result = NL_NEW(NLJacobiPreconditioner);    
     result->m = M->m;
     result->n = M->n;
     result->type = NL_MATRIX_OTHER;
     result->destroy_func = (NLDestroyMatrixFunc)nlJacobiPreconditionerDestroy;
     result->mult_func = (NLMultMatrixVectorFunc)nlJacobiPreconditionerMult;
     result->diag_inv = NL_NEW_ARRAY(double, M->n);
-    for(i=0; i<M->n; ++i) {
-	result->diag_inv[i] = (M->diag[i] == 0.0) ? 1.0 : 1.0/M->diag[i];
+    if(M->type == NL_MATRIX_SPARSE_DYNAMIC) {
+	M_dyn = (NLSparseMatrix*)M;
+	for(i=0; i<M_dyn->n; ++i) {
+	    result->diag_inv[i] = (M_dyn->diag[i] == 0.0) ? 1.0 : 1.0/M_dyn->diag[i];
+	}
+    } else if(M->type == NL_MATRIX_CRS) {
+	M_CRS = (NLCRSMatrix*)M;	
+	for(i=0; i<M_CRS->n; ++i) {
+	    result->diag_inv[i] = 1.0;
+	    for(jj=M_CRS->rowptr[i]; jj<M_CRS->rowptr[i+1]; ++jj) {
+		if(M_CRS->colind[jj] == i) {
+		    result->diag_inv[i] = 1.0 / M_CRS->val[jj];
+		}
+	    }
+	}
     }
     return (NLMatrix)result;
 }

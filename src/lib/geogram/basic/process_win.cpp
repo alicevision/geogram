@@ -270,6 +270,7 @@ namespace {
 
 #endif
 
+#ifdef GEO_COMPILER_MSVC    
     /**
      * \brief Abnormal termination handler
      * \details Exits the program. If \p message is
@@ -501,6 +502,9 @@ namespace {
         // Tell _CrtDbgReport that no further reporting is required.
         return TRUE;
     }
+    
+#endif
+    
 }
 
 /****************************************************************************/
@@ -590,6 +594,7 @@ namespace GEO {
         }
 
         size_t os_used_memory() {
+#ifdef GEO_COMPILER_MSVC
             PROCESS_MEMORY_COUNTERS info;
 #if (PSAPI_VERSION >= 2)
             K32GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));            
@@ -597,9 +602,13 @@ namespace GEO {
             GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));
 #endif            
             return size_t(info.WorkingSetSize);
+#else
+	   return size_t(0);
+#endif	   
         }
 
         size_t os_max_used_memory() {
+#ifdef GEO_COMPILER_MSVC	   
             PROCESS_MEMORY_COUNTERS info;
 #if (PSAPI_VERSION >= 2)
             K32GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));            
@@ -607,9 +616,13 @@ namespace GEO {
             GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));
 #endif            
             return size_t(info.PeakWorkingSetSize);
+#else
+	   return size_t(0);
+#endif	   
         }
 
         bool os_enable_FPE(bool flag) {
+#ifdef GEO_COMPILER_MSVC	    
             if(flag) {
                 unsigned int excepts = 0
                     // | _EM_INEXACT // inexact result
@@ -624,15 +637,24 @@ namespace GEO {
                 _controlfp(_MCW_EM, _MCW_EM);
             }
             return true;
+#else
+	    geo_argused(flag);
+	    return false;
+#endif	    
         }
 
         bool os_enable_cancel(bool flag) {
+#ifdef GEO_COMPILER_MSVC	    
             if(flag) {
                 signal(SIGINT, sigint_handler);
             } else {
                 signal(SIGINT, SIG_DFL);
             }
             return true;
+#else
+	    geo_argused(flag);
+	    return false;
+#endif	    
         }
 
         /**
@@ -642,6 +664,7 @@ namespace GEO {
          * exception handling routines that prevent the application from being
          * blocked by a bad assertion, a runtime check or runtime error dialog.
          */
+#ifdef GEO_COMPILER_MSVC	
         void os_install_signal_handlers() {
 
             // Install signal handlers
@@ -707,7 +730,11 @@ namespace GEO {
             _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
             _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
         }
-
+#else
+        void os_install_signal_handlers() {
+	}
+#endif	
+	
         /**
          * \brief Gets the full path to the current executable.
          */

@@ -347,10 +347,14 @@ namespace GEO {
 #endif
             }
 
+#if defined(GEO_OS_WINDOWS) && defined(GEO_DEBUG)
+	    // Do not install signal handlers in Windows debug mode,
+	    // because it makes debugging very difficult.
+#else	    
 	    if(::getenv("GEO_NO_SIGNAL_HANDLER") == NULL) {
 		os_install_signal_handlers();
 	    }
-
+#endif
             // Initialize Process default values
 
             enable_multithreading(multithreading_enabled_);

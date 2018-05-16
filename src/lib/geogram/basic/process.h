@@ -70,7 +70,7 @@ namespace GEO {
  *   with a constant value.
  */
 
-#if defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#if defined(GEO_COMPILER_GCC_FAMILY) 
 #define GEO_THREAD_LOCAL __thread
 #elif defined(GEO_COMPILER_MSVC) || defined(GEO_COMPILER_INTEL)
 #define GEO_THREAD_LOCAL __declspec(thread)
@@ -651,7 +651,7 @@ namespace GEO {
             Process::maximum_concurrent_threads() * threads_per_core
         );
 
-	nb_threads = geo_max(1u, nb_threads);
+	nb_threads = geo_max(index_t(1), nb_threads);
 	
         index_t batch_size = (to - from) / nb_threads;
         if(Process::is_running_threads() || nb_threads == 1) {

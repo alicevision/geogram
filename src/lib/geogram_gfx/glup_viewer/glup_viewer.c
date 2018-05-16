@@ -1639,6 +1639,7 @@ void glup_viewer_main_loop(int argc, char** argv) {
     glfwSetScrollCallback(glup_viewer_window,scroll);
     
     init();
+    glfwGetFramebufferSize(glup_viewer_window, &glup_viewer_W, &glup_viewer_H);    
     reshape(glup_viewer_W, glup_viewer_H);
 
     atexit(cleanup);

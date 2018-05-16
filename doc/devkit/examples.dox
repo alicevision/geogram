@@ -71,10 +71,6 @@ Alternatively, you can rename vorpaview(.exe) as vorpaview0(.exe),
 this will deactivate GLSL by default. Note that some options / key bindings
 may not work under this degraded mode. 
 
-The key bindings are mostly the same as in the 'medit' mesh viewer
-(see below). For instance, F1, F2 and F3 control the clipping planes.
-Additional key bindings can be found using 'h', that toggles the online help. 
-
 vorpastat
 ---------
 vorpastat measures the Hausdorff distance between two meshes 
@@ -152,7 +148,7 @@ usage:
 
 The points file can be in any mesh format supported by Geogram (.mesh, .meshb, .ply ...)
 and in .xyz file format (ASCII, one point per line). The output file (default: out.meshb
-if not specified) contains the tetrahedra. The result can be displayed using vorpaview or medit.
+if not specified) contains the tetrahedra. The result can be displayed using vorpaview.
 
 Additional parameters:
 - algo:delaunay=(BDEL|PDEL|tetgen) specify the implementation of the Delaunay triangulation. It can be one of
@@ -203,18 +199,6 @@ Additional parameters
 compute_RVD
 -----------
 computes the intersection between a Voronoi diagram and a surfacic or volumetric simplicial set
-
-Bundled third-party programs
-============================
-
-medit
------
-[medit](http://www.ann.jussieu.fr/frey/software.html)
-(by [Pascal Frey](https://www.ljll.math.upmc.fr/frey/))
-is another mesh viewer, included in the Geogram distribution.
-
-- [medit documentation](http://www.ann.jussieu.fr/frey/publications/RT-0253.pdf)
-- [more documentation (in French)](http://www.ann.jussieu.fr/frey/logiciels/Docmedit.dir/index.html)
 
 */
 

@@ -76,6 +76,95 @@
 #include <geogram/numerics/predicates/aligned3d.h>
 
 namespace {
+
+    using namespace GEO;
+    
+    GEO::PCK::SOSMode SOS_mode_ = GEO::PCK::SOS_ADDRESS; // GEO::PCK::SOS_LEXICO; // 
+
+    /**
+     * \brief Comparator class for nD points using lexicographic order.
+     * \details Used by symbolic perturbations.
+     */
+    class LexicoCompare {
+    public:
+
+	/**
+	 * \brief LexicoCompare constructor.
+	 * \param[in] dim dimension of the points to compare.
+	 */
+	LexicoCompare(index_t dim) : dim_(dim) {
+	}
+
+	/**
+	 * \brief Compares two points with respect to the lexicographic
+	 *  order.
+	 * \param[in] x , y pointers to the coordinates of the two points.
+	 * \retval true if x is strictly before y in the lexicographic order.
+	 * \retval false otherwise.
+	 */
+	bool operator()(const double* x, const double* y) const {
+	    for(index_t i=0; i<dim_-1; ++i) {
+		if(x[i] < y[i]) {
+		    return true;
+		}
+		if(x[i] > y[i]) {
+		    return false;
+		}
+	    }
+	    return (x[dim_-1] < y[dim_-1]);
+	}
+    private:
+	index_t dim_;
+    };
+
+    /**
+     * \brief Compares two 3D points with respect to the lexicographic
+     *  order.
+     * \param[in] x , y pointers to the coordinates of the two 3D points.
+     * \retval true if x is strictly before y in the lexicographic order.
+     * \retval false otherwise.
+     */
+    bool lexico_compare_3d(const double* x, const double* y) {
+	if(x[0] < y[0]) {
+	    return true;
+	}
+	if(x[0] > y[0]) {
+	    return false;
+	}
+	if(x[1] < y[1]) {
+	    return true;
+	}
+	if(x[1] > y[1]) {
+	    return false;
+	}
+	return x[2] < y[2];
+    }
+
+    /**
+     * \brief Sorts an array of pointers to points.
+     * \details set_SOS_mode() alters the behavior of this function.
+     *  If set to PCK::SOS_ADDRESS, then just the addresses of the points
+     *  are sorted. If set to PCK::SOS_LEXICO, then the points are sorted
+     *  in function of the lexicographic order of their coordinates.
+     * \param[in] begin a pointer to the first point.
+     * \param[in] end one position past the pointer to the last point.
+     * \param[in] dim the dimension of the points.
+     */
+    void SOS_sort(const double** begin, const double** end, index_t dim) {
+	if(SOS_mode_ == PCK::SOS_ADDRESS) {
+	    std::sort(begin, end);
+	} else {
+	    if(dim == 3) {
+		std::sort(begin, end, lexico_compare_3d);
+	    } else {
+		std::sort(begin, end, LexicoCompare(dim));
+	    }
+	}
+    }
+    
+}
+
+namespace {
     using namespace GEO;
 
     /**
@@ -379,7 +468,9 @@ namespace {
             p_sort[0] = p0;
             p_sort[1] = p1;
             p_sort[2] = p2;
-            std::sort(p_sort, p_sort + 3);
+	    
+            SOS_sort(p_sort, p_sort + 3, dim);
+	    
             for(index_t i = 0; i < 3; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1 = expansion_diff(Delta, a21);
@@ -563,7 +654,7 @@ namespace {
             p_sort[1] = p1;
             p_sort[2] = p2;
             p_sort[3] = p3;
-            std::sort(p_sort, p_sort + 4);
+            SOS_sort(p_sort, p_sort + 4, dim);
             for(index_t i = 0; i < 4; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1_0 = expansion_sum(b01, b02);
@@ -691,7 +782,8 @@ namespace {
             p_sort[1] = p1;
             p_sort[2] = p2;
             p_sort[3] = p3;
-            std::sort(p_sort, p_sort + 4);
+
+	    SOS_sort(p_sort, p_sort + 4, 3);
             for(index_t i = 0; i < 4; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1_0 = expansion_sum(b01, b02);
@@ -920,7 +1012,7 @@ namespace {
             p_sort[2] = p2;
             p_sort[3] = p3;
             p_sort[4] = p4;
-            std::sort(p_sort, p_sort + 5);
+            SOS_sort(p_sort, p_sort + 5, 3);
             for(index_t i = 0; i < 5; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1 = expansion_diff(Delta2, Delta1);
@@ -1077,7 +1169,7 @@ namespace {
             p_sort[2] = p2;
             p_sort[3] = p3;
             p_sort[4] = p4;
-            std::sort(p_sort, p_sort + 5);
+            SOS_sort(p_sort, p_sort + 5, dim);
             for(index_t i = 0; i < 5; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1_0 = expansion_sum3(b01, b02, b03);
@@ -1325,7 +1417,8 @@ namespace {
             p_sort[2] = p2;
             p_sort[3] = p3;
             p_sort[4] = p4;
-            std::sort(p_sort, p_sort + 5);
+
+	    SOS_sort(p_sort, p_sort + 5, 3);
             for(index_t i = 0; i < 5; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1 = expansion_diff(Delta2, Delta1);
@@ -1412,7 +1505,7 @@ namespace {
             p_sort[1] = p1;
             p_sort[2] = p2;
             p_sort[3] = p3;
-            std::sort(p_sort, p_sort + 4);
+            SOS_sort(p_sort, p_sort + 4, 3);
             for(index_t i = 0; i < 4; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1 = expansion_diff(Delta2, Delta1);
@@ -1538,7 +1631,7 @@ namespace {
         if(a == 0 && b == 0) {
             return 0;
         }
-        return double(a * 100) / b;
+        return double(a) * 100.0 / double(b);
     }
 
     /**
@@ -1642,6 +1735,15 @@ namespace GEO {
 
     namespace PCK {
 
+	void set_SOS_mode(SOSMode m) {
+	    SOS_mode_ = m;
+	}
+
+	SOSMode get_SOS_mode() {
+	    return SOS_mode_;
+	}
+
+	
         Sign side1_SOS(
             const double* p0, const double* p1,
             const double* q0,
@@ -1710,10 +1812,11 @@ namespace GEO {
             const double* p0, const double* p1, 
             const double* p2, const double* p3,
             double h0, double h1, double h2, double h3,            
-            const double* q0, const double* q1, const double* q2
+            const double* q0, const double* q1, const double* q2,
+	    bool SOS
         ) {
             Sign result = Sign(side3h_3d_filter(p0, p1, p2, p3, h0, h1, h2, h3, q0, q1, q2));
-            if(result == ZERO) {
+            if(SOS && result == ZERO) {
                 result = side3h_exact_SOS(p0, p1, p2, p3, h0, h1, h2, h3, q0, q1, q2);
             }
             return result;
@@ -1854,15 +1957,14 @@ namespace GEO {
         Sign GEOGRAM_API in_circle_3dlifted_SOS(
             const double* p0, const double* p1, const double* p2,
             const double* p3,
-            double h0, double h1, double h2, double h3
+            double h0, double h1, double h2, double h3,
+	    bool SOS
         ) {
-//            std::cerr << "calling in_circle_3dlifted_SOS()"
-//                      << std::endl;
             // in_circle_3dlifted is simply implemented using side3_3dlifted.
             // Both predicates are equivalent through duality
             // (see comment in in_circle_3d_SOS(), the same
             //  remark applies).
-            return Sign(-side3_3dlifted_SOS(p0,p1,p2,p3,h0,h1,h2,h3,p0,p1,p2));
+            return Sign(-side3_3dlifted_SOS(p0,p1,p2,p3,h0,h1,h2,h3,p0,p1,p2,SOS));
         }
 
         

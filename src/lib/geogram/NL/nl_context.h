@@ -78,6 +78,7 @@ typedef void(*NLProgressFunc)(
 #define NL_STATE_MATRIX_CONSTRUCTED     4
 #define NL_STATE_SYSTEM_CONSTRUCTED     5
 #define NL_STATE_SOLVED                 6
+#define NL_STATE_MATRIX_PATTERN         7
 
 /**
  * \brief Stores the information relevant to
@@ -369,6 +370,18 @@ typedef struct {
      *  to work.
      */
     NLdouble*        temp_eigen_value;
+
+    /**
+     * \brief true if nlBegin(NL_MATRIX_PATTERN) was called.
+     */
+    NLboolean        has_matrix_pattern;
+
+    /**
+     * \brief if no_variables_indirection is set, then there is no locked
+     *  variable, and the linear system directly uses the variables vector
+     *  and right-hand-side.
+     */
+    NLboolean        no_variables_indirection;
     
 } NLContextStruct;
 

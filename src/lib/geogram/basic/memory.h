@@ -308,7 +308,7 @@ namespace GEO {
             free(p);
 #elif defined(GEO_COMPILER_INTEL)
             _mm_free(p);
-#elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#elif defined(GEO_COMPILER_GCC_FAMILY) 
             free(p);
 #elif defined(GEO_COMPILER_MSVC)
             _aligned_free(p);
@@ -334,7 +334,7 @@ namespace GEO {
 #define geo_decl_aligned(var) var
 #elif defined(GEO_COMPILER_INTEL)
 #define geo_decl_aligned(var) __declspec(aligned(GEO_MEMORY_ALIGNMENT)) var
-#elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#elif defined(GEO_COMPILER_GCC_FAMILY)
 #define geo_decl_aligned(var) var __attribute__((aligned(GEO_MEMORY_ALIGNMENT)))
 #elif defined(GEO_COMPILER_MSVC)
 #define geo_decl_aligned(var) __declspec(align(GEO_MEMORY_ALIGNMENT)) var
@@ -376,10 +376,12 @@ namespace GEO {
 #else
 #define geo_assume_aligned(var, alignment)        
 #endif        
-#elif defined(GEO_COMPILER_MSVC)
+#elif defined(GEO_COMPILER_MSVC) 
 #define geo_assume_aligned(var, alignment)
         // TODO: I do not know how to do that with MSVC
 #elif defined(GEO_COMPILER_EMSCRIPTEN)        
+#define geo_assume_aligned(var, alignment)
+#elif defined(GEO_COMPILER_MINGW)        
 #define geo_assume_aligned(var, alignment)
 #endif
 
@@ -395,7 +397,7 @@ namespace GEO {
          */
 #if   defined(GEO_COMPILER_INTEL)
 #define geo_restrict __restrict
-#elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#elif defined(GEO_COMPILER_GCC_FAMILY)
 #define geo_restrict __restrict__
 #elif defined(GEO_COMPILER_MSVC)
 #define geo_restrict __restrict
@@ -715,6 +717,52 @@ namespace GEO {
             return baseclass::operator[] (index_t(i));
         }
 
+
+#ifdef GARGANTUA // If compiled with 64 bits index_t
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A reference to the element at position \p i in the vector.
+         */
+        T& operator[] (int i) {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A const reference to the element at position \p i 
+         *  in the vector.
+         */
+        const T& operator[] (int i) const {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A reference to the element at position \p i in the vector.
+         */
+        T& operator[] (unsigned int i) {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A const reference to the element at position \p i 
+         *  in the vector.
+         */
+        const T& operator[] (unsigned int i) const {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+#endif	
+	
         /**
          * \brief Gets a pointer to the array of elements
          * \return a pointer to the first element of the vector

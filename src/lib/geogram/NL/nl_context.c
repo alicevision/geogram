@@ -222,6 +222,10 @@ static NLboolean nlSolveDirect() {
 	return NL_FALSE;
     }
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+	if(nlCurrentContext->no_variables_indirection) {
+	    x = (double*)nlCurrentContext->variable_buffer[k].base_address;
+	    nl_assert(nlCurrentContext->variable_buffer[k].stride == sizeof(double));
+	}
 	nlMultMatrixVector(F, b, x);
 	b += n;
 	x += n;
@@ -239,7 +243,7 @@ static NLboolean nlSolveIterative() {
     NLBlas_t blas = nlHostBlas();
     NLMatrix M = nlCurrentContext->M;
     NLMatrix P = nlCurrentContext->P;
-    
+
     /*
      * For CUDA: it is implemented for
      *   all iterative solvers except GMRES
@@ -269,6 +273,12 @@ static NLboolean nlSolveIterative() {
     nlBlasResetStats(blas);
     
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+
+	if(nlCurrentContext->no_variables_indirection) {
+	    x = (double*)nlCurrentContext->variable_buffer[k].base_address;
+	    nl_assert(nlCurrentContext->variable_buffer[k].stride == sizeof(double));
+	}
+	
 	nlSolveSystemIterative(
 	    blas,
 	    M,
@@ -280,7 +290,8 @@ static NLboolean nlSolveIterative() {
 	    nlCurrentContext->max_iterations,
 	    nlCurrentContext->inner_iterations
 	);
-	b += n;
+
+	b += n;	
 	x += n;
     }
 
@@ -293,8 +304,6 @@ static NLboolean nlSolveIterative() {
     
     return NL_TRUE;
 }
-
-
 
 NLboolean nlDefaultSolver() {
     NLboolean result = NL_TRUE;
