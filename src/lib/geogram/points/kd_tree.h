@@ -409,8 +409,8 @@ namespace GEO {
 	    maxval = Numeric::min_float64();
 	    for(index_t i = b; i < e; ++i) {
 		double val = point_ptr(point_index_[i])[coord];
-		minval = geo_min(minval, val);
-		maxval = geo_max(maxval, val);
+		minval = std::min(minval, val);
+		maxval = std::max(maxval, val);
 	    }
 	}
 
@@ -485,7 +485,7 @@ namespace GEO {
                 return node_id;
             }
             index_t m = b + (e - b) / 2;
-            return geo_max(
+            return std::max(
                 max_node_index(2 * node_id, b, m),
                 max_node_index(2 * node_id + 1, m, e)
             );

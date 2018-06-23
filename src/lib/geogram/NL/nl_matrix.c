@@ -378,6 +378,8 @@ void nlCRSMatrixPatternSetRowLength(
     M->rowptr[i+1] = n;
 }
 
+void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS);
+
 void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS) {
     NLuint slice_size = CRS->rowptr[CRS->m] / CRS->nslices;
     NLuint slice, cur_bound, cur_NNZ, cur_row;    

@@ -407,10 +407,10 @@ namespace GEO {
 	    xmax = Numeric::min_float64();
 	    ymax = Numeric::min_float64();
 	    for(index_t c=0; c<mesh.facet_corners.nb(); ++c) {
-		xmin = geo_min(xmin, tex_coord[2*c]);
-		ymin = geo_min(ymin, tex_coord[2*c+1]);
-		xmax = geo_max(xmax, tex_coord[2*c]);
-		ymax = geo_max(ymax, tex_coord[2*c+1]);		    
+		xmin = std::min(xmin, tex_coord[2*c]);
+		ymin = std::min(ymin, tex_coord[2*c+1]);
+		xmax = std::max(xmax, tex_coord[2*c]);
+		ymax = std::max(ymax, tex_coord[2*c+1]);		    
 	    }
 	}
 	
@@ -429,10 +429,10 @@ namespace GEO {
 		    index_t c = chart.mesh.facets.corners_begin(f);
 		    c<chart.mesh.facets.corners_end(f); ++c
 		) {
-		    xmin = geo_min(xmin, tex_coord[2*c]);
-		    ymin = geo_min(ymin, tex_coord[2*c+1]);
-		    xmax = geo_max(xmax, tex_coord[2*c]);
-		    ymax = geo_max(ymax, tex_coord[2*c+1]);		    
+		    xmin = std::min(xmin, tex_coord[2*c]);
+		    ymin = std::min(ymin, tex_coord[2*c+1]);
+		    xmax = std::max(xmax, tex_coord[2*c]);
+		    ymax = std::max(ymax, tex_coord[2*c+1]);		    
 		}
 	    }
 	}

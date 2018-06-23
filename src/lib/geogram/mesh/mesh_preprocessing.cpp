@@ -226,11 +226,7 @@ namespace GEO {
                 << " facets with degree 2 vertices (fixed)"
                 << std::endl;
         }
-        for(
-            std::set<index_t>::iterator it = to_dissociate.begin();
-            it != to_dissociate.end(); ++it
-        ) {
-            index_t f = *it;
+        for(auto f : to_dissociate) {
             for(index_t c=M.facets.corners_begin(f); c!=M.facets.corners_end(f); ++c) {
                 M.facet_corners.set_adjacent_facet(c,NO_FACET);
             }

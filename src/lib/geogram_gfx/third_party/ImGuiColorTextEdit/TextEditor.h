@@ -432,7 +432,7 @@ private:
 // [Bruno Levy] Additional callback.
   public:
 	void set_callback(
-	    TextEditorCallback cb, void* cb_cli_data = NULL
+	    TextEditorCallback cb, void* cb_cli_data = nullptr
 	) {
 	    callback_ = cb;
 	    callback_client_data_ = cb_cli_data;

@@ -150,7 +150,7 @@ namespace {
 #ifdef GEO_OS_ANDROID
             mutex_ = 0;
 #else
-            pthread_mutex_init(&mutex_, 0);
+            pthread_mutex_init(&mutex_, nullptr);
 #endif
             pthread_attr_init(&attr_);
             pthread_attr_setdetachstate(&attr_, PTHREAD_CREATE_JOINABLE);
@@ -202,7 +202,7 @@ namespace {
             // that Thread::current() can retrieve it.
             set_current_thread(thread);
             thread->run();
-            return nil;
+            return nullptr;
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
@@ -221,7 +221,7 @@ namespace {
                 );
             }
             for(index_t i = 0; i < threads.size(); ++i) {
-                pthread_join(thread_impl_[i], nil);
+                pthread_join(thread_impl_[i], nullptr);
             }
 
         }
@@ -246,11 +246,11 @@ namespace {
      * \param[in] message optional message to print
      */
     GEO_NORETURN_DECL void abnormal_program_termination(
-        const char* message = nil
+        const char* message = nullptr
     ) GEO_NORETURN;
     
     void abnormal_program_termination(const char* message) {
-        if(message != nil) {
+        if(message != nullptr) {
             // Do not use Logger here!
             std::cout
                 << "Abnormal program termination: "
@@ -329,7 +329,7 @@ namespace {
      * program.
      */
     void sigint_handler(int) {
-        if(Progress::current_task() != nil) {
+        if(Progress::current_task() != nullptr) {
             Progress::cancel();
         } else {
             exit(1);

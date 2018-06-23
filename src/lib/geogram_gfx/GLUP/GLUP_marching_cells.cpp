@@ -74,7 +74,7 @@ namespace GLUP {
     MarchingCell::MarchingCell(GLUPprimitive prim) {
         UBO_ = 0;
         elements_VBO_ = 0;
-        desc_ = nil;
+        desc_ = nullptr;
         switch(prim) {
         case GLUP_TETRAHEDRA:
             desc_ =
@@ -142,7 +142,7 @@ namespace GLUP {
             if(config_size_[config] < 3) {
                 config_size_[config] = 0;
             }
-            max_config_size_=geo_max(max_config_size_,config_size(config));
+            max_config_size_=std::max(max_config_size_,config_size(config));
         }
 
         GLSL_uniform_state_declaration_ = std::string() +
@@ -332,20 +332,20 @@ namespace GLUP {
             shader_source_header_,
             GLSL_uniform_state_declaration(),
             vertex_shader_source_,
-            0
+            nullptr
         );
 
         GLuint fragment_shader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER,
             shader_source_header_,
             fragment_shader_source_,
-            0
+            nullptr
         );
 
         GLuint program = GLSL::create_program_from_shaders(
             vertex_shader,
             fragment_shader,
-            0
+            nullptr
         );
 
         // Get UBO size and offsets

@@ -68,7 +68,7 @@ namespace {
             Logger::err("GLSL")
                 << "Could not open file: \'"
                 << filename << "\'" << std::endl;
-            return nil ;
+            return nullptr ;
         }
         /* 
          * An easy way of determining the length of a file:
@@ -105,7 +105,7 @@ namespace {
         if(!link_status) {
             GLchar linker_message[4096];
             glGetProgramInfoLog(
-                program, sizeof(linker_message), 0, linker_message
+                program, sizeof(linker_message), nullptr, linker_message
             );
             Logger::err("GLSL") << "linker status :"
                                 << link_status << std::endl;
@@ -235,7 +235,7 @@ namespace GEO {
         
         static double GLSL_version_from_OpenGL_version() {
             const char* opengl_ver_str = (const char*)glGetString(GL_VERSION);
-            if(opengl_ver_str == NULL) {
+            if(opengl_ver_str == nullptr) {
                 Logger::warn("GLSL")
                     << "glGetString(GL_VERSION)"
                     << " did not answer, falling back to VanillaGL"
@@ -290,12 +290,12 @@ namespace GEO {
                 return GLSL_version;
             }
 
-            const char* shading_language_ver_str = nil;
+            const char* shading_language_ver_str = nullptr;
 
 #ifdef GEO_GL_150
 #ifndef GEO_OS_APPLE
             // glGetStringi() is the new way of querying OpenGL implementation
-            if(glGetStringi != nil) {
+            if(glGetStringi != nullptr) {
                 shading_language_ver_str = (const char*)glGetStringi(
                     GL_SHADING_LANGUAGE_VERSION, 0
                 );
@@ -306,7 +306,7 @@ namespace GEO {
             }
 #endif            
 #endif            
-            if(shading_language_ver_str == nil) {
+            if(shading_language_ver_str == nullptr) {
                 // Some buggy drivers do not implement glGetStringi(),
                 // so I try also glGetString() (without the "i")
                 shading_language_ver_str =
@@ -316,7 +316,7 @@ namespace GEO {
             // If the driver does not implement glGetString neither
             // glGetStringi with GL_SHADING_LANGUAGE_VERSION, then try
             // to deduce it from OpenGL version.
-            if(shading_language_ver_str == nil) {
+            if(shading_language_ver_str == nullptr) {
                 return GLSL_version_from_OpenGL_version();
             }
            
@@ -391,14 +391,14 @@ namespace GEO {
                 }
                 throw GLSL::GLSLCompileError();
             }
-            glShaderSource(s_handle, (GLsizei)nb_sources, sources, 0);
+            glShaderSource(s_handle, (GLsizei)nb_sources, sources, nullptr);
             glCompileShader(s_handle);
             GLint compile_status;
             glGetShaderiv(s_handle, GL_COMPILE_STATUS, &compile_status);
             if(!compile_status) {
                 GLchar compiler_message[4096];
                 glGetShaderInfoLog(
-                    s_handle, sizeof(compiler_message), 0, compiler_message
+                    s_handle, sizeof(compiler_message), nullptr, compiler_message
                 );
 
                 Logger::out("GLSL") << "Error in program:"
@@ -446,65 +446,65 @@ namespace GEO {
             const char* source20
         ) {
             vector<const char*> sources;
-            geo_assert(source1 != nil);
-            if(source1 != nil) {
+            geo_assert(source1 != nullptr);
+            if(source1 != nullptr) {
                 sources.push_back(source1);
             }
-            if(source2 != nil) {
+            if(source2 != nullptr) {
                 sources.push_back(source2);
             }
-            if(source3 != nil) {
+            if(source3 != nullptr) {
                 sources.push_back(source3);
             }
-            if(source4 != nil) {
+            if(source4 != nullptr) {
                 sources.push_back(source4);
             }
-            if(source5 != nil) {
+            if(source5 != nullptr) {
                 sources.push_back(source5);
             }
-            if(source6 != nil) {
+            if(source6 != nullptr) {
                 sources.push_back(source6);
             }
-            if(source7 != nil) {
+            if(source7 != nullptr) {
                 sources.push_back(source7);
             }
-            if(source8 != nil) {
+            if(source8 != nullptr) {
                 sources.push_back(source8);
             }
-            if(source9 != nil) {
+            if(source9 != nullptr) {
                 sources.push_back(source9);
             }
-            if(source10 != nil) {
+            if(source10 != nullptr) {
                 sources.push_back(source10);
             }
-            if(source11 != nil) {
+            if(source11 != nullptr) {
                 sources.push_back(source11);
             }
-            if(source12 != nil) {
+            if(source12 != nullptr) {
                 sources.push_back(source12);
             }
-            if(source13 != nil) {
+            if(source13 != nullptr) {
                 sources.push_back(source13);
             }
-            if(source14 != nil) {
+            if(source14 != nullptr) {
                 sources.push_back(source14);
             }
-            if(source15 != nil) {
+            if(source15 != nullptr) {
                 sources.push_back(source15);
             }
-            if(source16 != nil) {
+            if(source16 != nullptr) {
                 sources.push_back(source16);
             }
-            if(source17 != nil) {
+            if(source17 != nullptr) {
                 sources.push_back(source17);
             }
-            if(source18 != nil) {
+            if(source18 != nullptr) {
                 sources.push_back(source18);
             }
-            if(source19 != nil) {
+            if(source19 != nullptr) {
                 sources.push_back(source19);
             }
-            if(source20 != nil) {
+            if(source20 != nullptr) {
                 sources.push_back(source20);
             }
 
@@ -583,18 +583,18 @@ namespace GEO {
                 char* begin = strstr(src, "#BEGIN(");
                 char* end = strstr(src, "#END(");
                 
-                if(begin == nil && end == nil) {
+                if(begin == nullptr && end == nullptr) {
                     break;
                 }
                 
-                if(begin == nil) {
+                if(begin == nullptr) {
                     Logger::err("GLSL") << "missing #BEGIN() statement"
                                         << std::endl;
                     err_flag = true;
                     break;
                 }
                 
-                if(end == nil) {
+                if(end == nullptr) {
                     Logger::err("GLSL") << "missing #END() statement"
                                         << std::endl;
                     err_flag = true;
@@ -615,14 +615,14 @@ namespace GEO {
                 char* begin_closing_brace = strchr(begin_opening_brace,')');
                 char* end_closing_brace = strchr(end_opening_brace, ')');
                 
-                if(begin_closing_brace == nil) {
+                if(begin_closing_brace == nullptr) {
                     Logger::err("GLSL") << "#BEGIN: missing closing brace"
                                         << std::endl;
                     err_flag = true;
                     break;
                 }
 
-                if(end_closing_brace == nil) {
+                if(end_closing_brace == nullptr) {
                     Logger::err("GLSL") << "#END: missing closing brace"
                                         << std::endl;
                     err_flag = true;
@@ -675,7 +675,7 @@ namespace GEO {
                 src = begin_closing_brace+1;
                 GLuint shader = 0;
                 try {
-                    shader = compile_shader(shader_type, src, 0);
+                    shader = compile_shader(shader_type, src, nullptr);
                 } catch(...) {
                     err_flag = true;
                     break;
@@ -704,7 +704,7 @@ namespace GEO {
 
         GLuint create_program_from_file_no_link(const std::string& filename) {
             char* buffer = load_ASCII_file(filename.c_str());
-            if(buffer == nil) {
+            if(buffer == nullptr) {
                 return 0;
             }
             GLuint result = 0;
@@ -866,9 +866,9 @@ namespace GEO {
             ) {
                 includes.clear();
                 const char* cur = source;
-                while(cur != nil) {
+                while(cur != nullptr) {
                     cur = strstr(cur, "//import");
-                    if(cur == nil) {
+                    if(cur == nullptr) {
                         return;
                     }
                     cur += 8;
@@ -882,7 +882,7 @@ namespace GEO {
                         continue;
                     }
                     const char* next = strchr(cur, '>');
-                    if(next != nil) {
+                    if(next != nullptr) {
                         includes.push_back(
                             std::string(cur+1, size_t(next-cur-1))
                         );
@@ -901,8 +901,8 @@ namespace GEO {
                  * \brief File default constructor.
                  */
                 File() {
-                    text = nil;
-                    pseudo_file = nil;
+                    text = nullptr;
+                    pseudo_file = nullptr;
                 }
                 
                 /** 
@@ -911,14 +911,14 @@ namespace GEO {
                 std::string name;
 
                 /** 
-                 * \brief The content of the file, or nil if it is a pseudo
+                 * \brief The content of the file, or nullptr if it is a pseudo
                  *  file.
                  */
                 const char* text;
 
                 /**
                  * \brief A pointer to the function that generates the file
-                 *  contents if it is a pseudo file, or nil if it is a 
+                 *  contents if it is a pseudo file, or nullptr if it is a 
                  *  regular file.
                  */
                 PseudoFile  pseudo_file;
@@ -941,7 +941,7 @@ namespace GEO {
              */
             void get_depends(File& F) {
                 // Does nothing for pseudo files.
-                if(F.text == nil) {
+                if(F.text == nullptr) {
                     return;
                 }
 
@@ -999,7 +999,7 @@ namespace GEO {
             File& F = file_system_[name];
             F.name = name;
             F.text = source;
-            F.pseudo_file = nil;
+            F.pseudo_file = nullptr;
             get_depends(F);
         }
 
@@ -1009,7 +1009,7 @@ namespace GEO {
             geo_assert(file_system_.find(name) == file_system_.end());
             File& F = file_system_[name];
             F.name = name;
-            F.text = nil;
+            F.text = nullptr;
             F.pseudo_file = file;
         }
 
@@ -1033,7 +1033,7 @@ namespace GEO {
                     << std::endl;
                 geo_assert_not_reached;
             }
-            if(it->second.text == nil) {
+            if(it->second.text == nullptr) {
                 Logger::err("GLSL")
                     << name
                     << " : is a pseudo-file"
@@ -1055,7 +1055,7 @@ namespace GEO {
             std::vector<const char*> sources_texts;
             
             for(size_t dep=0; dep<F.depends.size(); ++dep) {
-                if(F.depends[dep]->pseudo_file != nil) {
+                if(F.depends[dep]->pseudo_file != nullptr) {
 		    F.depends[dep]->pseudo_file(provider,sources);
                 } else {
                     sources.push_back(F.depends[dep]->text);
@@ -1082,33 +1082,33 @@ namespace GEO {
 
             GLuint program = glCreateProgram();            
             
-            if(shader1 != nil) {
+            if(shader1 != nullptr) {
                 sources.push_back(shader1);
             }
             
-            if(shader2 != nil) {
+            if(shader2 != nullptr) {
                 sources.push_back(shader2);
             }
             
-            if(shader3 != nil) {
+            if(shader3 != nullptr) {
                 sources.push_back(shader3);
             }
             
-            if(shader4 != nil) {
+            if(shader4 != nullptr) {
                 sources.push_back(shader4);
             }
             
-            if(shader5 != nil) {
+            if(shader5 != nullptr) {
                 sources.push_back(shader5);
             }
             
-            if(shader6 != nil) {
+            if(shader6 != nullptr) {
                 sources.push_back(shader6);
             }
 
             for(size_t i=0; i<sources.size(); ++i) {
                 const char* p1 = strstr(sources[i], "//stage ");
-                if(p1 == nil) {
+                if(p1 == nullptr) {
                     Logger::err("GLSL")
                         << "Missing //stage GL_xxxxx declaration"
                         << std::endl;
@@ -1116,7 +1116,7 @@ namespace GEO {
                 }
                 p1 += 8;
                 const char* p2 = strchr(p1, '\n');
-                if(p2 == nil) {
+                if(p2 == nullptr) {
                     Logger::err("GLSL")
                         << "Missing CR in //stage GL_xxxxx declaration"
                         << std::endl;

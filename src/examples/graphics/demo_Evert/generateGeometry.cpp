@@ -1052,7 +1052,7 @@ static void computePointGrid(
             ThreeJet U(umin + double(u)*delta_u, 1, 0);
             TwoJetVec P = func(U,V,t,numStrips);
             int offset = (v * (ucount + 1) + u)*3;
-            if(normals == NULL) {
+            if(normals == nullptr) {
                 getPoint(P, points + offset);
             } else {
                 getPoint(P, points + offset, normals + offset);
@@ -1081,7 +1081,7 @@ void generateGeometry(
     double unpushStart,
     double uncorrStart
 ) {
-    if (NULL == points) {
+    if (nullptr == points) {
         return;
     }
 

@@ -95,7 +95,7 @@ namespace GEO {
 	geo_assert(M.facets.are_simplices());
 
 	MeshSplitCallbacks default_cb(&M);
-	if(cb == nil) {
+	if(cb == nullptr) {
 	    cb = &default_cb;
 	}
 	
@@ -184,7 +184,7 @@ namespace GEO {
 	MeshSplitCallbacks* cb	
     ) {
 	MeshSplitCallbacks default_cb(&M);
-	if(cb == nil) {
+	if(cb == nullptr) {
 	    cb = &default_cb;
 	}
 	
@@ -285,7 +285,7 @@ namespace GEO {
 	geo_cite("journals/CAD/CatmullRGB");
 	
 	MeshSplitCallbacks default_cb(&M);
-	if(cb == nil) {
+	if(cb == nullptr) {
 	    cb = &default_cb;
 	}
 

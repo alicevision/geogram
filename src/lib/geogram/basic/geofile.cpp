@@ -136,9 +136,9 @@ namespace GEO {
     
     GeoFile::GeoFile(const std::string& filename) :
         filename_(filename),
-        file_(nil),
+        file_(nullptr),
         ascii_(false),
-        ascii_file_(nil),
+        ascii_file_(nullptr),
         current_chunk_class_("0000"),
         current_chunk_size_(0),
         current_chunk_file_pos_(0) {
@@ -146,10 +146,10 @@ namespace GEO {
     }
     
     GeoFile::~GeoFile() {
-        if(file_ != nil) {
+        if(file_ != nullptr) {
             gzclose(file_);
         }
-        if(ascii_file_ != nil) {
+        if(ascii_file_ != nullptr) {
             fclose(ascii_file_);
         }
     }
@@ -183,7 +183,7 @@ namespace GEO {
         if(ascii_) {
             if(feof(ascii_file_)) {
                 fclose(ascii_file_);
-                ascii_file_ = nil;
+                ascii_file_ = nullptr;
                 current_chunk_size_ = 0;
                 current_chunk_class_ = "EOFL";
                 return;
@@ -191,7 +191,7 @@ namespace GEO {
         } else {
             if(gzeof(file_)) {
                 gzclose(file_);
-                file_ = nil;
+                file_ = nullptr;
                 current_chunk_size_ = 0;
                 current_chunk_class_ = "EOFL";
                 return;
@@ -236,7 +236,7 @@ namespace GEO {
     void GeoFile::write_int(index_t x_in, const char* comment) {
         Numeric::uint32 x = Numeric::uint32(x_in);
         if(ascii_) {
-            if(comment == nil) {
+            if(comment == nullptr) {
                 if(fprintf(ascii_file_,"%u\n",x) ==0) {
                     throw GeoFileException("Could not write integer to file");
                 }
@@ -290,7 +290,7 @@ namespace GEO {
     
     void GeoFile::write_string(const std::string& str, const char* comment) {
         if(ascii_) {
-            if(comment == nil) {
+            if(comment == nullptr) {
                 if(fprintf(ascii_file_, "\"%s\"\n", encode(str).c_str()) == 0) {
                     throw GeoFileException("Could not write string data to file");
                 }
@@ -432,18 +432,18 @@ namespace GEO {
     InputGeoFile::InputGeoFile(
         const std::string& filename
     ) : GeoFile(filename),
-        current_attribute_set_(nil),
-        current_attribute_(nil)
+        current_attribute_set_(nullptr),
+        current_attribute_(nullptr)
     {
         if(ascii_) {
             ascii_file_ = fopen(filename.c_str(), "rb");
-            if(ascii_file_ == nil) {
+            if(ascii_file_ == nullptr) {
                 throw GeoFileException("Could not open file: " + filename);
             }
         } else {
             check_zlib_version();
             file_ = gzopen(filename.c_str(), "rb");
-            if(file_ == nil) {
+            if(file_ == nullptr) {
                 throw GeoFileException("Could not open file: " + filename);
             }
         }
@@ -488,7 +488,7 @@ namespace GEO {
             index_t nb_items = read_int();
             check_chunk_size();
             
-            if(find_attribute_set(attribute_set_name) != nil) {
+            if(find_attribute_set(attribute_set_name) != nullptr) {
                 throw GeoFileException(
                     "Duplicate attribute set " + attribute_set_name
                 );
@@ -496,8 +496,8 @@ namespace GEO {
             attribute_sets_[attribute_set_name] =
                 AttributeSetInfo(attribute_set_name, nb_items);
             current_attribute_set_ = find_attribute_set(attribute_set_name);
-            geo_assert(current_attribute_set_ != nil);
-            current_attribute_ = nil;
+            geo_assert(current_attribute_set_ != nullptr);
+            current_attribute_ = nullptr;
             current_comment_ = "";
         } else if(current_chunk_class_ == "ATTR") {
             std::string attribute_set_name = read_string();
@@ -506,7 +506,7 @@ namespace GEO {
             index_t element_size = read_int();
             index_t dimension = read_int();
             current_attribute_set_ = find_attribute_set(attribute_set_name);
-            if(current_attribute_set_->find_attribute(attribute_name) != nil) {
+            if(current_attribute_set_->find_attribute(attribute_name) != nullptr) {
                 throw GeoFileException(
                     "Duplicate attribute " + attribute_name +
                     " in attribute set " + attribute_set_name
@@ -522,7 +522,7 @@ namespace GEO {
             );
             current_attribute_ =
                 current_attribute_set_->find_attribute(attribute_name);
-            geo_assert(current_attribute_ != nil);
+            geo_assert(current_attribute_ != nullptr);
             current_comment_ = "";
             
             if(current_attribute_set_->skip) {
@@ -530,8 +530,8 @@ namespace GEO {
                 return next_chunk();
             }
         } else if(current_chunk_class_ == "CMNT") {
-            current_attribute_ = nil;
-            current_attribute_set_ = nil;
+            current_attribute_ = nullptr;
+            current_attribute_set_ = nullptr;
             current_comment_ = read_string();
             check_chunk_size();
         } else if(current_chunk_class_ == "SPTR") {
@@ -545,7 +545,7 @@ namespace GEO {
         if(ascii_) {
             AsciiAttributeSerializer read_attribute_func =
                 ascii_attribute_read_[current_attribute_->element_type];
-            if(read_attribute_func == nil) {
+            if(read_attribute_func == nullptr) {
                 throw GeoFileException(
                     "No ASCII serializer for type:" +
                     current_attribute_->element_type
@@ -616,7 +616,7 @@ namespace GEO {
 
         if(ascii_) {
             ascii_file_ = fopen(filename.c_str(), "wb");
-            if(ascii_file_ == nil) {
+            if(ascii_file_ == nullptr) {
                 throw GeoFileException("Could not create file: " + filename);
             }
         } else {
@@ -629,7 +629,7 @@ namespace GEO {
                     ("wb" + String::to_string(compression_level)).c_str()
                 );
             }
-            if(file_ == nil) {
+            if(file_ == nullptr) {
                 throw GeoFileException("Could not create file: " + filename);
             }
         }
@@ -656,7 +656,7 @@ namespace GEO {
     void OutputGeoFile::write_attribute_set(
         const std::string& attribute_set_name, index_t nb_items
     ) {
-        geo_assert(find_attribute_set(attribute_set_name) == nil);
+        geo_assert(find_attribute_set(attribute_set_name) == nullptr);
 
         attribute_sets_[attribute_set_name] =
             AttributeSetInfo(attribute_set_name, nb_items);
@@ -684,8 +684,8 @@ namespace GEO {
         AttributeSetInfo* attribute_set_info = find_attribute_set(
             attribute_set_name
         );
-        geo_assert(attribute_set_info != nil);
-        geo_assert(attribute_set_info->find_attribute(attribute_name) == nil);
+        geo_assert(attribute_set_info != nullptr);
+        geo_assert(attribute_set_info->find_attribute(attribute_name) == nullptr);
 
         size_t data_size =
             element_size * dimension *
@@ -713,7 +713,7 @@ namespace GEO {
         if(ascii_) {
             AsciiAttributeSerializer write_attribute_func =
                 ascii_attribute_write_[element_type];
-            if(write_attribute_func == nil) {
+            if(write_attribute_func == nullptr) {
                 throw GeoFileException("No ASCII serializer for type:"+element_type);                
             }
             bool result = (*write_attribute_func)(

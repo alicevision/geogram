@@ -196,7 +196,7 @@ namespace GEO {
         }
 
         void terminate() {
-            set_client(nil);
+            set_client(nullptr);
         }
 
         void set_client(ProgressClient* client) {
@@ -204,7 +204,7 @@ namespace GEO {
         }
 
         const ProgressTask* current_task() {
-            return progress_tasks_.empty() ? nil : progress_tasks_.top();
+            return progress_tasks_.empty() ? nullptr : progress_tasks_.top();
         }
 
         void cancel() {
@@ -235,7 +235,7 @@ namespace GEO {
         task_name_(task_name),
         start_time_(SystemStopwatch::now()),
         quiet_(quiet),
-        max_steps_(geo_max(index_t(1), max_steps)),
+        max_steps_(std::max(index_t(1), max_steps)),
         step_(0),
         percent_(0)
     {
@@ -250,7 +250,7 @@ namespace GEO {
         task_name_(task_name),
         start_time_(SystemStopwatch::now()),
         quiet_(Logger::instance()->is_quiet()),
-        max_steps_(geo_max(index_t(1), max_steps)),
+        max_steps_(std::max(index_t(1), max_steps)),
         step_(0),
         percent_(0)
     {
@@ -273,7 +273,7 @@ namespace GEO {
     }
 
     void ProgressTask::reset(index_t max_steps) {
-        max_steps_ = geo_max(index_t(1), max_steps);
+        max_steps_ = std::max(index_t(1), max_steps);
         reset();
     }
 
@@ -294,7 +294,7 @@ namespace GEO {
     }
 
     void ProgressTask::update() {
-        percent_ = geo_min(index_t(100), index_t(step_ * 100 / max_steps_));
+        percent_ = std::min(index_t(100), index_t(step_ * 100 / max_steps_));
         if(!quiet_) {
             task_progress(step_, percent_);
         }

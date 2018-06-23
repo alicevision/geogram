@@ -120,8 +120,8 @@ Add_bound_variables::visit( AST::UnaryFunction* uf ) {
 void
 Add_bound_variables::visit( AST::FunctionDefinition* fundef ) {
     MSG( fundef->type->id )
-    assert( fundef != NULL );
-    assert( compute_call_count != NULL );
+    assert( fundef != nullptr );
+    assert( compute_call_count != nullptr );
     // those functions that are not called are regarded as "interface" functions.
     // consider float values as exact at function entry, so we dont need a bound here.
     // also, return_value is not used.
@@ -136,7 +136,7 @@ Add_bound_variables::visit( AST::FunctionDefinition* fundef ) {
 
 void
 Add_bound_variables::visit( AST::VariableDeclaration* vardecl ) {
-    assert( vardecl != NULL );
+    assert( vardecl != nullptr );
     if( is_float(vardecl->var->type) ) {
         Variable *new_var = add_bound( vardecl->var );
         Statement_addition_visitor::add_stmt( new AST::VariableDeclaration( new_var ) );
@@ -230,7 +230,7 @@ Add_bound_computation::visit( AST::BinaryExpression* bexp ) {
     // order is important here:
     AST::Expression *bound_2 = bound_expression( bexp->e2 );
     AST::Expression *bound_1 = bound_expression( bexp->e1 );
-    AST::Expression *result_bound = NULL;
+    AST::Expression *result_bound = nullptr;
     store_bound( bexp->e1, bound_1 );
     store_bound( bexp->e2, bound_2 );
     switch( bexp->kind ) {
@@ -263,7 +263,7 @@ Add_bound_computation::visit( AST::BinaryExpression* bexp ) {
                 AST::BinaryExpression::ADD
             );
         Error_bound_value *err_val = dynamic_cast<Error_bound_value*>(absint->get_analysis_result( bexp->e2 ) );
-        assert( err_val != NULL );
+        assert( err_val != nullptr );
         AST::Expression *denom =
             new AST::BinaryExpression(
                 new AST::BinaryExpression(
@@ -294,7 +294,7 @@ Add_bound_computation::visit( AST::BinaryExpression* bexp ) {
         throw InternalError( "case not handled", bexp->location );
         ;
     }
-    assert( result_bound != NULL );
+    assert( result_bound != nullptr );
     push_bound( result_bound );
 }
 
@@ -317,7 +317,7 @@ Add_bound_computation::visit( AST::ConditionalStatement* cstmt ) {
     pop_bound();
     assert( bound_expressions.size() == 0 );
     handle( cstmt->then_branch );
-    if( cstmt->else_branch != NULL )
+    if( cstmt->else_branch != nullptr )
         handle( cstmt->else_branch );
 }
 
@@ -339,7 +339,7 @@ Add_bound_computation::visit( AST::AssignmentExpression* aexp ) {
         push_bound( new AST::LiteralExpression(0) ); // just to conforn to our invariant
     } else if( is_int( aexp->getType() ) ) {
         //std::cout << "is int: " << id_expr->var->id << std::endl;
-        store_bound( aexp->e2, NULL );
+        store_bound( aexp->e2, nullptr );
     } else if( !is_float_or_int(aexp->getType()) && is_float_or_int( aexp->e2->getType() ) )
         pop_bound();
 }
@@ -358,7 +358,7 @@ Add_bound_computation::visit( AST::UnaryFunction *uf ) {
     case AST::UnaryFunction::XSQRT: MSG("xxx"); store_bound( uf->e, bound_e ); break;
     default: ;
     }
-    AST::Expression *gtzero = NULL, *eqzero = NULL;
+    AST::Expression *gtzero = nullptr, *eqzero = nullptr;
     switch( uf->kind ) {
     case AST::UnaryFunction::XSIGN:
         result_bound = new AST::LiteralExpression(1); break;
@@ -509,8 +509,8 @@ Add_bound_computation::visit( AST::TranslationUnit* tu ) {
 
 void
 Add_bound_computation::store_bound( AST::Expression *e, AST::Expression *bound ) {
-    assert( e != NULL );
-    if( bound != NULL ) {
+    assert( e != nullptr );
+    if( bound != nullptr ) {
         (*bound_map)[ e ] = bound;
     }
 }
@@ -519,7 +519,7 @@ Variable*
 Add_bound_computation::result_bound_variable() {
     assert( fundef_stack.size() > 0 );
     Variable *var = add_bounds->bound_variable( fundef_stack.top() );
-    assert( var != NULL );
+    assert( var != nullptr );
     return var;
 }
 
@@ -530,21 +530,21 @@ Add_bound_computation::has_result_bound_variable() {
 
 Variable*
 Add_bound_computation::bound_variable( Variable *var ) {
-    assert( add_bounds != NULL );
-    assert( var != NULL );
+    assert( add_bounds != nullptr );
+    assert( var != nullptr );
     return add_bounds->bound_variable( var );
 }
 
 Variable*
 Add_bound_computation::bound_variable( AST::FunctionCall *funcall ) {
-    assert( add_bounds != NULL );
-    assert( funcall != NULL );
+    assert( add_bounds != nullptr );
+    assert( funcall != nullptr );
     return add_bounds->bound_variable( funcall );
 }
 
 void
 Add_bound_computation::push_bound( AST::Expression *e ) {
-    assert( e != NULL );
+    assert( e != nullptr );
     bound_expressions.push( e );
     MSG( "size: " << bound_expressions.size() )
     //e->dump(10);
@@ -555,7 +555,7 @@ Add_bound_computation::pop_bound() {
     assert( bound_expressions.size() > 0 );
     AST::Expression *e = bound_expressions.top();
     bound_expressions.pop();
-    assert( e != NULL );
+    assert( e != nullptr );
     MSG( "size: " << bound_expressions.size() )
     //e->dump(10);
     return e;
@@ -568,7 +568,7 @@ Add_bound_computation::bound_expression( AST::Expression *e ) {
     } else
         throw RuntimeError( "cannot get bound for type " + e->getType()->name() );
     // for the compiler:
-    return NULL;
+    return nullptr;
 }
 
 // ------------------
@@ -621,7 +621,7 @@ Rewrite_float_comparisons::visit( AST::BinaryExpression *bexp ) {
                 );
             AST::Expression *bound_e = new AST::BinaryExpression( bound_1, bound_2, AST::BinaryExpression::ADD );
             Error_bound_value *err_result = dynamic_cast< Error_bound_value* >( absval1->sub( absval2 ) );
-            assert( err_result != NULL );
+            assert( err_result != nullptr );
             Variable *tmp_var = add_bounds->add_bounds->tmp_result_variable( bexp );
             add_stmt( new AST::VariableDeclaration( tmp_var ) );
             bound_e =
@@ -677,7 +677,7 @@ Rewrite_float_comparisons::visit( AST::UnaryFunction *uf ) {
         AST::Expression *bound_e = bound_expression( uf->e );
         Abstract_value   *absval = add_bounds->absint->get_analysis_result( uf->e );
         Error_bound_value *err_result = dynamic_cast< Error_bound_value* >( absval );
-        assert( err_result != NULL );
+        assert( err_result != nullptr );
         if( err_result->index == 0 ) {
             Transformation_visitor::push( uf );
             return;
@@ -739,8 +739,8 @@ Rewrite_float_comparisons::update( AST::Node *node_old, AST::Node *node_new ) {
     Transformation_visitor::update( node_old, node_new );
     AST::Expression *e_old = dynamic_cast< AST::Expression* >(node_old);
     AST::Expression *e_new = dynamic_cast< AST::Expression* >(node_new);
-    if( e_old != NULL )
-        assert( e_new != NULL );
+    if( e_old != nullptr )
+        assert( e_new != nullptr );
     if( has_bound( e_old ) ) {
         AST::Expression *bound_old = bound_expression( e_old );
         (*add_bounds->bound_map)[ e_new ] = bound_old;
@@ -749,7 +749,7 @@ Rewrite_float_comparisons::update( AST::Node *node_old, AST::Node *node_new ) {
 
 bool
 Rewrite_float_comparisons::has_bound( AST::Expression *e ) {
-    assert( add_bounds->bound_map != NULL );
+    assert( add_bounds->bound_map != nullptr );
     return add_bounds->bound_map->find( e ) != add_bounds->bound_map->end();
 }
 

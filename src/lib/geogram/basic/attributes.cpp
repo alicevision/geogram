@@ -81,7 +81,7 @@ namespace GEO {
     ) :
         element_size_(elemsize),
         dimension_(dim),
-        cached_base_addr_(nil),
+        cached_base_addr_(nullptr),
         cached_size_(0),
         lock_(GEOGRAM_SPINLOCK_INIT)
     {
@@ -98,11 +98,9 @@ namespace GEO {
             cached_base_addr_ = base_addr;
             cached_size_ = size;
             dimension_ = dim;
-            for(std::set<AttributeStoreObserver*>::iterator
-                    it = observers_.begin(); it!=observers_.end(); ++it
-            ) {
-                (*it)->notify(cached_base_addr_, cached_size_, dim);
-            }
+	    for(auto cur : observers_) {
+		cur->notify(cached_base_addr_, cached_size_, dim);
+	    }
         }
     }
     
@@ -111,10 +109,8 @@ namespace GEO {
 	// the AttributeStore is destroyed before the Attributes, can
 	// occur for instance when using Lua scripting with Attribute wrapper
 	// objects.
-	for(std::set<AttributeStoreObserver*>::iterator
-		it = observers_.begin(); it!=observers_.end(); ++it
-        ) {
-	    (*it)->disconnect();
+	for(auto cur : observers_) {
+	    cur->disconnect();
 	}
     }
 
@@ -127,9 +123,8 @@ namespace GEO {
     }
 
     void AttributeStore::unregister_observer(AttributeStoreObserver* observer) {
-        Process::acquire_spinlock(lock_);        
-        std::set<AttributeStoreObserver*>::iterator it =
-            observers_.find(observer);
+        Process::acquire_spinlock(lock_);
+	auto it = observers_.find(observer);
         geo_assert(it != observers_.end());
         observers_.erase(it);
         Process::release_spinlock(lock_);                
@@ -182,45 +177,33 @@ namespace GEO {
         if(new_size == size_) {
             return;
         }
-        for(
-            std::map<std::string, AttributeStore*>::iterator
-                it=attributes_.begin();
-            it != attributes_.end(); ++it
-        ) {
-            it->second->resize(new_size);
-        }
+	for(auto& cur : attributes_) {
+	    cur.second->resize(new_size);
+	}
         size_ = new_size;
     }
 
     void AttributesManager::apply_permutation(
         const vector<index_t>& permutation
     ) {
-        for(
-            std::map<std::string, AttributeStore*>::iterator
-                it=attributes_.begin();
-            it != attributes_.end(); ++it
-        ) {
-            it->second->apply_permutation(permutation);
-        }
+	for(auto& cur : attributes_) {
+	    cur.second->apply_permutation(permutation);	    
+	}
     }
 
     void AttributesManager::compress(
         const vector<index_t>& old2new
     ) {
-        for(
-            std::map<std::string, AttributeStore*>::iterator
-                it=attributes_.begin();
-            it != attributes_.end(); ++it
-        ) {
-            it->second->compress(old2new);
-        }
+	for(auto& cur : attributes_) {
+	    cur.second->compress(old2new);	    
+	}
     }
     
     
     void AttributesManager::bind_attribute_store(
         const std::string& name, AttributeStore* as
     ) {
-        geo_assert(find_attribute_store(name) == nil);
+        geo_assert(find_attribute_store(name) == nullptr);
         attributes_[name] = as;
         as->resize(size_);
     }
@@ -229,20 +212,17 @@ namespace GEO {
         vector<std::string>& names
     ) const {
         names.clear();
-        for(std::map<std::string, AttributeStore*>::const_iterator
-                it = attributes_.begin(); it != attributes_.end();
-            ++it) {
-            names.push_back(it->first);
-        }
+	for(auto& cur : attributes_) {
+	    names.push_back(cur.first);
+	}
     }
     
     AttributeStore* AttributesManager::find_attribute_store(
         const std::string& name
     ) {
-        std::map<std::string, AttributeStore*>::iterator
-            it = attributes_.find(name);
+        auto it = attributes_.find(name);
         if(it == attributes_.end()) {
-            return nil;
+            return nullptr;
         }
         return it->second;
     }
@@ -250,18 +230,16 @@ namespace GEO {
     const AttributeStore* AttributesManager::find_attribute_store(
         const std::string& name
     ) const {
-        std::map<std::string, AttributeStore*>::const_iterator
-            it = attributes_.find(name);
+	auto it = attributes_.find(name);
         if(it == attributes_.end()) {
-            return nil;
+            return nullptr;
         }
         return it->second;
     }
     
 
     void AttributesManager::delete_attribute_store(const std::string& name) {
-        std::map<std::string, AttributeStore*>::iterator
-            it = attributes_.find(name);
+	auto it = attributes_.find(name);
         geo_assert(it != attributes_.end());
         geo_assert(!it->second->has_observers());
         delete it->second;
@@ -269,11 +247,7 @@ namespace GEO {
     }
 
     void AttributesManager::delete_attribute_store(AttributeStore* as) {
-        for(
-            std::map<std::string, AttributeStore*>::iterator
-                it=attributes_.begin();
-            it != attributes_.end(); ++it
-        ) {
+        for(auto it=attributes_.begin(); it != attributes_.end(); ++it) {
             if(it->second == as) {
                 delete as;
                 attributes_.erase(it);
@@ -286,56 +260,36 @@ namespace GEO {
 
     void AttributesManager::clear(bool keep_attributes, bool keep_memory) {
         if(keep_attributes) {
-            for(
-                std::map<std::string, AttributeStore*>::iterator
-                    it=attributes_.begin();
-                it != attributes_.end(); ++it
-            ) {
-                it->second->clear(keep_memory);
+	    for(auto& cur : attributes_) {
+                cur.second->clear(keep_memory);
             }
         } else {
-            for(
-                std::map<std::string, AttributeStore*>::iterator
-                    it=attributes_.begin();
-                it != attributes_.end(); ++it
-            ) {
-                delete it->second;
-            }
+	    for(auto& cur : attributes_) {
+		delete cur.second;
+	    }
             attributes_.clear();
         }
         size_ = 0;
     }
 
     void AttributesManager::zero() {
-        for(
-            std::map<std::string, AttributeStore*>::iterator
-                it=attributes_.begin();
-            it != attributes_.end(); ++it
-        ) {
-            it->second->zero();
-        }
+	for(auto& cur : attributes_) {
+	    cur.second->zero();
+	}
     }
 
     void AttributesManager::copy(const AttributesManager& rhs) {
         clear(false, false);
         resize(rhs.size());
-        for(
-            std::map<std::string, AttributeStore*>::const_iterator
-                it=rhs.attributes_.begin();
-            it != rhs.attributes_.end(); ++it
-        ) {
-            bind_attribute_store(it->first, it->second->clone());
-        }
+	for(auto& cur : rhs.attributes_) {
+            bind_attribute_store(cur.first, cur.second->clone());	    
+	}
     }
 
     void AttributesManager::copy_item(index_t to, index_t from) {
-        for(
-            std::map<std::string, AttributeStore*>::iterator
-                it=attributes_.begin();
-            it != attributes_.end(); ++it
-        ) {
-            it->second->copy_item(to,from);
-        }        
+	for(auto& cur : attributes_) {
+	    cur.second->copy_item(to,from);
+	}
     }
     
     /************************************************************************/ 
@@ -448,8 +402,8 @@ namespace GEO {
         element_index_ = attribute_element_index(name);
         store_ = manager_->find_attribute_store(attribute_base_name(name));
 
-        if(store_ == nil || element_index_ == index_t(-1)) {
-            store_ = nil;
+        if(store_ == nullptr || element_index_ == index_t(-1)) {
+            store_ = nullptr;
             element_index_ = index_t(-1);
             return;
         }
@@ -457,7 +411,7 @@ namespace GEO {
         element_type_ = element_type(store_);
 
         if(element_type_ == ET_NONE) {
-            store_ = nil;
+            store_ = nullptr;
             element_index_ = index_t(-1);
             return;
         }
@@ -466,7 +420,7 @@ namespace GEO {
         // store's dimension (or 2*store dimension if a vec2,
         // or 3*store's dimension if a vec3)
         if(element_index_ >= nb_scalar_elements_per_item(store_)) {
-            store_ = nil;
+            store_ = nullptr;
             element_index_ = index_t(-1);
             element_type_ = ET_NONE;
 	    return;
@@ -483,7 +437,7 @@ namespace GEO {
             attribute_name
         );
         
-        if(store == nil) {
+        if(store == nullptr) {
             return false;
         }
         

@@ -71,6 +71,7 @@ SOURCES="../basic/memory.h \
 ../numerics/predicates/aligned3d.h \
 ../numerics/predicates.cpp \
 delaunay_2d.h \
+cavity.h \
 delaunay_3d.h \
 parallel_delaunay_3d.h \
 delaunay.cpp \

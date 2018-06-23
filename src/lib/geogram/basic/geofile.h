@@ -417,7 +417,7 @@ namespace GEO {
              * \brief Finds an AttributeInfo by name.
              * \param[in] name_in a const reference to the name of the 
              *  attribute
-             * \return a const pointer to the AttributeInfo or nil if there 
+             * \return a const pointer to the AttributeInfo or nullptr if there 
              *  is no such attribute.
              */
             const AttributeInfo* find_attribute(
@@ -428,14 +428,14 @@ namespace GEO {
                         return &(attributes[i]);
                     }
                 }
-                return nil;
+                return nullptr;
             }
 
             /**
              * \brief Finds an AttributeInfo by name.
              * \param[in] name_in a const reference to the name of the 
              *  attribute
-             * \return a pointer to the AttributeInfo or nil if there 
+             * \return a pointer to the AttributeInfo or nullptr if there 
              *  is no such attribute.
              */
              AttributeInfo* find_attribute(const std::string& name_in) {
@@ -444,7 +444,7 @@ namespace GEO {
                         return &(attributes[i]);
                     }
                 }
-                return nil;
+                return nullptr;
             }
             
             /**
@@ -472,14 +472,13 @@ namespace GEO {
         /**
          * \brief Finds an attribute set by name.
          * \param[in] name a const reference to the name of the attribute set
-         * \return a pointer to the AttributeSetInfo or nil if there is
+         * \return a pointer to the AttributeSetInfo or nullptr if there is
          *  no such attribute set.
          */
         AttributeSetInfo* find_attribute_set(const std::string& name) {
-            std::map<std::string, AttributeSetInfo>::iterator
-                it = attribute_sets_.find(name);
+	    auto it = attribute_sets_.find(name);
             if(it == attribute_sets_.end()) {
-                return nil;
+                return nullptr;
             }
             return &(it->second);
         }
@@ -487,16 +486,15 @@ namespace GEO {
         /**
          * \brief Finds an attribute set by name.
          * \param[in] name a const reference to the name of the attribute set
-         * \return a const pointer to the AttributeSetInfo or nil if there is
+         * \return a const pointer to the AttributeSetInfo or nullptr if there is
          *  no such attribute set.
          */
         const AttributeSetInfo* find_attribute_set(
             const std::string& name
         ) const {
-            std::map<std::string, AttributeSetInfo>::const_iterator
-                it = attribute_sets_.find(name);
+	    auto it = attribute_sets_.find(name);
             if(it == attribute_sets_.end()) {
-                return nil;
+                return nullptr;
             }
             return &(it->second);
         }
@@ -517,7 +515,7 @@ namespace GEO {
          * \param[in] comment an optional comment string, written to
          *  ASCII geofiles
          */
-        void write_int(index_t x, const char* comment = nil);
+        void write_int(index_t x, const char* comment = nullptr);
 
         /**
          * \brief Reads a string from the file.
@@ -535,7 +533,7 @@ namespace GEO {
          * \param[in] comment an optional comment string, written to
          *  ASCII geofiles
          */
-        void write_string(const std::string& s, const char* comment = nil);
+        void write_string(const std::string& s, const char* comment = nullptr);
 
         /**
          * \brief Reads an unsigned 64 bits integer from the file.
@@ -707,7 +705,7 @@ namespace GEO {
          *   ATTS (ATTRIBUTE_SET)
          */
         const AttributeSetInfo& current_attribute_set() const {
-            geo_assert(current_attribute_set_ != nil);
+            geo_assert(current_attribute_set_ != nullptr);
             return *current_attribute_set_;
         }
 
@@ -718,7 +716,7 @@ namespace GEO {
          * \pre current chunk class is "ATTR" (ATTRIBUTE)
          */
         const AttributeInfo& current_attribute() const {
-            geo_assert(current_attribute_ != nil);
+            geo_assert(current_attribute_ != nullptr);
             return *current_attribute_;
         }
 

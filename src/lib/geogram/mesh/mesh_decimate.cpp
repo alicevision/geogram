@@ -82,7 +82,7 @@ namespace GEO {
             }
         }
 
-        if(vertices_flags != nil) {
+        if(vertices_flags != nullptr) {
             for(index_t v = 0; v < M.vertices.nb(); ++v) {
                 if(vertices_flags[v] != 0) {
                     is_required[v] = true;

@@ -147,13 +147,19 @@ namespace {
 		    spectral_ = false;
 		}
 	    } else {
-		if(false && nlInitExtension("CHOLMOD")) {
+		/*
+		  // Direct solver, commented-out for now, 
+		  // causes problems with some configurations.
+		if(nlInitExtension("CHOLMOD")) {
 		    if(verbose_) {
 			Logger::out("LSCM") << "using CHOLMOD"
 					    << std::endl;
 		    }
 		    nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT);
-		} else {
+		} else 
+		*/
+
+		{
 		    if(verbose_) {
 			Logger::out("LSCM") << "using JacobiCG"
 					    << std::endl;

@@ -155,7 +155,7 @@ namespace GEO {
                         vec3  prev = mat3_to_euler(normalize_columns(B[v - 1]));
 						B[v] = fv.project_mat3(1e-3, 1e-5, &prev);
                     } else 
-                        B[v] = fv.project_mat3(1e-3, 1e-5, NULL);
+                        B[v] = fv.project_mat3(1e-3, 1e-5, nullptr);
                     if (v <= num_ln_v) {
                         AxisPermutation ap;
                         ap.make_col2_equal_to_z(B[v], normalize(oldz));

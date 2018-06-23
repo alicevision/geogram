@@ -73,8 +73,8 @@ namespace GEO {
         nb_arrays_ = 0;
         Z1_block_size_ = 0;
         Z1_stride_ = 0;
-        Z1_ = nil;
-        ZV_ = nil;
+        Z1_ = nullptr;
+        ZV_ = nullptr;
         thread_safe_ = false;
     }
 
@@ -90,7 +90,7 @@ namespace GEO {
                 nb_items_in_ZV += (sz - Z1_block_size_);
                 nb_arrays_in_ZV++;
             }
-            nb_items_in_Z1 += geo_min(sz, Z1_block_size_);
+            nb_items_in_Z1 += std::min(sz, Z1_block_size_);
         }
 
         Logger::out("PArrays")
@@ -123,18 +123,18 @@ namespace GEO {
     }
 
     void PackedArrays::clear() {
-        if(ZV_ != nil) {
+        if(ZV_ != nullptr) {
             for(index_t i = 0; i < nb_arrays_; i++) {
                 free(ZV_[i]);
             }
             free(ZV_);
-            ZV_ = nil;
+            ZV_ = nullptr;
         }
         nb_arrays_ = 0;
         Z1_block_size_ = 0;
         Z1_stride_ = 0;
         free(Z1_);
-        Z1_ = nil;
+        Z1_ = nullptr;
     }
 
     void PackedArrays::set_thread_safe(bool x) {
@@ -179,7 +179,7 @@ namespace GEO {
         index_t array_size = *array_base;
         index_t nb = array_size;
         array_base++;
-        index_t nb_in_block = geo_min(nb, Z1_block_size_);
+        index_t nb_in_block = std::min(nb, Z1_block_size_);
         Memory::copy(array, array_base, sizeof(index_t) * nb_in_block);
         if(nb > nb_in_block) {
             nb -= nb_in_block;
@@ -208,7 +208,7 @@ namespace GEO {
             resize_array(array_index, array_size, false);
         }
         index_t nb = array_size;
-        index_t nb_in_block = geo_min(nb, Z1_block_size_);
+        index_t nb_in_block = std::min(nb, Z1_block_size_);
         Memory::copy(array_base, array, sizeof(index_t) * nb_in_block);
         if(nb > nb_in_block) {
             nb -= nb_in_block;

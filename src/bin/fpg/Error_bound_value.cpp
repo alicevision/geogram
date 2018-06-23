@@ -21,7 +21,7 @@ Error_bound_value::get_initial_value( Variable *var ) {
 Error_bound_value*
 Error_bound_value::downcast( Abstract_value* value ) {
     Error_bound_value *bound = dynamic_cast<Error_bound_value*>( value );
-    assert( bound != NULL );
+    assert( bound != nullptr );
     return bound;
 }
 

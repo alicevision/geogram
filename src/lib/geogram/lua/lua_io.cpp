@@ -87,12 +87,10 @@ namespace {
 		L, "'require()' invalid number of arguments"
 	    );
 	}
-	std::map<std::string, const char*>::iterator it;
-	{
-	    std::string k =
-		std::string("lib/") + std::string(lua_tostring(L,1)) + ".lua";
-	    it = embedded_files.find(k);
-	}
+
+	std::string k =
+	    std::string("lib/") + std::string(lua_tostring(L,1)) + ".lua";
+	auto it = embedded_files.find(k);
 	if(it == embedded_files.end()) {
 	    return call_lua_require(L);
 	}
@@ -123,7 +121,7 @@ namespace {
     }
 
     inline void append(std::string& s, const char* c) {
-	s += (c==nil) ? "nil" : c;
+	s += (c==nullptr) ? "nil" : c;
     }
     
     int tostring(lua_State* L) {
@@ -190,7 +188,7 @@ namespace {
 	    lua_pushvalue(L, i);   // value to print. 
 	    lua_call(L, 1, 1);
 	    s = lua_tolstring(L, -1, &l);  // get result.
-	    if (s == NULL) {
+	    if (s == nullptr) {
 		return luaL_error(
 		    L, "'tostring' must return a string to 'print'"
 		);
@@ -267,19 +265,16 @@ void list_embedded_lua_files(
     std::vector<std::string>& filenames
 ) {
     filenames.clear();
-    for(std::map<std::string, const char*>::iterator it =
-	    embedded_files.begin();
-	it != embedded_files.end(); ++it) {
-	filenames.push_back(it->first);
+    for(auto& it : embedded_files) {
+	filenames.push_back(it.first);
     }
 }
 
 void get_embedded_lua_file(
     const char* filename, const char** data
 ) {
-    std::map<std::string, const char*>::iterator it =
-	embedded_files.find(filename);
-    *data = (it == embedded_files.end()) ? nil : it->second;
+    auto it = embedded_files.find(filename);
+    *data = (it == embedded_files.end()) ? nullptr : it->second;
 }
     
 void init_lua_io(lua_State* L) {

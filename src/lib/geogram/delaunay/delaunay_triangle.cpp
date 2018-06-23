@@ -106,11 +106,11 @@ namespace GEO {
         Delaunay::set_vertices(nb_vertices, vertices);
         free_triangulateio(&triangle_out_);
         triangle_in_.numberofpoints = int(nb_vertices);
-        triangle_in_.pointlist = (double*)vertices;
+        triangle_in_.pointlist = const_cast<double*>(vertices);
         // Q: quiet
         // z: numbering starts from 0
         // n: output neighbors
-        triangulate((char*)"Qzn", &triangle_in_, &triangle_out_, nil);
+        triangulate(const_cast<char*>("Qzn"), &triangle_in_, &triangle_out_, nullptr);
         set_arrays(
             index_t(triangle_out_.numberoftriangles), 
             triangle_out_.trianglelist, triangle_out_.neighborlist

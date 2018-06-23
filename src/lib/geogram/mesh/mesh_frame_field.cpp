@@ -368,17 +368,17 @@ namespace {
             double l2 = ::fabs(eigen_value_[2]) ;
             
             if(l1 > l0) {
-                geo_swap(l0   , l1   ) ;
-                geo_swap(i_[0], i_[1]) ;
+                std::swap(l0   , l1   ) ;
+                std::swap(i_[0], i_[1]) ;
             }
 
             if(l2 > l1) {
-                geo_swap(l1   , l2   ) ;
-                geo_swap(i_[1], i_[2]) ;
+                std::swap(l1   , l2   ) ;
+                std::swap(i_[1], i_[2]) ;
             }
             if(l1 > l0) {
-                geo_swap(l0   , l1  ) ;
-                geo_swap(i_[0],i_[1]) ;
+                std::swap(l0   , l1  ) ;
+                std::swap(i_[0],i_[1]) ;
             }
         }
 
@@ -758,7 +758,7 @@ namespace GEO {
         estimate_max_curvature_direction(M,alpha_sincos,locked,certainty);
         double max_certainty = 0.0;
         for(index_t f=0; f<M.facets.nb(); ++f) {
-            max_certainty = geo_max(max_certainty,certainty[f]);
+            max_certainty = std::max(max_certainty,certainty[f]);
         }
         for(index_t f=0; f<M.facets.nb(); ++f) {
             certainty[f] /= max_certainty;

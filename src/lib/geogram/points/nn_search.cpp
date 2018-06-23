@@ -58,7 +58,7 @@ namespace GEO {
         dimension_(dimension),
         nb_points_(0),
         stride_(0),
-        points_(nil),
+        points_(nullptr),
         exact_(true) {
     }
 
@@ -141,7 +141,7 @@ namespace GEO {
 
         NearestNeighborSearch* nns =
             NearestNeighborSearchFactory::create_object(name, dimension);
-        if(nns != nil) {
+        if(nns != nullptr) {
             return nns;
         }
 

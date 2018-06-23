@@ -166,7 +166,7 @@ namespace GEO {
 
         try {
             Delaunay* d = DelaunayFactory::create_object(name, dim);
-            if(d != nil) {
+            if(d != nullptr) {
                 return d;
             }
 
@@ -182,7 +182,7 @@ namespace GEO {
        Logger::err("Delaunay")
             << "Could not create Delaunay triangulation"
             << std::endl;
-       return nil;
+       return nullptr;
 #else       
         Logger::warn("Delaunay")
             << "Falling back to NN mode"
@@ -194,15 +194,15 @@ namespace GEO {
 
     Delaunay::Delaunay(coord_index_t dimension) {
         set_dimension(dimension);
-        vertices_ = nil;
+        vertices_ = nullptr;
         nb_vertices_ = 0;
         nb_cells_ = 0;
-        cell_to_v_ = nil;
-        cell_to_cell_ = nil;
+        cell_to_v_ = nullptr;
+        cell_to_cell_ = nullptr;
         is_locked_ = false;
         store_neighbors_ = false;
         default_nb_neighbors_ = 30;
-        constraints_ = nil;
+        constraints_ = nullptr;
         do_reorder_ = true;
         refine_ = false;
         quality_ = 2.0;
@@ -241,7 +241,7 @@ namespace GEO {
         cell_to_v_ = cell_to_v;
         cell_to_cell_ = cell_to_cell;
 
-        if(cell_to_cell != nil) {
+        if(cell_to_cell != nullptr) {
             if(store_cicl_) {
                 update_v_to_cell();
                 update_cicl();

@@ -58,7 +58,7 @@ namespace GLUP {
 	const char* vendor = (const char*)glGetString(GL_VENDOR);
 	// Workaround for problem with picking and depth update
 	// in points fragment shader.
-	is_intel_graphics_ = (strstr(vendor,"Intel") != nil);
+	is_intel_graphics_ = (strstr(vendor,"Intel") != nullptr);
     }
     
     void Context_GLSL150::setup() {

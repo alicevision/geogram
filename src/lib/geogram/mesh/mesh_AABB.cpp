@@ -72,8 +72,8 @@ namespace {
         for(++c; c < M.facets.corners_end(f); ++c) {
             p = M.vertices.point_ptr(M.facet_corners.vertex(c));
             for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = geo_min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = geo_max(B.xyz_max[coord], p[coord]);
+                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
+                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
             }
         }
     }
@@ -96,8 +96,8 @@ namespace {
         for(index_t lv=1; lv<4; ++lv) {
             p = M.vertices.point_ptr(M.cells.vertex(t,lv));
             for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = geo_min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = geo_max(B.xyz_max[coord], p[coord]);
+                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
+                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
             }
         }
     }
@@ -119,8 +119,8 @@ namespace {
         for(index_t lv=1; lv<M.cells.nb_vertices(c); ++lv) {
             p = M.vertices.point_ptr(M.cells.vertex(c,lv));
             for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = geo_min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = geo_max(B.xyz_max[coord], p[coord]);
+                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
+                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
             }
         }
     }
@@ -140,7 +140,7 @@ namespace {
         index_t m = b + (e - b) / 2;
         index_t childl = 2 * node_index;
         index_t childr = 2 * node_index + 1;
-        return geo_max(
+        return std::max(
             max_node_index(childl, b, m),
             max_node_index(childr, m, e)
         );
@@ -230,10 +230,10 @@ namespace {
     ) {
         geo_debug_assert(B.contains(p));
         double result = geo_sqr(p[0] - B.xyz_min[0]);
-        result = geo_min(result, geo_sqr(p[0] - B.xyz_max[0]));
+        result = std::min(result, geo_sqr(p[0] - B.xyz_max[0]));
         for(coord_index_t c = 1; c < 3; ++c) {
-            result = geo_min(result, geo_sqr(p[c] - B.xyz_min[c]));
-            result = geo_min(result, geo_sqr(p[c] - B.xyz_max[c]));
+            result = std::min(result, geo_sqr(p[c] - B.xyz_min[c]));
+            result = std::min(result, geo_sqr(p[c] - B.xyz_max[c]));
         }
         return result;
     }

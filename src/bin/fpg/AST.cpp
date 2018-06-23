@@ -19,11 +19,11 @@ namespace AST {
 
 // be careful with order of global initialization, AST::Node depends on current_location!
 Location current_location;
-std::ostream*     Node::os = NULL;
+std::ostream*     Node::os = nullptr;
 std::string       Node::context;
 //SymbolEnvironment Node::symbol_env;
 
-Type *return_type = NULL;
+Type *return_type = nullptr;
 
 LiteralExpression *literal_one  = new LiteralExpression( 1 );
 LiteralExpression *literal_zero = new LiteralExpression( 0 );
@@ -50,7 +50,7 @@ struct Clone_postprocessing : public Generic_visitor {
 
 Node*
 clone_prime( Node* n, Clone_context *context ) {
-    if( context == NULL )
+    if( context == nullptr )
         context = new Clone_context;
     // store n ... we need to do postprocessing on it
     n = n->clone( context );
@@ -150,16 +150,16 @@ ConditionalStatement::ConditionalStatement(
 )   : cond(cond), then_branch(then_branch), else_branch(else_branch)
 {
     CompoundStatement *compound = dynamic_cast<CompoundStatement*>( then_branch );
-    if( compound == NULL ) {
+    if( compound == nullptr ) {
         StatementList *slist = new StatementList();
         slist->add( then_branch );
         this->then_branch = new CompoundStatement( slist );
     } else
         this->then_branch = compound;
 
-    if( else_branch != NULL ) {
+    if( else_branch != nullptr ) {
         compound = dynamic_cast<CompoundStatement*>( else_branch );
-        if( compound == NULL )
+        if( compound == nullptr )
         {
             StatementList *slist = new StatementList();
             slist->add( else_branch );
@@ -223,7 +223,7 @@ TranslationUnit::add( FunctionDefinition *fun_def ) {
 // visitor
 
 #define ACCEPT(CLASSNAME) \
-void CLASSNAME ::accept( Visitor *visitor ) { assert( visitor != NULL ); visitor->visit( this ); }
+void CLASSNAME ::accept( Visitor *visitor ) { assert( visitor != nullptr ); visitor->visit( this ); }
 
 //ACCEPT(CastExpression)
 ACCEPT(LiteralExpression)
@@ -337,8 +337,8 @@ ExpressionStatement::clone( Clone_context *context ) {
 
 ConditionalStatement*
 ConditionalStatement::clone( Clone_context *context ) {
-    Statement *new_else_branch = NULL;
-    if( else_branch != NULL )
+    Statement *new_else_branch = nullptr;
+    if( else_branch != nullptr )
         new_else_branch = else_branch->clone( context );
     return update_location( this, new ConditionalStatement( cond->clone( context ), then_branch->clone( context ), new_else_branch ) );
 }
@@ -362,7 +362,7 @@ StatementList::clone( Clone_context *context ) {
 VariableDeclaration*
 VariableDeclaration::clone( Clone_context *context ) {
     MSG("mapping var " << (unsigned int)var<< " to var " << (unsigned int)new_var )
-    Variable *new_var = NULL;
+    Variable *new_var = nullptr;
     if( context->var_map.find( var ) == context->var_map.end() ) {
         new_var = new Variable( var->id, var->type );
         context->var_map [ var ] = new_var;
@@ -382,7 +382,7 @@ CompoundStatement::clone( Clone_context *context ) {
 // only creates _one_ single new fundef
 FunctionDefinition*
 FunctionDefinition::clone( Clone_context *context ) {
-    assert( context != NULL );
+    assert( context != nullptr );
     // NOTE: not yet inserted in symbol_env!
     FunctionType *new_type = new FunctionType( *type );
 

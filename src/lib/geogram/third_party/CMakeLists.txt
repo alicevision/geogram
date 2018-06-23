@@ -7,6 +7,9 @@ else()
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     add_definitions(-Wno-maybe-uninitialized)
   endif()
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_definitions(-Wno-unknown-warning-option -Wno-zero-as-null-pointer-constant)
+  endif()
 endif()
 
 

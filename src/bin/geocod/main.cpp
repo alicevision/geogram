@@ -160,7 +160,7 @@ namespace {
 		    exec_command("require(\"preamble\")");
 		}
 		ImGui::Separator();
-		ImGui::MenuItem("From template...", NULL, false, false);
+		ImGui::MenuItem("From template...", nullptr, false, false);
 		embedded_files_menu("templates/");
 		ImGui::EndMenu();
 	    }
@@ -177,12 +177,12 @@ namespace {
 		ImGui::EndMenu();
 	    }
 	    if(ImGui::BeginMenu("Load internal lib...")) {
-		ImGui::MenuItem("These files are those", NULL, false, false);
+		ImGui::MenuItem("These files are those", nullptr, false, false);
 		ImGui::MenuItem(
-		    "that are read by require(\"...\")", NULL, false, false
+		    "that are read by require(\"...\")", nullptr, false, false
 	        );
-		ImGui::MenuItem("You cannot modify them", NULL,false,false);
-		ImGui::MenuItem("(but you can take a look)", NULL,false,false);
+		ImGui::MenuItem("You cannot modify them",    nullptr, false, false);
+		ImGui::MenuItem("(but you can take a look)", nullptr, false, false);
 		ImGui::Separator();
 		embedded_files_menu("lib/");		
 		ImGui::EndMenu();

@@ -202,7 +202,7 @@ namespace GEO {
 	 * \param[in] x the multiplicative step.
 	 */
 	void set_step_mul(double x) {
-	    step_mul_ = geo_max(x,1.0);
+	    step_mul_ = std::max(x,1.0);
 	}
 	
     protected:

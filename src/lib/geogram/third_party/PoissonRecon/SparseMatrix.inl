@@ -313,11 +313,11 @@ int SparseMatrix<T>::SolveGS( const std::vector< std::vector< int > >& mcIndices
         int sum=0;
 
 #ifdef _OPENMP
-#ifdef _WIN32
+#ifdef _MSC_VER // [Bruno Levy] previously _WIN32, broke compile with MingW
 #define SetOMPParallel __pragma( omp parallel for num_threads( threads ) )
-#else // !_WIN32
+#else // !_MSC_VER
 #define SetOMPParallel _Pragma( "omp parallel for num_threads( threads )" )
-#endif // _WIN32
+#endif // _MSC_VER
 #else
 #define SetOMPParallel
 #endif

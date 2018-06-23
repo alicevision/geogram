@@ -128,9 +128,9 @@ namespace GEO {
 
 
     /**
-     * uv is a pointer because it is an optional parameter (can be NULL)
+     * uv is a pointer because it is an optional parameter (can be nullptr)
      */
-    inline index_t add_facet_to_mesh(Mesh* m, vector<vec3>& pts, Attribute<vec2>* uv = NULL, vector<vec2>* lU = NULL){
+    inline index_t add_facet_to_mesh(Mesh* m, vector<vec3>& pts, Attribute<vec2>* uv = nullptr, vector<vec2>* lU = nullptr){
 	index_t off = m->vertices.create_vertices(pts.size());
 	vector<index_t> nv(pts.size());
 	FOR(lv ,pts.size()) {
@@ -138,7 +138,7 @@ namespace GEO {
 	    m->vertices.point(nv[lv]) = pts[lv];
 	}
 	index_t f = m->facets.create_polygon(nv);
-	if (uv != NULL) FOR(lc,m->facets.nb_corners(f))//FOR_EACH_HALFEDGE_OF_FACET(m,h,f)
+	if (uv != nullptr) FOR(lc,m->facets.nb_corners(f))//FOR_EACH_HALFEDGE_OF_FACET(m,h,f)
 			    (*uv)[m->facets.corner(f,lc)] = (*lU)[lc];
 	return f;
     }

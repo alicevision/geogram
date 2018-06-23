@@ -254,12 +254,12 @@ namespace GEO {
          * \pre There is no current CentroidalVoronoiTesselation.
          */
         void make_current() {
-            geo_assert(instance_ == nil);
+            geo_assert(instance_ == nullptr);
             instance_ = this;
         }
 
         /**
-         * \brief Resets the current CentroidalVoronoiTesselation to nil.
+         * \brief Resets the current CentroidalVoronoiTesselation to nullptr.
          * \details The Optimizer uses global variables, therefore there can
          *  be only one CentroidalVoronoiTesselation simultaneously active.
          *  This function can be used to change the currently active
@@ -269,7 +269,7 @@ namespace GEO {
          */
         void done_current() {
             geo_assert(instance_ == this);
-            instance_ = nil;
+            instance_ = nullptr;
         }
 
     public:

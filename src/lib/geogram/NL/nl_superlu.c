@@ -347,6 +347,7 @@ static void nlTerminateExtension_SUPERLU(void) {
     if(SuperLU()->DLL_handle != NULL) {
         nlCloseDLL(SuperLU()->DLL_handle);
         SuperLU()->DLL_handle = NULL;
+	memset(SuperLU(), 0, sizeof(SuperLUContext));
     }
 }
 
@@ -471,8 +472,10 @@ typedef struct {
 
 
 static void nlSuperLUFactorizedMatrixDestroy(NLSuperLUFactorizedMatrix* M) {
-    SuperLU()->Destroy_SuperNode_Matrix(&M->L);
-    SuperLU()->Destroy_CompCol_Matrix(&M->U);    
+    if(nlExtensionIsInitialized_SUPERLU()) {
+	SuperLU()->Destroy_SuperNode_Matrix(&M->L);
+	SuperLU()->Destroy_CompCol_Matrix(&M->U);
+    }
     NL_DELETE_ARRAY(M->perm_r);
     NL_DELETE_ARRAY(M->perm_c);
 }

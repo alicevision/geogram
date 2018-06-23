@@ -150,7 +150,7 @@ namespace GEO {
          * - "BPOW" - Weighted regular 3D triangulation (dimension 4 only)
          * - "NN" - Delaunay with NearestNeighborSearch (any dimension)
          * - "default" - uses the command line argument "algo:delaunay"
-         * \retval nil if \p format is not a valid Delaunay algorithm name.
+         * \retval nullptr if \p format is not a valid Delaunay algorithm name.
          * \retval otherwise, a pointer to a Delaunay algorithm object. The
          * returned pointer must be stored in an Delaunay_var that does
          * automatic destruction:
@@ -311,7 +311,7 @@ namespace GEO {
         
         /**
          * \brief Gets the constraints.
-         * \return the constraints or nil if no constraints
+         * \return the constraints or nullptr if no constraints
          *  were definied.
          */
         const Mesh* constraints() const {

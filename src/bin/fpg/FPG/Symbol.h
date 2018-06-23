@@ -28,7 +28,7 @@ struct Block {
         Variables::iterator it = vars.find( id );
         if( it != vars.end() )
             return it->second;
-        else return NULL;
+        else return nullptr;
     }
 };
 

@@ -9,6 +9,12 @@ void register_embedded_bib_file(void);
 void register_embedded_bib_file() {
      GEO::Biblio::register_references(
         " \n"
+        "@misc{WEB:GEOGRAM, \n"
+        "  title = {Geogram: a programming library of geometric algorithms}, \n"
+        "  author = {Inria, project ALICE-GRAPHYS}, \n"
+        "  howpublished = {\\url{http://alice.loria.fr/software/geogram/doc/html/index.html}} \n"
+        "} \n"
+        " \n"
         "@article{journals/CAD/CatmullRGB, \n"
         "  title = \"Recursively generated B-spline surfaces on arbitrary topological meshes\", \n"
         "  journal = \"Computer-Aided Design\", \n"

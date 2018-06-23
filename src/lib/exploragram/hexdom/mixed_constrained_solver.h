@@ -316,7 +316,7 @@ namespace GEO {
 			vector<int> new_multiplicity(M1_nb_col, 0);
 			FOR(i, M1.size()) {
 				index_t g = to_grp[M1[i].index];
-				new_multiplicity[g] = geo_max(new_multiplicity[g], multiplicity[M1[i].index]);
+				new_multiplicity[g] = std::max(new_multiplicity[g], multiplicity[M1[i].index]);
 				M1[i].index = g;
 			}
 			multiplicity = new_multiplicity;
@@ -483,7 +483,7 @@ namespace GEO {
 			double min_mult = 10000;
 			vector<Coeff> res = get_line(x);
 			FOR(i, res.size()) {
-				min_mult = geo_min(
+				min_mult = std::min(
 					min_mult,
 					double(multiplicity[res[i].index]) * std::abs(res[i].a)
 				);
@@ -583,7 +583,7 @@ namespace GEO {
 							if (pass == 0) {
 								if (dist < snap_threshold
 									&& snap_threshold>auto_snap_threshold) {
-									snap_threshold = geo_max(dist + .001, auto_snap_threshold);
+									snap_threshold = std::max(dist + .001, auto_snap_threshold);
 								}
 								continue;
 							}

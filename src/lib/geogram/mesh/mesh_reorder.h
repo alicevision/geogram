@@ -153,7 +153,7 @@ namespace GEO {
      * \param[in] threshold minimum size of interval to be sorted
      * \param[in] ratio splitting ratio between current interval and
      *  the rest to be sorted
-     * \param[out] levels if non-nil, indices that correspond to level l are
+     * \param[out] levels if non-nullptr, indices that correspond to level l are
      *   in the range levels[l] (included) ... levels[l+1] (excluded)
      */
     void GEOGRAM_API compute_BRIO_order(
@@ -163,7 +163,7 @@ namespace GEO {
         index_t stride = 3,
         index_t threshold = 64,
         double ratio = 0.125,
-        vector<index_t>* levels = nil
+        vector<index_t>* levels = nullptr
     );
 }
 

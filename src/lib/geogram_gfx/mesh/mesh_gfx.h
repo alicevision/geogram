@@ -400,7 +400,9 @@ namespace GEO {
          *  in (0.0 .. 1.0)
          * \see set_show_mesh(), draw_surface(), draw_volume()
          */
-        void set_backface_surface_color(float r, float g, float b, float a=1.0f) {
+        void set_backface_surface_color(
+	    float r, float g, float b, float a=1.0f
+	) {
             backface_surface_color_[0] = r;
             backface_surface_color_[1] = g;
             backface_surface_color_[2] = b;
@@ -586,8 +588,8 @@ namespace GEO {
 	 * \brief Sets the parameters for texture mapping.
 	 * \param[in] subelements the subelements that have texture
 	 *  coordinates.
-	 * \param[in] attribute_name the name of the attribute that has the texture
-	 *  coordinates. Can be a 2d or 3d vector attribute.
+	 * \param[in] attribute_name the name of the attribute that 
+	 *  has the texture coordinates. Can be a 2d or 3d vector attribute.
 	 * \param[in] texture the texture.
 	 * \param[in] repeat the number of times the texture should be repeated
 	 *  in the unit square in texture space.
@@ -675,7 +677,7 @@ namespace GEO {
 			glupTexCoord3d(
 			    tex_coord_attribute_[0][element],
 			    tex_coord_attribute_[1][element],
-			    tex_coord_attribute_[2][element]			    
+			    tex_coord_attribute_[2][element]
 			);
 			break;
 		}
@@ -772,7 +774,8 @@ namespace GEO {
          * \brief Sets GLUP picking mode for drawing primitives
          *  of a given type, or deactivates GLUP picking if MeshGfx picking mode
          *  is deactivated.
-         * \param[in] what one of MESH_VERTICES, MESH_EDGES, MESH_FACETS, MESH_CELLS.
+         * \param[in] what one of 
+	 *  MESH_VERTICES, MESH_EDGES, MESH_FACETS, MESH_CELLS.
          */
         void set_GLUP_picking(MeshElementsFlags what);
 

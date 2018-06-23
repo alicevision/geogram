@@ -80,7 +80,7 @@ namespace GEO {
         // No need to lock/unlock array here, since we are
         // sure that each array is accessed by a single thread.
         index_t nb = neighbors_.array_size(v);
-        nb = geo_min(nb, nb_vertices() - 1);
+        nb = std::min(nb, nb_vertices() - 1);
         // Allocated on the stack (more thread-friendly and no need
         // to deallocate)
         index_t* neighbors = (index_t*) alloca(
@@ -112,7 +112,7 @@ namespace GEO {
         index_t i, index_t nb_neigh, index_t* neighbors
     ) const {
         nb_neigh++;
-        nb_neigh = geo_min(nb_neigh, nb_vertices());
+        nb_neigh = std::min(nb_neigh, nb_vertices());
 
         // Allocated on the stack (more multithread-friendly
         // and no need to free)

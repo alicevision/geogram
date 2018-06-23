@@ -64,7 +64,7 @@ namespace {
         virtual bool get_local_value(
             const std::string& name, std::string& value
         ) const {
-            ValueMap::const_iterator it = values_.find(name);
+            auto it = values_.find(name);
             if(it != values_.end()) {
                 value = it->second;
                 return true;
@@ -99,10 +99,10 @@ namespace GEO {
         const std::string& var_name
     ) :
         observed_variable_(var_name),
-        environment_(nil)
+        environment_(nullptr)
     {
         environment_ = Environment::instance()->find_environment(var_name);
-        geo_assert(environment_ != nil);
+        geo_assert(environment_ != nullptr);
         environment_->add_observer(var_name, this);
     }
 
@@ -128,8 +128,7 @@ namespace GEO {
     void VariableObserverList::add_observer(
         VariableObserver* observer
     ) {
-        Observers::const_iterator it =
-            std::find(observers_.begin(), observers_.end(), observer);
+	auto it = std::find(observers_.begin(), observers_.end(), observer);
         geo_assert(it == observers_.end());
         observers_.push_back(observer);
     }
@@ -137,8 +136,7 @@ namespace GEO {
     void VariableObserverList::remove_observer(
         VariableObserver* observer
     ) {
-        Observers::iterator it =
-            std::find(observers_.begin(), observers_.end(), observer);
+        auto it = std::find(observers_.begin(), observers_.end(), observer);
         geo_assert(it != observers_.end());
         observers_.erase(it);
     }
@@ -148,7 +146,7 @@ namespace GEO {
     Environment::Environment_var Environment::instance_;
 
     Environment* Environment::instance() {
-        if(instance_ == nil) {
+        if(instance_ == nullptr) {
             static bool created = false;
             if(created) {
                 std::cerr
@@ -233,11 +231,11 @@ namespace GEO {
         }
         for(index_t i=0; i<environments_.size(); ++i) {
             Environment* result = environments_[i]->find_environment(name);
-            if(result != nil) {
+            if(result != nullptr) {
                 return result;
             }
         }
-        return nil;
+        return nullptr;
     }
     
     bool Environment::add_observer(
@@ -250,7 +248,7 @@ namespace GEO {
     bool Environment::remove_observer(
         const std::string& name, VariableObserver* observer
     ) {
-        ObserverMap::iterator obs = observers_.find(name);
+        auto obs = observers_.find(name);
         geo_assert(obs != observers_.end());
         obs->second.remove_observer(observer);
         return true;
@@ -280,7 +278,7 @@ namespace GEO {
     bool Environment::notify_local_observers(
         const std::string& name, const std::string& value
     ) {
-        ObserverMap::iterator it = observers_.find(name);
+        auto it = observers_.find(name);
         if(it != observers_.end()) {
             it->second.notify_observers(value);
         }
@@ -310,10 +308,10 @@ namespace GEO {
         return false;
 #else
         char* result = ::getenv(name.c_str());
-        if(result != nil) {
+        if(result != nullptr) {
             value = std::string(result);
         }
-        return result != nil;
+        return result != nullptr;
 #endif
     }
 }

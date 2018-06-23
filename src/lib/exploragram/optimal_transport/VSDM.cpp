@@ -117,23 +117,23 @@ namespace {
 
 namespace GEO {
 
-    VSDM* VSDM::instance_ = nil;
+    VSDM* VSDM::instance_ = nullptr;
     
     VSDM::VSDM(Mesh* S, Mesh* T):
 	S_(S),
 	T_(T),
 	affinity_(1.0),
-	progress_(nil),
+	progress_(nullptr),
         nb_iter_(0),
         cur_iter_(0),
-        subd_(nil) {
+        subd_(nullptr) {
 	compute_graph_Laplacian(S_,&L_);
 	temp_V1_.resize(S_->vertices.nb());
 	temp_V2_.resize(S_->vertices.nb());
 	delaunay_ = Delaunay::create(3);
 	RVD_ = RestrictedVoronoiDiagram::create(delaunay_, T_);
 	optimizer_ = Optimizer::create("HLBFGS");
-	subd_matrix_ = nil;
+	subd_matrix_ = nullptr;
 	geo_cite("DBLP:conf/imr/NivoliersYL11");
 	geo_cite("DBLP:journals/cgf/LuLW12");
         geo_cite("DBLP:journals/ewc/NivoliersYL14");
@@ -149,39 +149,39 @@ namespace GEO {
 	    return;
 	}
 	
-	if(progress_ != nil) {
-	    progress_->reset(nb_iter) ;
+	if(progress_ != nullptr) {
+	    progress_->reset(nb_iter);
 	}
 
-	double S = Geom::mesh_area(*T_) ;
-	double R = ::pow(S, 1.0 / 2.0) ;
-	double CVT_normalization = 1.0 / pow(R, 4.0) ;
-	double affinity_normalization = 0.001 / pow(R, 2.0) ;
+	double S = Geom::mesh_area(*T_);
+	double R = ::pow(S, 1.0 / 2.0);
+	double CVT_normalization = 1.0 / pow(R, 4.0);
+	double affinity_normalization = 0.001 / pow(R, 2.0);
 	affinity_scaling_ =
-	    affinity_ * affinity_normalization / CVT_normalization ;
+	    affinity_ * affinity_normalization / CVT_normalization;
 
-	nb_iter_ = nb_iter ;
-	cur_iter_ = 0 ;
-        instance_ = this ;
+	nb_iter_ = nb_iter;
+	cur_iter_ = 0;
+        instance_ = this;
 	index_t n = S_->vertices.nb() * 3;
-	index_t m = 7 ;
+	index_t m = 7;
 	double* x = S_->vertices.point_ptr(0);
-	optimizer_->set_epsg(0.0) ;
-	optimizer_->set_epsf(0.0) ;
-	optimizer_->set_epsx(0.0) ;
+	optimizer_->set_epsg(0.0);
+	optimizer_->set_epsf(0.0);
+	optimizer_->set_epsx(0.0);
 	optimizer_->set_newiteration_callback(VSDM::newiteration_CB);
 	optimizer_->set_funcgrad_callback(VSDM::funcgrad_CB);
-	optimizer_->set_N(n) ;
-	optimizer_->set_M(m) ;
-	optimizer_->set_max_iter(nb_iter) ;
-	optimizer_->optimize(x) ;
-        instance_ = nil ;
+	optimizer_->set_N(n);
+	optimizer_->set_M(m);
+	optimizer_->set_max_iter(nb_iter);
+	optimizer_->optimize(x);
+        instance_ = nullptr;
     }
 
     void VSDM::funcgrad(index_t n, double* x, double& f, double* g) {
 	f = 0.0;
         Memory::clear(g, n * sizeof(double));
-	if(subd_ == nil) {
+	if(subd_ == nullptr) {
 	    delaunay_->set_vertices(n/3, x);	
 	    RVD_->compute_CVT_func_grad(f, g);
 	} else {
@@ -205,7 +205,7 @@ namespace GEO {
 	    }
 	}
 	if(affinity_ != 0.0) {
-	    add_funcgrad_affinity(n,x,f,g) ;
+	    add_funcgrad_affinity(n,x,f,g);
 	}
     }
 
@@ -218,11 +218,11 @@ namespace GEO {
 		temp_V1_[i] = x[3*i+coord];
 	    }
 	    nlSparseMatrixMult(&L_, temp_V1_.data(), temp_V2_.data());
-	    double F = 0.0 ;
+	    double F = 0.0;
 	    FOR(i,L_.n) {
 		F += temp_V1_[i] * temp_V2_[i];
 	    }
-	    f += affinity_scaling_ * F ;
+	    f += affinity_scaling_ * F;
 	    FOR(i,L_.n) {
 		g[3*i + coord] += 2.0 * affinity_scaling_ * temp_V2_[i];
 	    }
@@ -230,19 +230,19 @@ namespace GEO {
     }
     
     void VSDM::newiteration() {
-	cur_iter_++ ;
+	cur_iter_++;
 	if(cur_iter_ <= nb_iter_) {
 	    Logger::out("VSDM") 
-		<< "Iter: " << cur_iter_ << "/" << nb_iter_ << std::endl ; 
+		<< "Iter: " << cur_iter_ << "/" << nb_iter_ << std::endl; 
 	}
-        if(progress_ != nil) {
-            progress_->next() ;
+        if(progress_ != nullptr) {
+            progress_->next();
         }
     }
     
     void VSDM::funcgrad_CB(index_t n, double* x, double& f, double* g) {
-	geo_assert(instance_ != nil) ;
-        instance_->funcgrad(n, x, f, g) ;
+	geo_assert(instance_ != nullptr);
+        instance_->funcgrad(n, x, f, g);
     }
     
     void VSDM::newiteration_CB(
@@ -253,8 +253,8 @@ namespace GEO {
 	geo_argused(f);
 	geo_argused(g);
 	geo_argused(gnorm);
-	geo_assert(instance_ != nil) ;
-        instance_->newiteration() ;
+	geo_assert(instance_ != nullptr);
+        instance_->newiteration();
     }
 
     void VSDM::compute_graph_Laplacian(Mesh* S, NLSparseMatrix* L) {

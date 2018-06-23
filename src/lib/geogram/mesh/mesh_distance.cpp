@@ -107,7 +107,7 @@ namespace {
                         points_ptr_ + v * points_stride_
                     )
                 );
-                max_sq_dist_ = geo_max(
+                max_sq_dist_ = std::max(
                     max_sq_dist_, sq_dist
                 );
             }
@@ -173,7 +173,7 @@ namespace {
         geo_assert(remaining == 0);
         Process::run_threads(threads);
         for(index_t t = 0; t < threads.size(); t++) {
-            result = geo_max(result, threads[t]->max_squared_distance());
+            result = std::max(result, threads[t]->max_squared_distance());
         }
         double elapsed = W.elapsed_user_time();
         if(elapsed == 0.0) {
@@ -267,7 +267,7 @@ namespace GEO {
     double mesh_symmetric_Hausdorff_distance(
         Mesh& m1, Mesh& m2, double sampling_step
     ) {
-        return geo_max(
+        return std::max(
             mesh_one_sided_Hausdorff_distance(m1, m2, sampling_step),
             mesh_one_sided_Hausdorff_distance(m2, m1, sampling_step)
         );

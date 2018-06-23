@@ -755,8 +755,8 @@ namespace GEO {
 		CC[v] = ::exp(
 		    (nlGetVariable(v)-locked_value)/solver_scale)
 		;
-		min_val = geo_min(min_val,CC[v]);				
-		max_val = geo_max(max_val,CC[v]);
+		min_val = std::min(min_val,CC[v]);				
+		max_val = std::max(max_val,CC[v]);
 	    }
 	    double avg_val = 0.5 * (min_val + max_val);
 	    double min_limit = 1.0 / ::sqrt(max_scaling_correction);

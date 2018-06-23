@@ -132,7 +132,7 @@ namespace {
             GL_FLOAT, // input coordinates representation
             GL_FALSE, // do not normalize
             0,        // offset between two consecutive vertices (0 = packed)
-            0         // addr. relative to bound VBO 
+            nullptr   // addr. relative to bound VBO 
         );
 
         glBindBuffer(GL_ARRAY_BUFFER, quad_tex_coords_VBO);
@@ -143,7 +143,7 @@ namespace {
             GL_FLOAT, // input coordinates representation
             GL_FALSE, // do not normalize
             0,        // offset between two consecutive vertices (0 = packed)
-            0         // addr. relative to bound VBO 
+            nullptr   // addr. relative to bound VBO 
         );
         
         glupBindVertexArray(0);
@@ -208,15 +208,15 @@ namespace {
 #endif
 	
         GLuint vshader = GLSL::compile_shader(
-            GL_VERTEX_SHADER, vshader_source, 0
+            GL_VERTEX_SHADER, vshader_source, nullptr
         );
         
         GLuint fshader = GLSL::compile_shader(
-            GL_FRAGMENT_SHADER, fshader_source, 0
+            GL_FRAGMENT_SHADER, fshader_source, nullptr
         );
         
         quad_program = GLSL::create_program_from_shaders_no_link(
-            vshader, fshader, 0
+            vshader, fshader, nullptr
         );
         glBindAttribLocation(quad_program, 0, "vertex_in");
         glBindAttribLocation(quad_program, 1, "tex_coord_in");
@@ -278,7 +278,7 @@ namespace GEO {
         } else {
             d = 1.0 / d;
         }
-        d *= double(geo_max(mult, 1u));
+        d *= double(std::max(mult, 1u));
         M[0] =  d;
         M[12] = -d*minval;
         M[15] = 1.0;
@@ -335,7 +335,7 @@ namespace GEO {
             const char* vendor = (const char*)glGetString(GL_VENDOR);
             use_glGetBufferParameteri64v = (
                 strlen(vendor) >= 6 && !strncmp(vendor, "NVIDIA", 6) &&
-		(glGetBufferParameteri64v != nil)
+		(glGetBufferParameteri64v != nullptr)
             );
             // Does not seem to be implemented under OpenGL ES
             if(CmdLine::get_arg("gfx:GL_profile") == "ES") {
@@ -410,10 +410,10 @@ namespace GEO {
         }
         
         if(new_size == size_t(size)) {
-            //   Binding nil makes the GPU-side allocated buffer "orphan",
+            //   Binding nullptr makes the GPU-side allocated buffer "orphan",
             // if there was a rendering operation currently using it, then
             // it can safely continue.
-            glBufferData(target, GLsizeiptr(size), nil, GL_STREAM_DRAW);
+            glBufferData(target, GLsizeiptr(size), nullptr, GL_STREAM_DRAW);
             //   And here we bind a fresh new block of GPU-side memory.
             // See https://www.opengl.org/wiki/Buffer_Object_Streaming
             glBufferData(target, GLsizeiptr(size), data, GL_STREAM_DRAW);

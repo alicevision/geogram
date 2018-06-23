@@ -42,6 +42,9 @@
 
 #include <exploragram/basic/common.h>
 
+struct NLMatrixStruct;
+typedef NLMatrixStruct* NLMatrix;
+
 namespace GEO {
     /**
      * \brief Specifies the linear solver to be used
@@ -58,6 +61,7 @@ namespace GEO {
 #include <geogram/voronoi/RVD.h>
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/NL/nl.h>
+#include <geogram/NL/nl_matrix.h>
 #include <geogram/third_party/HLBFGS/HLBFGS.h>
 
 /**
@@ -471,7 +475,14 @@ namespace GEO {
          * \param[in] a the value to be added to the coefficient
          */
         void add_ij_coefficient(index_t i, index_t j, double a) {
-	    nlAddIJCoefficient(i,j,a);
+	    if(!user_H_g_) {
+		nlAddIJCoefficient(i,j,a);
+	    } else {
+		if(user_H_ != nullptr) {
+		    geo_debug_assert(user_H_->type == NL_MATRIX_SPARSE_DYNAMIC);
+		    nlSparseMatrixAdd((NLSparseMatrix*)user_H_, i, j, a);
+		}
+	    }
 	}
 
         /**
@@ -480,7 +491,9 @@ namespace GEO {
          * \param[in] a the value to be added to the coefficient
          */
         void add_i_right_hand_side(index_t i, double a) {
-	    nlAddIRightHandSide(i,a);
+	    if(!user_H_g_) {
+		nlAddIRightHandSide(i,a);
+	    } 
 	}
         
         /**
@@ -500,6 +513,28 @@ namespace GEO {
 	void set_initial_weight(index_t i, double w) {
 	    weights_[i] = w;
 	}
+
+	/**
+	 * \brief Gets the total mass of the domain.
+	 * \return the total mass. 
+	 */
+	double total_mass() const {
+	    return total_mass_;
+	}
+
+	/**
+	 * \brief Computes the P1 Laplacian of the Laguerre cells.
+	 * \param[in] Omega the domain, either a surfacic or a 
+	 *  volumetric mesh.
+	 * \param[in] weights the weights of the Laguerre diagram.
+	 * \param[out] Laplacian P1 Laplacian of the Laguerre diagram or nullptr if 
+	 *  not needed.
+	 * \param[out] measures optional measures the measures of 
+	 *  all Laguerre cells, or nullptr if not needed.
+	 */
+	void compute_P1_Laplacian(
+	    const double* weights, NLMatrix Laplacian, double* measures
+	);
 	
     protected:
 
@@ -586,9 +621,9 @@ namespace GEO {
 	        Newton_step_(false),
 		eval_F_(false),
 	        n_(0),
-	        w_(nil),
-	        g_(nil),
-		mg_(nil) {
+	        w_(nullptr),
+	        g_(nullptr),
+		mg_(nullptr) {
 		weighted_ =
 		    OTM->mesh().vertices.attributes().is_defined("weight");
 	    }
@@ -615,7 +650,7 @@ namespace GEO {
 	    * \retval false otherwise.
 	    */
 	    bool has_Laguerre_centroids() const {
-		return (mg_ != nil);
+		return (mg_ != nullptr);
 	    }
 
 	    /**
@@ -809,6 +844,18 @@ namespace GEO {
 	 *  air particles.
 	 */
 	bool clip_by_balls_;
+
+
+	/**
+	 * \brief True if class is just used by user to compute
+	 *  Hessian and gradient instead of doing full computation.
+	 */
+	bool user_H_g_;
+	
+	/**
+	 * \brief User-defined Hessian matrix.
+	 */
+	NLMatrix user_H_;
     };
 
 }

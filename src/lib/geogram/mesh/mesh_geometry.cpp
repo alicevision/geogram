@@ -216,8 +216,8 @@ namespace GEO {
         for(index_t v = 0; v < M.vertices.nb(); v++) {
             const double* p = M.vertices.point_ptr(v);
             for(index_t c = 0; c < 3; c++) {
-                xyzmin[c] = geo_min(xyzmin[c], p[c]);
-                xyzmax[c] = geo_max(xyzmax[c], p[c]);
+                xyzmin[c] = std::min(xyzmin[c], p[c]);
+                xyzmax[c] = std::max(xyzmax[c], p[c]);
             }
         }
     }
@@ -318,7 +318,7 @@ namespace GEO {
         for(index_t v = 0; v < M.vertices.nb(); v++) {
             double A3d = area3d[v];
             double ANd = areaNd[v];
-            ANd = geo_max(ANd, 1e-6);
+            ANd = std::max(ANd, 1e-6);
             double w = ::pow(A3d / ANd, 2.0);
             weight[v] = w;
         }

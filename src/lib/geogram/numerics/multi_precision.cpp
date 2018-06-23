@@ -102,7 +102,7 @@ namespace {
         /**
          * \brief Creates a new Pools object
          */
-        Pools() : pools_(1024,static_cast<void*>(0)) {
+        Pools() : pools_(1024,nullptr) {
             chunks_.reserve(1024);
         }
 
@@ -126,7 +126,7 @@ namespace {
             if(size >= pools_.size()) {
                 return ::malloc(size);
             }
-            if(pools_[size] == nil) {
+            if(pools_[size] == nullptr) {
                 new_chunk(size);
             }
             void* result = pools_[size];

@@ -54,26 +54,26 @@ namespace GEO {
         line_num_(0)
     {
         F_ = fopen(filename.c_str(), "r");
-        ok_ = (F_ != nil);
+        ok_ = (F_ != nullptr);
         line_[0] = '\0';
     }
 
     LineInput::~LineInput() {
-        if(F_ != nil) {
+        if(F_ != nullptr) {
             fclose(F_);
-            F_ = nil;
+            F_ = nullptr;
         }
     }
 
     bool LineInput::get_line() {
-        if(F_ == nil) {
+        if(F_ == nullptr) {
             return false;
         }
         line_[0] = '\0';
         // Skip the empty lines
         while(!isprint(line_[0])) {
             ++line_num_;
-            if(fgets(line_, MAX_LINE_LEN, F_) == nil) {
+            if(fgets(line_, MAX_LINE_LEN, F_) == nullptr) {
                 return false;
             }
         }
@@ -89,7 +89,7 @@ namespace GEO {
             if(*ptr == '\\' && total_length > 0) {
                 *ptr = ' ';
                 ptr++;
-                if(fgets(ptr, int(total_length), F_) == nil) {
+                if(fgets(ptr, int(total_length), F_) == nullptr) {
                     return false;
                 }
                 ++line_num_;
@@ -114,11 +114,11 @@ namespace GEO {
 
     void LineInput::get_fields(const char* separators) {
         field_.resize(0);
-        char* context = nil;
+        char* context = nullptr;
         char* tok = safe_strtok(line_, separators, &context);
-        while(tok != nil) {
+        while(tok != nullptr) {
             field_.push_back(tok);
-            tok = safe_strtok(nil, separators, &context);
+            tok = safe_strtok(nullptr, separators, &context);
         }
     }
 
@@ -126,9 +126,9 @@ namespace GEO {
     void LineInput::get_fields(const char* separators) {
         field_.resize(0);
         char* tok = strtok(line_, separators);
-        while(tok != nil) {
+        while(tok != nullptr) {
             field_.push_back(tok);
-            tok = strtok(nil, separators);
+            tok = strtok(nullptr, separators);
         }
     }
 

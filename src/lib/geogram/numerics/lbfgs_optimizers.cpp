@@ -68,9 +68,9 @@ namespace GEO {
      */
     namespace OptimizerConfig {
 
-        static Optimizer::newiteration_callback newiteration_callback_ = nil;
-        static Optimizer::funcgrad_callback funcgrad_callback_ = nil;
-        static Optimizer::evalhessian_callback evalhessian_callback_ = nil;
+        static Optimizer::newiteration_callback newiteration_callback_ = nullptr;
+        static Optimizer::funcgrad_callback funcgrad_callback_ = nullptr;
+        static Optimizer::evalhessian_callback evalhessian_callback_ = nullptr;
         static index_t N_ = 0;
 
         /**
@@ -163,16 +163,16 @@ namespace GEO {
     }
 
     void HLBFGSOptimizer::optimize(double* x) {
-        geo_assert(newiteration_callback_ != nil);
-        geo_assert(funcgrad_callback_ != nil);
+        geo_assert(newiteration_callback_ != nullptr);
+        geo_assert(funcgrad_callback_ != nullptr);
         geo_assert(n_ > 0);
-        geo_assert(x != nil);
+        geo_assert(x != nullptr);
 
         OptimizerConfig::init(
             n_,
             funcgrad_callback_,
             newiteration_callback_,
-            nil
+            nullptr
         );
 
         double parameter[20];
@@ -193,7 +193,7 @@ namespace GEO {
             (int) m_,
             x,
             OptimizerConfig::HLBFGS_funcgrad_callback,
-            0,
+            nullptr,
             HLBFGS_UPDATE_Hessian,
             OptimizerConfig::HLBFGS_newiteration_callback,
             parameter,
@@ -229,11 +229,11 @@ namespace GEO {
     }
 
     void HLBFGS_HessOptimizer::optimize(double* x) {
-        geo_assert(newiteration_callback_ != nil);
-        geo_assert(funcgrad_callback_ != nil);
-        geo_assert(evalhessian_callback_ != nil);
+        geo_assert(newiteration_callback_ != nullptr);
+        geo_assert(funcgrad_callback_ != nullptr);
+        geo_assert(evalhessian_callback_ != nullptr);
         geo_assert(n_ > 0);
-        geo_assert(x != nil);
+        geo_assert(x != nullptr);
 
         OptimizerConfig::init(
             n_,

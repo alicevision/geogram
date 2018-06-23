@@ -88,7 +88,7 @@ void GEOGRAM_API register_embedded_lua_file(
  * \param[in] filename the name that was previously
  *  used to register the file, using register_embedded_file()
  * \param[out] data a pointer to the static string with the
- *  "file" data, or nil if no file was registered with that
+ *  "file" data, or nullptr if no file was registered with that
  *  name.
  */
 void GEOGRAM_API get_embedded_lua_file(

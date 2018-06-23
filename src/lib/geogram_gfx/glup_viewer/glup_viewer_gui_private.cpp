@@ -118,7 +118,7 @@ void glup_viewer_gui_init(GLFWwindow* w) {
     style.FrameRounding = 10.0f;
     style.GrabRounding = 10.0f;
     ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = NULL;
+    io.IniFilename = nullptr;
 
     io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
 	roboto_medium_compressed_data, roboto_medium_compressed_size, 16.0f
@@ -165,7 +165,7 @@ void glup_viewer_gui_begin_frame() {
 
 void glup_viewer_gui_end_frame() {
     GlupViewerDisplayFunc overlay_func = glup_viewer_get_overlay_func();
-    if(overlay_func != nil) {
+    if(overlay_func != nullptr) {
         overlay_func();
         ImGui::Render();
 #ifdef GEO_GL_LEGACY            	
@@ -285,15 +285,15 @@ GLboolean glup_viewer_set_effect(GLenum effect) {
 	    effect_ = new GEO::UnsharpMaskingImpl();
 	    break;
     }
-    GLboolean result = (effect_.is_nil() || effect_->OK()) ? GL_TRUE : GL_FALSE;
-    if(!effect_.is_nil() && !effect_->OK()) {
+    GLboolean result = (effect_.is_null() || effect_->OK()) ? GL_TRUE : GL_FALSE;
+    if(!effect_.is_null() && !effect_->OK()) {
 	effect_.reset();
     }
     return result;
 }
 
 void glup_viewer_effect_begin_frame() {
-    if(!effect_.is_nil()) {
+    if(!effect_.is_null()) {
 	int w,h;
 	glup_viewer_get_screen_size(&w,&h);
 	effect_->pre_render(GEO::index_t(w), GEO::index_t(h));
@@ -301,7 +301,7 @@ void glup_viewer_effect_begin_frame() {
 }
     
 void glup_viewer_effect_end_frame() {
-    if(!effect_.is_nil()) {
+    if(!effect_.is_null()) {
 	effect_->post_render();
     }
 }
@@ -327,7 +327,7 @@ extern "C" {
             GEO::FileSystem::is_file(all_files[0])
         ) {
             const char* pname = all_files[0].c_str();
-            drag_drop(nil, 1, &pname);
+            drag_drop(nullptr, 1, &pname);
         }
     }
 }

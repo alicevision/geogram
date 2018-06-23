@@ -363,8 +363,8 @@ namespace {
      */
     void detect_bad_facets(
         Mesh& M, bool check_duplicates, vector<index_t>& remove_f,
-        vector<index_t>* old_polygons = nil,
-        vector<index_t>* new_polygons = nil
+        vector<index_t>* old_polygons = nullptr,
+        vector<index_t>* new_polygons = nullptr
     ) {
         index_t nb_duplicates = 0;
         index_t nb_degenerate = 0;
@@ -429,8 +429,8 @@ namespace {
                 // If we found a degenerate polygonal facet and
                 // we want to regenerate a valid one:
                 if(
-                    old_polygons != nil &&
-                    new_polygons != nil &&
+                    old_polygons != nullptr &&
+                    new_polygons != nullptr &&
                     M.facets.nb_vertices(f) > 3
                 ) {
                     if(find_facet_non_duplicated_vertices(
@@ -701,12 +701,12 @@ namespace {
      * \param[out] moebius_facets a pointer to a vector. On exit,
      *  *moebius_facets[f] has a non-zero value if facet f is
      *  incident to an edge that could not be consistently oriented.
-     *  If nil, then this information is not returned.
+     *  If nullptr, then this information is not returned.
      */
     void repair_propagate_orientation(
         Mesh& M, index_t f, const std::vector<bool>& visited,
         index_t& moebius_count,
-        vector<index_t>* moebius_facets = nil
+        vector<index_t>* moebius_facets = nullptr
     ) {
         index_t nb_plus = 0;
         index_t nb_minus = 0;
@@ -732,7 +732,7 @@ namespace {
         }
         if(nb_plus != 0 && nb_minus != 0) {
             moebius_count++;
-            if(moebius_facets != nil) {
+            if(moebius_facets != nullptr) {
                 moebius_facets->resize(M.facets.nb(), 0);
                 (*moebius_facets)[f] = 1;
                 for(
@@ -916,10 +916,10 @@ namespace {
      * \param[out] moebius_facets a pointer to a vector. On exit,
      *  *moebius_facets[f] has a non-zero value if facet f is
      *  incident to an edge that could not be consistently oriented.
-     *  If nil, then this information is not returned.
+     *  If nullptr, then this information is not returned.
      */
     void repair_reorient_facets_anti_moebius(
-        Mesh& M, vector<index_t>* moebius_facets=nil
+        Mesh& M, vector<index_t>* moebius_facets=nullptr
     ) {
         const int max_iter = 5;
         vector<facet_distance_t> D;

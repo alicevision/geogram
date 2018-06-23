@@ -80,7 +80,7 @@ namespace GEO {
         lighting_ = true;
         picking_mode_ = MESH_NONE;
         object_picking_id_ = index_t(-1);
-        mesh_ = nil;
+        mesh_ = nullptr;
         triangles_and_quads_ = true;
         quads_ = true;
 
@@ -251,7 +251,7 @@ namespace GEO {
     }
     
     void MeshGfx::draw_vertices() {
-        if(mesh_ == nil) {
+        if(mesh_ == nullptr) {
             return;
         }
         
@@ -293,7 +293,7 @@ namespace GEO {
             GLUP_LINES,
             GLUPsizei(mesh_->edges.nb()*2),
             GL_UNSIGNED_INT,
-            0
+            nullptr
         );
         if(attribute_subelements_ == MESH_VERTICES) {
             end_attributes();
@@ -338,7 +338,7 @@ namespace GEO {
     }
     
     void MeshGfx::draw_edges() {
-        if(mesh_ == nil) {
+        if(mesh_ == nullptr) {
             return;
         }
         
@@ -387,7 +387,7 @@ namespace GEO {
             GLUP_TRIANGLES,
             GLUPsizei(mesh_->facets.nb()*3),
             GL_UNSIGNED_INT,
-            0
+            nullptr
         );
         if(attribute_subelements_ == MESH_VERTICES) {
             end_attributes();
@@ -445,7 +445,7 @@ namespace GEO {
             GLUP_QUADS,
             GLUPsizei(mesh_->facets.nb()*4),
             GL_UNSIGNED_INT,
-            0
+            nullptr
         );
         if(attribute_subelements_ == MESH_VERTICES) {
             end_attributes();
@@ -701,7 +701,7 @@ namespace GEO {
     }
     
     void MeshGfx::draw_surface() {
-        if(mesh_ == nil) {
+        if(mesh_ == nullptr) {
             return;
         }
         set_GLUP_parameters();
@@ -807,7 +807,7 @@ namespace GEO {
             GLUP_TETRAHEDRA,
             GLUPsizei(mesh_->cells.nb()*4),
             GL_UNSIGNED_INT,
-            0
+            nullptr
         );
         if(attribute_subelements_ == MESH_VERTICES) {
             end_attributes();
@@ -1010,7 +1010,7 @@ namespace GEO {
     }
     
     void MeshGfx::draw_volume() {
-        if(mesh_ == nil) {
+        if(mesh_ == nullptr) {
             return;
         }
         if(mesh_->cells.nb() == 0) {
@@ -1033,7 +1033,7 @@ namespace GEO {
         mesh_ = mesh;
         triangles_and_quads_ = true;
         quads_ = true;
-        if(mesh_ != nil) {
+        if(mesh_ != nullptr) {
             for(index_t f = 0; f<mesh_->facets.nb(); ++f) {
                 index_t nb = mesh_->facets.nb_vertices(f);
                 if(nb != 3 && nb != 4) {
@@ -1059,7 +1059,7 @@ namespace GEO {
         //   - activate automatic synchronization with
         //      OpenGL fixed state.
         
-        if(glupCurrentContext() == nil) {
+        if(glupCurrentContext() == nullptr) {
             glupMakeCurrent(glupCreateContext());
             auto_GL_interop_ = true;
         }
@@ -1122,7 +1122,7 @@ namespace GEO {
         glBindBuffer(GL_ARRAY_BUFFER, vertices_VBO_);
         glEnableVertexAttribArray(0);
 
-        GLint dim = GLint(geo_min(3u, mesh_->vertices.dimension()));
+        GLint dim = GLint(std::min(3u, mesh_->vertices.dimension()));
         
         if(mesh_->vertices.single_precision()) {
             GLsizei stride = GLsizei(
@@ -1134,7 +1134,7 @@ namespace GEO {
                 GL_FLOAT, // input coordinates representation
                 GL_FALSE, // do not normalize
                 stride,   // offset between two consecutive vertices
-                0         // addr. relative to bound VBO 
+                nullptr   // addr. relative to bound VBO 
             );
         } else {
 #ifdef GEO_GL_NO_DOUBLES
@@ -1147,11 +1147,11 @@ namespace GEO {
             );
             glVertexAttribPointer(
                 0,         // Attribute 0
-                dim,         // nb coordinates per vertex
+                dim,       // nb coordinates per vertex
                 GL_DOUBLE, // input coordinates representation
                 GL_FALSE,  // do not normalize
                 stride,    // offset between two consecutive vertices
-                0          // addr. relative to bound VBO 
+                nullptr    // addr. relative to bound VBO 
             );
 #endif                    
         }
@@ -1353,8 +1353,10 @@ namespace GEO {
         }
         
         if(scalar_attribute_.is_bound()) {
-            size_t element_size = scalar_attribute_.attribute_store()->element_size();
-            GLint dimension = GLint(scalar_attribute_.attribute_store()->dimension());
+            size_t element_size =
+		scalar_attribute_.attribute_store()->element_size();
+            GLint dimension =
+		GLint(scalar_attribute_.attribute_store()->dimension());
             index_t nb_items = scalar_attribute_.size();
             const void* data = scalar_attribute_.attribute_store()->data();
 
@@ -1385,8 +1387,10 @@ namespace GEO {
         if(VAO == 0) {
             return;
         }
-        size_t element_size = scalar_attribute_.attribute_store()->element_size();
-        GLint dimension = GLint(scalar_attribute_.attribute_store()->dimension());
+        size_t element_size =
+	    scalar_attribute_.attribute_store()->element_size();
+        GLint dimension =
+	    GLint(scalar_attribute_.attribute_store()->dimension());
 
         if(
             scalar_attribute_.element_type() ==
@@ -1513,7 +1517,7 @@ namespace GEO {
 		);
 		break;
 	    case 3:
-		glupTextureType(GLUP_TEXTURE_3D);						
+		glupTextureType(GLUP_TEXTURE_3D);
 		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_3D_UNIT);
 		glBindTexture(
 		    GLUP_TEXTURE_3D_TARGET, attribute_texture_

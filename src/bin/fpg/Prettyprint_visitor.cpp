@@ -107,7 +107,7 @@ void
 Prettyprint_visitor::visit( AST::UnaryFunction *node ) {
     AST::Expression *e = node->e;
     argused(e);
-    assert( e != NULL );
+    assert( e != nullptr );
     switch( node->kind ) {
     case AST::UnaryFunction::XSIGN : out << "sign"; break;
     case AST::UnaryFunction::XSQRT : out << "sqrt"; break;
@@ -190,7 +190,7 @@ void
 Prettyprint_visitor::visit( AST::StatementList *node ) {
     for( AST::StatementContainer::iterator it = node->statements->begin(); it != node->statements->end(); ++it ) {
         AST::CompoundStatement *c = dynamic_cast<AST::CompoundStatement*>(*it);
-        if( c != NULL && c->statements->statements->size() == 1 )
+        if( c != nullptr && c->statements->statements->size() == 1 )
             out << oformat(c->statements);
         else
             out << oformat(*it);
@@ -200,8 +200,8 @@ Prettyprint_visitor::visit( AST::StatementList *node ) {
 void
 Prettyprint_visitor::visit( AST::CompoundStatement *node ) {
     /*if( node->statements->statements->size() == 1 &&
-        (dynamic_cast<AST::ExpressionStatement*>(node->statements->statements->front()) != NULL ||
-         dynamic_cast<AST::Return*>(node->statements->statements->front()) != NULL    ) )
+        (dynamic_cast<AST::ExpressionStatement*>(node->statements->statements->front()) != nullptr ||
+         dynamic_cast<AST::Return*>(node->statements->statements->front()) != nullptr    ) )
     {
         indent();
         out << oformat(node->statements);
@@ -289,9 +289,9 @@ Prettyprint_visitor::visit( AST::SwitchStatement *node ) {
 void
 Prettyprint_visitor::visit( AST::FunctionDefinition *fundef ) {
     out << std::endl << fundef->type->name() << "( ";
-    FunctionType::ParameterList::iterator it = fundef->type->parameters.begin();
+    // FunctionType::ParameterList::iterator it = fundef->type->parameters.begin();
     FOREACH_PARAMETER(fundef->type) {
-        std::string comma = it == fundef->type->parameters.begin() ? "" : ", ";
+        std::string comma = (it == fundef->type->parameters.begin()) ? "" : ", ";
         std::cout << comma << (*it)->type->name() << " " << (*it)->id;
     }
     out << ") " << oformat(fundef->body) << std::endl;

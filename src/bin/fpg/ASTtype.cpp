@@ -192,7 +192,7 @@ Type*
 StatementList::computeType() {
     FOREACH_STATEMENT {
         Statement *stmt = *it;
-        assert( stmt != NULL );
+        assert( stmt != nullptr );
         stmt->getType();
     }
     return type_void;
@@ -203,7 +203,7 @@ Type*
 FunctionDefinition::computeType() {
     return_type = type->return_type;
     body->getType();
-    return_type = NULL;
+    return_type = nullptr;
     return type_void;
 }
 

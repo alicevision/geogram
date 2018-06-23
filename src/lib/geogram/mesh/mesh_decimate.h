@@ -83,14 +83,14 @@ namespace GEO {
      * \param[in] mode a combination of #MeshDecimateMode flags.
      *  Combine them with the 'bitwise or' (|) operator.
      * \param[in] vertices_flags an array of flags associated with
-     *  each vertex of \p mesh_id, or NULL if unspecified. Memory
+     *  each vertex of \p mesh_id, or nullptr if unspecified. Memory
      *  is managed by client code. If \p vertices_flags[v] is
      *  non-zero, then vertex v is preserved, else it can be discarded.
      */
     void GEOGRAM_API mesh_decimate_vertex_clustering(
         Mesh& M, index_t nb_bins,
         MeshDecimateMode mode = MESH_DECIMATE_DEFAULT,
-        geo_index_t* vertices_flags = nil
+        geo_index_t* vertices_flags = nullptr
     );
 }
 

@@ -66,7 +66,7 @@ namespace {
     size_t safe_strncpy(
         char* dest, const char* source, size_t max_dest_size
     ) {
-        strncpy(dest, source, max_dest_size);
+        strncpy(dest, source, max_dest_size-1);
         dest[max_dest_size-1] = '\0';
         return strlen(dest);
     }
@@ -118,7 +118,7 @@ namespace GEO {
     }
 
     FileDialog::FileDialog() :
-        application_(nil),
+        application_(nullptr),
         visible_(false),
         current_write_extension_index_(0),        
         pinned_(false),
@@ -290,7 +290,7 @@ namespace GEO {
             } else {
 		selected_file_ = file;
                 if(
-		    application_ != nil &&
+		    application_ != nullptr &&
 		    application_->save(file)
 		) {
 		    Logger::out("I/O") << "Saved "
@@ -299,7 +299,7 @@ namespace GEO {
             }
         } else {
 	    selected_file_ = file;
-	    if(application_ != nil) {
+	    if(application_ != nullptr) {
 		application_->load(file);
 	    }
         }
@@ -471,7 +471,7 @@ namespace GEO {
                     ImGui::PushItemWidth(-1.0);
 
                     if(
-		       application_ != nil &&
+		       application_ != nullptr &&
 		       extensions_.size() == 0
 		    ) {
                         String::split_string(
@@ -519,7 +519,7 @@ namespace GEO {
         }
         if(
             ImGui::BeginPopupModal(
-                "File exists", NULL, ImGuiWindowFlags_AlwaysAutoResize
+                "File exists", nullptr, ImGuiWindowFlags_AlwaysAutoResize
             )
         ) {
             ImGui::Text(
@@ -548,7 +548,7 @@ namespace GEO {
 	if(!FileSystem::is_file(filename)) {
 	    return false;
 	}
-	if(application_ != nil) {
+	if(application_ != nullptr) {
 	    return application_->can_load(filename);
 	}
 	std::string ext = FileSystem::extension(filename);

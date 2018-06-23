@@ -241,11 +241,11 @@ namespace GEO {
 			facet_tex_vertices.resize(0);
                         
                         for(index_t i = 1; i < in.nb_fields(); i++) {
-			    char* tex_vertex_str = nil;
+			    char* tex_vertex_str = nullptr;
                             for(char* ptr = in.field(i); *ptr != '\0'; ptr++) {
                                 if(*ptr == '/') {
 				    if(!ignore_tex_coords &&
-				       tex_vertex_str == nil) {
+				       tex_vertex_str == nullptr) {
 					tex_vertex_str = ptr+1;
 				    }
                                     *ptr = '\0';
@@ -280,7 +280,7 @@ namespace GEO {
                             }
                             facet_vertices.push_back(vertex_index-1);
 
-			    if(tex_vertex_str != nil &&
+			    if(tex_vertex_str != nullptr &&
 			       tex_vertex_str[0] != '\0' &&
 			       tex_vertex_str[0] != '/' 
 			    ) {
@@ -800,8 +800,8 @@ namespace GEO {
                         // account for differences in the indexing
                         // convetions in .mesh/.meshb files w.r.t.
                         // geogram internal conventions.
-                        geo_swap(v[0], v[1]);
-                        geo_swap(v[4], v[5]);
+                        std::swap(v[0], v[1]);
+                        std::swap(v[4], v[5]);
                         
                         for(index_t lv=0; lv<8; ++lv) {
                             M.cells.set_vertex(
@@ -1253,7 +1253,7 @@ namespace GEO {
                 color_mult_(1.0),
                 current_color_(max_index_t()),
                 tristrip_index_(0),
-                load_colors_(false) {
+                load_colors_(true) {
             }
 
             /**
@@ -1268,9 +1268,9 @@ namespace GEO {
              * \return true on success, false otherwise
              */
             bool load() {
-                p_ply ply = ply_open(filename_.c_str(), nil, 0, nil);
+                p_ply ply = ply_open(filename_.c_str(), nullptr, 0, nullptr);
 
-                if(ply == nil) {
+                if(ply == nullptr) {
                     Logger::err("I/O")
                         << "Could not open file: " << filename_
                         << std::endl;
@@ -1372,7 +1372,7 @@ namespace GEO {
              * \param[in] ply the p_ply handle to the file
              */
             void check_for_colors(p_ply ply) {
-                p_ply_element element = nil;
+                p_ply_element element = nullptr;
 
                 bool has_r = false;
                 bool has_g = false;
@@ -1384,22 +1384,22 @@ namespace GEO {
 
                 for(;;) {
                     element = ply_get_next_element(ply, element);
-                    if(element == nil) {
+                    if(element == nullptr) {
                         break;
                     }
-                    const char* elt_name = nil;
-                    ply_get_element_info(element, &elt_name, nil);
+                    const char* elt_name = nullptr;
+                    ply_get_element_info(element, &elt_name, nullptr);
 
                     if(!strcmp(elt_name, "vertex")) {
-                        p_ply_property property = nil;
+                        p_ply_property property = nullptr;
                         for(;;) {
                             property = ply_get_next_property(element, property);
-                            if(property == nil) {
+                            if(property == nullptr) {
                                 break;
                             }
-                            const char* prop_name = nil;
+                            const char* prop_name = nullptr;
                             ply_get_property_info(
-                                property, &prop_name, nil, nil, nil
+                                property, &prop_name, nullptr, nullptr, nullptr
                             );
                             has_r = has_r || !strcmp(prop_name, "r");
                             has_g = has_g || !strcmp(prop_name, "g");
@@ -1441,6 +1441,31 @@ namespace GEO {
                 } else {
                     has_colors_ = false;
                 }
+
+		if(!has_colors_) {
+		    return;
+		}
+		
+		vertex_color_.bind_if_is_defined(
+		    mesh_.vertices.attributes(), "color"
+		);
+		if(vertex_color_.is_bound() &&
+		   vertex_color_.dimension() != 3
+		) {
+		    Logger::warn("PLY")
+			<< "Mesh already has a color attribute "
+			<< "that is not of dimension 3"
+			<< std::endl;
+		    has_colors_ = false;
+		    return;
+		}
+		if(!vertex_color_.is_bound()) {
+		    vertex_color_.create_vector_attribute(
+			mesh_.vertices.attributes(),
+			"color",
+			3
+		    );
+		}
             }
 
             /**
@@ -1451,9 +1476,11 @@ namespace GEO {
              * \return the PlyLoader associated with \p argument
              */
             static PlyLoader* loader(p_ply_argument argument) {
-                PlyLoader* result = nil;
-                ply_get_argument_user_data(argument, (void**) (&result), nil);
-                geo_debug_assert(result != nil);
+                PlyLoader* result = nullptr;
+                ply_get_argument_user_data(
+		    argument, (void**) (&result), nullptr
+		);
+                geo_debug_assert(result != nullptr);
                 return result;
             }
 
@@ -1513,7 +1540,7 @@ namespace GEO {
              */
             int add_vertex_data(p_ply_argument argument) {
                 long coord;
-                ply_get_argument_user_data(argument, nil, &coord);
+                ply_get_argument_user_data(argument, nullptr, &coord);
                 if(coord == 0) {
                     geo_debug_assert(mesh_.vertices.dimension() >= 3);
                     if(
@@ -1557,7 +1584,9 @@ namespace GEO {
              */
             int add_face_data(p_ply_argument argument) {
                 long length, value_index;
-                ply_get_argument_property(argument, nil, &length, &value_index);
+                ply_get_argument_property(
+		    argument, nullptr, &length, &value_index
+		);
                 if(value_index < 0) {
                     // Ignore negative values -
                     // this is not an error! (facet markers)
@@ -1595,7 +1624,9 @@ namespace GEO {
              */
             int add_tristrip_data(p_ply_argument argument) {
                 long length, value_index;
-                ply_get_argument_property(argument, nil, &length, &value_index);
+                ply_get_argument_property(
+		    argument, nullptr, &length, &value_index
+		);
                 if(value_index < 0) {
                     // Ignore negative values - this is not an error!
                     return 1;
@@ -1697,7 +1728,7 @@ namespace GEO {
              */
             int add_color_data(p_ply_argument argument) {
                 long coord;
-                ply_get_argument_user_data(argument, nil, &coord);
+                ply_get_argument_user_data(argument, nullptr, &coord);
                 if(coord == 0) {
                     geo_debug_assert(mesh_.vertices.dimension() >= 9);
                     if(current_color_ >= mesh_.vertices.nb()) {
@@ -1711,12 +1742,9 @@ namespace GEO {
 
                 if(coord == 0 || coord == 1 || coord == 2) {
                     double value =
-                        double(ply_get_argument_value(argument)) *
-                        color_mult_;
-                    geo_argused(value);
-                    // TODO: copy color into mesh
-                    // (note: use current_color_ - 1 since
-                    //  it was incremented before)
+                        double(ply_get_argument_value(argument)) * color_mult_;
+                    // (note: current_color_ - 1 because it was incremented before)
+		    vertex_color_[3*(current_color_ - 1) + index_t(coord)] = value;
                     return 1;
                 }
 
@@ -1744,6 +1772,8 @@ namespace GEO {
             bool load_colors_;
 
             vector<index_t> facet_vertices_;
+
+	    Attribute<double> vertex_color_;
         };
 
 
@@ -1760,10 +1790,10 @@ namespace GEO {
             const MeshIOFlags& ioflags
         ) {
             p_ply oply = ply_create(
-                filename.c_str(), PLY_LITTLE_ENDIAN, NULL, 0, NULL
+                filename.c_str(), PLY_LITTLE_ENDIAN, nullptr, 0, nullptr
             );
 
-            if(oply == nil) {
+            if(oply == nullptr) {
                 return false;
             }
 
@@ -1779,7 +1809,7 @@ namespace GEO {
                 // (determine best index types)
                 index_t max_facet_size = 0;
                 for(index_t f = 0; f < M.facets.nb(); ++f) {
-                    max_facet_size = geo_max(
+                    max_facet_size = std::max(
                         max_facet_size, M.facets.nb_vertices(f)
                     );
                 }
@@ -2238,7 +2268,7 @@ namespace GEO {
             const MeshIOFlags& ioflags
         ) {
             FILE* F = fopen(filename.c_str(), "rb");
-            if(F == nil) {
+            if(F == nullptr) {
                 return false;
             }
 
@@ -3914,7 +3944,7 @@ namespace GEO {
 	    {
 		index_t nb_vertices = 0;
 		FOR(v, M.vertices.nb()) {
-		    nb_vertices = geo_max(nb_vertices, index_t(vertex_id[v]));
+		    nb_vertices = std::max(nb_vertices, index_t(vertex_id[v]));
 		}
 		++nb_vertices;
 		vector<index_t> vid_to_v(nb_vertices);
@@ -3999,8 +4029,7 @@ namespace GEO {
 			    index_t(vertex_id[M.facet_corners.vertex(c2)]);
 			bindex K(iv1, iv2, bindex::KEEP_ORDER);
 			index_t ie = index_t(-1);
-			std::map<bindex,index_t>::const_iterator it =
-			    edge_to_id.find(K);
+			auto it = edge_to_id.find(K);
 			if(it == edge_to_id.end()) {
 			    ie = 2*edge_to_id[bindex(iv1,iv2)]+1;
 			} else {
@@ -4016,7 +4045,7 @@ namespace GEO {
 	    
 	    index_t nb_cells = 0;
 	    FOR(f, M.facets.nb()) {
-		nb_cells = geo_max(nb_cells, index_t(cell_id[f]));
+		nb_cells = std::max(nb_cells, index_t(cell_id[f]));
 	    }
 	    ++nb_cells;
 	    
@@ -4165,7 +4194,7 @@ namespace GEO {
 
         bool result = false;
         MeshIOHandler_var handler = MeshIOHandler::get_handler(filename);
-        if(handler != nil) {
+        if(handler != nullptr) {
             try {
                 result = handler->load(filename, M, ioflags);
             }
@@ -4223,7 +4252,7 @@ namespace GEO {
             << std::endl;
 
         MeshIOHandler_var handler = MeshIOHandler::get_handler(filename);
-        if(handler != nil && handler->save(M, filename, ioflags)) {
+        if(handler != nullptr && handler->save(M, filename, ioflags)) {
             return true;
         }
 
@@ -4240,14 +4269,14 @@ namespace GEO {
         MeshIOHandler* handler = MeshIOHandlerFactory::create_object(
             format
         );
-        if(handler != nil) {
+        if(handler != nullptr) {
             return handler;
         }
 
         Logger::err("I/O")
             << "Unsupported file format: " << format
             << std::endl;
-        return nil;
+        return nullptr;
     }
 
     MeshIOHandler* MeshIOHandler::get_handler(

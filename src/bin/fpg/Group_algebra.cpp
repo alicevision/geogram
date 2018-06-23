@@ -49,15 +49,15 @@ Leaf_item::Leaf_item( unsigned int degree, unsigned int index, std::set<Variable
 }
 
 Product_item::Product_item( Group_item* a, Group_item* b ) {
-    assert( a != NULL );
-    assert( b != NULL );
+    assert( a != nullptr );
+    assert( b != nullptr );
     items.push_back( a );
     items.push_back( b );
 }
 
 Sum_item::Sum_item( Group_item* a, Group_item* b ) {
-    assert( a != NULL );
-    assert( b != NULL );
+    assert( a != nullptr );
+    assert( b != nullptr );
     assert( a->degree() == b->degree() );
     items.push_back( a );
     items.push_back( b );
@@ -75,7 +75,7 @@ Product_item::degree() {
     std::vector< Group_item* >::iterator it;
     unsigned int result = 0;
     for( it = items.begin(); it != items.end(); ++it ) {
-        assert( *it != NULL );
+        assert( *it != nullptr );
         result += (*it)->degree();
     }
     return result;
@@ -93,9 +93,9 @@ Sum_item::degree() {
 // is_equal =====================================================
 bool
 Leaf_item::is_equal( Group_item *other, bool consider_varset ) {
-    assert( other != NULL );
+    assert( other != nullptr );
     Leaf_item* l = dynamic_cast<Leaf_item*>(other);
-    if( l == NULL )
+    if( l == nullptr )
         return false;
     else
         return degree() == l->degree() &&
@@ -105,9 +105,9 @@ Leaf_item::is_equal( Group_item *other, bool consider_varset ) {
 
 bool
 Array_item::is_equal( Group_item *other, bool consider_varset ) {
-    assert( other != NULL );
+    assert( other != nullptr );
     Array_item* p = dynamic_cast<Array_item*>(other);
-    if( p == NULL )
+    if( p == nullptr )
         return false;
     if( p->degree() != degree() || items.size() != p->items.size() ) {
         MSG("not equal: " << p->degree() << " != " << degree() << " || " << items.size() << " != " << p->items.size() )
@@ -129,18 +129,18 @@ Array_item::is_equal( Group_item *other, bool consider_varset ) {
 
 bool
 Sum_item::is_equal( Group_item *other, bool consider_varset ) {
-    assert( other != NULL );
+    assert( other != nullptr );
     Sum_item* p = dynamic_cast<Sum_item*>(other);
-    if( p == NULL )
+    if( p == nullptr )
         return false;
     return Array_item::is_equal( other, consider_varset );
 }
 
 bool
 Product_item::is_equal( Group_item *other, bool consider_varset ) {
-    assert( other != NULL );
+    assert( other != nullptr );
     Product_item* p = dynamic_cast<Product_item*>(other);
-    if( p == NULL )
+    if( p == nullptr )
         return false;
     return Array_item::is_equal( other, consider_varset );
 }
@@ -155,7 +155,7 @@ Group_item::add( Group_item *other ) {
 Group_item*
 Leaf_item::add( Group_item* other ) {
     MSG("")
-    assert( other != NULL );
+    assert( other != nullptr );
     //dump();
     //other->dump();
     if( degree() != other->degree() ) {
@@ -163,7 +163,7 @@ Leaf_item::add( Group_item* other ) {
     }
     Leaf_item* l = dynamic_cast<Leaf_item*>(other);
     Sum_item * s = dynamic_cast< Sum_item*>(other);
-    if( l != NULL ) {
+    if( l != nullptr ) {
         std::set<Variable*> new_variables;
         std::copy(    variables.begin(),    variables.end(), std::inserter( new_variables, new_variables.begin() ) );
         std::copy( l->variables.begin(), l->variables.end(), std::inserter( new_variables, new_variables.begin() ) );
@@ -173,7 +173,7 @@ Leaf_item::add( Group_item* other ) {
             return new Leaf_item( degree(), 0,      new_variables );
         else
             return new Leaf_item( std::max( degree(), l->degree() ), 0, new_variables );
-    } else if( s != NULL )
+    } else if( s != nullptr )
         return s->add( this );
     MSG("cannot directly add, creating new sum")
     return new Sum_item( this, other );
@@ -182,7 +182,7 @@ Leaf_item::add( Group_item* other ) {
 Sum_item*
 Sum_item::add( Group_item* other ) {
     MSG("")
-    assert( other != NULL );
+    assert( other != nullptr );
     //dump();
     //other->dump();
     if( degree() != other->degree() ) {
@@ -196,7 +196,7 @@ Sum_item::add( Group_item* other ) {
     std::list< Group_item* > this_todo, other_todo;
     std::list< Group_item* >::iterator other_it;
     std::vector< Group_item* >::iterator this_it;
-    if( s != NULL )
+    if( s != nullptr )
         std::copy( s->items.begin(), s->items.end(), std::back_inserter( other_todo ) );
     else
         other_todo.push_back( other );
@@ -229,7 +229,7 @@ Sum_item::add( Group_item* other ) {
 Group_item*
 Product_item::add( Group_item* other ) {
     MSG("")
-    assert( other != NULL );
+    assert( other != nullptr );
     //dump();
     //other->dump();
     if( degree() != other->degree() ) {
@@ -237,9 +237,9 @@ Product_item::add( Group_item* other ) {
     }
     Sum_item  *s = dynamic_cast<Sum_item*>(other);
     Leaf_item *l = dynamic_cast<Leaf_item*>(other);
-    if( s != NULL )
+    if( s != nullptr )
         return s->add( this );
-    else if( l != NULL )
+    else if( l != nullptr )
         return l->add( this );
 
     Product_item* new_p = new Product_item();
@@ -247,7 +247,7 @@ Product_item::add( Group_item* other ) {
     std::list< Group_item* > this_todo, other_todo;
     std::list< Group_item* >::iterator this_it, other_it;
     std::copy( items.begin(), items.end(), std::back_inserter( this_todo ) );
-    if( p != NULL )
+    if( p != nullptr )
         std::copy( p->items.begin(), p->items.end(), std::back_inserter( other_todo ) );
     else
         other_todo.push_back( other );
@@ -275,8 +275,8 @@ Product_item::add( Group_item* other ) {
     }
     if( !this_todo.empty() || !other_todo.empty() ) {
         MSG("items left!")
-        Group_item *i1 = NULL;
-        Group_item *i2 = NULL;
+        Group_item *i1 = nullptr;
+        Group_item *i2 = nullptr;
         if( this_todo.size() > 1 ) {
             Product_item *p1 = new Product_item();
             std::copy(  this_todo.begin(),  this_todo.end(), std::back_inserter( p1->items ) );
@@ -289,12 +289,12 @@ Product_item::add( Group_item* other ) {
             i2 = p2;
         } else if( other_todo.size() == 1 )
             i2 = other_todo.front();
-        assert( i1 != NULL || i2 != NULL );
-        if( i1 == NULL ) {
-            assert( i2 != NULL );
+        assert( i1 != nullptr || i2 != nullptr );
+        if( i1 == nullptr ) {
+            assert( i2 != nullptr );
             i1 = i2;
-        } else if( i2 == NULL ) {
-            assert( i1 != NULL );
+        } else if( i2 == nullptr ) {
+            assert( i1 != nullptr );
             i2 = i1;
         }
         MSG("rest1: " )
@@ -322,15 +322,15 @@ Product_item::add( Group_item* other ) {
 Group_item*
 Group_item::mul( Group_item *other ) {
     MSG("")
-    assert( other != NULL );
+    assert( other != nullptr );
     //dump();
     //other->dump();
     Leaf_item* other_l = dynamic_cast<Leaf_item*>(other);
     // dont do anything for multiplications with constants:
-    if( other_l != NULL && other_l->variables.empty() )
+    if( other_l != nullptr && other_l->variables.empty() )
         return this;
     Product_item *p = dynamic_cast< Product_item* >( other );
-    if( p != NULL )
+    if( p != nullptr )
         return p->mul( this );
     else
         return new Product_item( this, other );
@@ -340,17 +340,17 @@ Group_item::mul( Group_item *other ) {
 Product_item*
 Product_item::mul( Group_item* other ) {
     MSG("")
-    assert( other != NULL );
+    assert( other != nullptr );
     //dump();
     //other->dump();
     Product_item *new_p = new Product_item( *this );
     Leaf_item* other_l = dynamic_cast<Leaf_item*>(other);
     // dont do anything for multiplications with constants:
-    if( other_l != NULL && other_l->variables.empty() )
+    if( other_l != nullptr && other_l->variables.empty() )
         return this;
 
     Product_item* other_p = dynamic_cast<Product_item*>(other);
-    if( other_p != NULL )
+    if( other_p != nullptr )
         std::copy( other_p->items.begin(), other_p->items.end(), std::back_inserter( new_p->items ) );
     else
         new_p->items.push_back( other );
@@ -426,7 +426,7 @@ Sum_item::simplify {
 
 void
 Leaf_item::add_to_group( Variable *var ) {
-    assert( var != NULL );
+    assert( var != nullptr );
     MSG( var->id )
     variables.insert( var );
 }

@@ -108,7 +108,7 @@ namespace {
                     old2new_[i] = smallest;
                     return true;
                 }
-                smallest = geo_min(smallest, neighbors[jj]);
+                smallest = std::min(smallest, neighbors[jj]);
             }
             old2new_[i] = smallest;
             return false;
@@ -121,13 +121,13 @@ namespace {
          * \param[in] i index of the query point
          */
         void operator() (index_t i) {
-            index_t nb = geo_min(index_t(6),nb_points());
+            index_t nb = std::min(index_t(6),nb_points());
             while(!find_nearest_neighbors(i, nb) && nb < nb_points()) {
                 if(nb == nb_points()) {
                     break;
                 }
                 nb += nb / 2;
-                nb = geo_min(nb, nb_points());
+                nb = std::min(nb, nb_points());
             }
         }
 

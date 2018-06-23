@@ -117,14 +117,14 @@ struct Add_variable_visitor
 
     Variable*
     add_variable( std::string id, Type *type ) {
-        assert( type != NULL );
+        assert( type != nullptr );
         assert( id.length() > 0 );
-        assert( collect_variables != NULL );
+        assert( collect_variables != nullptr );
         std::string fresh_name = collect_variables->make_fresh_variable_name( id );
         // reuse same type
         Variable *new_var = new Variable( fresh_name, type );
         collect_variables->add( new_var );
-        assert( new_var != NULL );
+        assert( new_var != nullptr );
         return new_var;
     }
 
@@ -139,7 +139,7 @@ struct Add_tmp_variable_visitor
 
     Variable*
     add_tmp_result( AST::Expression *e, std::string hint = std::string() ) {
-        assert( e != NULL );
+        assert( e != nullptr );
         // return type can be either int or double:
         if( hint == std::string() )
             hint = e->getType()->id + "_tmp_result";
@@ -150,7 +150,7 @@ struct Add_tmp_variable_visitor
 
     Variable*
     tmp_result_variable( AST::Expression *e ) {
-        assert( e != NULL );
+        assert( e != nullptr );
         assert( has_tmp_result_variable( e ) );
         return tmp_result_storage_map[ e ];
     }

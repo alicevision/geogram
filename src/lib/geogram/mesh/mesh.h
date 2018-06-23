@@ -139,7 +139,7 @@ namespace GEO {
             if(nb_ + nb > attributes_.size()) {
                 index_t new_size=nb_ + nb;
                 if(nb < 128) {
-                    new_size = geo_max(index_t(16),attributes_.size());
+                    new_size = std::max(index_t(16),attributes_.size());
                     while(new_size < nb_ + nb) {
                         new_size *= 2;
                     }
@@ -158,7 +158,7 @@ namespace GEO {
             index_t result = nb_;
             ++nb_;
             if(attributes_.size() < nb_) {
-                index_t new_size = geo_max(index_t(16),attributes_.size()*2);
+                index_t new_size = std::max(index_t(16),attributes_.size()*2);
                 attributes_.resize(new_size);
             }
             return result;
@@ -472,7 +472,7 @@ namespace GEO {
             geo_debug_assert(v < nb());            
             geo_debug_assert(!single_precision());
             geo_debug_assert(dimension() >= 3);
-            return *(vec3*)(&point_[v*point_.dimension()]);
+            return *(const vec3*)(&point_[v*point_.dimension()]);
         }
         
         /**
@@ -1293,6 +1293,17 @@ namespace GEO {
     protected:
 
         /**
+         * \brief Indicates that the stored elements are only triangles.
+         */
+        void is_simplicial() {
+	    if(!is_simplicial_) {
+		is_simplicial_ = true;
+		facet_ptr_.resize(1);
+		facet_ptr_[0] = 0;
+	    }
+	}
+	
+        /**
          * \brief Indicates that the stored elements are no
          *  longer only triangles.
          * \details Creates the facet pointers for the pre-existing
@@ -1312,7 +1323,8 @@ namespace GEO {
         MeshVertices& vertices_;        
         MeshFacetCornersStore& facet_corners_;
         friend class Mesh;
-        friend class GeogramIOHandler;                
+        friend class GeogramIOHandler;
+	friend void GEOGRAM_API tessellate_facets(Mesh& M, index_t max_nb_vertices);
     };
     
     /*************************************************************************/
@@ -1928,7 +1940,7 @@ namespace GEO {
             // faces is created for each cell, so that a single cell
             // pointer is used for both.
             
-            index_t cell_size = geo_max(desc.nb_vertices, desc.nb_facets);
+            index_t cell_size = std::max(desc.nb_vertices, desc.nb_facets);
             index_t first_cell = nb();
             index_t co = cell_corners_.nb();
             

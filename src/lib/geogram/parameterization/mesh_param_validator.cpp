@@ -63,11 +63,11 @@ namespace GEO {
 
     ParamValidator::~ParamValidator() {
         delete[] graph_mem_;
-	graph_mem_ = nil;
+	graph_mem_ = nullptr;
         delete[] x_left_;
-	x_left_ = nil;
+	x_left_ = nullptr;
         delete[] x_right_;
-	x_right_ = nil;
+	x_right_ = nullptr;
     }
 
     bool ParamValidator::chart_is_valid(Chart& chart) {
@@ -162,7 +162,7 @@ namespace GEO {
         double max_area = 0;
 	for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 	    index_t f = chart.facets[ff];
-            max_area = geo_max(GEO::Geom::mesh_facet_area(chart.mesh,f), max_area);
+            max_area = std::max(GEO::Geom::mesh_facet_area(chart.mesh,f), max_area);
         }
 
         // Ignore facets smaller than 1% of the largest facet.
@@ -218,7 +218,7 @@ namespace GEO {
         user_y_min_  = ymin;
         user_width_  = xmax - xmin;
         user_height_ = ymax - ymin;
-        user_size_ = geo_max(user_width_, user_height_);
+        user_size_ = std::max(user_width_, user_height_);
     }
 
     
@@ -243,8 +243,8 @@ namespace GEO {
         int ymax = -1;
         
         for(int i=0; i<3; i++) {
-            ymin = geo_min(ymin, y[i]);
-            ymax = geo_max(ymax, y[i]);
+            ymin = std::min(ymin, y[i]);
+            ymax = std::max(ymax, y[i]);
         }
 
         int signed_area = 

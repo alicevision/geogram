@@ -1,0 +1,254 @@
+/*
+ *  Copyright (c) 2012-2014, Bruno Levy
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ *  * Redistributions of source code must retain the above copyright notice,
+ *  this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright notice,
+ *  this list of conditions and the following disclaimer in the documentation
+ *  and/or other materials provided with the distribution.
+ *  * Neither the name of the ALICE Project-Team nor the names of its
+ *  contributors may be used to endorse or promote products derived from this
+ *  software without specific prior written permission.
+ * 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  If you modify this software, you should include a notice giving the
+ *  name of the person performing the modification, the date of modification,
+ *  and the reason for such modification.
+ *
+ *  Contact: Bruno Levy
+ *
+ *     Bruno.Levy@inria.fr
+ *     http://www.loria.fr/~levy
+ *
+ *     ALICE Project
+ *     LORIA, INRIA Lorraine, 
+ *     Campus Scientifique, BP 239
+ *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     FRANCE
+ *
+ */
+
+
+#ifndef GEOGRAM_DELAUNAY_CAVITY
+#define GEOGRAM_DELAUNAY_CAVITY
+
+#include <geogram/basic/common.h>
+#include <geogram/basic/memory.h>
+#include <geogram/basic/numeric.h>
+#include <string.h>
+
+namespace GEO {
+
+    /**
+     * \brief Represents the set of tetrahedra on the boundary
+     *  of the cavity in a 3D Delaunay triangulation.
+     */
+    class Cavity {
+	
+      public:
+
+	/**
+	 * \brief Type used for local indices.
+	 */
+	typedef Numeric::uint8 local_index_t;
+	
+
+	static const local_index_t MAX_V = 32;
+	static const local_index_t END_OF_LIST = 255;
+	static const index_t MAX_T = 2*MAX_V;
+	static const index_t HASH_TABLE_SIZE = 67;
+	
+	/**
+	 * \brief Cavity constructor.
+	 */
+	Cavity() {
+	    clear();
+	}
+
+	/**
+	 * \brief Clears this cavity.
+	 */
+	void clear() {
+	    nb_v_ = 0;
+	    nb_t_ = 0;
+	    OK_ = true;
+	    ::memset(first_, END_OF_LIST, sizeof(first_));
+#ifdef GEO_DEBUG	    
+	    ::memset(vv2t_, END_OF_LIST, sizeof(vv2t_));
+#endif	    
+	}
+
+	/**
+	 * \brief Computes the hash code of a global vertex index.
+	 */
+	local_index_t hash(signed_index_t vglobal) const {
+	    return local_index_t(index_t(vglobal) % HASH_TABLE_SIZE);
+	}
+
+	/**
+	 * \brief Finds or create a local vertex from a global one.
+	 * \param[in] vglobal the global vertex index
+	 * \return the local vertex index or END_OF_LIST if capacity 
+	 *  was exceeded.
+	 */
+	local_index_t find_or_insert_vertex(signed_index_t vglobal) {
+	    // Traverse the collision list.
+	    local_index_t h = hash(vglobal);
+	    for(
+		local_index_t cur = first_[h];
+		cur!=END_OF_LIST; cur=next_[cur]
+	    ) {
+		if(vglobal_[cur] == vglobal) {
+		    return cur;
+		}
+	    }
+	    // No existing vertex, create a new one.
+	    if(nb_v_ == MAX_V) {
+		OK_ = false;
+		return END_OF_LIST;
+	    }
+	    local_index_t new_v = local_index_t(nb_v_);
+	    vglobal_[new_v] = vglobal;
+	    next_[new_v] = first_[h];
+	    first_[h] = new_v;
+	    ++nb_v_;
+	    return new_v;
+	}
+
+	/**
+	 * \brief Inserts a new boundary tetrahedron in the structure.
+	 * \param[in] tglobal global tetrahedron index
+	 * \param[in] boundary_f index of the facet that is on the boundary
+	 * \param[in] v0 , v1 , v2 the three vertices of the facet that
+	 *  is on the boundary
+	 */
+	void insert_boundary_tet(
+	    index_t tglobal, index_t boundary_f, signed_index_t v0, signed_index_t v1, signed_index_t v2
+	) {
+	    if(!OK_) {
+		return;
+	    }
+	    
+	    geo_debug_assert(v0 != v1);
+	    geo_debug_assert(v1 != v2);
+	    geo_debug_assert(v2 != v0);	    
+	    
+	    local_index_t lv0 = find_or_insert_vertex(v0);
+	    local_index_t lv1 = find_or_insert_vertex(v1);
+	    local_index_t lv2 = find_or_insert_vertex(v2);
+
+	    if(!OK_) {
+		return;
+	    }
+	    
+	    geo_debug_assert(lv0 != lv1);
+	    geo_debug_assert(lv1 != lv2);
+	    geo_debug_assert(lv2 != lv0);	    
+
+	    if(nb_t_ == MAX_T) {
+		OK_ = false;
+		return;
+	    }
+	
+	    local_index_t new_t = local_index_t(nb_t_);
+	    ++nb_t_;
+	    tglobal_[new_t] = tglobal;
+	    boundary_f_[new_t] = boundary_f;
+
+	    t2v_[new_t][0] = lv0;
+	    t2v_[new_t][1] = lv1;
+	    t2v_[new_t][2] = lv2;
+	
+	    vv2t_[lv0][lv1] = new_t;
+	    vv2t_[lv1][lv2] = new_t;
+	    vv2t_[lv2][lv0] = new_t;	
+	}
+
+	/**
+	 * \brief Does some sanity checks and outputs debug messages.
+	 */
+	void check() {
+	    
+	    for(index_t h=0; h<256; ++h) {
+		index_t len = 0;
+		for(
+		    local_index_t cur = first_[h];
+		    cur!=END_OF_LIST; cur=next_[cur]
+		) {
+		    ++len;
+		}
+		std::cerr << h << " : " << len << std::endl;
+	    }
+	    
+	    for(index_t lt=0; lt<nb_t_; ++lt) {
+		std::cerr
+		    << lt << " : "
+		    << int(t2v_[lt][0]) << " "
+		    << int(t2v_[lt][1]) << " "
+		    << int(t2v_[lt][2]) << std::endl;
+	    }
+	    
+	    for(index_t lt=0; lt<nb_t_; ++lt) {
+		geo_assert(t2v_[lt][0] < nb_v_);
+		geo_assert(t2v_[lt][1] < nb_v_);
+		geo_assert(t2v_[lt][2] < nb_v_);
+
+		geo_assert(t2v_[lt][0] != t2v_[lt][1]);
+		geo_assert(t2v_[lt][1] != t2v_[lt][2]);
+		geo_assert(t2v_[lt][2] != t2v_[lt][0]);				
+	    }
+	}
+
+	/** \brief Number of vertices. */
+	index_t nb_v_ = 0;
+
+	/** \brief First vertex of collision list. */
+	local_index_t first_[HASH_TABLE_SIZE];
+
+	/** \brief Collision list links. */
+	local_index_t next_[MAX_V];
+
+	/** \brief Vertex global index. */
+	signed_index_t vglobal_[MAX_V];
+
+	/** \brief Number of tetrahedra. */
+	index_t nb_t_ = 0;
+
+	/** \brief Tetrahedra global index. */
+	index_t tglobal_[MAX_T];
+
+	/** \brief Tetrahedra boundary facet. */
+	index_t boundary_f_[MAX_T];
+
+	/** \brief Tetrahedron to vertex links. */
+	local_index_t t2v_[MAX_T][3];
+
+	/** \brief Maps a pair of vertices to a tetrahedron. */
+	local_index_t vv2t_[MAX_V][MAX_V];    
+
+	/** 
+	 * \brief True if the structure is correct, false 
+	 *  otherwise, if capacity was exceeded.
+	 */
+	bool OK_;
+    };
+
+}
+
+#endif
+

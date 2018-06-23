@@ -389,7 +389,7 @@ namespace GEO {
          */
         void cleanup() {
             expansion::delete_expansion_on_heap(rep_);
-            rep_ = nil;
+            rep_ = nullptr;
         }
         
     private:

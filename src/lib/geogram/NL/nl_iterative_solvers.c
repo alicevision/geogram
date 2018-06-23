@@ -519,8 +519,9 @@ NLuint nlSolveSystemIterative(
 		);
 	    }
 	}
+	nlCurrentContext->used_iterations = result;
     }
-    nlCurrentContext->used_iterations = result;
+
 
     if(!nlBlasHasUnifiedMemory(blas)) {
 	blas->Memcpy(

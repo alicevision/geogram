@@ -133,7 +133,7 @@ namespace GEO {
          * \param[out] g a pointer to the components 
          *   of the gradient of the objective function
          * \param[in] spinlocks a pointer to the spinlocks array to
-         *  be used in multithreading mode, or nil in single-threaded
+         *  be used in multithreading mode, or nullptr in single-threaded
          *  mode
          */
          void set_points_and_gradient(
@@ -141,7 +141,7 @@ namespace GEO {
              index_t nb_points, 
              const double* points, 
              double* g,
-             Process::SpinLockArray* spinlocks=nil
+             Process::SpinLockArray* spinlocks=nullptr
          ) {
              nb_points_ = nb_points;
              points_stride_ = index_t(dimension);

@@ -470,7 +470,7 @@ namespace GEO {
     void MeshFacets::clear(bool keep_attributes, bool keep_memory) {
         facet_corners_.clear_store(keep_attributes, keep_memory);
         clear_store(keep_attributes, keep_memory);
-        is_simplicial_ = true;
+	is_simplicial();
     }
     
     void MeshFacets::delete_elements(
@@ -802,7 +802,7 @@ namespace GEO {
         bool steal_args
     ) {
         index_t nb_triangles = triangles.size()/3;
-        is_simplicial_ = true;
+	is_simplicial();
         facet_ptr_.clear();
         resize_store(nb_triangles);
         if(steal_args) {
@@ -1152,7 +1152,7 @@ namespace GEO {
             for(index_t new_cell = 0; new_cell<nb(); ++new_cell) {
                 index_t old_cell = permutation[new_cell];
                 index_t cell_size =
-                    geo_max(nb_vertices(old_cell), nb_facets(old_cell));
+                    std::max(nb_vertices(old_cell), nb_facets(old_cell));
                 for(index_t i=0; i<cell_size; ++i) {
                     cell_corner_facets_permutation.push_back(
                         cell_ptr_[old_cell]+i
@@ -1209,7 +1209,7 @@ namespace GEO {
             for(index_t new_c=0; new_c<nb(); ++new_c) {
                 index_t old_c = permutation[new_c];
                 index_t old_ptr = cell_ptr_[old_c];
-                index_t cell_size = geo_max(
+                index_t cell_size = std::max(
                     nb_vertices(old_c), nb_facets(old_c)
                 );
                 new_cell_ptr[new_c] = new_ptr;
@@ -2015,7 +2015,7 @@ namespace GEO {
         case MESH_ALL_SUBELEMENTS:
             geo_assert_not_reached;
         }
-        return *(MeshSubElementsStore*)nil;
+        return *(MeshSubElementsStore*)nullptr;
     }
     
     const MeshSubElementsStore& Mesh::get_subelements_by_type(
@@ -2041,7 +2041,7 @@ namespace GEO {
         case MESH_ALL_SUBELEMENTS:
             geo_assert_not_reached;
         }
-        return *(MeshSubElementsStore*)nil;
+        return *(MeshSubElementsStore*)nullptr;
     }
     
     std::string Mesh::subelements_type_to_name(MeshElementsFlags what) {

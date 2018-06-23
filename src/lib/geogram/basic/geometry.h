@@ -682,8 +682,8 @@ namespace GEO {
      */
     inline void bbox_union(Box& target, const Box& B1, const Box& B2) {
         for(coord_index_t c = 0; c < 3; ++c) {
-            target.xyz_min[c] = geo_min(B1.xyz_min[c], B2.xyz_min[c]);
-            target.xyz_max[c] = geo_max(B1.xyz_max[c], B2.xyz_max[c]);
+            target.xyz_min[c] = std::min(B1.xyz_min[c], B2.xyz_min[c]);
+            target.xyz_max[c] = std::max(B1.xyz_max[c], B2.xyz_max[c]);
         }
     }
 }

@@ -367,10 +367,11 @@ namespace GEO {
 
         /**
          * \brief Initializes GeogramLib
+	 * \param[in] flags the flags passed to GEO::initialize()
          * \details This function must be called once before using
          * any functionality of GeogramLib.
          */
-        void GEOGRAM_API initialize();
+        void GEOGRAM_API initialize(int flags);
 
         /**
          * \brief Terminates GeogramLib
@@ -646,12 +647,12 @@ namespace GEO {
         threads_per_core = 1;
 #endif
 
-        index_t nb_threads = geo_min(
+        index_t nb_threads = std::min(
             to - from,
             Process::maximum_concurrent_threads() * threads_per_core
         );
 
-	nb_threads = geo_max(index_t(1), nb_threads);
+	nb_threads = std::max(index_t(1), nb_threads);
 	
         index_t batch_size = (to - from) / nb_threads;
         if(Process::is_running_threads() || nb_threads == 1) {

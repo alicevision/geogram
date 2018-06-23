@@ -61,8 +61,7 @@ namespace GEO {
                 index_t ib2 = sym.bisector(1);
                 index_t ib3 = sym.bisector(2);
                 quadindex K(center_vertex_id + 1, ib1 + 1, ib2 + 1, ib3 + 1);
-                std::map<quadindex, index_t>::iterator it =
-                    ppp_to_id_.find(K);
+                auto it = ppp_to_id_.find(K);
                 if(it != ppp_to_id_.end()) {
                     return it->second;
                 } else {
@@ -82,8 +81,7 @@ namespace GEO {
                     signed_index_t(ib1) + 1, 
                     signed_index_t(ib2) + 1
                 );
-                std::map<signed_quadindex, index_t>::iterator it =
-                    ppm_to_id_.find(K);
+                auto it = ppm_to_id_.find(K);
                 if(it != ppm_to_id_.end()) {
                     return it->second;
                 } else {
@@ -103,8 +101,7 @@ namespace GEO {
                     -signed_index_t(bv2) - 1, 
                     signed_index_t(ib) + 1
                 );
-                std::map<signed_quadindex, index_t>::iterator it =
-                    pmm_to_id_.find(K);
+                auto it = pmm_to_id_.find(K);
                 if(it != pmm_to_id_.end()) {
                     return it->second;
                 } else {

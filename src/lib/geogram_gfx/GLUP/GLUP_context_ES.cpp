@@ -283,11 +283,11 @@ namespace GLUP {
         // the vertices in a buffer, for all types of volumetric
         // primitives.
         index_t max_nb_elements = 0;
-        max_nb_elements = geo_max(max_nb_elements, nb_elements(4,12));
-        max_nb_elements = geo_max(max_nb_elements, nb_elements(8,36));
-        max_nb_elements = geo_max(max_nb_elements, nb_elements(6,24));
-        max_nb_elements = geo_max(max_nb_elements, nb_elements(5,18));        
-        max_nb_elements = geo_max(max_nb_elements, nb_elements(4,12));        
+        max_nb_elements = std::max(max_nb_elements, nb_elements(4,12));
+        max_nb_elements = std::max(max_nb_elements, nb_elements(8,36));
+        max_nb_elements = std::max(max_nb_elements, nb_elements(6,24));
+        max_nb_elements = std::max(max_nb_elements, nb_elements(5,18));        
+        max_nb_elements = std::max(max_nb_elements, nb_elements(4,12));        
         
         nb_clip_cells_elements_ = max_nb_elements;        
         clip_cells_elements_ = new Numeric::uint16[nb_clip_cells_elements_];
@@ -304,7 +304,7 @@ namespace GLUP {
             clip_cells_elements_VBO_,
             GL_ELEMENT_ARRAY_BUFFER,
             max_nb_elements * sizeof(Numeric::uint32),
-            nil // no need to copy the buffer, it will be overwritten after.
+            nullptr // no need to copy the buffer, it will be overwritten after.
         );
 
         glupBindVertexArray(0);
@@ -328,7 +328,7 @@ namespace GLUP {
             sliced_cells_elements_VBO_,
             GL_ELEMENT_ARRAY_BUFFER,
             max_nb_elements * sizeof(Numeric::uint16),
-            nil // no need to copy the buffer, it will be overwritten after.
+            nullptr // no need to copy the buffer, it will be overwritten after.
         );
         
         for(index_t i=0; i<4; ++i) {
@@ -339,7 +339,7 @@ namespace GLUP {
                 sliced_cells_vertex_attrib_VBO_[i],
                 GL_ARRAY_BUFFER,
                 max_nb_vertices * sizeof(Numeric::float32) * 4,
-                nil // no need to copy the buffer, it will be overwritten.
+                nullptr // no need to copy the buffer, it will be overwritten.
             );
 
             glVertexAttribPointer(
@@ -348,7 +348,7 @@ namespace GLUP {
                 GL_FLOAT,
                 GL_FALSE,
                 0,
-                0
+                nullptr
             );
         }
         glEnableVertexAttribArray(0);
@@ -357,7 +357,7 @@ namespace GLUP {
 
     Context_ES2::Context_ES2() :
         nb_clip_cells_elements_(0),
-        clip_cells_elements_(nil),        
+        clip_cells_elements_(nullptr),        
         clip_cells_elements_VBO_(0),
         clip_cells_VAO_(0),
         sliced_cells_elements_VBO_(0),
@@ -957,7 +957,7 @@ namespace GLUP {
                 GL_UNSIGNED_SHORT, // components are 16 bits integers
                 GL_FALSE,          // do not normalize
                 0,                 // stride
-                0                  // pointer (relative to bound VBO beginning)
+                nullptr            // pointer (relative to bound VBO beginning)
             );
         } else {
             glDisableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
@@ -975,7 +975,7 @@ namespace GLUP {
             primitive_info_[immediate_state_.primitive()].GL_primitive,
             GLsizei(cur_element_out),
             GL_UNSIGNED_SHORT,
-            0
+            nullptr
         );
         
         glupBindVertexArray(0);
@@ -985,7 +985,7 @@ namespace GLUP {
 
     void Context_ES2::flush_immediate_buffers_with_sliced_cells_clipping() {
         
-        MarchingCell* marching_cell = nil;
+        MarchingCell* marching_cell = nullptr;
         switch(immediate_state_.primitive()) {
         case GLUP_TETRAHEDRA:
             marching_cell = &marching_tet_;
@@ -1062,7 +1062,7 @@ namespace GLUP {
                     GL_TRIANGLE_FAN,
                     GLsizei(marching_cell->config_size(config)), 
                     GL_UNSIGNED_INT,
-                    0
+                    nullptr
                 );
             }
             

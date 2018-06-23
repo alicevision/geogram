@@ -250,15 +250,15 @@ namespace {
                     continue;
                 }
 
-                double dsij = geo_min(
+                double dsij = std::min(
                     s[j] - s[i], total_length - (s[j] - s[i])
                 );
                 const vec3& pi = halfedge_vertex(MH, hole[i]);
                 const vec3& pj = halfedge_vertex(MH, hole[j]);
                 double dxij = length(pj - pi);
 
-                dsij = geo_max(dsij, 1e-6);
-                dxij = geo_max(dxij, 1e-6);
+                dsij = std::max(dsij, 1e-6);
+                dxij = std::max(dxij, 1e-6);
                 double rij = dxij / dsij;
 
                 if(use_normals) {
@@ -291,7 +291,7 @@ namespace {
         // Now I do not think this can happen
         // (to be checked)
         if(v2 < v1) {
-            geo_swap(v1, v2);
+	    std::swap(v1, v2);
         }
 
         // Step 3: copy the two "sub-holes"
@@ -714,8 +714,19 @@ namespace GEO {
         }
     }
 
+    /**
+     * \brief Tessellates a hole.
+     * \param[in] MH the MeshHalfHeddes the hole belongs to.
+     * \param[in] H the hole.
+     * \param[in] max_nb_vertices maximum number of vertices in
+     *  the new facets to create.
+     * \param[in] copy_facet_attrib an optional facet index. If 
+     *  specified, all the attributes of this facet will be copied
+     *  to the created facets.
+     */
     static void tessellate_hole(
-	MeshHalfedges& MH, Hole& H, index_t max_nb_vertices
+	MeshHalfedges& MH, Hole& H, index_t max_nb_vertices,
+	index_t copy_facet_attrib = index_t(-1)
     ) {
 	Mesh& M = MH.mesh();
 	if(H.size() <= max_nb_vertices) {
@@ -724,11 +735,14 @@ namespace GEO {
 		index_t v = M.facet_corners.vertex(H[i].corner);
 		M.facets.set_vertex(f,i,v);
 	    }
+	    if(copy_facet_attrib != index_t(-1)) {
+		M.facets.attributes().copy_item(f, copy_facet_attrib);
+	    }
 	} else {
 	    Hole H1,H2;
 	    split_hole(MH,H,H1,H2,false);
-	    tessellate_hole(MH,H1,max_nb_vertices);
-	    tessellate_hole(MH,H2,max_nb_vertices);
+	    tessellate_hole(MH,H1,max_nb_vertices,copy_facet_attrib);
+	    tessellate_hole(MH,H2,max_nb_vertices,copy_facet_attrib);
 	}
     }
 
@@ -746,12 +760,15 @@ namespace GEO {
 		    c<M.facets.corners_end(f); ++c) {
 		    h.push_back(MeshHalfedges::Halfedge(f,c));
 		}
-		tessellate_hole(MH, h, max_nb_vertices);
+		tessellate_hole(MH, h, max_nb_vertices, f);
 	    }
 	}
 	delete_f.resize(M.facets.nb());
 	M.facets.delete_elements(delete_f);
 	M.facets.connect();
+	if(max_nb_vertices == 3) {
+	    M.facets.is_simplicial();
+	}
     }
     
 }

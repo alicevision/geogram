@@ -89,7 +89,7 @@ namespace GEO {
             glTexImage2D(
                 GL_TEXTURE_2D, 0, internal_storage,
                 GLsizei(width), GLsizei(height), 0,
-                GL_RGBA, GL_FLOAT, 0 
+                GL_RGBA, GL_FLOAT, nullptr
             );
 	    GEO_CHECK_GL();	    
             if(depth_buffer_id != 0) {
@@ -101,7 +101,7 @@ namespace GEO {
                     GLsizei(width), GLsizei(height), 0,
                     GL_DEPTH_COMPONENT,
 		    GL_UNSIGNED_SHORT,
-		    0
+		    nullptr
                 );
 		GEO_CHECK_GL();				
             }
@@ -187,7 +187,7 @@ namespace GEO {
             GLsizei(width), GLsizei(height), 0,
             GL_RGBA,	    
 	    GL_FLOAT,
-	    0
+	    nullptr
         );
 
 	GEO_CHECK_GL();
@@ -210,7 +210,7 @@ namespace GEO {
                 GLsizei(width), GLsizei(height), 0,
                 GL_DEPTH_COMPONENT,
 		GL_UNSIGNED_SHORT,
-		0
+		nullptr
             );
 
 	    GEO_CHECK_GL();

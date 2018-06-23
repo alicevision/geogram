@@ -51,6 +51,7 @@
 #include <geogram/delaunay/delaunay_nn.h>
 #include <geogram/basic/assert.h>
 #include <geogram/basic/process.h>
+#include <geogram/basic/attributes.h>
 
 /**
  * \file geogram/voronoi/generic_RVD_vertex.h
@@ -362,8 +363,8 @@ namespace GEOGen {
         small_set<T, DIM3>& I
     ) {
         I.clear();
-        typename small_set<T, DIM1>::const_iterator i1 = S1.begin();
-        typename small_set<T, DIM2>::const_iterator i2 = S2.begin();
+        auto i1 = S1.begin();
+        auto i2 = S2.begin();
         while(i1 < S1.end() && i2 < S2.end()) {
             if(*i1 < *i2) {
                 ++i1;
@@ -426,29 +427,7 @@ namespace GEOGen {
             v1_(0),
             v2_(0) {
         }
-
-        /**
-         * \brief SymbolicVertex copy constructor.
-         * \param[in] rhs the SymbolicVertex used to initialize this one
-         */
-        SymbolicVertex(const SymbolicVertex& rhs) :
-            baseclass(rhs),
-            v1_(rhs.v1_),
-            v2_(rhs.v2_) {
-        }
-
-        /**
-         * \brief Assignment operator.
-         * \param[in] rhs a const reference to the SymbolicVertex to be copied.
-         * \return a reference to this SymbolicVertex after assignment.
-         */
-        SymbolicVertex& operator=(const SymbolicVertex& rhs) {
-            baseclass::operator=(rhs);
-            v1_ = rhs.v1_;
-            v2_ = rhs.v2_;
-            return *this;
-        }
-        
+	    
         /**
          * \brief Adds a bisector to the symbolic representation.
          */
@@ -469,7 +448,7 @@ namespace GEOGen {
          */
         index_t nb_boundary_facets() const {
             index_t result = 0;
-            for(baseclass::const_iterator it = baseclass::begin();
+            for(auto it = baseclass::begin();
                 it != baseclass::end() && *it < 0; ++it) {
                 result++;
             }
@@ -481,7 +460,7 @@ namespace GEOGen {
          */
         index_t nb_bisectors() const {
             index_t result = 0;
-            for(baseclass::const_iterator it = baseclass::end() - 1;
+            for(auto it = baseclass::end() - 1;
                 it != baseclass::begin() - 1 && *it > 0; --it) {
                 result++;
             }
@@ -671,6 +650,7 @@ namespace GEOGen {
         index_t v2_;
     };
 
+
     /**
      * \brief An allocator for points that are created
      * from intersections in GenericVoronoiDiagram.
@@ -853,7 +833,7 @@ namespace GEOGen {
          * \brief Creates an uninitialized Vertex.
          */
         Vertex() :
-            point_(nil),
+            point_(nullptr),
             weight_(1.0),
             f_(-1),
             seed_(-1),
@@ -1082,6 +1062,15 @@ namespace GEOGen {
         EdgeFlags flags_;
     };
 }
+
+/*
+namespace GEO {
+    template <> struct can_be_used_as_attribute<GEOGen::SymbolicVertex> {
+	static constexpr auto value = std::integral_constant<bool,true>();
+    };
+}
+*/    
+
 
 #endif
 

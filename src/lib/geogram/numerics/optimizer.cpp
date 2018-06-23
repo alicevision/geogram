@@ -53,9 +53,9 @@ namespace GEO {
         n_(0),
         m_(0),
         max_iter_(1000),
-        funcgrad_callback_(nil),
-        newiteration_callback_(nil),
-        evalhessian_callback_(nil),
+        funcgrad_callback_(nullptr),
+        newiteration_callback_(nullptr),
+        evalhessian_callback_(nullptr),
         epsg_(0),
         epsf_(0),
         epsx_(0),
@@ -75,14 +75,14 @@ namespace GEO {
         geo_register_Optimizer_creator(HLBFGS_HessOptimizer, "HLBFGS_HESS");
 #endif
         Optimizer* opt = OptimizerFactory::create_object(name);
-        if(opt != nil) {
+        if(opt != nullptr) {
             return opt;
         }
 
         Logger::err("Optimizer")
             << "Could not create optimizer: " << name
             << std::endl;
-        return nil;
+        return nullptr;
     }
 }
 

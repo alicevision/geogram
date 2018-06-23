@@ -117,7 +117,7 @@ public:
 	}
 
 	void init_mesh() {
-		mesh_gfx()->set_mesh(nil);
+		mesh_gfx()->set_mesh(nullptr);
 		mesh()->clear(false, false);
 
 		// Create the mesh of regular grid
@@ -308,7 +308,7 @@ public:
 		if(status_bar_->active()) { h -= (STATUS_HEIGHT()+1); }
 		if(console_visible_) { h -= (CONSOLE_HEIGHT()+1); }
 		h -= MENU_HEIGHT();
-		if(Command::current() != nil) { h /= 2; }
+		if(Command::current() != nullptr) { h /= 2; }
 
 		ImGui::SetNextWindowPos(ImVec2(0.0f, float(MENU_HEIGHT())), ImGuiSetCond_Always);
 		ImGui::SetNextWindowSize(ImVec2(float(PANE_WIDTH()), float(h)), ImGuiSetCond_Always);

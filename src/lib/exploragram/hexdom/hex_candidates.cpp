@@ -54,8 +54,8 @@ namespace GEO {
 		// compute a bbox in the parametric domain
 		int bbox[2][3] = { { 1000000, 1000000, 1000000 },{ -1000000, -1000000, -1000000 } };
 		FOR(i, 4) FOR(dim, 3) {
-			bbox[0][dim] = geo_min(bbox[0][dim], int(std::floor(UC[m->cells.corner(t, i)][dim])) - 1);
-			bbox[1][dim] = geo_max(bbox[1][dim], int(std::ceil(UC[m->cells.corner(t, i)][dim])) + 1);
+			bbox[0][dim] = std::min(bbox[0][dim], int(std::floor(UC[m->cells.corner(t, i)][dim])) - 1);
+			bbox[1][dim] = std::max(bbox[1][dim], int(std::ceil(UC[m->cells.corner(t, i)][dim])) + 1);
 		}
 
 		vec3 lX[4], lU[4];

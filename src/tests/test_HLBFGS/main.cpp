@@ -215,7 +215,7 @@ namespace {
                 (GEO::Optimizer*)(optimizer)
             );
 
-        if(hess != nil) {
+        if(hess != nullptr) {
             hess->set_T((unsigned int)T);
         }
         optimizer->optimize(init_x);

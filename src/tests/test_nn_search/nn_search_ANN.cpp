@@ -51,7 +51,7 @@ namespace GEO {
         coord_index_t dim
     ) :
         NearestNeighborSearch(dim),
-        ann_tree_(nil) {
+        ann_tree_(nullptr) {
     }
 
     void NearestNeighborSearch_ANN::set_points(index_t nb_points, const double* points) {
@@ -81,7 +81,7 @@ namespace GEO {
         );
 #else
         delete ann_tree_;
-        ann_tree_ = nil;
+        ann_tree_ = nullptr;
         ann_points_.resize(nb_points);
         for(index_t i = 0; i < nb_points; i++) {
             ann_points_[i] = const_cast<double*>(points) + stride_ * i;
@@ -107,7 +107,7 @@ namespace GEO {
 
     NearestNeighborSearch_ANN::~NearestNeighborSearch_ANN() {
         delete ann_tree_;
-        ann_tree_ = nil;
+        ann_tree_ = nullptr;
     }
 
 }

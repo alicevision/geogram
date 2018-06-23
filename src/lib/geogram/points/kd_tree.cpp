@@ -142,8 +142,8 @@ namespace GEO {
         for(index_t i = 0; i < nb_points; ++i) {
             const double* p = point_ptr(i);
             for(coord_index_t c = 0; c < dimension(); ++c) {
-                bbox_min_[c] = geo_min(bbox_min_[c], p[c]);
-                bbox_max_[c] = geo_max(bbox_max_[c], p[c]);
+                bbox_min_[c] = std::min(bbox_min_[c], p[c]);
+                bbox_max_[c] = std::max(bbox_max_[c], p[c]);
             }
         }
 	
@@ -689,7 +689,7 @@ namespace GEO {
 	double max_length = -1.0;
 	for(coord_index_t d=0; d<dimension(); ++d) {
 	    double length = bbox_max[d] - bbox_min[d];
-	    max_length = geo_max(max_length, length);
+	    max_length = std::max(max_length, length);
 	}
 
 	// Cutting coordinate
@@ -758,7 +758,7 @@ namespace GEO {
 	    if(l > r) {
 		break;
 	    }
-	    geo_swap(point_index_[l], point_index_[r]);
+	    std::swap(point_index_[l], point_index_[r]);
 	    ++l; --r;
 	}
 	int br1 = l;
@@ -773,7 +773,7 @@ namespace GEO {
 	    if(l > r) {
 		break;
 	    }
-	    geo_swap(point_index_[l], point_index_[r]);
+	    std::swap(point_index_[l], point_index_[r]);
 	    ++l; --r;
 	}
 	int br2 = l;

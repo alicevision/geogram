@@ -70,7 +70,7 @@ namespace GEO {
         // We do not want that the destructor of tetgen_in_
         // deallocates the points, since they are managed
         // by a vector<>.
-        tetgen_in_.pointlist = nil;
+        tetgen_in_.pointlist = nullptr;
         tetgen_in_.numberofpoints = 0;
     }
 
@@ -87,7 +87,7 @@ namespace GEO {
     void DelaunayTetgen::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
-        if(constraints_ != nil) {
+        if(constraints_ != nullptr) {
             set_vertices_constrained(nb_vertices, vertices);
         } else {
             set_vertices_unconstrained(nb_vertices, vertices);
@@ -101,16 +101,16 @@ namespace GEO {
         // n: output tet neighbors
         // V: verbose
         if(CmdLine::get_arg_bool("dbg:tetgen")) {
-            tetgen_args_.parse_commandline((char*) ("Vn"));
+            tetgen_args_.parse_commandline(const_cast<char*>("Vn"));
         } else {
-            tetgen_args_.parse_commandline((char*) ("Qn"));            
+	    tetgen_args_.parse_commandline(const_cast<char*>("Qn"));            
         }
 
         Delaunay::set_vertices(nb_vertices, vertices);
         tetgen_out_.deinitialize();
         tetgen_in_.initialize();
-        tetgen_in_.numberofpoints = (int)nb_vertices;
-        tetgen_in_.pointlist = (double*)vertices;
+        tetgen_in_.numberofpoints = int(nb_vertices);
+        tetgen_in_.pointlist = const_cast<double*>(vertices);
         try {
             GEO_3rdParty::tetrahedralize(
                 &tetgen_args_, &tetgen_in_, &tetgen_out_
@@ -174,7 +174,7 @@ namespace GEO {
                 cmdline = "QpnO0YYAA";
             }
         }
-        tetgen_args_.parse_commandline((char*)(cmdline.c_str()));
+        tetgen_args_.parse_commandline(const_cast<char*>(cmdline.c_str()));
         
         tetgen_in_.deinitialize();
         tetgen_in_.initialize();
@@ -210,8 +210,8 @@ namespace GEO {
             tetgen_in_.numberofedges = int(
                 constraints_->edges.nb()
             );
-            tetgen_in_.edgelist = (int*)(
-                constraints_->edges.vertex_index_ptr(0)
+            tetgen_in_.edgelist = const_cast<int*>(
+                (const int*)constraints_->edges.vertex_index_ptr(0)
             );
         }
         
@@ -238,7 +238,7 @@ namespace GEO {
                 )
             );
             F.numberofholes = 0 ;
-            F.holelist = nil ;
+            F.holelist = nullptr ;
         }
 
         bool there_was_an_error = false;
@@ -254,7 +254,7 @@ namespace GEO {
                 << "Encountered a problem, relaunching in diagnose mode..."
                 << std::endl;
             cmdline += "d";
-            tetgen_args_.parse_commandline((char*)(cmdline.c_str()));
+            tetgen_args_.parse_commandline(const_cast<char*>(cmdline.c_str()));
             try {
                 GEO_3rdParty::tetrahedralize(
                     &tetgen_args_, &tetgen_in_, &tetgen_out_
@@ -270,30 +270,27 @@ namespace GEO {
         // Pointlist was allocated in local array
         tetgen_in_.numberofpoints = 0;
         delete[] tetgen_in_.pointlist;
-        tetgen_in_.pointlist = nil;
+        tetgen_in_.pointlist = nullptr;
 
         // Edges were shared with constraint mesh
         // (no need to deallocate)
         tetgen_in_.numberofedges = 0;
-        tetgen_in_.edgelist = nil;
+        tetgen_in_.edgelist = nullptr;
 
         // Facets structures were allocated in local
         // array, and vertices indices were shared
         // with constraint mesh
         delete[] tetgen_in_.facetlist; 
-        tetgen_in_.facetlist = nil;
+        tetgen_in_.facetlist = nullptr;
         tetgen_in_.numberoffacets = 0;
         delete[] polygons;
 
         if(there_was_an_error) {
             InvalidInput error_report(error_code);
-            for(
-                std::set<int>::iterator it =
-                    tetgen_in_.isectfaces.begin();
-                it != tetgen_in_.isectfaces.end(); ++it) {
+            for(auto f : tetgen_in_.isectfaces) {
                 // Note: tetgen reports facets with
                 //  1-based indexing ([1...nf]) !!
-                error_report.invalid_facets.push_back(index_t(*it)-1);
+                error_report.invalid_facets.push_back(index_t(f)-1);
             }
             Logger::err("DelaunayTetgen")
                 << "Found "

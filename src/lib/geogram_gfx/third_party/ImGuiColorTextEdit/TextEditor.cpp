@@ -101,8 +101,8 @@ TextEditor::TextEditor()
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
 	// [Bruno Levy] additional callback.
-	callback_ = NULL;
-	callback_client_data_ = NULL;
+	callback_ = nullptr;
+	callback_client_data_ = nullptr;
 }
 
 
@@ -469,7 +469,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	// [Bruno Levy] read font size from current font (instead of default font)
 	ImGuiContext& g = *GImGui;
 	auto xadv = (g.Font->IndexAdvanceX['X']);
-	mCharAdvance = ImVec2(xadv, g.Font->FontSize + mLineSpacing);
+	mCharAdvance = ImVec2(xadv, g.Font->FontSize + mLineSpacing); // TODO: apply pixel scaling for HiDPI displays.
 
         //[Bruno Levy] commented-out (I prefer to use default style)
         // ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
@@ -548,7 +548,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		}
 
 		// [Bruno Levy] additional callback
-		if(callback_ != NULL){
+		if(callback_ != nullptr){
 		    if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(GLFW_KEY_F2)) {
 			callback_(TEXT_EDITOR_SAVE, callback_client_data_);
 		    }
@@ -757,7 +757,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		}
 
 		// [Bruno Levy] My tooltips (work in progress)
-		if(ImGui::IsWindowHovered() && callback_ != nil) {
+		if(ImGui::IsWindowHovered() && callback_ != nullptr) {
 		    ImVec2 mouse = ImGui::GetMousePos();
 		    ImVec2 origin = ImGui::GetCursorScreenPos();
 		    if(mouse.y > origin.y) {
@@ -837,7 +837,7 @@ void TextEditor::SetText(const std::string & aText)
 
 	Colorize();
 	
-	if(callback_ != nil) {
+	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
 }
@@ -896,7 +896,7 @@ void TextEditor::EnterCharacter(Char aChar)
 	Colorize(coord.mLine - 1, 3);
 	EnsureCursorVisible();
 
-	if(callback_ != nil) {
+	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
 }
@@ -978,7 +978,7 @@ void TextEditor::DeleteSelection()
 	SetCursorPosition(mState.mSelectionStart);
 	Colorize(mState.mSelectionStart.mLine, 1);
 
-	if(callback_ != nil) {
+	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
 }
@@ -1385,7 +1385,7 @@ void TextEditor::Paste()
 		AddUndo(u);
 	}
 
-	if(callback_ != nil) {
+	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
 }

@@ -1,5 +1,10 @@
 vor_reset_warning_level()
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_definitions(-Wno-unknown-warning-option -Wno-zero-as-null-pointer-constant)
+endif()
+
+
 # Since we are in a CMake "object library" (i.e.,
 # a set of object files compiled with same options),
 # the automatically generated geogram_gfx_EXPORTS

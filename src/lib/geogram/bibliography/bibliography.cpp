@@ -86,6 +86,7 @@ namespace GEO {
 	void initialize() {
 	    register_embedded_bib_file();
 	    timeorigin = SystemStopwatch::now();
+	    geo_cite("WEB:GEOGRAM");
 	}
 
 	void terminate() {
@@ -198,7 +199,7 @@ namespace GEO {
 	    
 	    citations_.push_back(
 		CitationRecord(
-		    ref, shortfile, line, shortfunction, (info != nil) ? info : ""
+		    ref, shortfile, line, shortfunction, (info != nullptr) ? info : ""
 		)
 	    );
 	    

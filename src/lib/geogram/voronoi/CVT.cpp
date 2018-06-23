@@ -57,7 +57,7 @@
 namespace GEO {
 
     CentroidalVoronoiTesselation*
-    CentroidalVoronoiTesselation::instance_ = nil;
+    CentroidalVoronoiTesselation::instance_ = nullptr;
 
     CentroidalVoronoiTesselation::CentroidalVoronoiTesselation(
         Mesh* mesh, coord_index_t dim, const std::string& delaunay
@@ -72,9 +72,9 @@ namespace GEO {
         delaunay_ = Delaunay::create(dimension_, delaunay);
         RVD_ = RestrictedVoronoiDiagram::create(delaunay_, mesh);
         mesh_ = mesh;
-        geo_assert(instance_ == nil);
+        geo_assert(instance_ == nullptr);
         instance_ = this;
-        progress_ = nil;
+        progress_ = nullptr;
 	geo_cite("Lloyd82leastsquares");
 	geo_cite("Du:1999:CVT:340312.340319");
 	geo_cite("DBLP:journals/tog/LiuWLSYLY09");
@@ -100,16 +100,16 @@ namespace GEO {
             );
         }
         mesh_ = mesh;
-        geo_assert(instance_ == nil);
+        geo_assert(instance_ == nullptr);
         instance_ = this;
-        progress_ = nil;
+        progress_ = nullptr;
 	geo_cite("Lloyd82leastsquares");
 	geo_cite("Du:1999:CVT:340312.340319");
 	geo_cite("DBLP:journals/tog/LiuWLSYLY09");
     }
 
     CentroidalVoronoiTesselation::~CentroidalVoronoiTesselation() {
-        instance_ = nil;
+        instance_ = nullptr;
     }
 
     bool CentroidalVoronoiTesselation::compute_initial_sampling(
@@ -144,7 +144,7 @@ namespace GEO {
 
         RVD_->set_check_SR(false);
 
-        if(progress_ != nil) {
+        if(progress_ != nullptr) {
             progress_->reset(nb_iter);
         }
 
@@ -169,7 +169,7 @@ namespace GEO {
             newiteration();
         }
 
-        progress_ = nil;
+        progress_ = nullptr;
     }
 
     void CentroidalVoronoiTesselation::compute_surface(
@@ -279,7 +279,7 @@ namespace GEO {
         index_t nb_iter, index_t m
     ) {
         Optimizer_var optimizer = Optimizer::create("HLBFGS");
-	if(optimizer.is_nil()) {
+	if(optimizer.is_null()) {
 	    Logger::warn("CVT") << "This geogram was not compiled with HLBFGS"
 				<< " (falling back to Lloyd iterations)"
 				<< std::endl;
@@ -291,7 +291,7 @@ namespace GEO {
 
         RVD_->set_check_SR(true);
 
-        if(progress_ != nil) {
+        if(progress_ != nullptr) {
             progress_->reset(nb_iter);
         }
 
@@ -309,7 +309,7 @@ namespace GEO {
         optimizer->optimize(points_.data());
 
         simplex_func_.reset();
-        progress_ = nil;
+        progress_ = nullptr;
     }
 
     void CentroidalVoronoiTesselation::constrain_points(double* g) const {
@@ -333,7 +333,7 @@ namespace GEO {
         delaunay_->set_vertices(nb_points, x);
         Memory::clear(g, n * sizeof(double));
         f = 0.0;
-        if(!simplex_func_.is_nil()) {
+        if(!simplex_func_.is_null()) {
             RVD_->compute_integration_simplex_func_grad(
                 f,g,simplex_func_
             );
@@ -344,7 +344,7 @@ namespace GEO {
     }
 
     void CentroidalVoronoiTesselation::newiteration() {
-        if(progress_ != nil) {
+        if(progress_ != nullptr) {
             progress_->next();
         }
         cur_iter_++;

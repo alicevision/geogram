@@ -170,7 +170,7 @@ static GLfloat params[7] = {
 };
 static int nb_params = 7;
 
-static char* title = "g33>|< Viewer";
+static const char* title = "g33>|< Viewer";
 
 static GLuint background_tex = 0;
 
@@ -654,7 +654,7 @@ void glup_viewer_clear_text() {
     }
 }
 
-void glup_viewer_printf(char* format, ...) {
+void glup_viewer_printf(const char* format, ...) {
     va_list args;
     char buffer[1024];
     va_start(args, format);
@@ -1355,7 +1355,7 @@ static void init() {
     glup_viewer_home();
 }
 
-void glup_viewer_set_window_title(char* s) {
+void glup_viewer_set_window_title(const char* s) {
     title = s;
 }
 
@@ -2090,7 +2090,7 @@ static unsigned char i2a[1024];
  */
 static int char_to_index[256][256];
 
-void glTexImage2DXPM(const char** xpm_data) {
+void glTexImage2DXPM(char const* const* xpm_data) {
     int width, height, nb_colors, chars_per_pixel;
     int line = 0;
     int color = 0;

@@ -133,7 +133,7 @@ namespace {
 	 * \param[out] output_mesh a reference to the generated mesh 
 	 */
 	SaveRVDCells(Mesh& output_mesh) : output_mesh_(output_mesh) {
-	    vertex_map_ = nil;
+	    vertex_map_ = nullptr;
 	    
 	    // If set, then only one polyhedron per (connected component of) restricted Voronoi
 	    // cell is generated.
@@ -157,7 +157,7 @@ namespace {
 
 	~SaveRVDCells() {
 	    delete vertex_map_;
-	    vertex_map_ = nil;
+	    vertex_map_ = nullptr;
 	}
 
 	/**

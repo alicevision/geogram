@@ -165,7 +165,7 @@ extern GLUP_VIEWER_API GLfloat* glup_viewer_float_ptr(int param);
 
 extern GLUP_VIEWER_API void glup_viewer_main_loop(int argc, char** argv);
 extern GLUP_VIEWER_API void glup_viewer_exit_main_loop(void);
-extern GLUP_VIEWER_API void glup_viewer_set_window_title(char* title);
+extern GLUP_VIEWER_API void glup_viewer_set_window_title(const char* title);
     
 extern GLUP_VIEWER_API void glup_viewer_set_display_func(
     GlupViewerDisplayFunc f
@@ -218,7 +218,7 @@ extern GLUP_VIEWER_API void glup_viewer_set_screen_size(int w, int h);
 extern GLUP_VIEWER_API void glup_viewer_get_screen_size(int* w, int* h);
 
 extern GLUP_VIEWER_API void glup_viewer_clear_text(void);
-extern GLUP_VIEWER_API void glup_viewer_printf(char* format, ...);
+extern GLUP_VIEWER_API void glup_viewer_printf(const char* format, ...);
 extern GLUP_VIEWER_API void glup_viewer_set_background(int texture);
 extern GLUP_VIEWER_API int glup_viewer_get_background(void);
 extern GLUP_VIEWER_API void glup_viewer_set_background_color(
@@ -239,7 +239,7 @@ extern GLUP_VIEWER_API void glup_viewer_set_scene_rotation(
     float xyz[3], float angle
 );
     
-extern GLUP_VIEWER_API void glTexImage2DXPM(char const** xpm_data);
+extern GLUP_VIEWER_API void glTexImage2DXPM(char const* const* xpm_data);
 extern GLUP_VIEWER_API void glTexImage2Dfile(const char* filename);
 
 extern GLUP_VIEWER_API GLboolean glup_viewer_load_image(
@@ -299,7 +299,7 @@ extern GLUP_VIEWER_API GLboolean glup_viewer_set_effect(GLenum effect);
 
 #ifdef __cplusplus
 inline void glup_viewer_printf(const std::string& s) {
-    glup_viewer_printf((char*) s.c_str());
+    glup_viewer_printf(s.c_str());
 }
 
 inline void glup_viewer_add_toggle(

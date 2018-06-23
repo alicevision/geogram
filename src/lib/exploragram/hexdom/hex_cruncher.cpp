@@ -696,8 +696,8 @@ namespace GEO {
 					if (!qem.valid(seed)) continue;
 					if (qem.next_around_vertex(seed) < seed || qem.next_around_vertex(qem.next_around_vertex(seed)) < seed) continue;
 					punch_v = qem.vertex(seed);
-					if (!init_one_ring(seed)) { failt[punch_v] = geo_max(failt[punch_v], 10.); continue; }
-					if (!topo_can_punch()) { failt[punch_v] = geo_max(failt[punch_v], 20.); continue; }
+					if (!init_one_ring(seed)) { failt[punch_v] = std::max(failt[punch_v], 10.); continue; }
+					if (!topo_can_punch()) { failt[punch_v] = std::max(failt[punch_v], 20.); continue; }
 					old_vertex_position = X(m)[punch_v];
 					nv_punch_v = punch_v;
 
@@ -726,7 +726,7 @@ namespace GEO {
 						if (via_facet[i] != NOT_AN_ID && m->facets.nb_vertices(via_facet[i])==3)
 							bad_config = true;
 					}
-					if (bad_config) { failt[punch_v] = geo_max(failt[punch_v], 20.); continue; }
+					if (bad_config) { failt[punch_v] = std::max(failt[punch_v], 20.); continue; }
 
 					if (punch_cand_ref != NOT_AN_ID) {
 						nv_punch_v = punch_cand_ref;
@@ -745,7 +745,7 @@ namespace GEO {
 								X(m)[qem.vertex(H[ring][(lv + 1) % 4])],
 								X(m)[qem.vertex(H[ring][(lv + 2) % 4])]
 							)) > .8;
-						if (have_bad_angle) { failt[punch_v] = geo_max(failt[punch_v], 30.); continue; }
+						if (have_bad_angle) { failt[punch_v] = std::max(failt[punch_v], 30.); continue; }
 
 						//-------------------------
 						{
@@ -756,7 +756,7 @@ namespace GEO {
 							vec3 n[3];
 							FOR(i, 3) n[i] = facet_normal(m, qem.face(H[i][0]));
 							if (dot(decal, n[0] + n[1] + n[2]) > 0) {
-								failt[punch_v] = geo_max(failt[punch_v], 40.);
+							    failt[punch_v] = std::max(failt[punch_v], 40.);
 								continue;
 							}
 							new_vertex_position = 2. * cubebary - old_vertex_position;
@@ -776,7 +776,7 @@ namespace GEO {
 							have_bad_angle = have_bad_angle
 								|| std::abs(cos_corner(X(m)[tri[f][0]], X(m)[tri[f][1]], X(m)[tri[f][2]])) > cos(M_PI / 8.);
 						}
-						if (have_bad_angle) { failt[punch_v] = geo_max(failt[punch_v], 50.); continue; }
+						if (have_bad_angle) { failt[punch_v] = std::max(failt[punch_v], 50.); continue; }
 
 						FOR(f, 3) {
 							n[f] = normalize(cross(X(m)[tri[f][1]] - X(m)[tri[f][0]], X(m)[tri[f][2]] - X(m)[tri[f][0]]));
@@ -792,7 +792,7 @@ namespace GEO {
 					// check that punch vertex is convex
 					if (new_hex_geometry_is_crappy()) {
 						X(m)[punch_v] = old_vertex_position;
-						 failt[punch_v] = geo_max(failt[punch_v], 60.); 
+						failt[punch_v] = std::max(failt[punch_v], 60.); 
 						 continue; 
 					}
 
@@ -1414,7 +1414,7 @@ namespace GEO {
 					plop(poly.length());
 					plop(ave_edge_length);
 					int nb_seg = int(2 * nint(0.5*poly.length() / ave_edge_length));
-					nb_seg = geo_max(1, nb_seg);
+					nb_seg = std::max(1, nb_seg);
 					FOR(s, nb_seg - 1) plop(poly.interpolate(double(s + 1) / double(nb_seg) - .001));
 				
 				}

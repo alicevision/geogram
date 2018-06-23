@@ -549,6 +549,8 @@ static void nlTerminateExtension_CUDA(void) {
 
     CUDA()->cudaDeviceReset();    
     nlCloseDLL(CUDA()->DLL_cudart);
+
+    memset(CUDA(), 0, sizeof(CUDAContext));
 }
 
 /**************************************************************************/
@@ -844,6 +846,9 @@ typedef struct {
  * \brief Deallocates just the CRS part of a CUDA matrix.
  */
 static void nlCRSMatrixCUDADestroyCRS(NLCUDASparseMatrix* Mcuda) {
+    if(!nlExtensionIsInitialized_CUDA()) {
+	return;
+    }
     if(Mcuda->colind != NULL) {
 	nlCUDACheck(CUDA()->cudaFree(Mcuda->colind));
 	Mcuda->colind = NULL;
@@ -859,6 +864,9 @@ static void nlCRSMatrixCUDADestroyCRS(NLCUDASparseMatrix* Mcuda) {
 }
 
 static void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
+    if(!nlExtensionIsInitialized_CUDA()) {
+	return;
+    }
     if(Mcuda->hyb != NULL) {
 	nlCUDACheck(CUDA()->cusparseDestroyHybMat(Mcuda->hyb));
     }
@@ -984,6 +992,9 @@ typedef struct {
 } NLDiagonalMatrixCUDA;
 
 static void nlDiagonalMatrixCUDADestroy(NLDiagonalMatrixCUDA* Mcuda) {
+    if(!nlExtensionIsInitialized_CUDA()) {
+	return;
+    }
     nlCUDACheck(CUDA()->cudaFree(Mcuda->val));
     memset(Mcuda, 0, sizeof(*Mcuda));
 }

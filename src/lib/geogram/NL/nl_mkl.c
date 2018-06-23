@@ -134,6 +134,8 @@ static void nlTerminateExtension_MKL(void) {
     nlCloseDLL(MKL()->DLL_mkl_intel_thread);
     nlCloseDLL(MKL()->DLL_mkl_core);
     nlCloseDLL(MKL()->DLL_iomp5);
+    memset(MKL(), 0, sizeof(MKLContext));
+    
 }
 
 NLMultMatrixVectorFunc NLMultMatrixVector_MKL = NULL;

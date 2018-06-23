@@ -314,7 +314,7 @@ namespace GEO {
         /**
          * \brief Creates a MeshIOHandler
          * \param[in] format format of the file
-         * \retval nil if \p format is not a supported file format.
+         * \retval nullptr if \p format is not a supported file format.
          * \retval otherwise, a pointer to a IO handler. The returned pointer
          * must be stored in an MeshIOHandler_var that does automatic
          * destruction:
@@ -329,9 +329,9 @@ namespace GEO {
          * \details Determines the file format from the extension of file \p
          * filename and creates a MeshIOHandler for this format.
          * \param[in] filename a path to a mesh file
-         * \retval nil if \p format is not a supported file format.
+         * \retval nullptr if \p format is not a supported file format.
          * \retval a pointer to a IO handler if format is supported.
-         * \retval nil otherwise
+         * \retval nullptr otherwise
          * \see create()
          */
         static MeshIOHandler* get_handler(const std::string& filename);

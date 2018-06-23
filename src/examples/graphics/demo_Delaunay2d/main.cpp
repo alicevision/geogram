@@ -742,7 +742,7 @@ namespace {
             const vec2& p1 = clip[i] ;
             const vec2& p2 = clip[j] ;
             clip_polygon_by_half_plane(*src, p1, p2, *dst);
-            geo_swap(src, dst) ;
+	    std::swap(src, dst) ;
         }
         result = *src ;
     }

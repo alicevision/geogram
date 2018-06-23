@@ -55,12 +55,8 @@ namespace {
     std::map<std::string, GEO::FileDialog*> file_dialogs;
     
     void terminate() {
-	for(
-	    std::map<std::string, GEO::FileDialog*>::iterator it =
-		file_dialogs.begin(); it != file_dialogs.end();
-	    ++it
-	) {
-	    delete it->second;
+	for(auto& it : file_dialogs) {
+	    delete it.second;
 	}
     }
     
@@ -238,7 +234,7 @@ namespace ImGui {
 	ImGuiExtFileDialogFlags flags
     ) {
 	initialize();	
-	GEO::FileDialog* dlg = nil;
+	GEO::FileDialog* dlg = nullptr;
 	if(file_dialogs.find(label) == file_dialogs.end()) {
 	    file_dialogs[label] = new GEO::FileDialog();
 	}

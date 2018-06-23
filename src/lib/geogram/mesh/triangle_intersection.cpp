@@ -847,14 +847,14 @@ namespace {
     ) {
 	result.resize(0);
 	geo_debug_assert(dim1 != 2 || dim2 != 2);
-	const vec3 *pp0=0, *pp1=0, *pp2=0;
-	const vec3 *qq0=0, *qq1=0, *qq2=0;
+	const vec3 *pp0=nullptr, *pp1=nullptr, *pp2=nullptr;
+	const vec3 *qq0=nullptr, *qq1=nullptr, *qq2=nullptr;
 	bool swp = false;
 	if(dim1 < dim2) {
 	    pp0 = &p0; pp1 = &p1; pp2 = &p2;
 	    qq0 = &q0; qq1 = &q1; qq2 = &q2;
 	} else {
-	    geo_swap(dim1, dim2);
+	    std::swap(dim1, dim2);
 	    swp = true;
 	    pp0 = &q0; pp1 = &q1; pp2 = &q2;
 	    qq0 = &p0; qq1 = &p1; qq2 = &p2;
@@ -983,8 +983,8 @@ namespace {
 	// at least one of the objects that determine intersection
 	// vertices is of dimension >= 1.
 	for(index_t i = 0; i < result.size(); i++) {
-	    max_dim = geo_max(max_dim, region_dim(result[i].first));
-	    max_dim = geo_max(max_dim, region_dim(result[i].second));
+	    max_dim = std::max(max_dim, region_dim(result[i].first));
+	    max_dim = std::max(max_dim, region_dim(result[i].second));
 	}
 	return (max_dim > 0);
     }
@@ -1052,8 +1052,8 @@ namespace GEO {
 	// at least one of the objects that determine intersection
 	// vertices is of dimension >= 1.
         for(index_t i = 0; i < result.size(); i++) {
-            max_dim = geo_max(max_dim, region_dim(result[i].first));
-            max_dim = geo_max(max_dim, region_dim(result[i].second));
+            max_dim = std::max(max_dim, region_dim(result[i].first));
+            max_dim = std::max(max_dim, region_dim(result[i].second));
         }
         bool has_isect = (max_dim > 0);
 	/*

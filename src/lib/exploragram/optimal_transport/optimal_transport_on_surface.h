@@ -62,15 +62,13 @@ namespace GEO {
      * \param[out] centroids a pointer to the computed centroids of 
      *  the Laguerre cells that correspond to the optimal transport of
      *  the uniform measure to the points
-     * \param[in] parallel_pow if true, use parallel power diagram algorithm
      */
     void EXPLORAGRAM_API compute_Laguerre_centroids_on_surface(
         Mesh* omega,
         index_t nb_points,
         const double* points,
         double* centroids,
-	bool parallel_pow=true,
-	Mesh* RVD=nil,
+	Mesh* RVD=nullptr,
 	bool verbose=false
     );
 

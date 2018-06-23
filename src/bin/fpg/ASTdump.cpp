@@ -85,7 +85,7 @@ AssignmentExpression::dump( int level ) {
 void
 FunctionCall::dump( int level ) {
     dumpPrefix( level );
-    assert( fun_type != NULL );
+    assert( fun_type != nullptr );
     std::cout << "funcall " << fun_type->id << std::endl;
     FOREACH_ARG
        (*it)->dump( level + 3 );
@@ -111,7 +111,7 @@ ConditionalStatement::dump( int level ) {
     dumpPrefix( level + 3);
     std::cout << "else" << std::endl;
     cond->dump( level + 3 );
-    if( else_branch != NULL )
+    if( else_branch != nullptr )
         else_branch->dump( level +3 );
 }
 

@@ -75,11 +75,19 @@
 #include <geogram/numerics/predicates/dot3d.h>
 #include <geogram/numerics/predicates/aligned3d.h>
 
+#ifdef __SSE2__ 
+#include <emmintrin.h>
+#endif
+
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
 namespace {
 
     using namespace GEO;
     
-    GEO::PCK::SOSMode SOS_mode_ = GEO::PCK::SOS_ADDRESS; // GEO::PCK::SOS_LEXICO; // 
+    GEO::PCK::SOSMode SOS_mode_ = GEO::PCK::SOS_ADDRESS; 
 
     /**
      * \brief Comparator class for nD points using lexicographic order.
@@ -161,12 +169,222 @@ namespace {
 	    }
 	}
     }
+
+    /**
+     * \brief Gets the maximum of 4 double precision numbers.
+     * \param[in] x1 , x2 , x3 , x4 the four numbers.
+     * \return the maximum.
+     */
+    inline double max4(double x1, double x2, double x3, double x4) {
+#ifdef __SSE2__
+	double result;
+	__m128d X1 =_mm_load_sd(&x1);
+	__m128d X2 =_mm_load_sd(&x2);
+	__m128d X3 =_mm_load_sd(&x3);
+	__m128d X4 =_mm_load_sd(&x4);
+	X1 = _mm_max_sd(X1,X2);
+	X3 = _mm_max_sd(X3,X4);
+	X1 = _mm_max_sd(X1,X3);
+	_mm_store_sd(&result, X1);
+	return result;
+#else	
+	return std::max(std::max(x1,x2),std::max(x3,x4));
+#endif	
+    }
+
+
+    /**
+     * \brief Gets the minimum and maximum of 3 double precision numbers.
+     * \param[in] x1 , x2 , x3 the three numbers.
+     * \param[out] m the minimum
+     * \param[out] M the maximum
+     */
+    inline void get_minmax3(
+	double& m, double& M, double x1, double x2, double x3
+    ) {
+#ifdef __SSE2__
+	__m128d X1 =_mm_load_sd(&x1);
+	__m128d X2 =_mm_load_sd(&x2);
+	__m128d X3 =_mm_load_sd(&x3);
+	__m128d MIN12 = _mm_min_sd(X1,X2);
+	__m128d MAX12 = _mm_max_sd(X1,X2);
+	X1 = _mm_min_sd(MIN12, X3);
+	X3 = _mm_max_sd(MAX12, X3);
+	_mm_store_sd(&m, X1);
+	_mm_store_sd(&M, X3);
+#else	
+	m = std::min(std::min(x1,x2), x3);
+	M = std::max(std::max(x1,x2), x3);
+#endif	
+    }
+
+#ifdef __AVX2__
+
+    /**
+     * \brief Computes the permutation mask for
+     *  _mm256_permute4x64_pd()
+     * \param[in] a0 , a1 , a2 , a3 the components of the
+     *  vector, in 0..3
+     * \return the mask to be used with _mm256_permute4x64_pd().
+     */
+    inline int avx_permute_mask(int a0, int a1, int a2, int a3) {
+	return a0 | (a1 << 2) | (a2 << 4) | (a3 << 6);
+    }
+
+    // To be replaced with _MM_SHUFFLE(a3,a2,a1,a0) (note: reverse arg order !)
     
-}
+    /**
+     * \brief Computes four 2x2 determinants simultaneously in AVX2
+     *  registers.
+     * \param[in] A , B , C , D the coefficients of the four determinants
+     *  distributed over four AVX2 registers. Note: each component corresponds to
+     *  one determinant (and not each register).
+     * \return an AVX2 register with the four determinants
+     */
+    inline __m256d avx2_vecdet(__m256d A, __m256d B, __m256d C, __m256d D) {
+	__m256d AD = _mm256_mul_pd(A,D);
+	__m256d BC = _mm256_mul_pd(B,C);
+	return _mm256_sub_pd(AD,BC);
+    }
 
-namespace {
-    using namespace GEO;
+    /**
+     * \brief Computes the 4x4 determinant of a matrix
+     *  stored in 4 AVX2 registers.
+     * \param[in] C11 , C12 , C13 , C14 the columns of
+     *  the matrix stored in AVX2 registers.
+     * \return the determinant of the matrix.
+     */
+    inline double avx2_det4x4(
+	__m256d C11,
+	__m256d C12,
+	__m256d C13,
+	__m256d C14
+    ) {
+	// We develop w.r.t. the first column and
+	// compute the 4 minors simultaneously.
+	
+	__m256d C41 = _mm256_permute4x64_pd(C11, avx_permute_mask(3,0,1,2));
+	
+	__m256d C22 = _mm256_permute4x64_pd(C12, avx_permute_mask(1,2,3,0));
+	__m256d C32 = _mm256_permute4x64_pd(C12, avx_permute_mask(2,3,0,1));	
 
+	__m256d C23 = _mm256_permute4x64_pd(C13, avx_permute_mask(1,2,3,0));
+	__m256d C33 = _mm256_permute4x64_pd(C13, avx_permute_mask(2,3,0,1));	
+
+	__m256d C24 = _mm256_permute4x64_pd(C14, avx_permute_mask(1,2,3,0));
+	__m256d C34 = _mm256_permute4x64_pd(C14, avx_permute_mask(2,3,0,1));
+	
+	__m256d M1 = _mm256_mul_pd(C12,avx2_vecdet(C23,C24,C33,C34));	
+	__m256d M2 = _mm256_mul_pd(C22,avx2_vecdet(C13,C14,C33,C34));
+	__m256d M3 = _mm256_mul_pd(C32,avx2_vecdet(C13,C14,C23,C24));
+
+	// compute the 4 3x3 minors simulateously by
+	// assembling the 3*4 2x2 minors
+	__m256d M = _mm256_add_pd(_mm256_sub_pd(M1,M2),M3);
+
+	// multiply the 4 3x3 minors by the 4 coefficients of the
+	// first column (permutted so that a41 comes first).
+	M = _mm256_mul_pd(M, C41);
+
+	// Compute -m0 +m1 -m2 +m3
+	M = _mm256_permute4x64_pd(M, avx_permute_mask(1,3,0,2));
+	__m128d M_a = _mm256_extractf128_pd(M, 0);
+	__m128d M_b = _mm256_extractf128_pd(M, 1);
+	__m128d Mab = _mm_sub_pd(M_a,M_b);
+	double m[2];
+	_mm_store_pd(m, Mab);
+	return m[0]+m[1];
+    }
+
+
+    /**
+     * \brief Arithmetic filter for the in_sphere_3d_SOS() predicate.
+     * \details This version is optimized using the AVX2 instruction 
+     *  set. It does not test for underflow nor for overflow.
+     *  Since it is used massively by Delaunay_3d, using the
+     *   optimized version may be worth it.
+     * \param[in] p first vertex of the tetrahedron
+     * \param[in] q second vertex of the tetrahedron
+     * \param[in] r third vertex of the tetrahedron
+     * \param[in] s fourth vertex of the tetrahedron
+     * \param[in] t point to be tested
+     * \retval +1 if \p t was determined to be outside 
+     *   the circumsphere of \p p,\p q,\p r,\p s
+     * \retval -1 if \p t was determined to be inside 
+     *   the circumsphere of  \p p,\p q,\p r,\p s
+     * \retval 0 if the position of \p t could be be determined
+     */
+    inline int in_sphere_3d_filter_avx2(
+        const double* p, const double* q, 
+        const double* r, const double* s, const double* t
+    ) {
+
+	// Mask to load just three doubles from the points.
+	__m256i XYZonly = _mm256_set_epi64x(
+	    0,~__int64_t(0),~__int64_t(0),~__int64_t(0)
+	);
+	__m256d P = _mm256_maskload_pd(p, XYZonly);
+	__m256d Q = _mm256_maskload_pd(q, XYZonly);
+	__m256d R = _mm256_maskload_pd(r, XYZonly);
+	__m256d S = _mm256_maskload_pd(s, XYZonly);
+	__m256d T = _mm256_maskload_pd(t, XYZonly);	
+	
+	__m256d PT = _mm256_sub_pd(P,T);
+	__m256d QT = _mm256_sub_pd(Q,T);
+	__m256d RT = _mm256_sub_pd(R,T);
+	__m256d ST = _mm256_sub_pd(S,T);			
+
+	// Absolute values by masking sign bit.
+	__m256d sign_mask = _mm256_set1_pd(-0.);
+	__m256d absPT     = _mm256_andnot_pd(PT, sign_mask);
+	__m256d absQT     = _mm256_andnot_pd(QT, sign_mask);
+	__m256d absRT     = _mm256_andnot_pd(RT, sign_mask);
+	__m256d absST     = _mm256_andnot_pd(ST, sign_mask);	
+	__m256d maxXYZ    = _mm256_max_pd(
+	    _mm256_max_pd(absPT, absQT), _mm256_max_pd(absRT, absST)
+	);
+
+	// Separating maxX, maxY, maxZ in three different registers
+	__m128d maxX = _mm256_extractf128_pd(maxXYZ,0);
+	__m128d maxZ = _mm256_extractf128_pd(maxXYZ,1);
+	__m128d maxY = _mm_shuffle_pd(maxX, maxX, 1);
+	__m128d max_max = _mm_max_pd(maxX, _mm_max_pd(maxY, maxZ));
+
+	// Computing dynamic filter
+	__m128d eps     = _mm_set_pd1(1.2466136531027298e-13);
+	        eps     = _mm_mul_pd(eps, _mm_mul_pd(maxX, _mm_mul_pd(maxY, maxZ)));
+		eps     = _mm_mul_pd(eps, _mm_mul_pd(max_max, max_max));
+	
+	// Transpose [PT, QT, RT, ST] -> X,Y,Z (last column is 0, ignored)
+	__m256d tmp0 = _mm256_shuffle_pd(PT, QT, 0x0);		
+	__m256d tmp2 = _mm256_shuffle_pd(PT, QT, 0xF);		
+	__m256d tmp1 = _mm256_shuffle_pd(RT, ST, 0x0);		
+	__m256d tmp3 = _mm256_shuffle_pd(RT, ST, 0xF);		
+	__m256d X  = _mm256_permute2f128_pd(tmp0, tmp1, 0x20);
+	__m256d Y  = _mm256_permute2f128_pd(tmp2, tmp3, 0x20);
+	__m256d Z  = _mm256_permute2f128_pd(tmp0, tmp1, 0x31);
+
+	// Compute first column with squared lengths of vectors
+	__m256d X2 = _mm256_mul_pd(X,X);
+	__m256d Y2 = _mm256_mul_pd(Y,Y);
+	__m256d Z2 = _mm256_mul_pd(Z,Z);
+	__m256d L2 = _mm256_add_pd(_mm256_add_pd(X2,Y2),Z2);
+
+	double det = avx2_det4x4(L2,X,Y,Z);
+
+	double epsval;
+	_mm_store_pd1(&epsval, eps);
+	
+	// Note: inverted as compared to CGAL
+	//   CGAL: in_sphere_3d (called side_of_oriented_sphere())
+	//      positive side is outside the sphere.
+	//   PCK: in_sphere_3d : positive side is inside the sphere
+
+	return (det > epsval) * -1 + (det < -epsval);
+    }
+    
+#endif
+    
     /**
      * \brief Arithmetic filter for the in_sphere_3d_SOS() predicate.
      * \details This filter was optimized by hand by Sylvain Pion
@@ -188,7 +406,6 @@ namespace {
         const double* p, const double* q, 
         const double* r, const double* s, const double* t
     ) {
-
         double ptx = p[0] - t[0];
         double pty = p[1] - t[1];
         double ptz = p[2] - t[2];
@@ -226,27 +443,15 @@ namespace {
         double artz = ::fabs(rtz);
         double astz = ::fabs(stz);
 
-        if (maxx < aqtx) maxx = aqtx;
-        if (maxx < artx) maxx = artx;
-        if (maxx < astx) maxx = astx;
-        
-        if (maxy < aqty) maxy = aqty;
-        if (maxy < arty) maxy = arty;
-        if (maxy < asty) maxy = asty;
-        
-        if (maxz < aqtz) maxz = aqtz;
-        if (maxz < artz) maxz = artz;
-        if (maxz < astz) maxz = astz;
-
+	maxx = max4(maxx, aqtx, artx, astx);
+	maxy = max4(maxy, aqty, arty, asty);
+	maxz = max4(maxz, aqtz, artz, astz);
+	
         double eps = 1.2466136531027298e-13 * maxx * maxy * maxz;
-  
-        // Sort maxx < maxy < maxz.
-        if (maxx > maxz)
-            std::swap(maxx, maxz);
-        if (maxy > maxz)
-            std::swap(maxy, maxz);
-        else if (maxy < maxx)
-            std::swap(maxx, maxy);
+
+	double min_max;
+	double max_max;
+	get_minmax3(min_max, max_max, maxx, maxy, maxz);
 
         double det = det4x4(
                         ptx,pty,ptz,pt2,
@@ -255,12 +460,12 @@ namespace {
                         stx,sty,stz,st2
                      );
 
-        if (maxx < 1e-58)  { /* sqrt^5(min_double/eps) */
+        if (min_max < 1e-58)  { /* sqrt^5(min_double/eps) */
             // Protect against underflow in the computation of eps.
             return FPG_UNCERTAIN_VALUE;
-        } else if (maxz < 1e61)  { /* sqrt^5(max_double/4 [hadamard]) */
+        } else if (max_max < 1e61)  { /* sqrt^5(max_double/4 [hadamard]) */
             // Protect against overflow in the computation of det.
-            eps *= (maxz * maxz);
+            eps *= (max_max * max_max);
             // Note: inverted as compared to CGAL
             //   CGAL: in_sphere_3d (called side_of_oriented_sphere())
             //      positive side is outside the sphere.
@@ -344,7 +549,7 @@ namespace {
             cnt_side1_SOS++;
             return (p0 < p1) ? POSITIVE : NEGATIVE;
         }
-        len_side1 = geo_max(len_side1, r.length());
+        len_side1 = std::max(len_side1, r.length());
         return r_sign;
     }
 
@@ -458,8 +663,8 @@ namespace {
         Sign r_sign = r.sign();
 
         // Statistics
-        len_side2_num = geo_max(len_side2_num, r.length());
-        len_side2_denom = geo_max(len_side2_denom, Delta.length());
+        len_side2_num = std::max(len_side2_num, r.length());
+        len_side2_denom = std::max(len_side2_denom, Delta.length());
 
         // Simulation of Simplicity (symbolic perturbation)
         if(r_sign == ZERO) {
@@ -476,7 +681,7 @@ namespace {
                     const expansion& z1 = expansion_diff(Delta, a21);
                     const expansion& z = expansion_sum(z1, a20);
                     Sign z_sign = z.sign();
-                    len_side2_SOS = geo_max(len_side2_SOS, z.length());
+                    len_side2_SOS = std::max(len_side2_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -484,7 +689,7 @@ namespace {
                 if(p_sort[i] == p1) {
                     const expansion& z = expansion_diff(a21, a20);
                     Sign z_sign = z.sign();
-                    len_side2_SOS = geo_max(len_side2_SOS, z.length());
+                    len_side2_SOS = std::max(len_side2_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -643,8 +848,8 @@ namespace {
         Sign r_sign = r.sign();
 
         // Statistics
-        len_side3_num = geo_max(len_side3_num, r.length());
-        len_side3_denom = geo_max(len_side3_denom, Delta.length());
+        len_side3_num = std::max(len_side3_num, r.length());
+        len_side3_denom = std::max(len_side3_denom, Delta.length());
 
         // Simulation of Simplicity (symbolic perturbation)
         if(r_sign == ZERO) {
@@ -665,7 +870,7 @@ namespace {
                     const expansion& z3 = expansion_product(a32, z3_0).negate();
                     const expansion& z = expansion_sum4(Delta, z1, z2, z3);
                     Sign z_sign = z.sign();
-                    len_side3_SOS = geo_max(len_side3_SOS, z.length());
+                    len_side3_SOS = std::max(len_side3_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -675,7 +880,7 @@ namespace {
                     const expansion& z3 = expansion_product(a32, b21);
                     const expansion& z = expansion_sum3(z1, z2, z3);
                     Sign z_sign = z.sign();
-                    len_side3_SOS = geo_max(len_side3_SOS, z.length());
+                    len_side3_SOS = std::max(len_side3_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -685,7 +890,7 @@ namespace {
                     const expansion& z3 = expansion_product(a32, b22);
                     const expansion& z = expansion_sum3(z1, z2, z3);
                     Sign z_sign = z.sign();
-                    len_side3_SOS = geo_max(len_side3_SOS, z.length());
+                    len_side3_SOS = std::max(len_side3_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -771,8 +976,8 @@ namespace {
         Sign r_sign = r.sign();
 
         // Statistics
-        len_side3h_num = geo_max(len_side3h_num, r.length());
-        len_side3h_denom = geo_max(len_side3h_denom, Delta.length());
+        len_side3h_num = std::max(len_side3h_num, r.length());
+        len_side3h_denom = std::max(len_side3h_denom, Delta.length());
 
         // Simulation of Simplicity (symbolic perturbation)
         if(r_sign == ZERO) {
@@ -794,7 +999,7 @@ namespace {
                     const expansion& z3 = expansion_product(a32, z3_0).negate();
                     const expansion& z = expansion_sum4(Delta, z1, z2, z3);
                     Sign z_sign = z.sign();
-                    len_side3h_SOS = geo_max(len_side3h_SOS, z.length());
+                    len_side3h_SOS = std::max(len_side3h_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -804,7 +1009,7 @@ namespace {
                     const expansion& z3 = expansion_product(a32, b21);
                     const expansion& z = expansion_sum3(z1, z2, z3);
                     Sign z_sign = z.sign();
-                    len_side3h_SOS = geo_max(len_side3h_SOS, z.length());
+                    len_side3h_SOS = std::max(len_side3h_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -814,7 +1019,7 @@ namespace {
                     const expansion& z3 = expansion_product(a32, b22);
                     const expansion& z = expansion_sum3(z1, z2, z3);
                     Sign z_sign = z.sign();
-                    len_side3h_SOS = geo_max(len_side3h_SOS, z.length());
+                    len_side3h_SOS = std::max(len_side3h_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -1000,8 +1205,8 @@ namespace {
         Sign r_sign = r.sign();
 
         // Statistics
-        len_side4_num = geo_max(len_side4_num, r.length());
-        len_side4_denom = geo_max(len_side4_denom, Delta1.length());
+        len_side4_num = std::max(len_side4_num, r.length());
+        len_side4_denom = std::max(len_side4_denom, Delta1.length());
 
         // Simulation of Simplicity (symbolic perturbation)
         if(sos && r_sign == ZERO) {
@@ -1019,26 +1224,26 @@ namespace {
                     const expansion& z2 = expansion_diff(Delta4, Delta3);
                     const expansion& z = expansion_sum(z1, z2);
                     Sign z_sign = z.sign();
-                    len_side4_SOS = geo_max(len_side4_SOS, z.length());
+                    len_side4_SOS = std::max(len_side4_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta4_sign * z_sign);
                     }
                 } else if(p_sort[i] == p1) {
                     Sign Delta1_sign = Delta1.sign();
                     if(Delta1_sign != ZERO) {
-                        len_side4_SOS = geo_max(len_side4_SOS, Delta1.length());
+                        len_side4_SOS = std::max(len_side4_SOS, Delta1.length());
                         return Sign(Delta4_sign * Delta1_sign);
                     }
                 } else if(p_sort[i] == p2) {
                     Sign Delta2_sign = Delta2.sign();
                     if(Delta2_sign != ZERO) {
-                        len_side4_SOS = geo_max(len_side4_SOS, Delta2.length());
+                        len_side4_SOS = std::max(len_side4_SOS, Delta2.length());
                         return Sign(-Delta4_sign * Delta2_sign);
                     }
                 } else if(p_sort[i] == p3) {
                     Sign Delta3_sign = Delta3.sign();
                     if(Delta3_sign != ZERO) {
-                        len_side4_SOS = geo_max(len_side4_SOS, Delta3.length());
+                        len_side4_SOS = std::max(len_side4_SOS, Delta3.length());
                         return Sign(Delta4_sign * Delta3_sign);
                     }
                 } else if(p_sort[i] == p4) {
@@ -1183,7 +1388,7 @@ namespace {
                     const expansion& z1234 = expansion_sum4(z1, z2, z3, z4);
                     const expansion& z = expansion_diff(Delta, z1234);
                     Sign z_sign = z.sign();
-                    len_side4_SOS = geo_max(len_side4_SOS, z.length());
+                    len_side4_SOS = std::max(len_side4_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -1194,7 +1399,7 @@ namespace {
                     const expansion& z4 = expansion_product(a33, b31);
                     const expansion& z = expansion_sum4(z1, z2, z3, z4);
                     Sign z_sign = z.sign();
-                    len_side4_SOS = geo_max(len_side4_SOS, z.length());
+                    len_side4_SOS = std::max(len_side4_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -1205,7 +1410,7 @@ namespace {
                     const expansion& z4 = expansion_product(a33, b32);
                     const expansion& z = expansion_sum4(z1, z2, z3, z4);
                     Sign z_sign = z.sign();
-                    len_side4_SOS = geo_max(len_side4_SOS, z.length());
+                    len_side4_SOS = std::max(len_side4_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -1216,7 +1421,7 @@ namespace {
                     const expansion& z4 = expansion_product(a33, b33);
                     const expansion& z = expansion_sum4(z1, z2, z3, z4);
                     Sign z_sign = z.sign();
-                    len_side4_SOS = geo_max(len_side4_SOS, z.length());
+                    len_side4_SOS = std::max(len_side4_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta_sign * z_sign);
                     }
@@ -1306,7 +1511,7 @@ namespace {
             a11, a12, a21, a22
         );
 
-        len_orient2d = geo_max(len_orient2d, Delta.length());
+        len_orient2d = std::max(len_orient2d, Delta.length());
 
         return Delta.sign();
     }
@@ -1336,7 +1541,7 @@ namespace {
             a11, a12, a13, a21, a22, a23, a31, a32, a33
         );
 
-        len_orient3d = geo_max(len_orient3d, Delta.length());
+        len_orient3d = std::max(len_orient3d, Delta.length());
 
         return Delta.sign();
     }
@@ -1405,8 +1610,8 @@ namespace {
         Sign r_sign = r.sign();
 
         // Statistics
-        len_orient3dh_num = geo_max(len_orient3dh_num, r.length());
-        len_orient3dh_denom = geo_max(len_orient3dh_denom, Delta1.length());
+        len_orient3dh_num = std::max(len_orient3dh_num, r.length());
+        len_orient3dh_denom = std::max(len_orient3dh_denom, Delta1.length());
 
         // Simulation of Simplicity (symbolic perturbation)
         if(sos && r_sign == ZERO) {
@@ -1425,26 +1630,26 @@ namespace {
                     const expansion& z2 = expansion_diff(Delta4, Delta3);
                     const expansion& z = expansion_sum(z1, z2);
                     Sign z_sign = z.sign();
-                    len_orient3dh_SOS = geo_max(len_orient3dh_SOS, z.length());
+                    len_orient3dh_SOS = std::max(len_orient3dh_SOS, z.length());
                     if(z_sign != ZERO) {
                         return Sign(Delta4_sign * z_sign);
                     }
                 } else if(p_sort[i] == p1) {
                     Sign Delta1_sign = Delta1.sign();
                     if(Delta1_sign != ZERO) {
-                        len_orient3dh_SOS = geo_max(len_orient3dh_SOS, Delta1.length());
+                        len_orient3dh_SOS = std::max(len_orient3dh_SOS, Delta1.length());
                         return Sign(Delta4_sign * Delta1_sign);
                     }
                 } else if(p_sort[i] == p2) {
                     Sign Delta2_sign = Delta2.sign();
                     if(Delta2_sign != ZERO) {
-                        len_orient3dh_SOS = geo_max(len_orient3dh_SOS, Delta2.length());
+                        len_orient3dh_SOS = std::max(len_orient3dh_SOS, Delta2.length());
                         return Sign(-Delta4_sign * Delta2_sign);
                     }
                 } else if(p_sort[i] == p3) {
                     Sign Delta3_sign = Delta3.sign();
                     if(Delta3_sign != ZERO) {
-                        len_orient3dh_SOS = geo_max(len_orient3dh_SOS, Delta3.length());
+                        len_orient3dh_SOS = std::max(len_orient3dh_SOS, Delta3.length());
                         return Sign(Delta4_sign * Delta3_sign);
                     }
                 } else if(p_sort[i] == p4) {
@@ -1902,7 +2107,12 @@ namespace GEO {
             cnt_side4_total++;
             
             // This specialized filter supposes that orient_3d(p0,p1,p2,p3) > 0
+
+#ifdef __AVX2__
+	    Sign result = Sign(in_sphere_3d_filter_avx2(p0, p1, p2, p3, p4));
+#else	    
             Sign result = Sign(in_sphere_3d_filter_optim(p0, p1, p2, p3, p4));
+#endif	    
             if(result == 0) {
                 result = side4_3d_exact_SOS(p0, p1, p2, p3, p4);
             }

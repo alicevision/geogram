@@ -358,7 +358,7 @@ namespace {
 	char filename[geo_imgui_string_length];
 
 	const char* filename_in = lua_tostring(L,2);
-	if(filename_in != nil) {
+	if(filename_in != nullptr) {
 	    if(strlen(filename_in) > geo_imgui_string_length + 1) {
 		Logger::err("ImGui") << "Max file name length exceeded"
 				     << std::endl;
@@ -491,7 +491,7 @@ namespace {
 		L, "'imgui.ShowStyleEditor()' invalid number of arguments"
 	    );
 	}
-	ImGui::ShowStyleEditor(nil);
+	ImGui::ShowStyleEditor(nullptr);
 	return 0;
     }
 

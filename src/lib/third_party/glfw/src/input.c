@@ -1093,7 +1093,8 @@ GLFWAPI int glfwUpdateGamepadMappings(const char* string)
             const size_t length = strcspn(c, "\r\n");
             if (length < sizeof(line))
             {
-                _GLFWmapping mapping = {{0}};
+                _GLFWmapping mapping;
+	        mapping.name[0] = '\0'; // [BL] fixed warning.
 
                 memcpy(line, c, length);
                 line[length] = '\0';

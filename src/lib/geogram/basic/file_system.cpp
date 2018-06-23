@@ -115,7 +115,7 @@ namespace GEO {
                     continue;
                 }
                 if(!is_directory(current)) {
-                    if(!::CreateDirectory(current.c_str(), NULL)) {
+                    if(!::CreateDirectory(current.c_str(), nullptr)) {
                         Logger::err("OS")
                             << "Could not create directory "
                             << current << std::endl;
@@ -269,14 +269,14 @@ namespace GEO {
                 dirname += "/";
             }
             DIR* dir = opendir(dirname.c_str());
-            if(dir == NULL) {
+            if(dir == nullptr) {
                 Logger::err("OS")
                     << "Could not open directory " << dirname
                     << std::endl;
                 return false;
             }
             struct dirent* entry = readdir(dir);
-            while(entry != NULL) {
+            while(entry != nullptr) {
                 std::string current = std::string(entry->d_name);
                 // Ignore . and ..
                 if(current != "." && current != "..") {
@@ -422,13 +422,13 @@ namespace GEO {
 
         bool copy_file(const std::string& from, const std::string& to) {
             FILE* fromf = fopen(from.c_str(), "rb");
-            if(fromf == nil) {
+            if(fromf == nullptr) {
                 Logger::err("FileSyst")
 		    << "Could not open source file:" << from << std::endl;
                 return false;
             }
             FILE* tof = fopen(to.c_str(),"wb");
-            if(tof == nil) {
+            if(tof == nullptr) {
                 Logger::err("FileSyst")
 		    << "Could not create file:" << to << std::endl;
                 fclose(fromf);
@@ -482,7 +482,7 @@ namespace GEO {
                 int rc = utimensat(
                     AT_FDCWD,
                     filename.c_str(),
-                    nil,
+                    nullptr,
                     0
                 );
                 if(rc != 0) {
@@ -498,10 +498,10 @@ namespace GEO {
                     filename.c_str(),
                     GENERIC_READ | GENERIC_WRITE,
                     FILE_SHARE_READ | FILE_SHARE_WRITE,
-                    nil,
+                    nullptr,
                     OPEN_EXISTING,
                     FILE_ATTRIBUTE_NORMAL,
-                    nil
+                    nullptr
                 );
                 if(hfile == INVALID_HANDLE_VALUE) {
                     Logger::err("FileSystem")
@@ -513,7 +513,7 @@ namespace GEO {
                 FILETIME now_file;
                 GetSystemTime(&now_system);
                 SystemTimeToFileTime(&now_system, &now_file);
-                SetFileTime(hfile,nil,&now_file,&now_file);
+                SetFileTime(hfile,nullptr,&now_file,&now_file);
                 CloseHandle(hfile);
             }
 #endif            
@@ -536,7 +536,7 @@ namespace GEO {
 
             char buffer[PATH_MAX];
             char* p = realpath(path.c_str(), buffer);
-            if(p != nil) {
+            if(p != nullptr) {
                 result = std::string(p);
             } else {
                 // realpath() only works for existing paths and existing file,
@@ -548,7 +548,7 @@ namespace GEO {
                     if(pos != std::string::npos) {
                         std::string path_part = path.substr(0,pos);
                         p = realpath(path_part.c_str(), buffer);
-                        if(p == nil) {
+                        if(p == nullptr) {
                             break;
                         } else {
                             result = std::string(p) +
@@ -565,7 +565,7 @@ namespace GEO {
             
 #ifdef GEO_OS_WINDOWS
             TCHAR buffer[MAX_PATH];
-            GetFullPathName(path.c_str(), MAX_PATH, buffer, nil);
+            GetFullPathName(path.c_str(), MAX_PATH, buffer, nullptr);
             result = std::string(buffer);
 #endif
             
@@ -589,7 +589,7 @@ namespace GEO {
             home="/";
 #else            
             char* result = getenv("HOME");
-            if(result != nil) {
+            if(result != nullptr) {
                 home=result;
             }
 #endif

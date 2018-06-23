@@ -116,7 +116,7 @@ namespace GEO {
          * \param[in] counted reference object to reference.
          */
         static void ref(const Counted* counted) {
-            if(counted != nil) {
+            if(counted != nullptr) {
                 counted->ref();
             }
         }
@@ -127,7 +127,7 @@ namespace GEO {
          * \param[in] counted reference object to dereference.
          */
         static void unref(const Counted* counted) {
-            if(counted != nil) {
+            if(counted != nullptr) {
                 counted->unref();
             }
         }

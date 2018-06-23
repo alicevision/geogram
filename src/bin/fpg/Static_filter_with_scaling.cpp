@@ -47,7 +47,7 @@ struct Contains_translation_on_fresh_values :
     virtual void visit( AST::BinaryExpression* bexp ) {
         Error_bound_value *is_fresh1 = dynamic_cast<Error_bound_value*>( absint_is_fresh->get_analysis_result( bexp->e1 ) );
         Error_bound_value *is_fresh2 = dynamic_cast<Error_bound_value*>( absint_is_fresh->get_analysis_result( bexp->e2 ) );
-        assert( is_fresh1 != NULL && is_fresh2 != NULL );
+        assert( is_fresh1 != nullptr && is_fresh2 != nullptr );
         if( is_fresh1->is_fresh() && is_fresh2->is_fresh() && bexp->kind == AST::BinaryExpression::SUB ) {
             MSG("")
             //bexp->dump(0);
@@ -81,16 +81,17 @@ struct Contains_float_compare_on_derived_values :
         {
             Error_bound_value *is_fresh1 = dynamic_cast<Error_bound_value*>( absint_is_fresh->get_analysis_result( bexp->e1 ) );
             Error_bound_value *is_fresh2 = dynamic_cast<Error_bound_value*>( absint_is_fresh->get_analysis_result( bexp->e2 ) );
-            assert( is_fresh1 != NULL && is_fresh2 != NULL );
+            assert( is_fresh1 != nullptr && is_fresh2 != nullptr );
             bool is_fresh = is_fresh1->is_fresh() && is_fresh2->is_fresh();
             //MSG(is_fresh)
             switch( bexp->kind ) {
             case AST::BinaryExpression::EQ:
             case AST::BinaryExpression::NEQ:
             case AST::BinaryExpression::GEQ:
-            case AST::BinaryExpression::LEQ:
+   	    case AST::BinaryExpression::LEQ: 
                 if( !is_fresh )
                     throw RuntimeError("no equality compare for derived values!", bexp->location );
+		// fallthrough
             case AST::BinaryExpression::LE:
             case AST::BinaryExpression::GR:
                 if( !is_fresh ) {
@@ -106,7 +107,7 @@ struct Contains_float_compare_on_derived_values :
 
     virtual void visit( AST::UnaryFunction *uf ) {
         Error_bound_value *is_fresh = dynamic_cast<Error_bound_value*>( absint_is_fresh->get_analysis_result( uf->e ) );
-        assert( is_fresh != NULL );
+        assert( is_fresh != nullptr );
         if( uf->kind == AST::UnaryFunction::XSIGN && !is_fresh->is_fresh() )
             result_value = true;
         else
@@ -128,10 +129,10 @@ struct Subst_funcall_filter : Expression_filter {
         MSG("")
         //e->dump(0);
         AST::FunctionCall *funcall = dynamic_cast<AST::FunctionCall*>(e);
-        assert( funcall != NULL );
+        assert( funcall != nullptr );
         if( funcall->fun_type->is_extern )
             return false;
-        assert( funcall->called_function != NULL );
+        assert( funcall->called_function != nullptr );
         Contains_translation_on_fresh_values       has_fresh_sub ( add_bounds->absint_is_fresh );
         Contains_float_compare_on_derived_values   has_float_comp( add_bounds->absint_is_fresh );
         funcall->called_function->accept( &has_fresh_sub );
@@ -243,7 +244,7 @@ Variable*
 Group_cache::find_maximum( std::vector< Variable* >& max_vars, std::set< Variable*> &ignore ) {
     std::vector< Variable* >::iterator begin = max_vars.begin(),
                                        end   = max_vars.end();
-    Variable *result = NULL;
+    Variable *result = nullptr;
     std::set< Variable*> ignore_tmp;
     unsigned int max_subsets = 0;
     for( ; begin != end; ++begin ) {
@@ -272,7 +273,7 @@ struct Use_as_max_value : public Abstract_value {
     Use_as_max_value*
     downcast( Abstract_value* value ) {
         Use_as_max_value *v= dynamic_cast<Use_as_max_value*>( value );
-        assert( v!= NULL );
+        assert( v!= nullptr );
         return v;
     }
     virtual Use_as_max_value*
@@ -310,8 +311,8 @@ struct Use_as_max_value : public Abstract_value {
 
     //virtual void funcall( AST::Expression* funcall) { if( is_fresh() ) use_as_max_ = true; }
 
-    virtual Use_as_max_value* div( Abstract_value* other )  { argused(other); CGAL_error(); return NULL; }
-    virtual Use_as_max_value* sqrt()                        { CGAL_error(); return NULL; }
+    virtual Use_as_max_value* div( Abstract_value* other )  { argused(other); CGAL_error(); return nullptr; }
+    virtual Use_as_max_value* sqrt()                        { CGAL_error(); return nullptr; }
     virtual Use_as_max_value* join( Abstract_value* other ) { argused(other); return this; }
 
     virtual Use_as_max_value* clone() { return new Use_as_max_value(*this); }
@@ -349,8 +350,8 @@ struct CSE_max
         Transformation_visitor::update( node_old, node_new );
         AST::Expression *e_old = dynamic_cast< AST::Expression* >(node_old);
         AST::Expression *e_new = dynamic_cast< AST::Expression* >(node_new);
-        if( e_old != NULL )
-            assert( e_new != NULL );
+        if( e_old != nullptr )
+            assert( e_new != nullptr );
         add_bounds->absint_max->update( e_old, e_new );
     }
 
@@ -367,7 +368,7 @@ struct Predicate_use_as_max : public Expression_filter {
 
 
 Add_bound_variables::Add_bound_variables( bool use_aposteriori_check )
-   : epsilon_tmp_variable(NULL),
+   : epsilon_tmp_variable(nullptr),
      absint_max(new Abstract_interpretation_visitor( new Use_as_max_value )),
      max_var_counter(0),
      use_aposteriori_check(use_aposteriori_check)
@@ -389,7 +390,7 @@ bool
 Add_bound_variables::use_as_max( AST::Expression* e) {
     MSG("")
     Use_as_max_value *uamv= dynamic_cast< Use_as_max_value* >( absint_max->get_analysis_result( e ) );
-    assert( uamv != NULL );
+    assert( uamv != nullptr );
     return uamv->use_as_max_ ;
 }
 
@@ -480,7 +481,7 @@ Add_bound_variables::visit( AST::TranslationUnit* tu) {
         collect_variables->clear();
         group_cache.clear();
         max_var_counter = 0;
-        epsilon_tmp_variable = NULL;
+        epsilon_tmp_variable = nullptr;
         rewrite_float_comp.reset();
         absint_is_fresh->clear();
         absint_sfe->clear();
@@ -579,18 +580,18 @@ Add_bound_variables::visit( AST::UnaryFunction* uf ) {
     if( uf->kind == AST::UnaryFunction::XSIGN ) {
         Variable *new_var = add_tmp_result( uf );
         Statement_addition_visitor::add_stmt( new AST::VariableDeclaration( new_var ) );
-        if( dynamic_cast<AST::IdentifierExpression*>(uf->e) == NULL ) {
+        if( dynamic_cast<AST::IdentifierExpression*>(uf->e) == nullptr ) {
             new_var = add_tmp_result( uf->e );
             Statement_addition_visitor::add_stmt( new AST::VariableDeclaration( new_var ) );
         }
-        if( epsilon_tmp_variable == NULL ) {
+        if( epsilon_tmp_variable == nullptr ) {
             epsilon_tmp_variable = add_variable( "eps", type_float_bound );
             Statement_addition_visitor::add_stmt_toplevel( new AST::VariableDeclaration( epsilon_tmp_variable ) );
         }
 
         Abstract_value *absval_giv = absint_giv->get_analysis_result( uf->e );
         Group_index_value *giv = dynamic_cast< Group_index_value* >( absval_giv );
-        assert( giv != NULL );
+        assert( giv != nullptr );
         assert( giv->group_item->degree() > 0 );
 
         Group_algebra::Group_varset groups;
@@ -628,10 +629,10 @@ Add_bound_variables::visit( AST::BinaryExpression* bexp ) {
         case AST::BinaryExpression::OR: {
             Abstract_value *absval_sfe = absint_sfe->get_analysis_result( bexp->e1 );
             Static_filter_error *sfe1 =  dynamic_cast< Static_filter_error* >( absval_sfe );
-            assert( sfe1 != NULL );
+            assert( sfe1 != nullptr );
             absval_sfe = absint_sfe->get_analysis_result( bexp->e1 );
             Static_filter_error *sfe2 =  dynamic_cast< Static_filter_error* >( absval_sfe );
-            assert( sfe2 != NULL );
+            assert( sfe2 != nullptr );
             if( !sfe1->is_fresh() || !sfe2->is_fresh() )
                 throw RuntimeError( "comparison between derived values not yet supported. use 'sign' or 'compare' instead.", bexp->location );
             break;
@@ -651,11 +652,11 @@ Rewrite_sign_of_fresh_values::visit( AST::UnaryFunction *uf ) {
         AST::BinaryExpression      *bexp = dynamic_cast<AST::BinaryExpression*    >(uf->e);
         AST::IdentifierExpression *idexp = dynamic_cast<AST::IdentifierExpression*>(uf->e);
 
-        if( bexp != NULL )
+        if( bexp != nullptr )
         {
             Error_bound_value *is_fresh1 = dynamic_cast<Error_bound_value*>( add_bounds->absint_is_fresh->get_analysis_result( bexp->e1 ) );
             Error_bound_value *is_fresh2 = dynamic_cast<Error_bound_value*>( add_bounds->absint_is_fresh->get_analysis_result( bexp->e2 ) );
-            assert( is_fresh1 != NULL && is_fresh2 != NULL );
+            assert( is_fresh1 != nullptr && is_fresh2 != nullptr );
             if( is_fresh1->is_fresh() && is_fresh2->is_fresh() && bexp->kind == AST::BinaryExpression::SUB ) {
                 AST::Expression *cond_e =
                     new AST::ConditionalExpression(
@@ -669,9 +670,9 @@ Rewrite_sign_of_fresh_values::visit( AST::UnaryFunction *uf ) {
                     );
                 result = cond_e;
             }
-        } else if( idexp != NULL ) {
+        } else if( idexp != nullptr ) {
             Error_bound_value *is_fresh = dynamic_cast<Error_bound_value*>( add_bounds->absint_is_fresh->get_analysis_result( idexp ) );
-            assert( is_fresh != NULL );
+            assert( is_fresh != nullptr );
             if( is_fresh->is_fresh() ) {
                 AST::Expression *cond_e =
                     new AST::ConditionalExpression(
@@ -697,16 +698,18 @@ Rewrite_float_comparisons::compute_max_from(
     Statement_addition_visitor::Position scope,
     bool use_fabs )
 {
-    assert( maxvar != NULL );
-    assert( other  != NULL );
+    assert( maxvar != nullptr );
+    assert( other  != nullptr );
     //MSG( "maxvar: " << maxvar->id )
     //MSG( "othervar: " << other->id )
     AST::Expression *e = new AST::IdentifierExpression(other);
     if( use_fabs )
         e = new AST::UnaryFunction( e, AST::UnaryFunction::XABS );
+    /*
     std::map< Variable*, std::set< Variable* > >::iterator
         begin = add_bounds->group_cache.subset_relation.begin(),
         end   = add_bounds->group_cache.subset_relation.end();
+    */
     if( max_var_cover.find( maxvar ) == max_var_cover.end() ) {
         add_stmt_with_scope( make_assign_stmt( maxvar, e ), scope );
     } else {
@@ -771,8 +774,8 @@ Rewrite_float_comparisons::make_max_groups( Group_index_value * giv,
                                             //AST::Expression   *&result_cond_zero,
                                             AST::Expression   *&result_cond_overflow  )
 {
-    assert( giv != NULL );
-    assert( giv->group_item != NULL );
+    assert( giv != nullptr );
+    assert( giv->group_item != nullptr );
     Group_algebra::Group_varset groups;
     giv->group_item->collect_groups( groups );
     Group_algebra::Group_varset::iterator it;
@@ -796,7 +799,7 @@ Rewrite_float_comparisons::make_max_groups( Group_index_value * giv,
         std::set< Variable* > maxvar_set = it2->second;
         std::vector< Variable* > maxvars;
         std::copy( maxvar_set.begin(), maxvar_set.end(), std::back_inserter( maxvars ) );
-        Variable *lb_var = NULL, *ub_var = NULL;
+        Variable *lb_var = nullptr, *ub_var = nullptr;
         derive_min_max( degree, maxvars, lb_var, ub_var );
 
         // compute actual allowable min/max input
@@ -825,7 +828,7 @@ Rewrite_float_comparisons::make_max_groups( Group_index_value * giv,
                 new AST::LiteralExpression( actual_min_input ),
                 AST::BinaryExpression::LE
             );
-        if( result_cond_underflow == NULL )
+        if( result_cond_underflow == nullptr )
             result_cond_underflow = cond_underflow;
         else
             result_cond_underflow =
@@ -841,7 +844,7 @@ Rewrite_float_comparisons::make_max_groups( Group_index_value * giv,
                 new AST::LiteralExpression( 0.0 ),
                 AST::BinaryExpression::EQ
             );
-        if( result_cond_zero == NULL )
+        if( result_cond_zero == nullptr )
             result_cond_zero = cond_zero;
         else
             result_cond_zero =
@@ -857,7 +860,7 @@ Rewrite_float_comparisons::make_max_groups( Group_index_value * giv,
                 new AST::LiteralExpression( actual_max_input ),
                 AST::BinaryExpression::GR
             );
-        if( result_cond_overflow == NULL )
+        if( result_cond_overflow == nullptr )
             result_cond_overflow = cond_overflow;
         else
             result_cond_overflow =
@@ -928,7 +931,7 @@ Rewrite_float_comparisons::derive_min_max( unsigned int degree,
                 new AST::ConditionalStatement(
                     cond_max_lt_lb,
                     make_assign_stmt( lb_var, id_max_var ),
-                    ub_ignore ? NULL
+                    ub_ignore ? nullptr
                               : new AST::ConditionalStatement(
                                   cond_max_gt_ub,
                                   make_assign_stmt( ub_var, id_max_var ) )
@@ -941,15 +944,15 @@ Rewrite_float_comparisons::derive_min_max( unsigned int degree,
 AST::Expression*
 Rewrite_float_comparisons::make_max_term( Group_algebra::Group_item *item ) {
     Group_algebra::Leaf_item *leaf = dynamic_cast<Group_algebra::Leaf_item*>(item);
-    if( leaf != NULL ) {
+    if( leaf != nullptr ) {
         Group_cache::iterator it = add_bounds->group_cache.find( leaf->variables );
         assert( it != add_bounds->group_cache.end() );
         return new AST::IdentifierExpression( it->second );
     }
     Group_algebra::Array_item *array = dynamic_cast<Group_algebra::Array_item*>(item);
-    bool is_sum  = dynamic_cast<Group_algebra:: Sum_item*>(item) != NULL;
+    bool is_sum  = dynamic_cast<Group_algebra:: Sum_item*>(item) != nullptr;
     argused(is_sum);
-    bool is_prod = dynamic_cast<Group_algebra::Product_item*>(item) != NULL;
+    bool is_prod = dynamic_cast<Group_algebra::Product_item*>(item) != nullptr;
     assert( is_sum || is_prod  );
     assert( array->items.size() >= 2 );
     std::vector< Group_algebra::Group_item* >::iterator it = array->items.begin();
@@ -979,25 +982,25 @@ Rewrite_float_comparisons::visit( AST::UnaryFunction *uf ) {
     if( uf->kind == AST::UnaryFunction::XSIGN && is_float(uf->e->getType()) ) {
         Abstract_value *absval_sfe = add_bounds->absint_sfe->get_analysis_result( uf->e );
         Static_filter_error *sfe =  dynamic_cast< Static_filter_error* >( absval_sfe );
-        assert( sfe != NULL );
+        assert( sfe != nullptr );
 
         Abstract_value *absval_giv = add_bounds->absint_giv->get_analysis_result( uf->e );
         Group_index_value *giv = dynamic_cast< Group_index_value* >( absval_giv );
-        assert( giv != NULL );
-        assert( giv->group_item != NULL );
+        assert( giv != nullptr );
+        assert( giv->group_item != nullptr );
 
         Variable *tmp_result_var = add_bounds->tmp_result_variable( uf );
-        Variable *tmp_arg_var = NULL;
+        Variable *tmp_arg_var = nullptr;
         if( add_bounds->has_tmp_result_variable( uf->e ) ) {
             tmp_arg_var = add_bounds->tmp_result_variable( uf->e );
             add_stmt( make_assign_stmt( tmp_arg_var, uf->e ) );
         } else {
             AST::IdentifierExpression *idexp = dynamic_cast<AST::IdentifierExpression*>(uf->e);
-            assert( idexp != NULL );
+            assert( idexp != nullptr );
             tmp_arg_var = idexp->var;
         }
-        assert( tmp_arg_var != NULL );
-        assert( tmp_result_var != NULL );
+        assert( tmp_arg_var != nullptr );
+        assert( tmp_result_var != nullptr );
         //assert( add_bounds->max_result_variables.size() > 0 );
         // correction due to the eps computation. for each multiplication, we need to add 'error*ulp'
         unsigned int degree = giv->group_item->degree();
@@ -1018,7 +1021,7 @@ Rewrite_float_comparisons::visit( AST::UnaryFunction *uf ) {
         eps = new AST::BinaryExpression( eps, make_max_term( giv->group_item ), AST::BinaryExpression::MUL );
         //giv->dump(std::cout);
         //uf->e->dump(0);
-        AST::Expression *cond_underflow = NULL, /* *cond_zero = NULL, */ *cond_overflow = NULL;
+        AST::Expression *cond_underflow = nullptr, /* *cond_zero = nullptr, */ *cond_overflow = nullptr;
         make_max_groups( giv, min_input, cond_underflow, /*cond_zero, */cond_overflow );
 
         static AST::Expression *plus_one  = new AST::LiteralExpression(  +1);

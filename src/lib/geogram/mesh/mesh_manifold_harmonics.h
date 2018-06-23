@@ -115,7 +115,7 @@ namespace GEO {
 	ManifoldHarmonicsCallback callback,
 	index_t nb_eigens_per_band = 30,
 	double initial_shift = 0.0,
-	void* client_data = nil
+	void* client_data = nullptr
     );
     
 }

@@ -428,7 +428,7 @@ namespace {
 	    catch(const TaskCanceled&) {
 	    }
         
-	    CVT.set_progress_logger(nil);
+	    CVT.set_progress_logger(nullptr);
 	} else {
 	    if(!mesh_load(CmdLine::get_arg("poly:points_file"), M_points)) {
 		return 1;

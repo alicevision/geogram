@@ -73,7 +73,7 @@ namespace {
 	    lua_State* L, GLUPmatrix m
 	) {
 	    geo_argused(L);
-	    const char* result = nil;
+	    const char* result = nullptr;
 	    switch(m) {
 		case GLUP_MODELVIEW_MATRIX:
 		    result = "modelview";
@@ -232,8 +232,7 @@ namespace {
 	    
 	    if(nargs == pos && lua_isstring(L,pos)) {
 		const char* name = lua_tostring(L,pos);
-		std::map<std::string, GEO::vec4>::iterator it =
-		    lua_glup_colormap.find(name);
+		auto it = lua_glup_colormap.find(name);
 		if(it == lua_glup_colormap.end()) {
 		    return false;
 		}
@@ -706,7 +705,7 @@ void init_lua_glup(lua_State* L) {
 void adjust_lua_glup_state(lua_State* L) {
     using namespace LUAGLUPImpl;
 
-    if(glupCurrentContext() == nil) {
+    if(glupCurrentContext() == nullptr) {
 	return;
     }
     

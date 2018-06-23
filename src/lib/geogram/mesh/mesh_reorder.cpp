@@ -50,8 +50,8 @@
 #include <geogram/basic/permutation.h>
 #include <geogram/basic/process.h>
 #include <geogram/basic/logger.h>
+#include <geogram/basic/algorithm.h>
 #include <geogram/bibliography/bibliography.h>
-#include <algorithm>
 
 namespace {
 
@@ -1178,7 +1178,7 @@ namespace {
 	    geo_assert_not_reached;
 	}
 
-        if(levels != nil) {
+        if(levels != nullptr) {
             levels->push_back(index_t(e - sorted_indices.begin()));
         }
     }
@@ -1276,7 +1276,7 @@ namespace GEO {
         double ratio,
         vector<index_t>* levels
     ) {
-        if(levels != nil) {
+        if(levels != nullptr) {
             levels->clear();
             levels->push_back(0);
         }

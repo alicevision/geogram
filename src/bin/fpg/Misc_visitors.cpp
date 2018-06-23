@@ -139,14 +139,14 @@ Collect_variables::Collect_variables() : Generic_visitor( false ) {}
 
 void
 Collect_variables::visit( AST::VariableDeclaration* vardecl ) {
-    assert( vardecl != NULL );
+    assert( vardecl != nullptr );
     add( vardecl->var );
     Generic_visitor::visit( vardecl );
 }
 
 void
 Collect_variables::visit( AST::FunctionDefinition* fundef ) {
-    assert( fundef != NULL );
+    assert( fundef != nullptr );
     FunctionType::ParameterList::iterator it;
     for( it = fundef->type->parameters.begin(); it != fundef->type->parameters.end(); ++it ) {
         Variable *var = *it;
@@ -158,14 +158,14 @@ Collect_variables::visit( AST::FunctionDefinition* fundef ) {
 
 void
 Collect_variables::add( Variable *var ) {
-    assert( var != NULL );
+    assert( var != nullptr );
     variables.insert( var );
     variable_names.insert( var->id );
 }
 
 bool
 Collect_variables::contains( Variable *var ) {
-    assert( var != NULL );
+    assert( var != nullptr );
     return variables.find( var ) != variables.end();
 }
 
@@ -207,7 +207,7 @@ Compute_call_count::Compute_call_count( unsigned int initial_value )
 void
 Compute_call_count::visit( AST::FunctionCall* funcall ) {
     Generic_visitor::visit( funcall );
-    if( funcall->called_function != NULL ) {
+    if( funcall->called_function != nullptr ) {
         if( callcount.find( funcall->called_function ) == callcount.end() )
             callcount[ funcall->called_function ] = initial_value + 1;
         else

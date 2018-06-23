@@ -285,8 +285,8 @@ namespace GEOGen {
          * \param[in] nb_arrays number of arrays
          */
         void set_size(index_t nb_arrays) {
-            keys_.assign(nb_arrays, nil);
-            values_.assign(nb_arrays, nil);
+            keys_.assign(nb_arrays, nullptr);
+            values_.assign(nb_arrays, nullptr);
             size_.assign(nb_arrays, 0);
         }
 

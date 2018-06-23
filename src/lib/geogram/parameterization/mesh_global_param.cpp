@@ -73,7 +73,7 @@ namespace {
 	index_t v1 = mesh->facet_corners.vertex(c1);
 	index_t v2 = mesh->facet_corners.vertex(c2);
 	if(v2 < v1) {
-	    geo_swap(v1,v2);
+	    std::swap(v1,v2);
 	}
 	const vec3& p1 = Geom::mesh_vertex(*mesh, v1);
 	const vec3& p2 = Geom::mesh_vertex(*mesh, v2);
@@ -501,7 +501,7 @@ namespace GEO {
 		    // If rotation is 90 degrees or 270 degrees, then
 		    // u and v are swapped.
 		    if((Rij & 1) != 0) {
-			geo_swap(cu,cv);
+			std::swap(cu,cv);
 		    }
 		    
 		    if(cu) {
@@ -545,13 +545,13 @@ namespace GEO {
 		vec3 Bfrot = cross(N,Bf);
 		
 		double a1 = (Geom::angle(E,Bf)) * 180.0 / M_PI;
-		a1 = geo_min(a1, 180.0-a1);
+		a1 = std::min(a1, 180.0-a1);
 		if(a1 < 10.0) {
 		    result |= GlobalParam2d::Internal::CNSTR_V;
 		}
 		
 		double a2 = (Geom::angle(E,Bfrot)) * 180.0 / M_PI;
-		a2 = geo_min(a2, 180.0-a2);	
+		a2 = std::min(a2, 180.0-a2);	
 		if(a2 < 10.0) {
 		    result |= GlobalParam2d::Internal::CNSTR_U;
 		}

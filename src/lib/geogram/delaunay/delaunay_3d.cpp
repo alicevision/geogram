@@ -237,7 +237,7 @@ namespace GEO {
     void Delaunay3d::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
-        Stopwatch* W = nil;
+        Stopwatch* W = nullptr;
         if(benchmark_mode_) {
             W = new Stopwatch("DelInternal");
         }
@@ -406,13 +406,13 @@ namespace GEO {
                 old2new[infinite_ptr] = finite_ptr;
                 ++nb_finite_cells_;
                 for(index_t lf=0; lf<4; ++lf) {
-                    geo_swap(
+                    std::swap(
                         cell_to_cell_store_[4*finite_ptr + lf],
                         cell_to_cell_store_[4*infinite_ptr + lf]
                     );
                 }
                 for(index_t lv=0; lv<4; ++lv) {
-                    geo_swap(
+                    std::swap(
                         cell_to_v_store_[4*finite_ptr + lv],
                         cell_to_v_store_[4*infinite_ptr + lv]
                     );
@@ -641,7 +641,7 @@ namespace GEO {
         index_t t = hint;
         index_t t_pred = NO_TETRAHEDRON;
         Sign orient_local[4];
-        if(orient == nil) {
+        if(orient == nullptr) {
             orient = orient_local;
         }
 
@@ -741,6 +741,8 @@ namespace GEO {
         index_t& t_bndry, index_t& f_bndry,
         index_t& first, index_t& last
     ) {
+	cavity_.clear(); 
+	
         first = last = END_OF_LIST;
 
         //  Generate a unique stamp from current vertex index,
@@ -828,11 +830,23 @@ namespace GEO {
                 index_t t2 = index_t(tet_adjacent(t, lf));
 
                 if(
-                    tet_is_in_list(t2) || // known as conflict
-                    tet_is_marked(t2)     // known as non-conflict
+                    tet_is_in_list(t2)  // known as conflict
                 ) {
                     continue;
                 }
+
+                if(
+                    tet_is_marked(t2)     // known as non-conflict
+                ) {
+		    cavity_.new_facet(
+			t, lf,
+			tet_vertex(t, tet_facet_vertex(lf,0)),
+			tet_vertex(t, tet_facet_vertex(lf,1)),
+			tet_vertex(t, tet_facet_vertex(lf,2))
+		    );
+                    continue;
+                }
+		
 
                 if(tet_is_conflict(t2, p)) {
                     // Chain t2 in conflict list
@@ -848,6 +862,14 @@ namespace GEO {
                 f_bndry = lf;
                 // Mark t2 as visited (but not conflict)
                 mark_tet(t2);
+
+		cavity_.new_facet(
+		    t, lf,
+		    tet_vertex(t, tet_facet_vertex(lf,0)),
+		    tet_vertex(t, tet_facet_vertex(lf,1)),
+		    tet_vertex(t, tet_facet_vertex(lf,2))
+		);
+		
             }
         }
     }
@@ -951,7 +973,36 @@ namespace GEO {
         // (no need to push any return address).
         goto return_point;
     }
+                        
+    index_t Delaunay3d::stellate_cavity(index_t v) {
+	
+	index_t new_tet = index_t(-1);
+	
+	for(index_t f=0; f<cavity_.nb_facets(); ++f) {
+	    index_t old_tet = cavity_.facet_tet(f);
+	    index_t lf = cavity_.facet_facet(f);
+	    index_t t_neigh = index_t(tet_adjacent(old_tet, lf));
+	    signed_index_t v1 = cavity_.facet_vertex(f,0);
+	    signed_index_t v2 = cavity_.facet_vertex(f,1);
+	    signed_index_t v3 = cavity_.facet_vertex(f,2);
+	    new_tet = new_tetrahedron(signed_index_t(v), v1, v2, v3);
+	    set_tet_adjacent(new_tet, 0, t_neigh);
+	    set_tet_adjacent(t_neigh, find_tet_adjacent(t_neigh,old_tet), new_tet);
+	    cavity_.set_facet_tet(f, new_tet);
+	}
+	
+	for(index_t f=0; f<cavity_.nb_facets(); ++f) {
+	    new_tet = cavity_.facet_tet(f);
+	    index_t neigh1, neigh2, neigh3;
+	    cavity_.get_facet_neighbor_tets(f, neigh1, neigh2, neigh3);
+	    set_tet_adjacent(new_tet, 1, neigh1);
+	    set_tet_adjacent(new_tet, 2, neigh2);
+	    set_tet_adjacent(new_tet, 3, neigh3);		
+	}
 
+	return new_tet;
+    }
+    
     index_t Delaunay3d::insert(index_t v, index_t hint) {
        index_t t_bndry = NO_TETRAHEDRON;
        index_t f_bndry = index_t(-1);
@@ -973,7 +1024,12 @@ namespace GEO {
            return NO_TETRAHEDRON;
        }
 
-       index_t new_tet = stellate_conflict_zone_iterative(v,t_bndry,f_bndry);
+       index_t new_tet = index_t(-1);
+       if(cavity_.OK()) {
+	   new_tet = stellate_cavity(v);
+       } else {
+	   new_tet = stellate_conflict_zone_iterative(v,t_bndry,f_bndry);
+       }
        
        // Recycle the tetrahedra of the conflict zone.
        cell_next_[last_conflict] = first_free_;
@@ -1037,7 +1093,7 @@ namespace GEO {
         geo_debug_assert(s != ZERO);
 
         if(s == NEGATIVE) {
-            geo_swap(iv2, iv3);
+            std::swap(iv2, iv3);
         }
 
         // Create the first tetrahedron

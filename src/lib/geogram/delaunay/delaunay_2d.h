@@ -174,7 +174,7 @@ namespace GEO {
          *  used to protect the calls to random(), this is necessary
          *  if multiple threads use locate() simultaneously
          * \param[out] orient a pointer to an array of three Sign%s
-         *  or nil. If non-nil, returns the orientation with respect
+         *  or nullptr. If non-nullptr, returns the orientation with respect
          *  to the three edges of the triangle that contains \p p.
          * \return the index of a triangle that contains \p p.
          *  If the point is outside the convex hull of
@@ -186,7 +186,7 @@ namespace GEO {
          index_t locate(
             const double* p, index_t hint = NO_TRIANGLE,
             bool thread_safe = false,
-            Sign* orient = nil
+            Sign* orient = nullptr
          ) const;
          
         /**
@@ -777,14 +777,14 @@ namespace GEO {
             const double* pv[3];
             for(index_t i=0; i<3; ++i) {
                 signed_index_t v = triangle_vertex(t,i);
-                pv[i] = (v == -1) ? nil : vertex_ptr(index_t(v));
+                pv[i] = (v == -1) ? nullptr : vertex_ptr(index_t(v));
             }
 
             // Check for virtual triangles (then in_circle()
             // is replaced with orient2d())
             for(index_t le = 0; le < 3; ++le) {
 
-                if(pv[le] == nil) {
+                if(pv[le] == nullptr) {
 
                     // Facet of a virtual triangle opposite to
                     // infinite vertex corresponds to
