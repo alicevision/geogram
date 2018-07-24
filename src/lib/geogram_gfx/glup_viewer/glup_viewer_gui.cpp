@@ -1263,7 +1263,7 @@ namespace GEO {
                 path_ = FileSystem::dir_name(filenames[filenames.size()-1]);
             }
         } else {
-            path_ = FileSystem::home_directory();
+            path_ = FileSystem::documents_directory();
         }
 
         glup_viewer_set_window_title(name_.c_str());

@@ -87,10 +87,14 @@ namespace {
 		L, "'require()' invalid number of arguments"
 	    );
 	}
-
-	std::string k =
-	    std::string("lib/") + std::string(lua_tostring(L,1)) + ".lua";
-	auto it = embedded_files.find(k);
+	if(!lua_isstring(L,1)) {
+	    return luaL_error(
+		L, "'require()' argument is not a string"
+	    );
+	}
+	auto it = embedded_files.find(
+	    std::string("lib/") + std::string(lua_tostring(L,1)) + ".lua"
+	);
 	if(it == embedded_files.end()) {
 	    return call_lua_require(L);
 	}
@@ -303,7 +307,8 @@ void init_lua_io(lua_State* L) {
     lua_bindwrapper(L, FileSystem::set_executable_flag);
     lua_bindwrapper(L, FileSystem::touch);
     lua_bindwrapper(L, FileSystem::normalized_path);		
-    lua_bindwrapper(L, FileSystem::home_directory);	
+    lua_bindwrapper(L, FileSystem::home_directory);
+    lua_bindwrapper(L, FileSystem::documents_directory);	    
     
     lua_bindwrapper(L, LUAFileSystemImpl::get_directory_entries);
     lua_bindwrapper(L, LUAFileSystemImpl::get_files);

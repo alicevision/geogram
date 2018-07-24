@@ -51,8 +51,7 @@ namespace GEO {
 
 Geogram is tested under Linux (32 and 64 bits), Windows (32 and 64 bits) and MacOS/X.
 You will need CMake (version >= 2.8.11). There is no other dependancy (everything
-that you need is shipped with Geogram). It also works with Android (ARMv7 processors).
-Follow the Linux, MacOS/X, Windows or Android instructions below. In addition, Emscripten (C++ to
+that you need is shipped with Geogram). Follow the Linux, MacOS/X or Windows instructions below. In addition, Emscripten (C++ to
 Javascript transpiler) is also supported. Specific instructions for each platform are detailed below.
 
 Contributors / Maintainers
@@ -195,81 +194,6 @@ CMakeOptions.txt, modifying it and re-running CMake:
  if you plan to write new PCK predicates).
 - CMAKE_INSTALL_PREFIX: where to install Geogram (when building the INSTALL target)
 - CPACK_GENERATOR: can be used to generate a Debian package 
-
-Android
-=======
-
-What follow are the instructions for installing the NDK on a Linux box, cross-compiling Geogram
-and testing the binaries on the target Android platform.
-
-Preparing the NDK 
------------------
-
-- Download the [Android NDK](https://developer.android.com/ndk/downloads/index.html)
-
-- Unpack the archive:
-\code
-chmod 755 android-ndk-rxxy-linux-x86_64.bin
-./android-ndk-rxxy-linux-x86_64.bin
-\endcode
-where 'rxxy' denotes the NDK version and release (e.g., r10e)
-
-- Create a standalone toolchain (cross-compiler)
-\code
-mkdir toolchain
-./android-ndk-rxxy/build/tools/make-standalone-toolchain.sh
-  --platform=android-zz --toolchain=arm-linux-androideabi-4.9
-  --system=linux-x86_64 --install-dir=`pwd`/toolchain
-  --stl=libc++
-\endcode
-where 'zz' denotes the target Android version (e.g., 19 for KitKat, 20 for Lollipop etc...)
-
-- Add the binaries directory of the toolchain in the path
-\code
-export PATH=`pwd`/toolchain/bin/:$PATH
-\endcode
-(the line above can be added to your .bashrc)
-\endcode
-
-Cross-compiling Geogram
------------------------
-
-\code
-cd geogram
-./configure.sh Android-armv7-gcc
-cd build/Android-armv7-gcc-Release/
-make
-\endcode
-
-Note: for now, only 32 bits ARM with FPU is supported. ARM64 can be quite easily
-supported (but this requires implementing a couple of ASM functions in basic/atomics.h),
-will be implemented when I'll update my phone. 
-
-Using the generated binaries on the phone
------------------------------------------
-
-You can install [TerminalIDE](https://play.google.com/store/apps/details?id=com.spartacusrex.spartacuside&hl=fr)
-on the phone, then copy the binaries and some data files in TerminalIDE's working directory
-(/data/data/com.spartacusrex.spartacuside/files). It can be also used through
-[ADB](http://developer.android.com/tools/help/adb.html).
-
-What about performances ?
--------------------------
-
-On my PC (Intel Core i7-4900MQ, 2.8 GHz), compute_delaunay with 850,000 points
-takes 1.4 seconds in parallel mode (and 4.3 seconds in sequential mode).
-
-On my phone (HTC One M7, Snapdragon 600, 4 cores, 1.7 GHz), compute_delaunay with 850,000 points
-takes 15 seconds in parallel mode (and 35 seconds in sequential mode).
-
-The phone has approximately 1/10th of the horsepower of the computer.
-
-What is the point ?
--------------------
-
-A portable, small, easy to compile and efficient geometry processing library can be useful
-for many projects, including 3D reconstruction with a mobile phone [here](http://cvg.ethz.ch/mobile/),
-reconstructions of buildings using drones, ...
 
 Emscripten
 ==========

@@ -221,19 +221,6 @@ namespace {
 #ifdef __AVX2__
 
     /**
-     * \brief Computes the permutation mask for
-     *  _mm256_permute4x64_pd()
-     * \param[in] a0 , a1 , a2 , a3 the components of the
-     *  vector, in 0..3
-     * \return the mask to be used with _mm256_permute4x64_pd().
-     */
-    inline int avx_permute_mask(int a0, int a1, int a2, int a3) {
-	return a0 | (a1 << 2) | (a2 << 4) | (a3 << 6);
-    }
-
-    // To be replaced with _MM_SHUFFLE(a3,a2,a1,a0) (note: reverse arg order !)
-    
-    /**
      * \brief Computes four 2x2 determinants simultaneously in AVX2
      *  registers.
      * \param[in] A , B , C , D the coefficients of the four determinants
@@ -263,16 +250,16 @@ namespace {
 	// We develop w.r.t. the first column and
 	// compute the 4 minors simultaneously.
 	
-	__m256d C41 = _mm256_permute4x64_pd(C11, avx_permute_mask(3,0,1,2));
+	__m256d C41 = _mm256_permute4x64_pd(C11, _MM_SHUFFLE(2,1,0,3)); 
 	
-	__m256d C22 = _mm256_permute4x64_pd(C12, avx_permute_mask(1,2,3,0));
-	__m256d C32 = _mm256_permute4x64_pd(C12, avx_permute_mask(2,3,0,1));	
+	__m256d C22 = _mm256_permute4x64_pd(C12, _MM_SHUFFLE(0,3,2,1)); 
+	__m256d C32 = _mm256_permute4x64_pd(C12, _MM_SHUFFLE(1,0,3,2)); 
 
-	__m256d C23 = _mm256_permute4x64_pd(C13, avx_permute_mask(1,2,3,0));
-	__m256d C33 = _mm256_permute4x64_pd(C13, avx_permute_mask(2,3,0,1));	
+	__m256d C23 = _mm256_permute4x64_pd(C13, _MM_SHUFFLE(0,3,2,1)); 
+	__m256d C33 = _mm256_permute4x64_pd(C13, _MM_SHUFFLE(1,0,3,2)); 
 
-	__m256d C24 = _mm256_permute4x64_pd(C14, avx_permute_mask(1,2,3,0));
-	__m256d C34 = _mm256_permute4x64_pd(C14, avx_permute_mask(2,3,0,1));
+        __m256d C24 = _mm256_permute4x64_pd(C14, _MM_SHUFFLE(0,3,2,1)); 
+        __m256d C34 = _mm256_permute4x64_pd(C14, _MM_SHUFFLE(1,0,3,2)); 
 	
 	__m256d M1 = _mm256_mul_pd(C12,avx2_vecdet(C23,C24,C33,C34));	
 	__m256d M2 = _mm256_mul_pd(C22,avx2_vecdet(C13,C14,C33,C34));
@@ -287,7 +274,7 @@ namespace {
 	M = _mm256_mul_pd(M, C41);
 
 	// Compute -m0 +m1 -m2 +m3
-	M = _mm256_permute4x64_pd(M, avx_permute_mask(1,3,0,2));
+	M = _mm256_permute4x64_pd(M, _MM_SHUFFLE(2,0,3,1)); 
 	__m128d M_a = _mm256_extractf128_pd(M, 0);
 	__m128d M_b = _mm256_extractf128_pd(M, 1);
 	__m128d Mab = _mm_sub_pd(M_a,M_b);

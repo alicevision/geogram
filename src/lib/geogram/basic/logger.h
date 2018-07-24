@@ -50,6 +50,7 @@
 
 #include <geogram/basic/common.h>
 #include <geogram/basic/environment.h>
+#include <geogram/basic/process.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -84,7 +85,7 @@ namespace GEO {
          * \param[in] loggerStream the LoggerStream that owns this buffer
          */
         LoggerStreamBuf(LoggerStream* loggerStream) :
-            loggerStream_(loggerStream) {
+  	loggerStream_(loggerStream) {
         }
 
     private:
@@ -710,8 +711,10 @@ namespace GEO {
         bool quiet_;
         bool pretty_;
         bool minimal_;
+	bool notifying_error_;
         
         friend class LoggerStream;
+        friend class LoggerStreamBuf;
     };
 
     /************************************************************************/

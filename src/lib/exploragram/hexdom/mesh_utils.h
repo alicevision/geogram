@@ -147,8 +147,8 @@ namespace GEO {
 	v_min = 1e20;
 	v_max = -1e20;
 	FOR(i, attr.nb_elements()) {
-	    v_min = geo_min(v_min, attr[i]);
-	    v_max = geo_max(v_max, attr[i]);
+	   v_min = std::min(v_min, attr[i]);
+	   v_max = std::max(v_max, attr[i]);
 	}
     }
     

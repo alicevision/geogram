@@ -578,7 +578,7 @@ namespace GEO {
             std::string home;
 #if defined GEO_OS_WINDOWS
             wchar_t folder[MAX_PATH+1];
-            HRESULT hr = SHGetFolderPathW(0, CSIDL_MYDOCUMENTS, 0, 0, folder);
+            HRESULT hr = SHGetFolderPathW(0, CSIDL_PROFILE, 0, 0, folder);
             if (SUCCEEDED(hr)) {
                 char result[MAX_PATH+1];
                 wcstombs(result, folder, MAX_PATH);
@@ -596,6 +596,27 @@ namespace GEO {
             return home;
         }
 
+        std::string documents_directory() {
+            std::string home;
+#if defined GEO_OS_WINDOWS
+            wchar_t folder[MAX_PATH+1];
+            HRESULT hr = SHGetFolderPathW(0, CSIDL_MYDOCUMENTS, 0, 0, folder);
+            if (SUCCEEDED(hr)) {
+                char result[MAX_PATH+1];
+                wcstombs(result, folder, MAX_PATH);
+                home=std::string(result);
+                flip_slashes(home);
+            }
+#elif defined GEO_OS_EMSCRIPTEN
+            home="/";
+#else            
+            char* result = getenv("HOME");
+            if(result != nullptr) {
+                home=result;
+            }
+#endif
+            return home;
+        }
         
     }
 

@@ -24,7 +24,16 @@ extern "C" {
 
 struct GLFWwindow;
 
-IMGUI_API bool        ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks, const char* glsl_version = NULL);
+IMGUI_API bool        ImGui_ImplGlfwGL3_Init(
+    GLFWwindow* window, bool install_callbacks,
+    const char* glsl_version =
+#ifdef __cplusplus
+    nullptr
+#else    
+    NULL
+#endif    
+);
+    
 IMGUI_API void        ImGui_ImplGlfwGL3_Shutdown();
 IMGUI_API void        ImGui_ImplGlfwGL3_NewFrame();
 IMGUI_API void        ImGui_ImplGlfwGL3_RenderDrawData(ImDrawData* draw_data);

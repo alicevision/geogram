@@ -107,7 +107,7 @@ namespace GEO {
         are_you_sure_(false)
     {
 #ifdef GEO_OS_WINDOWS
-	directory_ = FileSystem::home_directory() + "/";
+	directory_ = FileSystem::documents_directory() + "/";
 #else	
         directory_ = FileSystem::get_current_working_directory() + "/";
 #endif	
@@ -336,7 +336,7 @@ namespace GEO {
         }
         ImGui::SameLine();
         if(ImGui::Button("home")) {
-            set_directory(FileSystem::home_directory());
+            set_directory(FileSystem::documents_directory());
             update_files();
         }
         ImGui::SameLine();            
@@ -354,8 +354,9 @@ namespace GEO {
 	    }
 	}
 
-        
+	draw_disk_drives();
         ImGui::Separator();
+	
         {
             std::vector<std::string> path;
             String::split_string(directory_, '/', path);
@@ -564,6 +565,23 @@ namespace GEO {
     void FileDialog::set_extensions(const std::string& extensions) {
 	extensions_.clear();
 	GEO::String::split_string(extensions, ';', extensions_);
+    }
+
+    void FileDialog::draw_disk_drives() {
+#ifdef GEO_OS_WINDOWS	
+	DWORD drives = GetLogicalDrives();
+	for(DWORD b=0; b<16; ++b) {
+	    if((drives & (1u << b)) != 0) {
+		std::string drive;
+		drive += char('A' + char(b));
+		drive += ":";
+		if(ImGui::Button(drive.c_str())) {
+		    set_directory(drive);
+		}
+		ImGui::SameLine();
+	    }
+	}
+#endif	
     }
     
 }

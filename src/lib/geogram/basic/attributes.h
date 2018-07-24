@@ -244,12 +244,28 @@ namespace GEO {
             return cached_size_;
         }
 
+	/**
+	 * \brief Gets the capacity.
+	 * \return the number of items that can be stored without
+	 *  a reallocation.
+	 */
+	index_t capacity() const {
+	    return cached_capacity_;
+	}
+	
         /**
          * \brief Resizes this AttributeStore
          * \param[in] new_size new number of items
          */
         virtual void resize(index_t new_size) = 0;
 
+        /**
+         * \brief Reserves memory.
+         * \param[in] new_capacity total number of items to 
+	 *  be stored.
+         */
+	virtual void reserve(index_t new_capacity) = 0;
+	
         /**
          * \brief Resizes this AttributeStore to 0.
          * \param[in] keep_memory if true, then memory
@@ -532,6 +548,7 @@ namespace GEO {
         index_t dimension_;        
         Memory::pointer cached_base_addr_;
         index_t cached_size_;
+	index_t cached_capacity_;
         std::set<AttributeStoreObserver*> observers_;
         Process::spinlock lock_;
 
@@ -576,7 +593,19 @@ namespace GEO {
             );
         }
 
-        virtual void clear(bool keep_memory=false) {
+	virtual void reserve(index_t new_capacity) {
+	    if(new_capacity > capacity()) {
+		store_.reserve(new_capacity*dimension_);
+		cached_capacity_ = new_capacity;
+		notify(
+		    store_.empty() ? nullptr : Memory::pointer(store_.data()),
+		    size(),
+		    dimension_
+		);
+	    }
+	}
+
+	virtual void clear(bool keep_memory=false) {
             if(keep_memory) {
                 store_.resize(0);
             } else {
@@ -591,6 +620,7 @@ namespace GEO {
                 return;
             }
             vector<T> new_store(size()*dim);
+	    new_store.reserve(capacity()*dim);
             index_t copy_dim = std::min(dim, dimension());
             for(index_t i = 0; i < size(); ++i) {
                 for(index_t c = 0; c < copy_dim; ++c) {
@@ -735,7 +765,16 @@ namespace GEO {
         index_t size() const {
             return size_;
         }
-        
+
+	/**
+	 * \brief Gets the capacity.
+	 * \return the number of items that can be stored without doing
+	 *  a reallocation.
+	 */
+	index_t capacity() const {
+	    return capacity_;
+	}
+	
         /**
          * \brief Resizes all the attributes managed by this
          *  AttributesManager.
@@ -744,6 +783,14 @@ namespace GEO {
          */
         void resize(index_t new_size);
 
+	/**
+	 * \brief Pre-allocates memory for a number of items.
+	 * \details Has effect only if new_capacity is larger 
+	 *  than current capacity.
+	 * \param[in] new_capacity the number of items.
+	 */
+	void reserve(index_t new_capacity);
+	
         /**
          * \brief Clears this AttributesManager
          * \param[in] keep_attributes if true, then all
@@ -884,6 +931,7 @@ namespace GEO {
         
     private:
         index_t size_;
+	index_t capacity_;
         std::map<std::string, AttributeStore*> attributes_;
     } ;
 

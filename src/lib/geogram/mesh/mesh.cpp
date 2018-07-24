@@ -831,7 +831,7 @@ namespace GEO {
 
     namespace MeshCellDescriptors {
 
-        CellDescriptor tet_descriptor = {
+        GEOGRAM_API CellDescriptor tet_descriptor = {
             4,         // nb_vertices
             4,         // nb_facets
             {3,3,3,3}, // nb_vertices in facet
@@ -851,7 +851,7 @@ namespace GEO {
         };
         
 
-        CellDescriptor hex_descriptor = {
+        GEOGRAM_API CellDescriptor hex_descriptor = {
             8,             // nb_vertices
             6,             // nb_facets
             {4,4,4,4,4,4}, // nb_vertices in facet
@@ -874,7 +874,7 @@ namespace GEO {
             }
         };
 
-        CellDescriptor prism_descriptor = {
+        GEOGRAM_API CellDescriptor prism_descriptor = {
             6,             // nb_vertices
             5,             // nb_facets
             {3,3,4,4,4},   // nb_vertices in facet
@@ -895,7 +895,7 @@ namespace GEO {
         };
 
 
-        CellDescriptor pyramid_descriptor = {
+        GEOGRAM_API CellDescriptor pyramid_descriptor = {
             5,             // nb_vertices
             5,             // nb_facets
             {4,3,3,3,3},   // nb_vertices in facet
@@ -915,7 +915,7 @@ namespace GEO {
             }
         };
 
-        CellDescriptor connector_descriptor = {
+        GEOGRAM_API CellDescriptor connector_descriptor = {
             4,             // nb_vertices
             3,             // nb_facets
             {4,3,3},       // nb_vertices in facet
@@ -933,7 +933,7 @@ namespace GEO {
             }         
         };
 
-        CellDescriptor* cell_type_to_cell_descriptor[5] = { 
+        GEOGRAM_API CellDescriptor* cell_type_to_cell_descriptor[5] = { 
             &tet_descriptor, 
             &hex_descriptor, 
             &prism_descriptor, 

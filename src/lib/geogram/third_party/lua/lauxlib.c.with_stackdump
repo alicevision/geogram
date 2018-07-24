@@ -216,12 +216,41 @@ LUALIB_API void luaL_where (lua_State *L, int level) {
 }
 
 
+static void stackDump (lua_State *L) {
+   int i=lua_gettop(L);
+   printf(" ----------------  Stack Dump ----------------" );
+   while(  i   ) 
+     {
+	int t = lua_type(L, i);
+	switch (t) 
+	  {
+	     
+	   case LUA_TSTRING:
+	     printf("%d:%s'", i, lua_tostring(L, i));
+	     break;
+	   case LUA_TBOOLEAN:
+	     printf("%d: %s",i,lua_toboolean(L, i) ? "true" : "false");
+	     break;
+	   case LUA_TNUMBER:
+	     printf("%d: %g",  i, lua_tonumber(L, i));
+	     break;
+	   default: printf("%d: %s", i, lua_typename(L, t)); break;
+	  }
+	
+	i--;
+     }
+   
+   printf("--------------- Stack Dump Finished ---------------" );
+}
+
+
 /*
 ** Again, the use of 'lua_pushvfstring' ensures this function does
 ** not need reserved stack space when called. (At worst, it generates
 ** an error with "stack overflow" instead of the given message.)
 */
 LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
+  stackDump(L);
   va_list argp;
   va_start(argp, fmt);
   luaL_where(L, 1);

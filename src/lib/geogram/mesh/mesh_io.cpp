@@ -1797,12 +1797,29 @@ namespace GEO {
                 return false;
             }
 
+	    Attribute<double> vertex_color;
+	    vertex_color.bind_if_is_defined(
+		M.vertices.attributes(), "color"
+	    );
+	    if(vertex_color.is_bound() && vertex_color.dimension() != 3) {
+		Logger::warn("IO")
+		    << "Mesh has vertex colors but attribut dim is not 3 (ignoring them)"
+		    << std::endl;
+		vertex_color.unbind();
+	    }
+
             // Create element and properties for vertices
             e_ply_type coord_type = PLY_FLOAT;
+	    e_ply_type color_type = PLY_UINT8;
             ply_add_element(oply, "vertex", long(M.vertices.nb()));
             ply_add_property(oply, "x", coord_type, coord_type, coord_type);
             ply_add_property(oply, "y", coord_type, coord_type, coord_type);
             ply_add_property(oply, "z", coord_type, coord_type, coord_type);
+	    if(vertex_color.is_bound()) {
+		ply_add_property(oply, "red",   color_type, color_type, color_type);
+		ply_add_property(oply, "green", color_type, color_type, color_type);
+		ply_add_property(oply, "blue",  color_type, color_type, color_type);
+	    }
 
             if(ioflags.has_element(MESH_FACETS)) {
                 // Create element and properties for facets
@@ -1846,6 +1863,12 @@ namespace GEO {
                 for(index_t coord = 0; coord < 3; coord++) {
                     ply_write(oply, xyz[coord]);
                 }
+		if(vertex_color.is_bound()) {
+		    const double* rgb = &vertex_color[v*3];
+		    for(index_t coord = 0; coord < 3; coord++) {
+			ply_write(oply, Numeric::uint8(255.0*rgb[coord]));
+		    }
+		}
             }
 
             if(ioflags.has_element(MESH_FACETS)) {
@@ -4168,6 +4191,370 @@ namespace GEO {
 	}
 	
     };
+
+/****************************************************************************/
+
+    const index_t id_offset_msh = 1;
+    const index_t msh2geo_hex[8] = {1, 3, 7, 5, 0, 2, 6, 4 };
+    const index_t msh2geo_def[8] = {0, 1, 2, 3, 4, 5, 6, 7 };
+    const index_t celltype_geo2msh[5] = {4, 5, 6, 7}; 
+
+    /**
+     * \brief Support for GMSH file format.
+     * \details By Maxence Reberol.
+     */
+    class GEOGRAM_API MSHIOHandler : public MeshIOHandler {
+      public:
+	MSHIOHandler() {
+	}
+
+	bool verify_file_format(const std::string& filename) {
+	    LineInput in(filename);
+	    if (!in.OK()) return false;
+	    in.get_line();
+	    in.get_fields();
+	    if (in.field_matches(0, "$MeshFormat")) {
+		in.get_line();
+		in.get_fields();
+		if (in.field_as_double(0) == 2.2
+		    && in.field_as_uint(1) == 0
+		    && in.field_as_uint(2) == 8
+		) return true;
+	    }
+	    return false;
+	}
+
+	bool read_vertices(const std::string& filename, Mesh& M) {
+	    LineInput in(filename);
+	    while (in.get_line()) {
+		in.get_fields();
+		if (in.field_matches(0, "$Nodes")) {
+		    in.get_line();
+		    in.get_fields();
+		    geo_assert(in.nb_fields() == 1);
+		    M.vertices.create_vertices(in.field_as_uint(0));
+		    for (index_t v = 0; v < M.vertices.nb(); ++v){
+			in.get_line();
+			in.get_fields();
+			geo_assert(in.nb_fields() == 4);
+			double pt[4] = {
+			    in.field_as_double(1),
+			    in.field_as_double(2),
+			    in.field_as_double(3)
+			};
+			set_mesh_point(M, v, pt, 3);
+		    }
+		} else if (in.field_matches(0, "$EndNodes"))  {
+		    return true; 
+		}
+	    }
+	    return false;
+	}
+	bool read_elements(const std::string& filename, Mesh& M) {
+	    index_t nb_elements = 0;
+	    index_t nb_edges = 0;
+	    index_t nb_tri = 0;
+	    index_t nb_quad = 0;
+	    index_t nb_tet = 0;
+	    index_t nb_hex = 0;
+	    index_t nb_pyr = 0;
+	    index_t nb_pri = 0;
+	    index_t nb_oth = 0;
+	    { /* First pass to get the number of each element type */
+		LineInput in(filename);
+		while (in.get_line()) {
+		    in.get_fields();
+		    if (in.field_matches(0, "$Elements")) {
+			in.get_line();
+			in.get_fields();
+			geo_assert(in.nb_fields() == 1);
+			nb_elements = in.field_as_uint(0);
+			for (index_t e = 0; e < nb_elements; ++e){
+			    in.get_line();
+			    in.get_fields();
+			    if      (in.field_as_uint(1) == 1) nb_edges += 1;
+			    else if (in.field_as_uint(1) == 2) nb_tri += 1;
+			    else if (in.field_as_uint(1) == 3) nb_quad += 1;
+			    else if (in.field_as_uint(1) == 4) nb_tet += 1;
+			    else if (in.field_as_uint(1) == 5) nb_hex += 1;
+			    else if (in.field_as_uint(1) == 6) nb_pri += 1;
+			    else if (in.field_as_uint(1) == 7) nb_pyr += 1;
+			    else { nb_oth += 1; }
+			}
+			if (nb_oth > 0) {
+			    Logger::warn("I/O")
+				<< nb_oth
+				<< " elements with type unsupported"
+				<< std::endl;
+			}
+		    }
+		}
+		M.edges.create_edges(nb_edges);
+		M.facets.create_triangles(nb_tri);
+		M.facets.create_quads(nb_quad);
+		M.cells.create_tets(nb_tet);
+		M.cells.create_hexes(nb_hex);
+		M.cells.create_pyramids(nb_pyr);
+		M.cells.create_prisms(nb_pri);
+	    }
+	    { /* Second pass to fill the content of the mesh */
+		/* Re-use the number of elts as counters */
+		nb_edges = 0;
+		index_t nb_facets = 0;
+		index_t nb_cells = 0;
+		LineInput in(filename);
+		while (in.get_line()) {
+		    in.get_fields();
+		    if (in.field_matches(0, "$Elements")) {
+			in.get_line();
+			in.get_fields();
+			geo_assert(in.field_as_uint(0) == nb_elements);
+			for (index_t e = 0; e < nb_elements; ++e){
+			    in.get_line();
+			    in.get_fields();
+			    index_t nb_tags = in.field_as_uint(2);
+			    index_t offset = 3 + nb_tags;
+			    if (in.field_as_uint(1) == 1) {
+				index_t nbv = 2;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.edges.set_vertex(
+					nb_edges, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_edges += 1;
+			    } else if (in.field_as_uint(1) == 2) {
+				index_t nbv = 3;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.facets.set_vertex(
+					nb_facets, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_facets += 1;
+			    } else if (in.field_as_uint(1) == 3) {
+				index_t nbv = 4;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.facets.set_vertex(
+					nb_facets, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_facets += 1;
+			    } else if (in.field_as_uint(1) == 4) {
+				index_t nbv = 4;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    } else if (in.field_as_uint(1) == 5) {
+				index_t nbv = 8;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, msh2geo_hex[j],
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    } else if (in.field_as_uint(1) == 6) {
+				index_t nbv = 6;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    } else if (in.field_as_uint(1) == 7) {
+				index_t nbv = 5;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    }
+			}
+		    }
+		}
+	    }
+	    return true;
+	}
+
+	virtual bool load(
+	    const std::string& filename, Mesh& M,
+	    const MeshIOFlags& ioflags
+	) {
+	    geo_argused(ioflags);
+	    M.clear();
+	    M.vertices.set_dimension(3);
+	    try {
+		if (!verify_file_format(filename)) {
+		    Logger::err("I/O")
+			<< "$MeshFormat not supported" << std::endl;
+		    return false;
+		}
+		if (!read_vertices(filename, M)) {
+		    Logger::err("I/O")
+			<< "failed to read vertices" << std::endl;
+		    return false;
+		}
+		if (!read_elements(filename, M)) {
+		    Logger::err("I/O")
+			<< "failed to read elements" << std::endl;
+		    return false;
+		}
+	    } catch(const std::string& what) {
+		Logger::err("I/O") << what << std::endl;
+		return false;
+	    } catch(const std::exception& ex) {
+		Logger::err("I/O") << ex.what() << std::endl;
+		return false;
+	    } catch(...) {
+		Logger::err("I/O") << "Caught exception" << std::endl;
+		return false;
+	    }
+	    return true;
+	}
+
+	virtual bool save(
+	    const Mesh& M_in, const std::string& filename, 
+	    const MeshIOFlags& ioflags
+	    ) {
+
+	    Mesh M(M_in.vertices.dimension());
+	    M.copy(M_in, true);
+
+	    M.vertices.remove_isolated();
+
+	    Attribute<int> region;
+	    Attribute<int> bdr_region;
+	    if (M.cells.attributes().is_defined("region")) {
+		region.bind(M.cells.attributes(), "region");
+	    }
+	    if (M.facets.attributes().is_defined("bdr_region")) {
+		bdr_region.bind(M.facets.attributes(), "bdr_region");
+	    }
+
+	    std::ofstream out( filename.c_str() ) ;
+	    out.precision( 16 ) ;
+
+	    /* Header */
+	    out << "$MeshFormat\n";
+	    out << "2.2 0 " << sizeof(double) << std::endl;
+	    out << "$EndMeshFormat\n";
+
+	    /* Vertices */
+	    out << "$Nodes" << std::endl ;
+	    out << M.vertices.nb() << std::endl ;
+	    for( index_t v = 0; v < M.vertices.nb(); v++ ) {
+		out << v + id_offset_msh << " "
+		    << M.vertices.point_ptr(v)[0] << " "
+		    << M.vertices.point_ptr(v)[1] << " "
+		    << M.vertices.point_ptr(v)[2] << '\n' ;
+	    }
+	    out << "$EndNodes" << std::endl ;
+
+	    /* Elements */
+	    index_t nb_tet = 0;
+	    index_t nb_hex = 0;
+	    index_t nb_pyr = 0;
+	    index_t nb_pri = 0;
+	    for(index_t c = 0; c != M.cells.nb(); ++c){
+		if(M.cells.type(c) == GEO::MESH_TET){
+		    ++nb_tet;
+		} else if(M.cells.type(c) == GEO::MESH_HEX){
+		    ++nb_hex;
+		} else if(M.cells.type(c) == GEO::MESH_PYRAMID){
+		    ++nb_pyr;
+		} else if(M.cells.type(c) == GEO::MESH_PRISM){
+		    ++nb_pri;
+		}
+	    }
+	    index_t nb_elt = nb_tet + nb_hex + nb_pyr + nb_pri;
+	    if (ioflags.has_element(MESH_FACETS)) nb_elt += M.facets.nb();
+
+	    out << "$Elements" << std::endl ;
+	    out << nb_elt << std::endl ;
+	    index_t elt_id = 0; /* starts at 1, common for faces and cells */
+	    if (ioflags.has_element(MESH_FACETS)) {
+		for (index_t f = 0; f < M.facets.nb(); ++f) {
+		    int attr_value = 0;
+		    if (bdr_region.is_bound()){
+			attr_value = bdr_region[f];
+		    }
+		    int type = -1;
+		    if (M.facets.nb_vertices(f) == 3) {
+			type = 2;
+		    } else if (M.facets.nb_vertices(f) == 4) {
+			type = 3;
+		    } else {
+			geo_assert_not_reached
+			    }
+		    elt_id += 1;
+		    out << elt_id << " " << type << " " << "2" << " "
+			<< attr_value << " " << attr_value << " ";
+		    for (index_t li = 0; li < M.facets.nb_vertices(f); ++li) {
+			out << M.facets.vertex(f, li) + id_offset_msh << " ";
+		    }
+		    out << std::endl;
+		}
+	    }
+	    for (index_t c = 0; c < M.cells.nb(); ++c) {
+		if (M.cells.type(c) == GEO::MESH_CONNECTOR) {
+		    continue;
+		}
+		int attr_value = 0;
+		if (region.is_bound()) attr_value = region[c];
+		const index_t* msh2geo =
+		    (M.cells.type(c) == GEO::MESH_HEX) ?
+		    msh2geo_hex : msh2geo_def;
+		elt_id += 1;
+
+		/* Write to file, format is:
+		 *   elm-number elm-type number-of-tags < tag > ...
+		 *   node-number-list
+		 */
+		out << elt_id << " " << celltype_geo2msh[M.cells.type(c)]
+		    << " " << "1" << " " << attr_value << " ";
+		for (index_t li = 0; li < M.cells.nb_vertices(c); ++li) {
+		    out << M.cells.vertex(c, msh2geo[li]) + id_offset_msh
+			<< " ";
+		}
+		out << std::endl;
+	    }
+	    out << "$EndElements" << std::endl;
+	    
+	    out.close();
+	    return true;
+	}
+    };
+    
 }
 
 /****************************************************************************/
@@ -4356,6 +4743,7 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb");
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb1");
         geo_register_MeshIOHandler_creator(OVMIOHandler, "ovm");
+        geo_register_MeshIOHandler_creator(MSHIOHandler, "msh");	
     }
 
     

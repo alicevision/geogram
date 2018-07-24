@@ -83,6 +83,7 @@ namespace GEO {
         dimension_(dim),
         cached_base_addr_(nullptr),
         cached_size_(0),
+	cached_capacity_(0),
         lock_(GEOGRAM_SPINLOCK_INIT)
     {
     }
@@ -166,7 +167,7 @@ namespace GEO {
     
     /*************************************************************************/
 
-    AttributesManager::AttributesManager() : size_(0) {
+    AttributesManager::AttributesManager() : size_(0), capacity_(0) {
     }
 
     AttributesManager::~AttributesManager() {
@@ -183,6 +184,16 @@ namespace GEO {
         size_ = new_size;
     }
 
+    void AttributesManager::reserve(index_t new_capacity) {
+        if(new_capacity <= capacity_) {
+            return;
+        }
+	for(auto& cur : attributes_) {
+	    cur.second->reserve(new_capacity);
+	}
+        capacity_ = new_capacity;
+    }
+    
     void AttributesManager::apply_permutation(
         const vector<index_t>& permutation
     ) {
@@ -205,6 +216,7 @@ namespace GEO {
     ) {
         geo_assert(find_attribute_store(name) == nullptr);
         attributes_[name] = as;
+	as->reserve(capacity_);
         as->resize(size_);
     }
 
@@ -280,6 +292,7 @@ namespace GEO {
 
     void AttributesManager::copy(const AttributesManager& rhs) {
         clear(false, false);
+	reserve(rhs.capacity());
         resize(rhs.size());
 	for(auto& cur : rhs.attributes_) {
             bind_attribute_store(cur.first, cur.second->clone());	    

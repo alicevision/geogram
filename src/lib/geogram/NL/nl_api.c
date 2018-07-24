@@ -826,14 +826,17 @@ void nlCoefficient(NLuint index, NLdouble value) {
 }
 
 void nlAddIJCoefficient(NLuint i, NLuint j, NLdouble value) {
+#ifdef NL_DEBUG
+    NLuint kk;
+    if(nlCurrentContext->variable_is_locked != NULL) {    
+	for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
+	    nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
+	}
+    }
+#endif    
     nlCheckState(NL_STATE_MATRIX);
     nl_debug_range_assert(i, 0, nlCurrentContext->nb_variables - 1);
     nl_debug_range_assert(j, 0, nlCurrentContext->nb_variables - 1);
-#ifdef NL_DEBUG
-    for(NLuint i=0; i<nlCurrentContext->nb_variables; ++i) {
-        nl_debug_assert(!nlCurrentContext->variable_is_locked[i]);
-    }
-#endif    
     if(nlCurrentContext->has_matrix_pattern) {
 	nlCRSMatrixAdd(
 	    nlGetCurrentCRSMatrix(), i, j, value
@@ -847,27 +850,33 @@ void nlAddIJCoefficient(NLuint i, NLuint j, NLdouble value) {
 }
 
 void nlAddIRightHandSide(NLuint i, NLdouble value) {
-    nlCheckState(NL_STATE_MATRIX);
-    nl_debug_range_assert(i, 0, nlCurrentContext->nb_variables - 1);
 #ifdef NL_DEBUG
-    for(NLuint i=0; i<nlCurrentContext->nb_variables; ++i) {
-        nl_debug_assert(!nlCurrentContext->variable_is_locked[i]);
+    NLuint kk;
+    if(nlCurrentContext->variable_is_locked != NULL) {        
+	for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
+	    nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
+	}
     }
 #endif
+    nlCheckState(NL_STATE_MATRIX);
+    nl_debug_range_assert(i, 0, nlCurrentContext->nb_variables - 1);
     nlCurrentContext->b[i] += value;
     nlCurrentContext->ij_coefficient_called = NL_TRUE;
 }
 
 void nlMultiAddIRightHandSide(NLuint i, NLuint k, NLdouble value) {
     NLuint n = nlCurrentContext->n;
+#ifdef NL_DEBUG
+    NLuint kk;
+    if(nlCurrentContext->variable_is_locked != NULL) {        
+	for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
+	    nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
+	}
+    }
+#endif
     nlCheckState(NL_STATE_MATRIX);
     nl_debug_range_assert(i, 0, nlCurrentContext->nb_variables - 1);
     nl_debug_range_assert(k, 0, nlCurrentContext->nb_systems - 1);
-#ifdef NL_DEBUG
-    for(NLuint i=0; i<nlCurrentContext->nb_variables; ++i) {
-        nl_debug_assert(!nlCurrentContext->variable_is_locked[i]);
-    }
-#endif
     nlCurrentContext->b[i + k*n] += value;
     nlCurrentContext->ij_coefficient_called = NL_TRUE;
 }

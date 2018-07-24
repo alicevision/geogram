@@ -77,12 +77,14 @@ namespace GEO {
      *	 - FEM_P1_LUMPED: linear finite elements with lumped mass matrix
      * \param[in] shift eigen shift applied to explore a certain part
      *  of the spectrum.
+     * \param[in] print_spectrum if true, prints eigenvalues to the terminal.
      */
     void GEOGRAM_API mesh_compute_manifold_harmonics(
 	Mesh& M, index_t nb_eigens,
 	LaplaceBeltramiDiscretization discretization,
 	const std::string& attribute_name = "eigen",
-	double shift = 0.0
+	double shift = 0.0,
+	bool print_spectrum = false
     );
 
 

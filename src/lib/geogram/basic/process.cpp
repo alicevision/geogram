@@ -449,7 +449,14 @@ namespace GEO {
         }
 
         bool is_running_threads() {
+#ifdef GEO_OPENMP
+            return (
+		omp_in_parallel() ||
+		(running_threads_invocations_ > 0)
+	    );	    
+#else	    
             return running_threads_invocations_ > 0;
+#endif	    
         }
 
         bool multithreading_enabled() {

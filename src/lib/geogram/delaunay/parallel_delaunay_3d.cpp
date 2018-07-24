@@ -2723,6 +2723,11 @@ namespace GEO {
          */
         static char halfedge_facet_[4][4];
 
+	/**
+	 * \brief Stores the triangles on the boundary
+	 *  of the cavity, for faster generation of the
+	 *  new tetrahedra.
+	 */
 	Cavity cavity_;
     };
 
@@ -3022,9 +3027,6 @@ namespace GEO {
         delete W;
 
         if(debug_mode_) {
-//            Delaunay3dThread* thread0 = 
-//                static_cast<Delaunay3dThread*>(threads_[0].get());
-            
             for(index_t i=0; i<threads_.size(); ++i) {
                 std::cerr << i << " : " <<
                     static_cast<Delaunay3dThread*>(threads_[i].get())

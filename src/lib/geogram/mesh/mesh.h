@@ -137,16 +137,17 @@ namespace GEO {
         index_t create_sub_elements(index_t nb) {
             index_t result = nb_;
             if(nb_ + nb > attributes_.size()) {
-                index_t new_size=nb_ + nb;
+                index_t new_capacity=nb_ + nb;
                 if(nb < 128) {
-                    new_size = std::max(index_t(16),attributes_.size());
-                    while(new_size < nb_ + nb) {
-                        new_size *= 2;
+                    new_capacity = std::max(index_t(16),attributes_.size());
+                    while(new_capacity < nb_ + nb) {
+                        new_capacity *= 2;
                     }
                 }
-                attributes_.resize(new_size);
+                attributes_.reserve(new_capacity);
             }
             nb_ += nb;
+	    attributes_.resize(nb_);
             return result;
         }
 
@@ -157,10 +158,12 @@ namespace GEO {
         index_t create_sub_element() {
             index_t result = nb_;
             ++nb_;
-            if(attributes_.size() < nb_) {
-                index_t new_size = std::max(index_t(16),attributes_.size()*2);
-                attributes_.resize(new_size);
+            if(attributes_.capacity() < nb_) {
+                index_t new_capacity =
+		    std::max(index_t(16),attributes_.capacity()*2);
+		attributes_.reserve(new_capacity);
             }
+	    attributes_.resize(nb_);
             return result;
         }
 
@@ -1324,7 +1327,9 @@ namespace GEO {
         MeshFacetCornersStore& facet_corners_;
         friend class Mesh;
         friend class GeogramIOHandler;
-	friend void GEOGRAM_API tessellate_facets(Mesh& M, index_t max_nb_vertices);
+	friend void GEOGRAM_API tessellate_facets(
+	    Mesh& M, index_t max_nb_vertices
+	);
     };
     
     /*************************************************************************/

@@ -5,8 +5,8 @@
 include(${GEOGRAM_SOURCE_DIR}/cmake/platforms/Linux.cmake)
 
 # Set the Android compilers
-set(CMAKE_CXX_COMPILER aarch64-linux-android-g++)
-set(CMAKE_C_COMPILER aarch64-linux-android-gcc)
+set(CMAKE_CXX_COMPILER aarch64-linux-android-clang++)
+set(CMAKE_C_COMPILER aarch64-linux-android-clang)
 
 set(VORPALINE_ARCH_64 true)
 
@@ -31,15 +31,21 @@ add_definitions(${FULL_WARNINGS})
 # Warn about missing virtual destructor (C++ only)
 add_flags(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
 
+add_flags(CMAKE_CXX_FLAGS -Wno-unknown-warning-option)
+add_flags(CMAKE_C_FLAGS -Wno-unknown-warning-option)
+
+# Activate c++ 2011
+add_flags(CMAKE_CXX_FLAGS -std=c++11)
+
 # Add static and dynamic bounds checks (optimization required)
 # add_flags(CMAKE_CXX_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 # add_flags(CMAKE_C_FLAGS_RELEASE -D_FORTIFY_SOURCE=2)
 
-set(ARCH_FLAGS -ffp-contract=off)
+set(ARCH_FLAGS -ffp-contract=off -fPIE -fPIC)
 
 add_flags(CMAKE_CXX_FLAGS ${ARCH_FLAGS})
 add_flags(CMAKE_C_FLAGS ${ARCH_FLAGS})
-add_flags(CMAKE_EXE_LINKER_FLAGS ${ARCH_FLAGS})
+add_flags(CMAKE_EXE_LINKER_FLAGS ${ARCH_FLAGS} -pie)
 
 # Additional debug flags
 # deactivated for now: I added bound checking in VOR::vector<>.
