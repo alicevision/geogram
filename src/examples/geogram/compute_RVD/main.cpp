@@ -133,7 +133,7 @@ namespace {
 	 * \param[out] output_mesh a reference to the generated mesh 
 	 */
 	SaveRVDCells(Mesh& output_mesh) : output_mesh_(output_mesh) {
-	    vertex_map_ = nullptr;
+	    my_vertex_map_ = nullptr;
 	    
 	    // If set, then only one polyhedron per (connected component of) restricted Voronoi
 	    // cell is generated.
@@ -156,8 +156,8 @@ namespace {
 	}
 
 	~SaveRVDCells() {
-	    delete vertex_map_;
-	    vertex_map_ = nullptr;
+	    delete my_vertex_map_;
+	    my_vertex_map_ = nullptr;
 	}
 
 	/**
@@ -195,9 +195,9 @@ namespace {
 	    // will not want to reset indexing (and will comment-out the following three lines).
 	    // It will also construct the RVDVertexMap in the constructor.
 	    
-	    delete vertex_map_;
-	    vertex_map_ = new RVDVertexMap;
-	    vertex_map_->set_first_vertex_index(output_mesh_.vertices.nb());
+	    delete my_vertex_map_;
+	    my_vertex_map_ = new RVDVertexMap;
+	    my_vertex_map_->set_first_vertex_index(output_mesh_.vertices.nb());
 	}
 
 	/**
@@ -218,7 +218,7 @@ namespace {
 	    const double* geometry, const GEOGen::SymbolicVertex& symb
 	) {
 	    // Find the index of the vertex associated with its symbolic representation.
-	    index_t vid = vertex_map_->find_or_create_vertex(seed(), symb);
+	    index_t vid = my_vertex_map_->find_or_create_vertex(seed(), symb);
 
 	    // If the vertex does not exist in the mesh, create it.
 	    if(vid >= output_mesh_.vertices.nb()) {
@@ -286,7 +286,7 @@ namespace {
     private:
 	vector<index_t> current_facet_;
 	Mesh& output_mesh_;
-	RVDVertexMap* vertex_map_;
+	RVDVertexMap* my_vertex_map_;
     };
     
     void compute_RVD_cells(RestrictedVoronoiDiagram* RVD, Mesh& RVD_mesh) {

@@ -284,6 +284,10 @@ namespace GLUP {
         GLuint sliced_cells_elements_VBO_;
         GLuint sliced_cells_vertex_attrib_VBO_[4];
         GLuint sliced_cells_VAO_;
+
+	double GLSL_version_;
+
+	bool vertex_id_VBO_bound_;
     };
 
     /*********************************************************************/

@@ -53,6 +53,10 @@
 
 #include <geogram/bibliography/bibliography.h>
 
+#ifdef GEO_OS_ANDROID
+#  pragma GCC diagnostic ignored "-Wpointer-bool-conversion"
+#  pragma GCC diagnostic ignored "-Wtautological-pointer-compare"
+#endif
 
 // TODO: for points and spheres: early fragment tests, depth greater
 // (+ vertex shader that "drags the point to the camera" in such a way
@@ -615,8 +619,14 @@ namespace GLUP {
         //  create_vertex_program_that_uses_all_UBO_variables()        
 
         static const char* shader_source_header_ =
-            "#version 150 core \n" ; 
-
+#ifdef GEO_OS_ANDROID
+            "#version 300 es\n"
+	    "precision highp float;\n"
+            "precision lowp sampler3D;\n" ; 	    	
+#else	    
+            "#version 150 core\n" ; 
+#endif
+	
         static const char* fragment_shader_source_ =
             "out vec4 colorOut;                      \n"
             "void main() {                           \n"
@@ -1272,7 +1282,7 @@ namespace GLUP {
     }
 
     void Context::prepare_to_draw(GLUPprimitive primitive) {
-#ifndef GEO_GL_150
+#ifndef GEO_GL_440
         geo_argused(primitive);
 #else
 
@@ -1459,6 +1469,7 @@ namespace GLUP {
             update_lighting();
         }
 #ifdef GEO_GL_150
+	#ifdef GL_CLIP_DISTANCE0
         if(!use_ES_profile_) {
             if(uniform_state_.toggle[GLUP_CLIPPING].get()) {
                 glEnable(GL_CLIP_DISTANCE0);
@@ -1466,6 +1477,7 @@ namespace GLUP {
                 glDisable(GL_CLIP_DISTANCE0);
             }
         }
+	#endif
         if(uniform_buffer_ != 0) {
             glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer_);
             glBufferSubData(

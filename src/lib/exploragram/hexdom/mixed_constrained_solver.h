@@ -151,12 +151,12 @@ namespace GEO {
 		//   L.push_back(Coeff(index,val));
 		//   order_AND_make_unique(L);
 		for (index_t jj = 0; jj < L.size(); ++jj) {
-			if (L[jj].index == index) {
+		        if (L[jj].index == index) {
 				L[jj].a += val;
 				return;
 			}
 			if (L[jj].index > index) {
-				L.insert(L.begin() + jj, Coeff(index, val));
+			        L.insert(L.begin() + long(jj), Coeff(index, val));
 				return;
 			}
 		}

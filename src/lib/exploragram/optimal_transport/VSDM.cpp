@@ -68,7 +68,7 @@ namespace {
 	/**
 	 * \copydoc MeshSplitCallbacks::create_vertex()
 	 */
-	virtual index_t create_vertex() {
+	index_t create_vertex() override {
 	    FOR(i,mesh_->vertices.dimension()) {
 		nlSparseMatrixAddRow(matrix_);
 	    }
@@ -78,7 +78,7 @@ namespace {
 	/**
 	 * \copydoc MeshSplitCallbacks::scale_vertex()
 	 */
-	virtual void scale_vertex(index_t v, double s) {
+	void scale_vertex(index_t v, double s) override {
 	    index_t dim = mesh_->vertices.dimension();
 	    FOR(i,dim) {
 		nlSparseMatrixScaleRow(matrix_, v*dim+i, s);
@@ -89,7 +89,7 @@ namespace {
 	/**
 	 * \copydoc MeshSplitCallbacks::zero_vertex()
 	 */
-	virtual void zero_vertex(index_t v) {
+	void zero_vertex(index_t v) override {
 	    index_t dim = mesh_->vertices.dimension();
 	    FOR(i,dim) {
 		nlSparseMatrixZeroRow(matrix_, v*dim+i);
@@ -100,9 +100,9 @@ namespace {
 	/**
 	 * \copydoc MeshSplitCallbacks::madd_vertex()
 	 */
-	virtual void madd_vertex(
+	void madd_vertex(
 	    index_t v1, double s, index_t v2
-	) {
+	) override {
 	    index_t dim = mesh_->vertices.dimension();
 	    FOR(i,dim) {
 		nlSparseMatrixMAddRow(matrix_, v1*dim+i, s, v2*dim+i);

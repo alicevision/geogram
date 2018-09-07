@@ -46,6 +46,7 @@
 #include <geogram_gfx/ImGui_ext/imgui_ext.h>
 #include <geogram_gfx/ImGui_ext/file_dialog.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
+#include <geogram_gfx/third_party/ImGui/imgui_internal.h>
 #include <geogram/basic/logger.h>
 #include <map>
 
@@ -208,7 +209,14 @@ namespace {
 namespace ImGui {
 
     float scaling() {
-	return ImGui::GetIO().FontGlobalScale;
+	ImGuiContext& g = *GImGui;
+	float s = 1.0;
+	if(g.Font->FontSize > 40.0f) {
+	    s = g.Font->FontSize / 30.0f;
+	} else {
+	    s = g.Font->FontSize / 20.0f;	    
+	}
+	return s * ImGui::GetIO().FontGlobalScale;
     }
 
     void set_scaling(float x) {

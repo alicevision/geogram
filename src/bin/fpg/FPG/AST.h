@@ -11,7 +11,7 @@
 #include <FPG/Symbol.h>
 #include <FPG/Location.h>
 
-class Visitor;
+struct Visitor;
 
 namespace AST {
 
@@ -33,7 +33,7 @@ struct Clone_context {
 
 
 struct Node {
-    friend class ::Visitor;
+    friend struct ::Visitor;
     Node() : location(current_location), type(nullptr) {}
     virtual ~Node() {}
     static std::string       context;

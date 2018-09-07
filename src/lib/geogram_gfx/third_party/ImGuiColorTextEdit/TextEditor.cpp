@@ -4,9 +4,11 @@
 //  geogram stopwatch for now (some
 //  of our older compilers do not support
 //  chrono yet).
+//  (TODO: check whether we still need that)
 #include <geogram/basic/stopwatch.h>
 
 #include <string>
+#include <regex>
 #include <cmath>
 #include <iostream>
 
@@ -14,68 +16,20 @@
 #include <geogram_gfx/third_party/ImGuiColorTextEdit/TextEditor.h>
 #include <geogram_gfx/third_party/ImGui/imgui_internal.h>
 
-// [Bruno Levy] made syntax highlighting optional,
-// deactivated for older compilers that do not have std::regex
-#ifndef GEO_OLD_COMPILER
-#include <regex>
-#endif
-
 // [Bruno Levy] includes for GLFW, needed by new callbacks
 // (for key constants).
+#ifdef __ANDROID__
+// TODO
+#define GLFW_KEY_F2 0
+#define GLFW_KEY_F5 0
+#define GLFW_KEY_TAB 0
+#else
 #ifdef GEO_USE_SYSTEM_GLFW3
 #include <GLFW/glfw3.h>
 #else
 #include <third_party/glfw/include/GLFW/glfw3.h>
 #endif
-
-
-// [Bruno Levy] replaced std::equal() with local function
-// so that we do not depend on C++ 2014
-namespace {
-
-    template <class ITERATOR1, class ITERATOR2, class PREDICATE>
-    bool my_equal(
-	ITERATOR1 b1, ITERATOR1 e1,
-	ITERATOR2 b2, ITERATOR2 e2,
-	PREDICATE pred
-    ) {
-	while( b1 != e1 && b2 != e2 ) {
-	    if( !pred(*b1,*b2) ) {
-		return false;
-	    }
-	    ++b1;
-	    ++b2;
-	}
-	return b1 == e1 && b2 == e2;
-    }
-
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#   define snprintf c99_snprintf
-#   define vsnprintf c99_vsnprintf
-
-__inline int c99_vsnprintf(char *outBuf, size_t size, const char *format, va_list ap) {
-    int count = -1;
-
-    if (size != 0)
-        count = _vsnprintf_s(outBuf, size, _TRUNCATE, format, ap);
-    if (count == -1)
-        count = _vscprintf(format, ap);
-
-    return count;
-}
-    
- __inline int c99_snprintf(char *outBuf, size_t size, const char *format, ...) {
-     int count;
-     va_list ap;
-     va_start(ap, format);
-     count = c99_vsnprintf(outBuf, size, format, ap);
-     va_end(ap);
-     return count;
- }
-#endif    
-
-    
-}
+#endif
 
 static const int cTextStart = 7;
 
@@ -85,6 +39,48 @@ static const int cTextStart = 7;
 // - handle unicode/utf
 // - testing
 
+template<class InputIt1, class InputIt2, class BinaryPredicate>
+bool equals(InputIt1 first1, InputIt1 last1,
+	InputIt2 first2, InputIt2 last2, BinaryPredicate p)
+{
+	for (; first1 != last1 && first2 != last2; ++first1, ++first2) 
+	{
+		if (!p(*first1, *first2))
+			return false;
+	}
+	return first1 == last1 && first2 == last2;
+}
+
+
+// [Bruno Levy] snprintf and vsnprintf for old MSVC compilers
+
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#   define snprintf c99_snprintf
+#   define vsnprintf c99_vsnprintf
+
+namespace {
+    __inline int c99_vsnprintf(char *outBuf, size_t size, const char *format, va_list ap) {
+	int count = -1;
+	
+	if (size != 0)
+	    count = _vsnprintf_s(outBuf, size, _TRUNCATE, format, ap);
+	if (count == -1)
+	    count = _vscprintf(format, ap);
+	return count;
+    }
+    
+    __inline int c99_snprintf(char *outBuf, size_t size, const char *format, ...) {
+	int count;
+	va_list ap;
+	va_start(ap, format);
+	count = c99_vsnprintf(outBuf, size, format, ap);
+	va_end(ap);
+	return count;
+    }
+}
+#endif    
+
+
 TextEditor::TextEditor()
 	: mLineSpacing(0.0f)
 	, mUndoIndex(0)
@@ -93,13 +89,15 @@ TextEditor::TextEditor()
 	, mReadOnly(false)
 	, mWithinRender(false)
 	, mScrollToCursor(false)
-	, mWordSelectionMode(false)
+	, mTextChanged(false)
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
+	, mSelectionMode(SelectionMode::Normal)
 	, mCheckMultilineComments(true)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
+	mLines.push_back(Line());
 	// [Bruno Levy] additional callback.
 	callback_ = nullptr;
 	callback_client_data_ = nullptr;
@@ -113,13 +111,10 @@ TextEditor::~TextEditor()
 void TextEditor::SetLanguageDefinition(const LanguageDefinition & aLanguageDef)
 {
 	mLanguageDefinition = aLanguageDef;
-// [Bruno Levy] made syntax highlighting optional	
-#ifndef GEO_OLD_COMPILER
 	mRegexList.clear();
 
 	for (auto& r : mLanguageDefinition.mTokenRegexStrings)
 		mRegexList.push_back(std::make_pair(std::regex(r.first, std::regex_constants::optimize), r.second));
-#endif	
 }
 
 void TextEditor::SetPalette(const Palette & aValue)
@@ -184,6 +179,7 @@ TextEditor::Coordinates TextEditor::GetActualCursorCoordinates() const
 
 TextEditor::Coordinates TextEditor::SanitizeCoordinates(const Coordinates & aValue) const
 {
+    // [Bruno Levy] fixed for coords outside text
 	auto line = std::max(0, std::min((int)mLines.size() - 1, aValue.mLine));
 	auto column = mLines.empty() ? 0 : std::min((int)mLines[line].size(), aValue.mColumn);
 	return Coordinates(line, column);
@@ -235,6 +231,8 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 		if (aStart.mLine < aEnd.mLine)
 			RemoveLine(aStart.mLine + 1, aEnd.mLine + 1);
 	}
+
+	mTextChanged = true;
 }
 
 int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValue)
@@ -276,6 +274,8 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 			++aWhere.mColumn;
 		}
 		chr = *(++aValue);
+
+		mTextChanged = true;
 	}
 
 	return totalLines;
@@ -394,6 +394,7 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 
 	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
 
+	mTextChanged = true;
 }
 
 void TextEditor::RemoveLine(int aIndex)
@@ -420,6 +421,8 @@ void TextEditor::RemoveLine(int aIndex)
 	mBreakpoints = std::move(btmp);
 
 	mLines.erase(mLines.begin() + aIndex);
+
+	mTextChanged = true;
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
@@ -463,6 +466,7 @@ std::string TextEditor::GetWordAt(const Coordinates & aCoords) const
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
+	mTextChanged = false;
 
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -525,8 +529,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Delete();
 		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
 			BackSpace();
+/*		// [Bruno Levy] commented out, because it is switched on when I do not expect it
 		else if (!ctrl && !shift && !alt && ImGui::IsKeyPressed(45))
 			mOverwrite ^= true;
+*/
 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(45))
 			Copy();
 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed('C'))
@@ -543,7 +549,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		    EnterCharacter('\n');
 		} else if(ctrl && !shift && !alt && (ImGui::IsKeyPressed('A') || ImGui::IsKeyPressed('Q'))) {
 		    // [Bruno Levy] select all		
-		    SetSelection(Coordinates(0,0), Coordinates(GetTotalLines(),0), false);
+		    SetSelection(Coordinates(0,0), Coordinates(GetTotalLines(),0), SelectionMode::Normal);
 		    SetCursorPosition(Coordinates(GetTotalLines(),0));
 		}
 
@@ -586,30 +592,64 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	if (ImGui::IsWindowHovered())
 	{
+		static float lastClick = -1.0f;
 		if (!shift && !alt)
 		{
-			if (ImGui::IsMouseClicked(0))
+			auto click = ImGui::IsMouseClicked(0);
+			auto doubleClick = ImGui::IsMouseDoubleClicked(0);
+			auto t = ImGui::GetTime();
+			auto tripleClick = click && !doubleClick && t - lastClick < io.MouseDoubleClickTime;
+			if (tripleClick)
+			{
+				printf("triple\n");
+				if (!ctrl)
+				{
+					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+					mSelectionMode = SelectionMode::Line;
+					SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+				}
+
+				lastClick = -1.0f;
+			}
+			else if (doubleClick)
+			{
+				printf("double\n");
+				if (!ctrl)
+				{
+					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+					if (mSelectionMode == SelectionMode::Line)
+						mSelectionMode = SelectionMode::Normal;
+					else
+						mSelectionMode = SelectionMode::Word;
+					SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+				}
+
+				lastClick = ImGui::GetTime();
+			}
+			else if (click)
 			{
 				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
 				if (ctrl)
-					mWordSelectionMode = true;
-				SetSelection(mInteractiveStart, mInteractiveEnd, mWordSelectionMode);
-			}
-			if (ImGui::IsMouseDoubleClicked(0) && !ctrl)
-			{
-				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
-				mWordSelectionMode = true;
-				SetSelection(mInteractiveStart, mInteractiveEnd, mWordSelectionMode);
+					mSelectionMode = SelectionMode::Word;
+				else
+					mSelectionMode = SelectionMode::Normal;
+				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+
+				lastClick = ImGui::GetTime();
 			}
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
+				io.WantCaptureMouse = true;
 				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
-				SetSelection(mInteractiveStart, mInteractiveEnd, mWordSelectionMode);
+				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+			}
+			else
+			{
 			}
 		}
 
-		if (!ImGui::IsMouseDown(0))
-			mWordSelectionMode = false;
+		//if (!ImGui::IsMouseDown(0))
+		//	mWordSelectionMode = false;
 	}
 
 	ColorizeInternal();
@@ -624,7 +664,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto scrollX = ImGui::GetScrollX();
 	auto scrollY = ImGui::GetScrollY();
 
-	auto lineNo = (int)floor(scrollY / mCharAdvance.y);  
+	auto lineNo = (int)floor(scrollY / mCharAdvance.y);
 	auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / mCharAdvance.y)));
 	if (!mLines.empty())
 	{
@@ -659,18 +699,19 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			}
 
 			static char buf[16];
+			auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 
 			if (mBreakpoints.find(lineNo + 1) != mBreakpoints.end())
 			{
-				auto end = ImVec2(lineStartScreenPos.x + contentSize.x, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(lineStartScreenPos, end, mPalette[(int)PaletteIndex::Breakpoint]);
+				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
+				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::Breakpoint]);
 			}
 
 			auto errorIt = mErrorMarkers.find(lineNo + 1);
 			if (errorIt != mErrorMarkers.end())
 			{
-				auto end = ImVec2(lineStartScreenPos.x + contentSize.x, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(lineStartScreenPos, end, mPalette[(int)PaletteIndex::ErrorMarker]);
+				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
+				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::ErrorMarker]);
 
 				if (ImGui::IsMouseHoveringRect(lineStartScreenPos, end))
 				{
@@ -687,7 +728,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				}
 			}
 
-			snprintf(buf, 16, "%6d", lineNo + 1);
+			auto chars = snprintf(buf, 16, "%6d", lineNo + 1);
+			(void)chars; // [Bruno] silence warning
+			assert(chars >= 0 && chars < 16);
 			drawList->AddText(ImVec2(lineStartScreenPos.x /*+ mCharAdvance.x * 1*/, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
 
 			if (mState.mCursorPosition.mLine == lineNo)
@@ -696,7 +739,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				if (!HasSelection())
 				{
-					auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 					auto end = ImVec2(start.x + contentSize.x + scrollX, start.y + mCharAdvance.y);
 					drawList->AddRectFilled(start, end, mPalette[(int)(focused ? PaletteIndex::CurrentLineFill : PaletteIndex::CurrentLineFillInactive)]);
 					drawList->AddRect(start, end, mPalette[(int)PaletteIndex::CurrentLineEdge], 1.0f);
@@ -831,12 +873,15 @@ void TextEditor::SetText(const std::string & aText)
 		{
 			mLines.back().push_back(Glyph(chr, PaletteIndex::Default));
 		}
+
+		mTextChanged = true;
 	}
 
 	mUndoBuffer.clear();
 
 	Colorize();
 	
+        // [Bruno Levy] additional callback   
 	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
@@ -879,13 +924,15 @@ void TextEditor::EnterCharacter(Char aChar)
 	else
 	{
 		auto& line = mLines[coord.mLine];
-		if (mOverwrite && (int)line.size() < coord.mColumn)
+		if (mOverwrite && (int)line.size() > coord.mColumn)
 			line[coord.mColumn] = Glyph(aChar, PaletteIndex::Default);
 		else
 			line.insert(line.begin() + coord.mColumn, Glyph(aChar, PaletteIndex::Default));
 		mState.mCursorPosition = coord;
 		++mState.mCursorPosition.mColumn;
 	}
+
+	mTextChanged = true;
 
 	u.mAdded = aChar;
 	u.mAddedEnd = GetActualCursorCoordinates();
@@ -896,6 +943,7 @@ void TextEditor::EnterCharacter(Char aChar)
 	Colorize(coord.mLine - 1, 3);
 	EnsureCursorVisible();
 
+	// [Bruno Levy] additional callback   
 	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
@@ -929,18 +977,34 @@ void TextEditor::SetSelectionEnd(const Coordinates & aPosition)
 		std::swap(mState.mSelectionStart, mState.mSelectionEnd);
 }
 
-void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aEnd, bool aWordMode)
+void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aEnd, SelectionMode aMode)
 {
 	mState.mSelectionStart = SanitizeCoordinates(aStart);
 	mState.mSelectionEnd = SanitizeCoordinates(aEnd);
 	if (aStart > aEnd)
 		std::swap(mState.mSelectionStart, mState.mSelectionEnd);
 
-	if (aWordMode)
+	switch (aMode)
+	{
+	case TextEditor::SelectionMode::Normal:
+		break;
+	case TextEditor::SelectionMode::Word:
 	{
 		mState.mSelectionStart = FindWordStart(mState.mSelectionStart);
 		if (!IsOnWordBoundary(mState.mSelectionEnd))
 			mState.mSelectionEnd = FindWordEnd(FindWordStart(mState.mSelectionEnd));
+		break;
+	}
+	case TextEditor::SelectionMode::Line:
+	{
+		const auto lineNo = mState.mSelectionEnd.mLine;
+		const auto lineSize = lineNo < int(mLines.size()) ? mLines[lineNo].size() : 0;
+		mState.mSelectionStart = Coordinates(mState.mSelectionStart.mLine, 0);
+		mState.mSelectionEnd = Coordinates(lineNo, (int) lineSize);
+		break;
+	}
+	default:
+		break;
 	}
 }
 
@@ -978,6 +1042,7 @@ void TextEditor::DeleteSelection()
 	SetCursorPosition(mState.mSelectionStart);
 	Colorize(mState.mSelectionStart.mLine, 1);
 
+	// [Bruno Levy] additional callback   
 	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
@@ -1078,7 +1143,7 @@ void TextEditor::MoveLeft(int aAmount, bool aSelect, bool aWordMode)
 	}
 	else
 		mInteractiveStart = mInteractiveEnd = mState.mCursorPosition;
-	SetSelection(mInteractiveStart, mInteractiveEnd, aSelect && aWordMode);
+	SetSelection(mInteractiveStart, mInteractiveEnd, aSelect && aWordMode ? SelectionMode::Word : SelectionMode::Normal);
 
 	EnsureCursorVisible();
 }
@@ -1095,8 +1160,11 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 		auto& line = mLines[mState.mCursorPosition.mLine];
 		if (mState.mCursorPosition.mColumn >= (int)line.size())
 		{
-			mState.mCursorPosition.mLine = std::max(0, std::min((int)mLines.size() - 1, mState.mCursorPosition.mLine + 1));
-			mState.mCursorPosition.mColumn = 0;
+			if (mState.mCursorPosition.mLine < (int)mLines.size() - 1)
+			{
+				mState.mCursorPosition.mLine = std::max(0, std::min((int)mLines.size() - 1, mState.mCursorPosition.mLine + 1));
+				mState.mCursorPosition.mColumn = 0;
+			}
 		}
 		else
 		{
@@ -1120,7 +1188,7 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 	}
 	else
 		mInteractiveStart = mInteractiveEnd = mState.mCursorPosition;
-	SetSelection(mInteractiveStart, mInteractiveEnd, aSelect && aWordMode);
+	SetSelection(mInteractiveStart, mInteractiveEnd, aSelect && aWordMode ? SelectionMode::Word : SelectionMode::Normal);
 
 	EnsureCursorVisible();
 }
@@ -1257,6 +1325,8 @@ void TextEditor::Delete()
 			line.erase(line.begin() + pos.mColumn);
 		}
 
+		mTextChanged = true;
+
 		Colorize(pos.mLine, 1);
 	}
 
@@ -1274,15 +1344,31 @@ void TextEditor::BackSpace()
 	if (mLines.empty())
 		return;
 
+
+	UndoRecord u;
+	u.mBefore = mState;
+
 	if (HasSelection())
+	{
+		u.mRemoved = GetSelectedText();
+		u.mRemovedStart = mState.mSelectionStart;
+		u.mRemovedEnd = mState.mSelectionEnd;
+
 		DeleteSelection();
+	}
 	else
 	{
-		mState.mCursorPosition = GetActualCursorCoordinates();
+		auto pos = GetActualCursorCoordinates();
+		SetCursorPosition(pos);
+
 		if (mState.mCursorPosition.mColumn == 0)
 		{
 			if (mState.mCursorPosition.mLine == 0)
 				return;
+
+			u.mRemoved = '\n';
+			u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
+			Advance(u.mRemovedEnd);
 
 			auto& line = mLines[mState.mCursorPosition.mLine];
 			auto& prevLine = mLines[mState.mCursorPosition.mLine - 1];
@@ -1295,19 +1381,35 @@ void TextEditor::BackSpace()
 		else
 		{
 			auto& line = mLines[mState.mCursorPosition.mLine];
+
+			u.mRemoved = line[pos.mColumn - 1].mChar;
+			u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
+			--u.mRemovedStart.mColumn;
+
 			--mState.mCursorPosition.mColumn;
 			if (mState.mCursorPosition.mColumn < (int)line.size())
 				line.erase(line.begin() + mState.mCursorPosition.mColumn);
 		}
+
+		mTextChanged = true;
+
 		EnsureCursorVisible();
 		Colorize(mState.mCursorPosition.mLine, 1);
 	}
+
+	u.mAfter = mState;
+	AddUndo(u);
 }
 
 void TextEditor::SelectWordUnderCursor()
 {
 	auto c = GetCursorPosition();
 	SetSelection(FindWordStart(c), FindWordEnd(c));
+}
+
+void TextEditor::SelectAll()
+{
+	SetSelection(Coordinates(0, 0), Coordinates((int)mLines.size(), 0));
 }
 
 bool TextEditor::HasSelection() const
@@ -1385,6 +1487,7 @@ void TextEditor::Paste()
 		AddUndo(u);
 	}
 
+	// [Bruno Levy] additional callback   
 	if(callback_ != nullptr) {
 	    callback_(TEXT_EDITOR_TEXT_CHANGED, callback_client_data_);
 	}
@@ -1448,37 +1551,60 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 
 const TextEditor::Palette & TextEditor::GetLightPalette()
 {
-    // [Bruno Levy] separated declaration of values
-    // for older compilers.
-    static unsigned int data[] = {
-	0xff000000, // None
-	0xffff0c06, // Keyword	
-	0xff008000, // Number
-	0xff2020a0, // String
-	0xff304070, // Char literal
-	0xff000000, // Punctuation
-	0xff409090, // Preprocessor
-	0xff404040, // Identifier
-	0xff606010, // Known identifier
-	0xffc040a0, // Preproc identifier
-	0xff205020, // Comment (single line)
-	0xff405020, // Comment (multi line)
-	0xffffffff, // Background
-	0xff000000, // Cursor
-	0x80600000, // Selection  
-        0xa00010ff, // ErrorMarker
-	0x80f08000, // Breakpoint
-	0xff505000, // Line number
-	0x40000000, // Current line fill
-	0x40808080, // Current line fill (inactive)
-	0x40000000, // Current line edge
-    };
-    static Palette p;
-    for(unsigned int i=0; i<(unsigned)PaletteIndex::Max; ++i) {
-	p[i] = data[i];
-    }
-    return p;
+	static Palette p = { {
+		0xff000000,	// None
+		0xffff0c06,	// Keyword	
+		0xff008000,	// Number
+		0xff2020a0,	// String
+		0xff304070, // Char literal
+		0xff000000, // Punctuation
+		0xff409090,	// Preprocessor
+		0xff404040, // Identifier
+		0xff606010, // Known identifier
+		0xffc040a0, // Preproc identifier
+		0xff205020, // Comment (single line)
+		0xff405020, // Comment (multi line)
+		0xffffffff, // Background
+		0xff000000, // Cursor
+		0x80600000, // Selection
+		0xa00010ff, // ErrorMarker
+		0x80f08000, // Breakpoint
+		0xff505000, // Line number
+		0x40000000, // Current line fill
+		0x40808080, // Current line fill (inactive)
+		0x40000000, // Current line edge
+	} };
+	return p;
 }
+
+const TextEditor::Palette & TextEditor::GetRetroBluePalette()
+{
+	static Palette p = { {
+		0xff00ffff,	// None
+		0xffffff00,	// Keyword	
+		0xff00ff00,	// Number
+		0xff808000,	// String
+		0xff808000, // Char literal
+		0xffffffff, // Punctuation
+		0xff008000,	// Preprocessor
+		0xff00ffff, // Identifier
+		0xffffffff, // Known identifier
+		0xffff00ff, // Preproc identifier
+		0xff808080, // Comment (single line)
+		0xff404040, // Comment (multi line)
+		0xff800000, // Background
+		0xff0080ff, // Cursor
+		0x80ffff00, // Selection
+		0xa00000ff, // ErrorMarker
+		0x80ff8000, // Breakpoint
+		0xff808000, // Line number
+		0x40000000, // Current line fill
+		0x40808080, // Current line fill (inactive)
+		0x40000000, // Current line edge
+	} };
+	return p;
+}
+
 
 std::string TextEditor::GetText() const
 {
@@ -1506,11 +1632,6 @@ void TextEditor::Colorize(int aFromLine, int aLines)
 
 void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 {
-// [Bruno Levy] made syntax highlighting optional	    
-#ifdef GEO_OLD_COMPILER
-    (void)aFromLine; // Silence arg not used warning
-    (void)aToLine;
-#else
 	if (mLines.empty() || aFromLine >= aToLine)
 		return;
 
@@ -1574,7 +1695,6 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 			}
 		}
 	}
-#endif	
 }
 
 void TextEditor::ColorizeInternal()
@@ -1631,20 +1751,17 @@ void TextEditor::ColorizeInternal()
 						auto pred = [](const char& a, const Glyph& b) { return a == b.mChar; };
 						auto from = line.begin() + i.mColumn;
 						auto& startStr = mLanguageDefinition.mCommentStart;
-
-						// [Bruno Levy] replaced std::equal with my_equal (2 occurences)
-						
 						if (i.mColumn + startStr.size() <= line.size() &&
-							my_equal(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
+							equals(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
 							commentStart = i;
 
 						inComment = commentStart <= i;
 
 						line[i.mColumn].mMultiLineComment = inComment;
-
+						
 						auto& endStr = mLanguageDefinition.mCommentEnd;
 						if (i.mColumn + 1 >= (int)endStr.size() &&
-							my_equal(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
+							equals(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
 							commentStart = end;
 					}
 				}
@@ -1807,7 +1924,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
 		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
+		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex::Number));
@@ -1878,7 +1995,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::HLSL()
 		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
+		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
@@ -1926,7 +2043,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::GLSL()
 		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
+		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
@@ -1974,7 +2091,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::C()
 		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
+		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
@@ -2019,7 +2136,16 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::SQL()
 			langDef.mKeywords.insert(k);
 
 		static const char* const identifiers[] = {
-			"ABS",  "ACOS",  "ADD_MONTHS",  "ASCII",  "ASCIISTR",  "ASIN",  "ATAN",  "ATAN2",  "AVG",  "BFILENAME",  "BIN_TO_NUM",  "BITAND",  "CARDINALITY",  "CASE",  "CAST",  "CEIL",			"CHARTOROWID",  "CHR",  "COALESCE",  "COMPOSE",  "CONCAT",  "CONVERT",  "CORR",  "COS",  "COSH",  "COUNT",  "COVAR_POP",  "COVAR_SAMP",  "CUME_DIST",  "CURRENT_DATE",			"CURRENT_TIMESTAMP",  "DBTIMEZONE",  "DECODE",  "DECOMPOSE",  "DENSE_RANK",  "DUMP",  "EMPTY_BLOB",  "EMPTY_CLOB",  "EXP",  "EXTRACT",  "FIRST_VALUE",  "FLOOR",  "FROM_TZ",  "GREATEST",			"GROUP_ID",  "HEXTORAW",  "INITCAP",  "INSTR",  "INSTR2",  "INSTR4",  "INSTRB",  "INSTRC",  "LAG",  "LAST_DAY",  "LAST_VALUE",  "LEAD",  "LEAST",  "LENGTH",  "LENGTH2",  "LENGTH4",			"LENGTHB",  "LENGTHC",  "LISTAGG",  "LN",  "LNNVL",  "LOCALTIMESTAMP",  "LOG",  "LOWER",  "LPAD",  "LTRIM",  "MAX",  "MEDIAN",  "MIN",  "MOD",  "MONTHS_BETWEEN",  "NANVL",  "NCHR",			"NEW_TIME",  "NEXT_DAY",  "NTH_VALUE",  "NULLIF",  "NUMTODSINTERVAL",  "NUMTOYMINTERVAL",  "NVL",  "NVL2",  "POWER",  "RANK",  "RAWTOHEX",  "REGEXP_COUNT",  "REGEXP_INSTR",			"REGEXP_REPLACE",  "REGEXP_SUBSTR",  "REMAINDER",  "REPLACE",  "ROUND",  "ROWNUM",  "RPAD",  "RTRIM",  "SESSIONTIMEZONE",  "SIGN",  "SIN",  "SINH",			"SOUNDEX",  "SQRT",  "STDDEV",  "SUBSTR",  "SUM",  "SYS_CONTEXT",  "SYSDATE",  "SYSTIMESTAMP",  "TAN",  "TANH",  "TO_CHAR",  "TO_CLOB",  "TO_DATE",  "TO_DSINTERVAL",  "TO_LOB",			"TO_MULTI_BYTE",  "TO_NCLOB",  "TO_NUMBER",  "TO_SINGLE_BYTE",  "TO_TIMESTAMP",  "TO_TIMESTAMP_TZ",  "TO_YMINTERVAL",  "TRANSLATE",  "TRIM",  "TRUNC", "TZ_OFFSET",  "UID",  "UPPER",			"USER",  "USERENV",  "VAR_POP",  "VAR_SAMP",  "VARIANCE",  "VSIZE "
+			"ABS",  "ACOS",  "ADD_MONTHS",  "ASCII",  "ASCIISTR",  "ASIN",  "ATAN",  "ATAN2",  "AVG",  "BFILENAME",  "BIN_TO_NUM",  "BITAND",  "CARDINALITY",  "CASE",  "CAST",  "CEIL",
+			"CHARTOROWID",  "CHR",  "COALESCE",  "COMPOSE",  "CONCAT",  "CONVERT",  "CORR",  "COS",  "COSH",  "COUNT",  "COVAR_POP",  "COVAR_SAMP",  "CUME_DIST",  "CURRENT_DATE",
+			"CURRENT_TIMESTAMP",  "DBTIMEZONE",  "DECODE",  "DECOMPOSE",  "DENSE_RANK",  "DUMP",  "EMPTY_BLOB",  "EMPTY_CLOB",  "EXP",  "EXTRACT",  "FIRST_VALUE",  "FLOOR",  "FROM_TZ",  "GREATEST",
+			"GROUP_ID",  "HEXTORAW",  "INITCAP",  "INSTR",  "INSTR2",  "INSTR4",  "INSTRB",  "INSTRC",  "LAG",  "LAST_DAY",  "LAST_VALUE",  "LEAD",  "LEAST",  "LENGTH",  "LENGTH2",  "LENGTH4",
+			"LENGTHB",  "LENGTHC",  "LISTAGG",  "LN",  "LNNVL",  "LOCALTIMESTAMP",  "LOG",  "LOWER",  "LPAD",  "LTRIM",  "MAX",  "MEDIAN",  "MIN",  "MOD",  "MONTHS_BETWEEN",  "NANVL",  "NCHR",
+			"NEW_TIME",  "NEXT_DAY",  "NTH_VALUE",  "NULLIF",  "NUMTODSINTERVAL",  "NUMTOYMINTERVAL",  "NVL",  "NVL2",  "POWER",  "RANK",  "RAWTOHEX",  "REGEXP_COUNT",  "REGEXP_INSTR",
+			"REGEXP_REPLACE",  "REGEXP_SUBSTR",  "REMAINDER",  "REPLACE",  "ROUND",  "ROWNUM",  "RPAD",  "RTRIM",  "SESSIONTIMEZONE",  "SIGN",  "SIN",  "SINH",
+			"SOUNDEX",  "SQRT",  "STDDEV",  "SUBSTR",  "SUM",  "SYS_CONTEXT",  "SYSDATE",  "SYSTIMESTAMP",  "TAN",  "TANH",  "TO_CHAR",  "TO_CLOB",  "TO_DATE",  "TO_DSINTERVAL",  "TO_LOB",
+			"TO_MULTI_BYTE",  "TO_NCLOB",  "TO_NUMBER",  "TO_SINGLE_BYTE",  "TO_TIMESTAMP",  "TO_TIMESTAMP_TZ",  "TO_YMINTERVAL",  "TRANSLATE",  "TRIM",  "TRUNC", "TZ_OFFSET",  "UID",  "UPPER",
+			"USER",  "USERENV",  "VAR_POP",  "VAR_SAMP",  "VARIANCE",  "VSIZE "
 		};
 		for (auto& k : identifiers)
 		{

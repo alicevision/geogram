@@ -283,7 +283,6 @@ namespace {
 	return m[0]+m[1];
     }
 
-
     /**
      * \brief Arithmetic filter for the in_sphere_3d_SOS() predicate.
      * \details This version is optimized using the AVX2 instruction 
@@ -338,7 +337,7 @@ namespace {
 	__m128d max_max = _mm_max_pd(maxX, _mm_max_pd(maxY, maxZ));
 
 	// Computing dynamic filter
-	__m128d eps     = _mm_set_pd1(1.2466136531027298e-13);
+	__m128d eps     = _mm_set1_pd(1.2466136531027298e-13);
 	        eps     = _mm_mul_pd(eps, _mm_mul_pd(maxX, _mm_mul_pd(maxY, maxZ)));
 		eps     = _mm_mul_pd(eps, _mm_mul_pd(max_max, max_max));
 	

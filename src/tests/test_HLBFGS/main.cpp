@@ -10,7 +10,7 @@
 #include <iostream>
 
 namespace {
-    Lite_Sparse_Matrix* m_sparse_matrix = 0;
+    Lite_Sparse_Matrix* m_sparse_matrix = nullptr;
 
 /********************** Initial HLBFGS API ***********************************/
 
@@ -110,7 +110,7 @@ namespace {
         } else {
             HLBFGS(
             N, M, init_x,
-            evalfunc_C, 0,
+            evalfunc_C, nullptr,
             HLBFGS_UPDATE_Hessian, newiteration_C, parameter, info
         );
         }

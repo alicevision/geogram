@@ -1,67 +1,13 @@
 #pragma once
 
-// [Bruno Levy] For the older compilers that does not have
-// regex support, uncomment to deactivate syntax highlighting
-// #define GEO_OLD_COMPILER
-
 #include <string>
 #include <vector>
+#include <array>
 #include <memory>
-#include <map>
-
-#ifndef GEO_OLD_COMPILER
-#include <regex>
 #include <unordered_set>
 #include <unordered_map>
-#include <array>
-#else
-#include <set>
-namespace std {
-
-    /**
-     * \brief Minimal drop-in replacement for class std::array.
-     */
-    template <class T, unsigned int SIZE> class array {
-      public:
-	typedef array<T,SIZE> thisclass;
-
-	array() {
-	}
-
-	array(const thisclass& rhs) {
-	    for(unsigned int i=0; i<SIZE; ++i) {
-		data_[i] = rhs.data_[i];
-	    }
-	}
-
-	thisclass& operator=(const thisclass& rhs) {
-	    for(unsigned int i=0; i<SIZE; ++i) {
-		data_[i] = rhs.data_[i];
-	    }
-	    return *this;
-	}
-	
-	T& operator[](unsigned int idx) {
-	    return data_[idx];
-	}
-	const T& operator[](unsigned int idx) const {
-	    return data_[idx];		
-	}
-
-      private:
-	T data_[SIZE];
-    };
-
-    /**
-     * \brief Drop-in replacement for std::move(), that does
-     *  nothing here.
-     */
-    template <class T> inline const T& move(const T& x) {
-	return x;
-    }
-    
-}
-#endif
+#include <map>
+#include <regex>
 
 // [Bruno Levy] include path redirected to geogram.
 #include <geogram_gfx/api/defs.h>
@@ -83,7 +29,7 @@ typedef void (*TextEditorCallback)(
 class GEOGRAM_GFX_API TextEditor
 {
 public:
-	enum class PaletteIndex : uint8_t
+	enum class PaletteIndex
 	{
 		Default,
 		Keyword,
@@ -107,6 +53,13 @@ public:
 		CurrentLineFillInactive,
 		CurrentLineEdge,
 		Max
+	};
+
+	enum class SelectionMode
+	{
+		Normal,
+		Word,
+		Line
 	};
 
 	struct Breakpoint
@@ -182,28 +135,18 @@ public:
 	};
 
 	typedef std::string String;
-
-	// [Bruno Levy] for old compilers that do not have std::unordered_set
-	// and map.
-#ifdef GEO_OLD_COMPILER
-	typedef std::map<std::string, Identifier> Identifiers;
-	typedef std::set<std::string> Keywords;
-	typedef std::set<int> Breakpoints;
-#else	
 	typedef std::unordered_map<std::string, Identifier> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
-	typedef std::unordered_set<int> Breakpoints;
-#endif
-	
 	typedef std::map<int, std::string> ErrorMarkers;
+	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
 	
 	struct Glyph
 	{
 		Char mChar;
-	        PaletteIndex mColorIndex : 8; // [Bruno Levy]: 7 is too small to hold all values
-	        bool mMultiLineComment : 1;
+	        PaletteIndex mColorIndex; // [Bruno Levy]: 7 is too small to hold all values
+	        bool mMultiLineComment;
 
 		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
 	};
@@ -272,6 +215,7 @@ public:
 
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
+	bool IsTextChanged() const { return mTextChanged; }
 
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 
@@ -294,8 +238,9 @@ public:
 
 	void SetSelectionStart(const Coordinates& aPosition);
 	void SetSelectionEnd(const Coordinates& aPosition);
-	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, bool awordmode = false);
+	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal);
 	void SelectWordUnderCursor();
+	void SelectAll();
 	bool HasSelection() const;
 
 	void Copy();
@@ -310,6 +255,7 @@ public:
 
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
+	static const Palette& GetRetroBluePalette();
 
 	// [Bruno Levy] gets the text source element under the pointer
 	// when a tooltip should be displayed.
@@ -318,12 +264,8 @@ public:
 	}
 	
 private:
-
-// [Bruno Levy] Made syntax hightlighting optional	
-#ifndef GEO_OLD_COMPILER   
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
-#endif
-	
+
 	struct EditorState
 	{
 		Coordinates mSelectionStart;
@@ -413,16 +355,14 @@ private:
 	bool mReadOnly;
 	bool mWithinRender;
 	bool mScrollToCursor;
-	bool mWordSelectionMode;
+	bool mTextChanged;
 	int mColorRangeMin, mColorRangeMax;
+	SelectionMode mSelectionMode;
 
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
-
-// [Bruno Levy] Made syntax hightlighting optional		
-#ifndef GEO_OLD_COMPILER
 	RegexList mRegexList;
-#endif
+
 	bool mCheckMultilineComments;
 	Breakpoints mBreakpoints;
 	ErrorMarkers mErrorMarkers;

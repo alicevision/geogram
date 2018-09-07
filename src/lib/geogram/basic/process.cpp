@@ -552,15 +552,7 @@ namespace GEO {
             }
             fpe_initialized_ = true;
             fpe_enabled_ = flag;
-
-            if(os_enable_FPE(flag)) {
-                Logger::out("Process")
-                    << (flag ? "FPE enabled" : "FPE disabled")
-                    << std::endl;
-            } else {
-                Logger::warn("Process")
-                    << "FPE control not implemented" << std::endl;
-            }
+	    os_enable_FPE(flag);
         }
 
         bool cancel_enabled() {

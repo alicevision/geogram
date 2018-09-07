@@ -31,25 +31,24 @@ DAMAGE.
 
 #include <string.h>
 
-#ifndef __aarch64__
+#if !defined(__ANDROID__)
 #include <sys/timeb.h>
 #endif
 
 #ifndef WIN32
 #include <sys/time.h>
-#endif // WIN32
+#endif 
 
-inline double Time( void )
-{
+inline double Time(void) {
 #ifdef WIN32
 	struct _timeb t;
 	_ftime( &t );
 	return double( t.time ) + double( t.millitm ) / 1000.0;
-#else // WIN32
+#else 
 	struct timeval t;
 	gettimeofday( &t , NULL );
 	return t.tv_sec + double( t.tv_usec ) / 1000000;
-#endif // WIN32
+#endif
 }
 
-#endif // MY_TIME_INCLUDED
+#endif

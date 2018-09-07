@@ -571,6 +571,13 @@ namespace GEO {
             }
             return value;
         }
+
+	/**
+	 * \brief Converts a wide char string into an UTF8 string.
+	 * \param[in] in the input null-terminated wide-char string.
+	 * \return the UTF8-encoded string in a std::string.
+	 */
+	std::string GEOGRAM_API wchar_to_UTF8(const wchar_t* in);
     }
 }
 

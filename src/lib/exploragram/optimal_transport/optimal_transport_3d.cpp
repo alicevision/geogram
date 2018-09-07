@@ -159,11 +159,11 @@ namespace {
 	/**
 	 * \copydoc RVDPolyhedronCallback::operator()
 	 */
-	virtual void operator() (
+	void operator() (
 	    index_t v,
 	    index_t t,
 	    const GEOGen::ConvexCell& C
-	) const {
+	) const override {
 	    // v can be an air particle.
 	    if(v >= n_) {
 		return;

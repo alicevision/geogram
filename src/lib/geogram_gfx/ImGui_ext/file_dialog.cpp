@@ -106,7 +106,7 @@ namespace GEO {
         save_mode_(save_mode),
         are_you_sure_(false)
     {
-#ifdef GEO_OS_WINDOWS
+#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
 	directory_ = FileSystem::documents_directory() + "/";
 #else	
         directory_ = FileSystem::get_current_working_directory() + "/";
@@ -127,7 +127,11 @@ namespace GEO {
         save_mode_(false),
         are_you_sure_(false)
     {
+#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
+	directory_ = FileSystem::documents_directory() + "/";
+#else	
         directory_ = FileSystem::get_current_working_directory() + "/";
+#endif	
 	current_file_index_ = 0;
 	current_directory_index_ = 0;
 	current_write_extension_index_ = 0;
@@ -385,11 +389,11 @@ namespace GEO {
             }
         }
 
-        const float footer_size = 30.0f;
+        const float footer_size = 35.0f*ImGui::scaling();
         {
             ImGui::BeginChild(
                 "##directories",
-                ImVec2(ImGui::GetWindowWidth() * 0.5f - 12.0f, -footer_size),
+                ImVec2(ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(), -footer_size),
                 true
             );
             for(index_t i=0; i<directories_.size(); ++i) {
@@ -408,7 +412,7 @@ namespace GEO {
         {
             ImGui::BeginChild(
                 "##files",
-                ImVec2(ImGui::GetWindowWidth() * 0.5f - 12.0f, -footer_size),
+                ImVec2(ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(), -footer_size),
                 true
             );
             for(index_t i=0; i<files_.size(); ++i) {
@@ -439,7 +443,7 @@ namespace GEO {
                 }
                 ImGui::SameLine();
                 ImGui::PushItemWidth(
-                    save_mode_ ? -80.0f*ImGui::scaling() : -1.0f
+                    save_mode_ ? -80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
                 );
                 if(ImGui::InputText(
                        "##filename",
@@ -469,7 +473,7 @@ namespace GEO {
 
                 if(save_mode_) {
                     ImGui::SameLine();
-                    ImGui::PushItemWidth(-1.0);
+                    ImGui::PushItemWidth(-5.0f*ImGui::scaling());
 
                     if(
 		       application_ != nullptr &&
@@ -554,7 +558,7 @@ namespace GEO {
 	}
 	std::string ext = FileSystem::extension(filename);
 	for(size_t i=0; i<extensions_.size(); ++i) {
-	    if(extensions_[i] == ext) {
+	    if(extensions_[i] == ext || extensions_[i] == "*") {
 		return true;
 	    }
 	}

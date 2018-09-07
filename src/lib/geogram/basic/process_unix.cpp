@@ -147,7 +147,7 @@ namespace {
             // under Android, so I'm using assembly functions
             // from atomics (I'm sure they got the right memory
             // barriers for SMP).
-#ifdef GEO_OS_ANDROID
+#if defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
             mutex_ = 0;
 #else
             pthread_mutex_init(&mutex_, nullptr);
@@ -157,23 +157,27 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::maximum_concurrent_threads() */
-        virtual index_t maximum_concurrent_threads() {
+        index_t maximum_concurrent_threads() override {
             return Process::number_of_cores();
         }
 
         /** \copydoc GEO::ThreadManager::enter_critical_section() */
-        virtual void enter_critical_section() {
-#ifdef GEO_OS_ANDROID
-            lock_mutex_arm(&mutex_);
+	void enter_critical_section() override {
+#if defined(GEO_OS_ANDROID)
+            lock_mutex_android(&mutex_);
+#elif defined(GEO_OS_ANDROID)
+            lock_mutex_arm32(&mutex_);
 #else
             pthread_mutex_lock(&mutex_);
 #endif
         }
 
         /** \copydoc GEO::ThreadManager::leave_critical_section() */
-        virtual void leave_critical_section() {
-#ifdef GEO_OS_ANDROID
-            unlock_mutex_arm(&mutex_);
+	void leave_critical_section() override {
+#if defined(GEO_OS_RASPBERRY)
+            unlock_mutex_arm32(&mutex_);	    
+#elif defined(GEO_OS_ANDROID)
+            unlock_mutex_android(&mutex_);
 #else
             pthread_mutex_unlock(&mutex_);
 #endif
@@ -181,7 +185,7 @@ namespace {
 
     protected:
         /** \brief PThreadManager destructor */
-        virtual ~PThreadManager() {
+	~PThreadManager() override {
             pthread_attr_destroy(&attr_);
 #ifndef GEO_OS_ANDROID
             pthread_mutex_destroy(&mutex_);
@@ -206,9 +210,9 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-        virtual void run_concurrent_threads(
+	void run_concurrent_threads (
             ThreadGroup& threads, index_t max_threads
-        ) {
+        ) override {
             // TODO: take max_threads into account
             geo_argused(max_threads);
 
@@ -227,8 +231,10 @@ namespace {
         }
 
     private:
-#ifdef GEO_OS_ANDROID
-        arm_mutex_t mutex_;
+#if defined(GEO_OS_RASPBERRY)
+        arm32_mutex_t mutex_;	
+#elif defined(GEO_OS_ANDROID)
+        android_mutex_t mutex_;
 #else
         pthread_mutex_t mutex_;
 #endif

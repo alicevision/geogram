@@ -147,10 +147,10 @@ namespace GEO {
             dimension_(dimension) {
         }
 
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 	    bool ignore_tex_coords = false; 
 	        //!ioflags.has_attribute(MESH_VERTEX_TEX_COORD);
 	    
@@ -399,10 +399,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_assert(M.vertices.dimension() >= dimension_);
             std::ofstream out(filename.c_str());
             if(!out) {
@@ -492,12 +492,12 @@ namespace GEO {
         }
 
     protected:
-        virtual ~OBJIOHandler() {
+	~OBJIOHandler() override {
         }
 
-        virtual void bind_attributes(
+        void bind_attributes(
             const Mesh& M, const MeshIOFlags& flags, bool create
-	) {
+	) override {
 	    MeshIOHandler::bind_attributes(M, flags, create);
 	    
 	    tex_coord_.bind_if_is_defined(
@@ -519,7 +519,7 @@ namespace GEO {
 	    
 	}
 
-	virtual void unbind_attributes() {
+	void unbind_attributes() override {
 	    if(tex_coord_.is_bound()) {
 		tex_coord_.unbind();
 	    }
@@ -579,10 +579,10 @@ namespace GEO {
             keyword2nbv_[GmfEdges] = 2;            
         }
         
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 
             int ver, dim;
             int64_t mesh_file_handle = GmfOpenMesh(
@@ -871,10 +871,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             bool use_doubles = CmdLine::get_arg_bool("sys:use_doubles");
             int64_t mesh_file_handle = GmfOpenMesh(
                 const_cast<char*>(filename.c_str()), GmfWrite,
@@ -1777,18 +1777,18 @@ namespace GEO {
         };
 
 
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             PlyLoader loader(filename, M, ioflags);
             return loader.load();
         }
         
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             p_ply oply = ply_create(
                 filename.c_str(), PLY_LITTLE_ENDIAN, nullptr, 0, nullptr
             );
@@ -1904,10 +1904,10 @@ namespace GEO {
          *  and elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
             
             // Note: Vertices indexes start by 0 in off format.
@@ -2060,10 +2060,10 @@ namespace GEO {
          *  should be saved
          * \return true on success, false otherwise
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             std::ofstream output(filename.c_str());
             if(!output) {
                 return false;
@@ -2286,10 +2286,10 @@ namespace GEO {
          *   elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             FILE* F = fopen(filename.c_str(), "rb");
             if(F == nullptr) {
                 return false;
@@ -2340,10 +2340,10 @@ namespace GEO {
          *   and elements should be saved
          * \return true on success, false otherwise
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 
             bind_attributes(M, ioflags, false);
 
@@ -2408,24 +2408,28 @@ namespace GEO {
          *   elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
+	    index_t nb_vertices = get_nb_vertices(filename);
+	    if(nb_vertices == index_t(-1)) {
+		return false;
+	    }
+
+	    M.vertices.create_vertices(nb_vertices);
+
             LineInput in(filename);
             if(!in.OK()) {
                 return false;
             }
-            
             Attribute<double> normal;
-            
             index_t cur_v = 0;
             while(!in.eof() && in.get_line()) {
                 in.get_fields();
                 switch(in.nb_fields()) {
                     case 1:
-                        M.vertices.create_vertices(in.field_as_uint(0));
                         break;
                     case 2:
                     case 3:
@@ -2470,10 +2474,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
 
             if(M.vertices.dimension() < 3) {
@@ -2531,6 +2535,48 @@ namespace GEO {
             
             return true;
         }
+
+      protected:
+	
+	/**
+	 * \brief Gets the number of vertices in the file.
+	 * \details Some xyz files do not have the number of
+	 *  points specified in them. For these files, this
+	 *  function reads the entire file once and counts the
+	 *  points. It is better to do so, because it makes it
+	 *  possible to allocate the points once we known the 
+	 *  required size, instead of growing.
+	 * \param[in] filename the name of the file.
+	 * \return the number of vertices in the file, or
+	 *  index_t(-1) if the file could not be opened.
+	 */
+	index_t get_nb_vertices(const std::string& filename) {
+	    index_t result = 0;
+	    LineInput in(filename);
+            if(!in.OK()) {
+                return index_t(-1);
+            }
+            while(!in.eof() && in.get_line()) {
+                in.get_fields();
+                switch(in.nb_fields()) {
+                    case 1:
+                        return in.field_as_uint(0);
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 6:
+			++result;
+                    break;
+                    default:
+                        Logger::err("I/O")
+                            << "Line " << in.line_number()
+                            << ": wrong number of fields"
+                            << std::endl;
+                        return index_t(-1);
+                }
+            }
+            return result;
+        }
     };
     
 
@@ -2549,10 +2595,10 @@ namespace GEO {
          *   elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
 
             LineInput in(filename);
@@ -2579,10 +2625,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
 
             std::ofstream out(filename.c_str());
@@ -2638,10 +2684,10 @@ namespace GEO {
          *  should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             LineInput in(filename);
             if(!in.OK()) {
                 return false;
@@ -2850,10 +2896,10 @@ namespace GEO {
          * should be saved
          * \return true on success, false otherwise
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename, 
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
             
             if(M.vertices.dimension() < dimension_) {
@@ -2975,7 +3021,7 @@ namespace GEO {
          *  elements should be loaded
          * \return true on success, false otherwise.
          */
-        bool load(
+        virtual bool load(
             InputGeoFile& in,
             Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
@@ -3049,7 +3095,7 @@ namespace GEO {
          *  should be saved
          * \return true on success, false otherwise.
          */
-        virtual bool save(
+	virtual bool save(
             const Mesh& M, OutputGeoFile& out,
             const MeshIOFlags& ioflags = MeshIOFlags(),
             bool save_command_line = false
@@ -3227,10 +3273,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::load()
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             bool result = true;
             try {
                 InputGeoFile in(filename);
@@ -3248,10 +3294,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::save()
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             bool result = true;
             try {
                 OutputGeoFile out(
@@ -3567,10 +3613,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::save()
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             geo_argused(M);
             geo_argused(filename);
             geo_argused(ioflags);
@@ -3588,10 +3634,10 @@ namespace GEO {
      */ 
     class PDBIOHandler : public MeshIOHandler {
     public:
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 	    geo_argused(ioflags);
 	    M.clear();
 	    M.vertices.set_dimension(3);
@@ -3644,10 +3690,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::save()
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             geo_argused(M);
             geo_argused(filename);
             geo_argused(ioflags);
@@ -3683,10 +3729,10 @@ namespace GEO {
 	/**
 	 * \copydoc MeshIOHandler::load()
 	 */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 	    geo_argused(ioflags);
 	    M.clear();
 	    M.vertices.set_dimension(3);
@@ -3935,10 +3981,10 @@ namespace GEO {
 	/**
 	 * \copydoc MeshIOHandler::save()
 	 */
-	virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-	) {
+	) override {
 	    geo_argused(ioflags);
 	    
 	    Attribute<int> vertex_id;
@@ -4406,10 +4452,10 @@ namespace GEO {
 	    return true;
 	}
 
-	virtual bool load(
+	bool load(
 	    const std::string& filename, Mesh& M,
 	    const MeshIOFlags& ioflags
-	) {
+	) override {
 	    geo_argused(ioflags);
 	    M.clear();
 	    M.vertices.set_dimension(3);
@@ -4442,10 +4488,10 @@ namespace GEO {
 	    return true;
 	}
 
-	virtual bool save(
+	bool save(
 	    const Mesh& M_in, const std::string& filename, 
 	    const MeshIOFlags& ioflags
-	    ) {
+	) override {
 
 	    Mesh M(M_in.vertices.dimension());
 	    M.copy(M_in, true);

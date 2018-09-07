@@ -61,9 +61,9 @@ namespace {
     class RootEnvironment : public Environment {
     protected:
         /** \copydoc GEO::Environment::get_local_value() */
-        virtual bool get_local_value(
+        bool get_local_value(
             const std::string& name, std::string& value
-        ) const {
+        ) const override {
             auto it = values_.find(name);
             if(it != values_.end()) {
                 value = it->second;
@@ -73,15 +73,15 @@ namespace {
         }
 
         /** \copydoc GEO::Environment::set_local_value() */
-        virtual bool set_local_value(
+        bool set_local_value(
             const std::string& name, const std::string& value
-        ) {
+        ) override {
             values_[name] = value;
             return true;
         }
 
         /** \brief ProcessEnvironment destructor */
-        virtual ~RootEnvironment() {
+        ~RootEnvironment() override {
         }
 
     private:

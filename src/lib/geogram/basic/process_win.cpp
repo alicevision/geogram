@@ -103,32 +103,32 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::maximum_concurrent_threads() */
-        virtual index_t maximum_concurrent_threads() {
+	index_t maximum_concurrent_threads() override {
             SYSTEM_INFO sysinfo;
             GetSystemInfo(&sysinfo);
             return sysinfo.dwNumberOfProcessors;
         }
 
         /** \copydoc GEO::ThreadManager::enter_critical_section() */
-        virtual void enter_critical_section() {
+	void enter_critical_section() override {
             EnterCriticalSection(&lock_);
         }
 
         /** \copydoc GEO::ThreadManager::leave_critical_section() */
-        virtual void leave_critical_section() {
+	void leave_critical_section() override {
             LeaveCriticalSection(&lock_);
         }
 
     protected:
         /** \brief WindowsThreadManager destructor */
-        virtual ~WindowsThreadManager() {
+	~WindowsThreadManager() override {
             DeleteCriticalSection(&lock_);
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-        virtual void run_concurrent_threads(
+	void run_concurrent_threads(
             ThreadGroup& threads, index_t max_threads
-        ) {
+        ) override {
             // TODO: take max_threads into account
             geo_argused(max_threads);
 
@@ -202,7 +202,7 @@ namespace {
 
     protected:
         /** \brief WindowsThreadPoolManager destructor */
-        virtual ~WindowsThreadPoolManager() {
+	~WindowsThreadPoolManager() override {
 // It makes it crash on exit when calling these functions
 // with dynamic libs, I do not know why...            
 // TODO: investigate...
@@ -213,9 +213,9 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-        virtual void run_concurrent_threads(
+	void run_concurrent_threads(
             ThreadGroup& threads, index_t max_threads
-        ) {
+        ) override {
             // TODO: take max_threads into account
             geo_argused(max_threads);
 

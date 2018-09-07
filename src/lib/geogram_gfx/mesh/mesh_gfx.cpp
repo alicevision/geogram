@@ -1138,9 +1138,9 @@ namespace GEO {
             );
         } else {
 #ifdef GEO_GL_NO_DOUBLES
-            Logger::warn("MeshGfx")
-                << "Double precision GL attributes not supported by this arch."
-                << std::endl;
+            // Logger::warn("MeshGfx")
+            //     << "Double precision GL attributes not supported by this arch."
+            //     << std::endl;
 #else            
             GLsizei stride = GLsizei(
                 mesh_->vertices.dimension() * sizeof(double)

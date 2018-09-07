@@ -186,7 +186,7 @@ namespace {
             nb_triangles_ = 0;
         }
 
-        virtual void set_delaunay(Delaunay* delaunay) {
+	void set_delaunay(Delaunay* delaunay) override {
             baseclass::set_delaunay(delaunay);
             RVD_.set_delaunay(delaunay);
             for(index_t p = 0; p < nb_parts_; ++p) {
@@ -194,21 +194,21 @@ namespace {
             }
         }
 
-        virtual void set_check_SR(bool x) {
+	void set_check_SR(bool x) override {
             RVD_.set_check_SR(x);
             for(index_t p = 0; p < nb_parts_; ++p) {
                 parts_[p].set_check_SR(x);
             }
         }
 
-        virtual void set_exact_predicates(bool x) {
+	void set_exact_predicates(bool x) override {
             RVD_.set_exact_predicates(x);
             for(index_t p = 0; p < nb_parts_; ++p) {
                 parts_[p].set_exact_predicates(x);
             }
         }
 
-        virtual bool exact_predicates() const {
+	bool exact_predicates() const override {
             return RVD_.exact_predicates();
         }
 
@@ -374,7 +374,7 @@ namespace {
             LOCKS& locks_;
         };
 
-        virtual void compute_centroids_on_surface(double* mg, double* m) {
+	void compute_centroids_on_surface(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
                 if(master_ != nullptr) {
@@ -503,7 +503,7 @@ namespace {
             LOCKS& locks_;
         };
 
-        virtual void compute_centroids_in_volume(double* mg, double* m) {
+	void compute_centroids_in_volume(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
                 if(master_ != nullptr) {
@@ -729,7 +729,7 @@ namespace {
             const GenRestrictedVoronoiDiagram& RVD_;
         };
 
-        virtual void compute_CVT_func_grad_on_surface(double& f, double* g) {
+	void compute_CVT_func_grad_on_surface(double& f, double* g) override {
             create_threads();
             if(nb_parts() == 0) {
                 if(master_ != nullptr) {
@@ -881,7 +881,7 @@ namespace {
             const GenRestrictedVoronoiDiagram& RVD_;
         };
 
-        virtual void compute_CVT_func_grad_in_volume(double& f, double* g) {
+	void compute_CVT_func_grad_in_volume(double& f, double* g) override {
             create_threads();
             if(nb_parts() == 0) {
                 if(master_ != nullptr) {
@@ -1002,9 +1002,9 @@ namespace {
             IntegrationSimplex* simplex_func_;
         };
 
-        virtual void compute_integration_simplex_func_grad(
+	void compute_integration_simplex_func_grad(
             double& f, double* g, IntegrationSimplex* F
-        ) {
+        ) override {
             create_threads();
             if(nb_parts() == 0) {
                 if(master_ == nullptr) {
@@ -1447,10 +1447,10 @@ namespace {
             bool cell_borders_only_;
         };
 
-        virtual void compute_RVD(
+	void compute_RVD(
             Mesh& M, coord_index_t dim, bool cell_borders_only,
             bool integration_simplices
-        ) {
+        ) override {
             bool sym = RVD_.symbolic();
             RVD_.set_symbolic(true);
             if(volumetric_) {
@@ -1562,7 +1562,7 @@ namespace {
             Mesh& M,
             Mesh& result,
             bool copy_symbolic_info
-        ) {
+        ) override {
             Mesh* tmp_mesh = mesh_;
             mesh_ = &M;
             RVD_.set_mesh(&M);
@@ -1576,12 +1576,12 @@ namespace {
 
         /********************************************************************/
 
-	virtual void for_each_polygon(
+	void for_each_polygon(
 	    GEO::RVDPolygonCallback& callback,
 	    bool symbolic,
 	    bool connected_comp_priority,
 	    bool parallel
-	) {
+	) override {
 	    bool sym_backup = RVD_.symbolic();
 	    RVD_.set_symbolic(symbolic);
 	    RVD_.set_connected_components_priority(connected_comp_priority);
@@ -1599,12 +1599,12 @@ namespace {
 	
         /********************************************************************/
 	
-	virtual void for_each_polyhedron(
+	void for_each_polyhedron(
 	    GEO::RVDPolyhedronCallback& callback,
 	    bool symbolic,
 	    bool connected_comp_priority,
 	    bool parallel
-	) {
+	) override {
 	    bool sym_backup = RVD_.symbolic();
 	    RVD_.set_symbolic(symbolic);
 	    RVD_.set_connected_components_priority(connected_comp_priority);
@@ -1663,9 +1663,9 @@ namespace {
             }
         }
 
-        virtual bool compute_initial_sampling_on_surface(
+	bool compute_initial_sampling_on_surface(
             double* p, index_t nb_points
-        ) {
+        ) override {
             geo_assert(mesh_->facets.are_simplices());
 
             // We do that here, since this triggers partitioning,
@@ -1684,9 +1684,9 @@ namespace {
             );
         }
 
-        virtual bool compute_initial_sampling_in_volume(
+	bool compute_initial_sampling_in_volume(
             double* p, index_t nb_points
-        ) {
+        ) override {
             geo_assert(mesh_->cells.nb() != 0);
 
             // We do that here, since this triggers partitioning,
@@ -1777,9 +1777,9 @@ namespace {
             mesh_vertices_->set_vertices(nb_vertices, mesh_vertices.data());
         }
 
-        virtual void project_points_on_surface(
+	void project_points_on_surface(
             index_t nb_points, double* points, vec3* nearest, bool do_project
-        ) {
+        ) override {
 
             prepare_projection();
 
@@ -2305,13 +2305,13 @@ namespace {
             vector<index_t>& tetrahedra_;
         };
 
-        virtual void compute_RDT(
+	void compute_RDT(
             vector<index_t>& simplices,
             vector<double>& embedding,
             RDTMode mode,
             const vector<bool>& seed_is_locked,
             MeshFacetsAABB* AABB
-        ) {
+        ) override {
             if(volumetric_) {
                 // For the moment, only simple mode is supported
                 simplices.clear();
@@ -2377,7 +2377,7 @@ namespace {
             }
         }
 
-        virtual void create_threads() {
+	void create_threads() override {
             // TODO: check if number of facets is not smaller than
             // number of threads
             // TODO: create parts even if facets range is specified
@@ -2426,30 +2426,30 @@ namespace {
             }
         }
 
-        virtual void set_volumetric(bool x) {
+	void set_volumetric(bool x) override {
             volumetric_ = x;
             for(index_t i = 0; i < nb_parts(); ++i) {
                 part(i).set_volumetric(x);
             }
         }
 
-        virtual void set_facets_range(
+        void set_facets_range(
             index_t facets_begin, index_t facets_end
-        ) {
+        ) override {
             RVD_.set_facets_range(facets_begin, facets_end);
             facets_begin_ = signed_index_t(facets_begin);
             facets_end_ = signed_index_t(facets_end);
         }
 
-        virtual void set_tetrahedra_range(
+	void set_tetrahedra_range(
             index_t tets_begin, index_t tets_end
-        ) {
+        ) override {
             RVD_.set_tetrahedra_range(tets_begin, tets_end);
             tets_begin_ = signed_index_t(tets_begin);
             tets_end_ = signed_index_t(tets_end);
         }
 
-        virtual void delete_threads() {
+	void delete_threads() override {
             delete[] parts_;
             parts_ = nullptr;
             nb_parts_ = 0;
@@ -2475,7 +2475,7 @@ namespace {
 	/**
 	 * \copydoc RestrictedVoronoiDiagram::point_allocator()
 	 */
-	virtual GEOGen::PointAllocator* point_allocator() {
+	GEOGen::PointAllocator* point_allocator() override {
 	    return RVD_.point_allocator();
 	}
 	
@@ -2523,7 +2523,7 @@ namespace {
         /**
          * \brief Destructor
          */
-        virtual ~RVD_Nd_Impl() {
+	~RVD_Nd_Impl() override {
             delete_threads();
         }
 

@@ -163,7 +163,7 @@ namespace GLUP {
 
     void Context_ES2::prepare_to_draw(GLUPprimitive primitive) {
         Context::prepare_to_draw(primitive);
-#ifdef GEO_GL_150
+#if defined(GEO_GL_150) && defined(GL_POINT_SPRITE)
         if(
             (!use_core_profile_ || use_ES_profile_) &&
             primitive == GLUP_POINTS
@@ -181,8 +181,16 @@ namespace GLUP {
         // Note: points, spheres, lines and triangles without mesh can
 	// support array mode, but this will not work with picking,
 	// therefore it is disabled.
+#ifdef GEO_OS_ANDROID
+	return
+	    (prim == GLUP_POINTS ||
+	     prim == GLUP_SPHERES ||
+	     prim == GLUP_LINES ||
+	     prim == GLUP_TRIANGLES);
+#else	
         geo_argused(prim);
-        return false;
+	return false;
+#endif	
     }
 
     /**
@@ -361,13 +369,17 @@ namespace GLUP {
         clip_cells_elements_VBO_(0),
         clip_cells_VAO_(0),
         sliced_cells_elements_VBO_(0),
-        sliced_cells_VAO_(0) {
+        sliced_cells_VAO_(0),
+        vertex_id_VBO_bound_(false) {
         for(index_t i=0; i<4; ++i) {
             sliced_cells_vertex_attrib_VBO_[i] = 0;
         }
-#if defined(GEO_OS_EMSCRIPTEN)
+	GLSL_version_ = GLSL::supported_language_version();
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_ANDROID)
         use_ES_profile_ = true;
-#endif
+	Logger::out("GLUP") << "ES2 context, supported GLSL version = " << GLSL_version_
+			    << std::endl;
+#endif	
     }
     
     Context_ES2::~Context_ES2() {
@@ -939,28 +951,32 @@ namespace GLUP {
             }
         }
 
-
-        // TODO: do that once only..
         if(
             vertex_id_VBO_ != 0 && ((
                 immediate_state_.primitive() >= GLUP_TRIANGLES &&
                 uniform_state_.toggle[GLUP_DRAW_MESH].get()
             ) || uniform_state_.toggle[GLUP_PICKING].get())
         ) {
-            glEnableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
-            glBindBuffer(
-                GL_ARRAY_BUFFER, vertex_id_VBO_
-            );
-            glVertexAttribPointer(
-                GLUP_VERTEX_ID_ATTRIBUTE,
-                1,                 // 1 component per attribute
-                GL_UNSIGNED_SHORT, // components are 16 bits integers
-                GL_FALSE,          // do not normalize
-                0,                 // stride
-                nullptr            // pointer (relative to bound VBO beginning)
-            );
+	    if(!vertex_id_VBO_bound_) {
+		glEnableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
+		glBindBuffer(
+		    GL_ARRAY_BUFFER, vertex_id_VBO_
+		);
+		glVertexAttribPointer(
+		    GLUP_VERTEX_ID_ATTRIBUTE,
+		    1,                 // 1 component per attribute
+		    GL_UNSIGNED_SHORT, // components are 16 bits integers
+		    GL_FALSE,          // do not normalize
+		    0,                 // stride
+		    nullptr            // pointer (relative to bound VBO beginning)
+		);
+		vertex_id_VBO_bound_ = true;
+	    }
         } else {
-            glDisableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
+	    if(vertex_id_VBO_bound_) {
+		vertex_id_VBO_bound_ = false;
+		glDisableVertexAttribArray(GLUP_VERTEX_ID_ATTRIBUTE);
+	    }
         }
         
         // Stream the indices into the elements VBO.
@@ -1171,10 +1187,17 @@ namespace GLUP {
         std::vector<GLSL::Source>& sources
     ) {
         if(use_ES_profile_) {
-            sources.push_back(
-                "#version 100               \n"
-                "#define GLUP_VERTEX_SHADER \n"
-            );
+	    if(GLSL_version_ >= 3.0) {
+		sources.push_back(
+		    "#version 300 es\n"
+		    "#define GLUP_VERTEX_SHADER \n"
+		);
+	    } else {
+		sources.push_back(
+		    "#version 100\n"
+		    "#define GLUP_VERTEX_SHADER \n"
+		);
+	    }
         } else {
             sources.push_back(
 #ifdef GEO_OS_APPLE		
@@ -1192,8 +1215,14 @@ namespace GLUP {
         std::vector<GLSL::Source>& sources
     ) {
         if(use_ES_profile_) {
-            sources.push_back(
-                "#version 100                                    \n"
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_ANDROID)
+	    if(GLSL_version_ >= 3.0) {
+		sources.push_back("#version 300 es\n");
+	    } else {
+		sources.push_back("#version 100\n");		
+	    }
+#endif	    
+	    sources.push_back(
                 "#define GLUP_FRAGMENT_SHADER                    \n"
                 "#extension GL_OES_standard_derivatives : enable \n"
                 "#extension GL_EXT_frag_depth : enable           \n"
@@ -1201,7 +1230,7 @@ namespace GLUP {
 		"#ifndef GL_OES_texture3D                        \n"
 		"   #define GLUP_NO_TEXTURE_3D                   \n"		
 		"#endif                                          \n"
-                "precision mediump float;                        \n"
+                "precision highp float;                          \n"
                 "#ifdef GL_FRAGMENT_PRECISION_HIGH               \n"
                 "   precision highp int;                         \n"
                 "#endif                                          \n"

@@ -53,44 +53,40 @@
 #include <geogram_gfx/basic/common.h>
 #include <geogram_gfx/api/defs.h>
 
-#ifdef GEO_OS_EMSCRIPTEN
-#define GEO_GL_ES2
-#define GEO_GL_NO_DOUBLES
+
+#if defined(GEO_OS_EMSCRIPTEN)
+#  define GLFW_INCLUDE_ES2 
+#  include <GLFW/glfw3.h>
+#  define GL_GLEXT_PROTOTYPES
+#  include <GLES2/gl2ext.h>
+#  define GL_INVALID_INDEX GLuint(-1)
+   typedef double GLdouble;
+#  define glGenVertexArrays glGenVertexArraysOES
+#  define glBindVertexArray glBindVertexArrayOES
+#  define glDeleteVertexArrays glDeleteVertexArraysOES
+#  define GEO_GL_ES2
+#  define GEO_GL_NO_DOUBLES
+#elif defined(GEO_OS_ANDROID)
+#  include <GLES3/gl3.h>
+#  include <GLES3/gl31.h>
+#  include <GLES3/gl32.h>
+#  define GEO_GL_TEXTURE_3D
+#  define GEO_GL_ES2
+#  define GEO_GL_150
+#  define GEO_GL_NO_DOUBLES
+//#  define GL_POINT_SPRITE 0x8861
+//#  define GL_PROGRAM_POINT_SIZE 0x8642
+//#  define GL_CLIP_DISTANCE0 0x3000
 #else
-#define GEO_GL_TEXTURE_3D
-#ifdef GEO_OS_APPLE
-#define GEO_GL_LEGACY
-#define GEO_GL_150
-#define GEO_GL_440
-#define GEO_GL_ES2
-#else
-#define GEO_GL_LEGACY
-#define GEO_GL_150
-#define GEO_GL_440
-#define GEO_GL_ES2
-#endif
-#endif
-
-#ifdef GEO_OS_EMSCRIPTEN
-#define GLFW_INCLUDE_ES2 
-#include <GLFW/glfw3.h>
-#define GL_GLEXT_PROTOTYPES
-#include <GLES2/gl2ext.h>
-//typedef GLint GLint64; // Was missing in Emscripten 1.36.0. OK in 1.37.19.
-#define GL_INVALID_INDEX GLuint(-1)
-typedef double GLdouble;
-#define glGenVertexArrays glGenVertexArraysOES
-#define glBindVertexArray glBindVertexArrayOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
-
-#else
-
-#include <geogram_gfx/third_party/glad/glad.h>
-
+#  include <geogram_gfx/third_party/glad/glad.h>
+#  define GEO_GL_TEXTURE_3D
+#  define GEO_GL_LEGACY
+#  define GEO_GL_150
+#  define GEO_GL_440
+#  define GEO_GL_ES2
 #endif
 
 #include <geogram_gfx/GLUP/GLUP.h>
-
 #include <geogram/basic/geometry.h>
 
 /**

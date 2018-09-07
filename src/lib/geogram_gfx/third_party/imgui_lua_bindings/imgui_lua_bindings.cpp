@@ -205,7 +205,7 @@ static int impl_##name(lua_State *L) { \
 
 #define END_INT_POINTER(name) \
   if (name != NULL) { \
-    lua_pushnumber(L, i_##name##_value); \
+    lua_pushinteger(L, i_##name##_value); \
     stackval++; \
   }
 
@@ -215,7 +215,7 @@ static int impl_##name(lua_State *L) { \
 
 #define END_UINT_POINTER(name) \
   if (name != NULL) { \
-    lua_pushnumber(L, i_##name##_value); \
+    lua_pushinteger(L, i_##name##_value); \
     stackval++; \
   }
 

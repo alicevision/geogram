@@ -78,6 +78,7 @@ namespace {
             points_(points),
             stride_(stride),
             splitting_coord_(splitting_coord) {
+	    geo_argused(nb_points_);
         }
 
         /**

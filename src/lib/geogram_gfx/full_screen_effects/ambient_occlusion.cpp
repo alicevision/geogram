@@ -59,6 +59,13 @@ namespace {
     static const index_t R_HEIGHT = 32;
 }
 
+// Requirements for Android compile are the same
+// as for Emscripten.
+// TODO: something cleaner.
+#ifdef GEO_OS_ANDROID
+#define GEO_OS_EMSCRIPTEN
+#endif
+
 namespace GEO {
 
     AmbientOcclusionImpl::AmbientOcclusionImpl() {
@@ -288,7 +295,10 @@ namespace GEO {
             tex_buff[i] = Memory::byte(Numeric::random_int32() & 255);
         }
 #ifdef GEO_OS_EMSCRIPTEN
-#define GL_RED GL_LUMINANCE       
+#  ifdef GL_RED
+#    undef GL_RED
+#  endif	
+#  define GL_RED GL_LUMINANCE
 #endif       
         glTexImage2D(
             GL_TEXTURE_2D, 0, 

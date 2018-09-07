@@ -47,9 +47,9 @@
 #include <geogram_gfx/basic/GLSL.h>
 #include <geogram/basic/string.h>
 
+#ifdef GEO_GL_150
 namespace {
     using namespace GLUP;
-
     /**
      * \brief Sets an entry in an array with specified stride.
      * \param[in] array the address of the first element of the array
@@ -63,8 +63,9 @@ namespace {
     ) {
 	*reinterpret_cast<T*>(Memory::pointer(array) + (i * stride)) = value;
     }
-    
 }
+#endif
+
 
 namespace GLUP {
     using namespace GEO;
@@ -299,12 +300,16 @@ namespace GLUP {
         
         // Create a program that uses the UBO
 
-#ifdef GEO_OS_APPLE	
+#if defined(GEO_OS_ANDROID)
         static const char* shader_source_header_ =
-            "#version 150 \n";
+            "#version 300 es\n"
+	    "precision highp float;\n";
+#elif defined(GEO_OS_APPLE)
+        static const char* shader_source_header_ =
+            "#version 150\n";
 #else
         static const char* shader_source_header_ =
-            "#version 150 core \n";
+            "#version 150 core\n";
 #endif
 	
         // This program is stupid, it is only meant to make sure
@@ -312,13 +317,13 @@ namespace GLUP {
         // GLSL compilers optimize-it out and we can no-longer
         // query variable offsets from it)
         static const char* vertex_shader_source_ =
-            "in vec3 position;                              \n"
-            "void main() {                                  \n"
-            "  gl_Position.x = MarchingCell.config_size[0]; \n"
-            "  gl_Position.y = MarchingCell.config[0];      \n"
-            "  gl_Position.z = MarchingCell.config[1];      \n"
-            "  gl_Position.w = MarchingCell.config[1];      \n"
-            "}                                              \n"
+            "in vec3 position;                                \n"
+            "void main() {                                    \n"
+            "  gl_Position.x = float(MarchingCell.config_size[0]); \n"
+            "  gl_Position.y = float(MarchingCell.config[0]); \n"
+            "  gl_Position.z = float(MarchingCell.config[1]); \n"
+            "  gl_Position.w = float(MarchingCell.config[1]); \n"
+            "}                                                \n"
             ;
         
         static const char* fragment_shader_source_ =

@@ -2088,7 +2088,7 @@ namespace {
          * \brief Does the actual computation of this thread.
          * \details The actual computation is determined by set_mode().
          */
-        virtual void run() {
+	void run() override {
             switch(mode_) {
                 case CO3NE_NORMALS:
                     run_normals();

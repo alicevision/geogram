@@ -31,3 +31,9 @@ set_target_properties(
     geogram_gfx_third_party PROPERTIES
     FOLDER "GEOGRAM"
 )
+
+if(ANDROID)
+  target_include_directories(geogram_gfx_third_party PRIVATE
+    ${ANDROID_NDK}/sources/android/native_app_glue
+  )
+endif()

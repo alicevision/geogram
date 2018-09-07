@@ -34,7 +34,7 @@ vec4 row3(in mat4 M) {
 void main(void) {
 
     if(glupIsEnabled(GLUP_PICKING)) {                      
-#ifdef GL_ES                                          
+#ifdef GLUP_ES_100
         primitive_id = float(int(vertex_id_in + 0.5)) + 0.5;
 #else                                                 
         primitive_id = int(vertex_id_in + 0.5);              

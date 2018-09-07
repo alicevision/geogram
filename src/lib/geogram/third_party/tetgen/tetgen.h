@@ -65,15 +65,18 @@
 // [Bruno] I got too many complaints in tetgen so I "close my eyes" :-)
 #ifdef __GNUC__
 #ifndef __ICC
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wunused-result"
-
 #pragma GCC diagnostic ignored "-Wstrict-overflow"
+
+#if !defined( __ANDROID__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wrestrict"
+#endif
 
 #ifdef __clang__
 #pragma GCC diagnostic ignored "-Wmissing-noreturn"

@@ -466,15 +466,15 @@ namespace {
 	    chart_.bind(target_->facets.attributes(), "chart");
 	}
 
-	~ComputeRVDPolygonCallback() {
+	~ComputeRVDPolygonCallback() override {
 	    chart_.unbind();
 	}
 
-	virtual void operator() (
+	void operator() (
 	    index_t v,
 	    index_t t,
 	    const GEOGen::Polygon& P
-	) const {
+	) const override {
 	    geo_argused(t);
 	    if(OTM_->air_fraction() != 0.0 && OTM_->nb_air_particles() == 0) {
 		if(v < OTM_->nb_points()) {

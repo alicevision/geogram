@@ -5,7 +5,9 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUP/fragment_shader_utils.h>
 
-in float gl_ClipDistance[];                                
+#ifndef GLUP_NO_GL_CLIPPING        
+in float gl_ClipDistance[];
+#endif
 
 #ifdef GL_ARB_conservative_depth
 layout (depth_less) out float gl_FragDepth;   
@@ -19,10 +21,12 @@ in VertexData {
 
 void main() {
 
-#ifdef GL_ES    
+#ifdef GL_ES
+#ifndef GLUP_NO_GL_CLIPPING            
     if(glupIsEnabled(GLUP_CLIPPING) && (gl_ClipDistance[0] < 0.0)) {
         discard;                                                
-    }                                                          
+    }
+#endif    
 #endif
 
     vec2 V = 2.0*(gl_PointCoord - vec2(0.5, 0.5));             

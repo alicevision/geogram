@@ -57,8 +57,10 @@
 #ifdef GEO_OS_LINUX
 #  if defined(GEO_OS_EMSCRIPTEN) 
 #    define GEO_USE_DUMMY_ATOMICS
-#  elif defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
-#    define GEO_USE_ARM_ATOMICS
+#  elif defined(GEO_OS_RASPBERRY)
+#    define GEO_USE_ARM32_ATOMICS
+#  elif defined(GEO_OS_ANDROID)
+#    define GEO_USE_ANDROID_ATOMICS
 #  else
 #    define GEO_USE_X86_ATOMICS
 #  endif
@@ -77,50 +79,50 @@ inline char atomic_bittestandreset_x86(volatile unsigned int*, unsigned int) {
     return 0;
 }
 
-#elif defined(GEO_USE_ARM_ATOMICS)
+#elif defined(GEO_USE_ANDROID_ATOMICS)
 
-/** A mutex for ARM processors */
-typedef GEO::Numeric::uint32 arm_mutex_t;
+/** A mutex for Android */
+typedef GEO::Numeric::uint32 android_mutex_t;
 
-
-#ifdef __aarch64__
-
-inline void lock_mutex_arm(volatile arm_mutex_t* lock) {
+inline void lock_mutex_android(volatile android_mutex_t* lock) {
     while(__sync_lock_test_and_set(lock, 1) != 0);
 }
 
-inline void unlock_mutex_arm(volatile arm_mutex_t* lock) {
+inline void unlock_mutex_android(volatile android_mutex_t* lock) {
     __sync_lock_release(lock);
 }
 
-inline unsigned int atomic_bitset_arm(volatile unsigned int* ptr, unsigned int bit) {
+inline unsigned int atomic_bitset_android(volatile unsigned int* ptr, unsigned int bit) {
     return __sync_fetch_and_or(ptr, 1u << bit) & (1u << bit);
 }
 
-inline unsigned int atomic_bitreset_arm(volatile unsigned int* ptr, unsigned int bit) {
+inline unsigned int atomic_bitreset_android(volatile unsigned int* ptr, unsigned int bit) {
     return __sync_fetch_and_and(ptr, ~(1u << bit)) & (1u << bit);
 }
 
-inline void memory_barrier_arm() {
+inline void memory_barrier_android() {
     // Full memory barrier.
     __sync_synchronize();
 }
 
-inline void wait_for_event_arm() {
+inline void wait_for_event_android() {
     /* TODO */    
 }
 
-inline void send_event_arm() {
+inline void send_event_android() {
     /* TODO */    
 }
 
-#else
+#elif defined(GEO_USE_ARM32_ATOMICS)
+
+/** A mutex for ARM processors */
+typedef GEO::Numeric::uint32 arm32_mutex_t;
 
 /**
  * \brief Acquires a lock (ARM only)
  * \param[in,out] lock the mutex to lock
  */
-inline void lock_mutex_arm(volatile arm_mutex_t* lock) {
+inline void lock_mutex_arm32(volatile arm32_mutex_t* lock) {
     arm_mutex_t tmp;
     __asm__ __volatile__ (
         "1:     ldrex   %0, [%1]     \n" // read lock
@@ -139,7 +141,7 @@ inline void lock_mutex_arm(volatile arm_mutex_t* lock) {
  * \brief Releases a lock (ARM only)
  * \param[in,out] lock the mutex to unlock
  */
-inline void unlock_mutex_arm(volatile arm_mutex_t* lock) {
+inline void unlock_mutex_arm32(volatile arm32_mutex_t* lock) {
     __asm__ __volatile__ (
         "       dmb              \n" // ensure all previous access are observed
         "       str     %1, [%0] \n" // clear the lock
@@ -159,7 +161,7 @@ inline void unlock_mutex_arm(volatile arm_mutex_t* lock) {
  * \retval a non-zero integer if the bit was previously set
  * \retval 0 if the bit was previously not set
  */
-inline unsigned int atomic_bitset_arm(volatile unsigned int* ptr, unsigned int bit) {
+inline unsigned int atomic_bitset_arm32(volatile unsigned int* ptr, unsigned int bit) {
     unsigned int tmp;
     unsigned int result;
     unsigned int OK;
@@ -186,7 +188,7 @@ inline unsigned int atomic_bitset_arm(volatile unsigned int* ptr, unsigned int b
  * \retval a non-zero integer if the bit was previously reset
  * \retval 0 if the bit was previously not reset
  */
-inline unsigned int atomic_bitreset_arm(volatile unsigned int* ptr, unsigned int bit) {
+inline unsigned int atomic_bitreset_arm32(volatile unsigned int* ptr, unsigned int bit) {
     unsigned int tmp;
     unsigned int result;
     unsigned int OK;
@@ -207,7 +209,7 @@ inline unsigned int atomic_bitreset_arm(volatile unsigned int* ptr, unsigned int
 /**
  * \brief Issues a memory and compiler barrier (ARM only)
  */
-inline void memory_barrier_arm() {
+inline void memory_barrier_arm32() {
     __asm__ __volatile__ (
         "dmb \n"
         : : : "memory"
@@ -217,7 +219,7 @@ inline void memory_barrier_arm() {
 /**
  * \brief Waits for an event (ARM only)
  */
-inline void wait_for_event_arm() {
+inline void wait_for_event_arm32() {
     __asm__ __volatile__ (
         "wfe \n"
         : : : 
@@ -227,15 +229,13 @@ inline void wait_for_event_arm() {
 /**
  * \brief Sends an event (ARM only)
  */
-inline void send_event_arm() {
+inline void send_event_arm32() {
     __asm__ __volatile__ (
         "dsb \n" // ensure completion of store operations
         "sev \n"
         : : : 
     );
 }
-
-#endif
 
 #elif defined(GEO_USE_X86_ATOMICS)
 

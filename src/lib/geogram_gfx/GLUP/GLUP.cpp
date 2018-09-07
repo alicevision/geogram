@@ -57,6 +57,11 @@
 #pragma GCC diagnostic ignored "-Wdollar-in-identifier-extension"
 #endif
 
+#ifdef GEO_OS_ANDROID
+#  pragma GCC diagnostic ignored "-Wpointer-bool-conversion"
+#endif
+
+
 /*****************************************************************************/
 
 namespace {
@@ -301,12 +306,14 @@ static bool supports_tessellation_shader() {
 #endif
 
 GLUPcontext glupCreateContext() {
+
     
     if(!GLUP::initialized_) {
         GLUP::initialized_ = true;
         atexit(GLUP::cleanup);
     }
 
+    
     GEO_CHECK_GL();
     
     std::string GLUP_profile = GEO::CmdLine::get_arg("gfx:GLUP_profile");
@@ -314,8 +321,9 @@ GLUPcontext glupCreateContext() {
 
     if(GLUP_profile == "auto") {
       
-#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE)
-      GLUP_profile = "GLUPES2";
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE) || defined(GEO_OS_ANDROID)
+	GLUP_profile = "GLUPES2";
+	// GLUP_profile = "GLUP150"; // Does something but bugged / not fully functional.
 #else
       GEO_CHECK_GL();      
       double GLSL_version = GEO::GLSL::supported_language_version();
@@ -1855,7 +1863,7 @@ void glupGenVertexArrays(GLUPsizei n, GLUPuint* arrays) {
 #ifdef GEO_OS_EMSCRIPTEN
         glGenVertexArraysOES(n, arrays);
 #else
-	if(glGenVertexArrays == nullptr) {
+	if(!glGenVertexArrays) {
 	    GLUP::vertex_array_emulate = true;
 	    glupGenVertexArrays(n,arrays);
 	    return;
@@ -1871,10 +1879,10 @@ void glupDeleteVertexArrays(GLUPsizei n, const GLUPuint *arrays) {
             GLUP::VAO_allocator.delete_VAO(arrays[i]);
         }
     } else {
-#ifdef GEO_OS_EMSCRIPTEN
+#if defined(GEO_OS_EMSCRIPTEN) 
         glDeleteVertexArraysOES(n, arrays);        
 #else
-	if(glDeleteVertexArrays == nullptr) {
+	if(!glDeleteVertexArrays) {
 	    GLUP::vertex_array_emulate = true;
 	    glupDeleteVertexArrays(n,arrays);
 	    return;
@@ -1900,10 +1908,10 @@ void glupBindVertexArray(GLUPuint array) {
             }
         }
     } else {
-#ifdef GEO_OS_EMSCRIPTEN
+#if defined(GEO_OS_EMSCRIPTEN) 
         glBindVertexArrayOES(array);        
 #else
-	if(glBindVertexArray == nullptr) {
+	if(!glBindVertexArray) {
 	    GLUP::vertex_array_emulate = true;
 	    glupBindVertexArray(array);
 	    return;

@@ -609,6 +609,11 @@ namespace GEO {
             }
 #elif defined GEO_OS_EMSCRIPTEN
             home="/";
+#elif defined GEO_OS_ANDROID
+            char* result = getenv("EXTERNAL_STORAGE");
+            if(result != nullptr) {
+                home=result;
+            }
 #else            
             char* result = getenv("HOME");
             if(result != nullptr) {

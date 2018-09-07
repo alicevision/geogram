@@ -76,10 +76,10 @@ namespace GEO {
 
     namespace Process {
 
-#if defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
+#if defined(GEO_OS_RASPBERRY)
 
         /** A lightweight synchronization structure. */
-        typedef arm_mutex_t spinlock;
+        typedef arm32_mutex_t spinlock;
 
         /** The initialization value of a spin lock. */
 #       define GEOGRAM_SPINLOCK_INIT 0
@@ -88,7 +88,7 @@ namespace GEO {
          * \param[in] x a spinlock that should be available.
          */
         inline void acquire_spinlock(spinlock& x) {
-            lock_mutex_arm(&x);
+            lock_mutex_arm32(&x);
         }
 
         /**
@@ -96,10 +96,33 @@ namespace GEO {
          * \param[in] x a spinlock that should be reserved.
          */
         inline void release_spinlock(spinlock& x) {
-            unlock_mutex_arm(&x);
+            unlock_mutex_arm32(&x);
+        }
+	
+#elif defined(GEO_OS_ANDROID)
+
+        /** A lightweight synchronization structure. */
+        typedef android_mutex_t spinlock;
+
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT 0
+        /**
+         * \brief Loops until \p x is available then reserves it.
+         * \param[in] x a spinlock that should be available.
+         */
+        inline void acquire_spinlock(spinlock& x) {
+            lock_mutex_android(&x);
         }
 
-#elif defined(GEO_OS_LINUX) && !defined(GEO_OS_RASPBERRY)
+        /**
+         * \brief Makes \p x available to other threads.
+         * \param[in] x a spinlock that should be reserved.
+         */
+        inline void release_spinlock(spinlock& x) {
+            unlock_mutex_android(&x);
+        }
+
+#elif defined(GEO_OS_LINUX) 
 
         /** A lightweight synchronization structure. */
         typedef unsigned char spinlock;
@@ -273,7 +296,7 @@ namespace GEO {
             std::vector<spinlock> spinlocks_;
         };
 
-#elif defined(GEO_OS_ANDROID) || defined(GEO_OS_RASPBERRY)
+#elif defined(GEO_OS_RASPBERRY) 
 
         /**
          * \brief An array of light-weight synchronisation
@@ -343,14 +366,14 @@ namespace GEO {
                 index_t w = i >> 5;
                 word_t b = word_t(i & 31);
                 // Loop while previously stored value has its bit set.
-                while((atomic_bitset_arm(&spinlocks_[w], b)) != 0) {
+                while((atomic_bitset_arm32(&spinlocks_[w], b)) != 0) {
                     // If somebody else has the lock, sleep.
-                    //  It is important to sleep here, else atomic_bitset_arm()
+                    //  It is important to sleep here, else atomic_bitset_xxx()
                     // keeps acquiring the exclusive monitor (even for testing)
                     // and this slows down everything.
-                    wait_for_event_arm();
+                    wait_for_event_arm32();
                 }
-                memory_barrier_arm();
+                memory_barrier_arm32();
             }
 
             /**
@@ -360,14 +383,116 @@ namespace GEO {
              */
             void release_spinlock(index_t i) {
                 geo_thread_sync_assert(i < size());
-                memory_barrier_arm();
+                memory_barrier_android();
                 index_t w = i >> 5;
                 word_t b = word_t(i & 31);
-                atomic_bitreset_arm(&spinlocks_[w], b);
+                atomic_bitreset_arm32(&spinlocks_[w], b);
                 //   Now wake up the other threads that started
                 // sleeping if they did not manage to acquire
                 // the lock.
-                send_event_arm();
+                send_event_arm32();
+            }
+
+        private:
+            std::vector<word_t> spinlocks_;
+            index_t size_;
+        };
+	
+#elif defined(GEO_OS_ANDROID) 
+
+        /**
+         * \brief An array of light-weight synchronisation
+         *  primitives (spinlocks).
+         *
+         * \details In this implementation, storage is optimized so that
+         * a single bit per spinlock is used.
+         *
+         */
+        class SpinLockArray {
+        public:
+            /**
+             * \brief Internal representation of SpinLockArray elements.
+             * \details Each word_t represents 32 spinlocks.
+             */
+            typedef Numeric::uint32 word_t;
+
+            /**
+             * \brief Constructs a new SpinLockArray of size 0.
+             */
+            SpinLockArray() : size_(0) {
+            }
+
+            /**
+             * \brief Constructs a new SpinLockArray of size \p size_in.
+             * \param[in] size_in number of spinlocks in the array.
+             */
+            SpinLockArray(index_t size_in) : size_(0) {
+                resize(size_in);
+            }
+
+            /**
+             * \brief Resizes a SpinLockArray.
+             * \details All the spinlocks are reset to 0.
+             * \param[in] size_in The desired new size.
+             */
+            void resize(index_t size_in) {
+                if(size_ != size_in) {
+                    size_ = size_in;
+                    index_t nb_words = (size_ >> 5) + 1;
+                    spinlocks_.assign(nb_words, 0);
+                }
+            }
+
+            /**
+             * \brief Gets the number of spinlocks in this array.
+             */
+            index_t size() const {
+                return size_;
+            }
+
+            /**
+             * \brief Resets size to 0 and clears all the memory.
+             */
+            void clear() {
+                spinlocks_.clear();
+            }
+
+            /**
+             * \brief Acquires a spinlock at a given index
+             * \details Loops until spinlock at index \p i is available then
+             * reserve it.
+             * \param[in] i index of the spinlock
+             */
+            void acquire_spinlock(index_t i) {
+                geo_thread_sync_assert(i < size());
+                index_t w = i >> 5;
+                word_t b = word_t(i & 31);
+                // Loop while previously stored value has its bit set.
+                while((atomic_bitset_android(&spinlocks_[w], b)) != 0) {
+                    // If somebody else has the lock, sleep.
+                    //  It is important to sleep here, else atomic_bitset_xxx()
+                    // keeps acquiring the exclusive monitor (even for testing)
+                    // and this slows down everything.
+                    wait_for_event_android();
+                }
+                memory_barrier_android();
+            }
+
+            /**
+             * \brief Releases a spinlock at a given index
+             * \details Makes spinlock at index \p i available to other threads.
+             * \param[in] i index of the spinlock
+             */
+            void release_spinlock(index_t i) {
+                geo_thread_sync_assert(i < size());
+                memory_barrier_android();
+                index_t w = i >> 5;
+                word_t b = word_t(i & 31);
+                atomic_bitreset_android(&spinlocks_[w], b);
+                //   Now wake up the other threads that started
+                // sleeping if they did not manage to acquire
+                // the lock.
+                send_event_android();
             }
 
         private:
@@ -375,7 +500,7 @@ namespace GEO {
             index_t size_;
         };
 
-#elif defined(GEO_OS_LINUX) && !defined(GEO_OS_RASPBERRY)
+#elif defined(GEO_OS_LINUX) 
 
         /**
          * \brief An array of light-weight synchronisation
@@ -587,6 +712,67 @@ namespace GEO {
 
 
     }
+
+#ifdef GEO_OS_WINDOWS
+
+    // Emulation of pthread mutexes using Windows API
+
+    typedef CRITICAL_SECTION pthread_mutex_t;
+    typedef unsigned int pthread_mutexattr_t;
+    
+    inline int pthread_mutex_lock(pthread_mutex_t *m) {
+        EnterCriticalSection(m);
+        return 0;
+    }
+
+    inline int pthread_mutex_unlock(pthread_mutex_t *m) {
+        LeaveCriticalSection(m);
+        return 0;
+    }
+        
+    inline int pthread_mutex_trylock(pthread_mutex_t *m) {
+        return TryEnterCriticalSection(m) ? 0 : EBUSY; 
+    }
+
+    inline int pthread_mutex_init(pthread_mutex_t *m, pthread_mutexattr_t *a) {
+        geo_argused(a);
+        InitializeCriticalSection(m);
+        return 0;
+    }
+
+    inline int pthread_mutex_destroy(pthread_mutex_t *m) {
+        DeleteCriticalSection(m);
+        return 0;
+    }
+
+    // Emulation of pthread condition variables using Windows API
+
+    typedef CONDITION_VARIABLE pthread_cond_t;
+    typedef unsigned int pthread_condattr_t;
+
+    inline int pthread_cond_init(pthread_cond_t *c, pthread_condattr_t *a) {
+        geo_argused(a);
+        InitializeConditionVariable(c);
+        return 0;
+    }
+
+    inline int pthread_cond_destroy(pthread_cond_t *c) {
+        geo_argused(c);
+        return 0;
+    }
+
+    inline int pthread_cond_broadcast(pthread_cond_t *c) {
+        WakeAllConditionVariable(c);
+        return 0;
+    }
+
+    inline int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m) {
+        SleepConditionVariableCS(c, m, INFINITE);
+        return 0;
+    }
+    
+#endif    
+    
 }
 
 #endif

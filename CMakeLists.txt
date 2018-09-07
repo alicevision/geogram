@@ -22,24 +22,27 @@ endif()
 # Optional modules
 # (can be overriden in CMakeOptions.txt)
 
-option(GEOGRAM_WITH_GRAPHICS "Viewers and geogram_gfx library" ON)
-option(GEOGRAM_WITH_LEGACY_NUMERICS "Legacy numerical libraries" ON)
-option(GEOGRAM_WITH_HLBFGS "Non-linear solver (Yang Liu's HLBFGS)" ON)
-option(GEOGRAM_WITH_TETGEN "Tetrahedral mesher (Hang Si's TetGen)" ON)
-option(GEOGRAM_WITH_TRIANGLE "Triangle mesher (Jonathan Shewchuk's triangle)" ON)
-option(GEOGRAM_WITH_EXPLORAGRAM "Experimental code (hexahedral meshing pipeline and optimal transport)" ON)
-option(GEOGRAM_WITH_LUA "Built-in LUA interpreter" ON)
-option(GEOGRAM_LIB_ONLY "Libraries only (no example programs/no viewer)" OFF)
-option(GEOGRAM_WITH_FPG "Predicate generator (Sylvain Pion's FPG)" OFF)
-option(GEOGRAM_USE_SYSTEM_GLFW3 "Use the version of GLFW3 installed in the system if found" OFF)
-
-set(VORPALINE_PLATFORM "" CACHE STRING "")
+# Set GEOGRAM_SUB_BUILD if Geogram sources included in buildtree, then
+# VORPALINE_PLATFORM can be set directly in parent CMakeLists.txt
+if(NOT GEOGRAM_SUB_BUILD)
+   option(GEOGRAM_WITH_GRAPHICS "Viewers and geogram_gfx library" ON)
+   option(GEOGRAM_WITH_LEGACY_NUMERICS "Legacy numerical libraries" ON)
+   option(GEOGRAM_WITH_HLBFGS "Non-linear solver (Yang Liu's HLBFGS)" ON)
+   option(GEOGRAM_WITH_TETGEN "Tetrahedral mesher (Hang Si's TetGen)" ON)
+   option(GEOGRAM_WITH_TRIANGLE "Triangle mesher (Jonathan Shewchuk's triangle)" ON)
+   option(GEOGRAM_WITH_EXPLORAGRAM "Experimental code (hexahedral meshing pipeline and optimal transport)" ON)
+   option(GEOGRAM_WITH_LUA "Built-in LUA interpreter" ON)
+   option(GEOGRAM_LIB_ONLY "Libraries only (no example programs/no viewer)" OFF)
+   option(GEOGRAM_WITH_FPG "Predicate generator (Sylvain Pion's FPG)" OFF)
+   option(GEOGRAM_USE_SYSTEM_GLFW3 "Use the version of GLFW3 installed in the system if found" OFF)
+   set(VORPALINE_PLATFORM "" CACHE STRING "")
+endif()
 
 include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 6)
-set(VORPALINE_VERSION_PATCH 6)
+set(VORPALINE_VERSION_PATCH 7)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
@@ -62,7 +65,7 @@ set(VORPALINE_BUILD_NUMBER $ENV{BUILD_NUMBER})
 if(GEOGRAM_WITH_VORPALINE)
    find_package(Subversion QUIET)
    if(NOT SUBVERSION_FOUND)
-       message(WARNING "Subversion executable not found - cannot determine current revision")
+       message(WARNING "Subversion executable not found - cannot determine current revision") 
    else()
        Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Vorpaline)
        message(STATUS "Vorpaline revision is ${Vorpaline_WC_REVISION}")
@@ -120,10 +123,10 @@ if(NOT GEOGRAM_LIB_ONLY)
   add_subdirectory(src/bin)
   add_subdirectory(src/tests)
   add_subdirectory(src/examples)
+  add_subdirectory(tests)
 endif()
 
 add_subdirectory(doc)
-add_subdirectory(tests)
 
 ##############################################################################
 # Cleanup from previous builds

@@ -316,6 +316,118 @@ namespace {
             (s[0] <= 0 && s[1] <= 0 && s[2] <= 0 && s[3] <= 0)
         );
     }
+
+
+    /**
+     * \brief Tests whether a segment intersects a triangle.
+     * \param[in] q1 , q2 the two extremities of the segment.
+     * \param[in] p1 , p2 , p3 the three vertices of the triangle.
+     * \retval true if [q1,q2] has an intersection with (p1, p2, p3).
+     * \retval false otherwise.
+     */
+    bool segment_triangle_intersection(
+	const vec3& q1, const vec3& q2,
+	const vec3& p1, const vec3& p2, const vec3& p3
+    ) {
+
+	//   If the segment does not straddle the supporting plane of the
+	// triangle, then there is no intersection.
+	vec3 N = cross(p2-p1, p3-p1);
+	if(dot(q1-p1,N)*dot(q2-p1,N) > 0.0) {
+	    return false;
+	}
+
+	//  The three tetrahedra formed by the segment and the three edges
+	// of the triangle should have the same sign, else there is no
+	// intersection.
+	int s1 = geo_sgn(Geom::tetra_signed_volume(q1,q2,p1,p2));
+	int s2 = geo_sgn(Geom::tetra_signed_volume(q1,q2,p2,p3));
+	if(s1 != s2) {
+	    return false;
+	}
+	int s3 = geo_sgn(Geom::tetra_signed_volume(q1,q2,p3,p1));
+	return (s2 == s3);
+    }
+
+    /**
+     * \brief Tests whether there is an intersection between a segment
+     *  and a mesh facet.
+     * \param[in] q1 , q2 the extremities of the segment
+     * \param[in] M the mesh
+     * \param[in] f the facet
+     */
+    bool segment_mesh_facet_intersection(
+	const vec3& q1, const vec3& q2,
+        const Mesh& M,
+        index_t f
+    ) {
+        geo_debug_assert(M.facets.nb_vertices(f) == 3);
+        index_t c = M.facets.corners_begin(f);
+        const vec3& p1 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
+        ++c;
+        const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
+        ++c;
+        const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
+	return segment_triangle_intersection(q1, q2, p1, p2, p3);
+    }
+    
+    /**
+     * \brief Tests whether a segment intersects a box.
+     * \param[in] q1 , q2 the two extremities of the segment.
+     * \param[in] box the box.
+     * \retval true if [q1,q2] intersects the box.
+     * \retval false otherwise.
+     */
+    bool segment_box_intersection(
+	const vec3& q1, const vec3& q2, const Box& box
+    ) {
+	// Ref: https://www.gamedev.net/forums/topic/338987-aabb---line-segment-intersection-test/
+	vec3 d(
+	    0.5*(q2.x - q1.x),
+	    0.5*(q2.y - q1.y),
+	    0.5*(q2.z - q1.z)
+	);
+	
+	vec3 e(
+	    0.5*(box.xyz_max[0] - box.xyz_min[0]),
+	    0.5*(box.xyz_max[1] - box.xyz_min[1]),
+	    0.5*(box.xyz_max[2] - box.xyz_min[2])	    
+	);
+	
+	vec3 c(
+	    q1.x + d.x - 0.5*(box.xyz_min[0] + box.xyz_max[0]),
+	    q1.y + d.y - 0.5*(box.xyz_min[1] + box.xyz_max[1]),
+	    q1.z + d.z - 0.5*(box.xyz_min[2] + box.xyz_max[2])
+	);
+
+	vec3 ad(fabs(d.x), fabs(d.y), fabs(d.z));
+	
+	if (fabs(c[0]) > e[0] + ad[0]) {
+	    return false;
+	}
+	
+	if (fabs(c[1]) > e[1] + ad[1]) {
+	    return false;
+	}
+	 
+	if (fabs(c[2]) > e[2] + ad[2]) {
+	    return false;
+	}
+  
+	if (fabs(d[1] * c[2] - d[2] * c[1]) > e[1] * ad[2] + e[2] * ad[1]) {
+	    return false;
+	}
+	
+	if (fabs(d[2] * c[0] - d[0] * c[2]) > e[2] * ad[0] + e[0] * ad[2]) {
+	    return false;
+	}
+	
+	if (fabs(d[0] * c[1] - d[1] * c[0]) > e[0] * ad[1] + e[1] * ad[0]) {
+	    return false;
+	}
+	
+	return true;
+    }
 }
 
 /****************************************************************************/
@@ -448,6 +560,30 @@ namespace GEO {
         }
     }
 
+
+    bool MeshFacetsAABB::segment_intersection(const vec3& q1, const vec3& q2) const {
+	return segment_intersection_recursive(q1, q2, 1, 0, mesh_.facets.nb());
+    }
+
+    bool MeshFacetsAABB::segment_intersection_recursive(
+	const vec3& q1, const vec3& q2, index_t n, index_t b, index_t e
+    ) const {
+	if(!segment_box_intersection(q1, q2, bboxes_[n])) {
+	    return false;
+	}
+        if(b + 1 == e) {
+	    return segment_mesh_facet_intersection(q1, q2, mesh_, b);
+	}
+        index_t m = b + (e - b) / 2;
+        index_t childl = 2 * n;
+        index_t childr = 2 * n + 1;
+	return (
+	    segment_intersection_recursive(q1, q2, childl, b, m) ||
+	    segment_intersection_recursive(q1, q2, childr, m, e)
+	);
+    }
+
+    
 /****************************************************************************/
 
     MeshCellsAABB::MeshCellsAABB(Mesh& M, bool reorder) : mesh_(M) {

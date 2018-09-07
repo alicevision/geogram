@@ -13,7 +13,7 @@ namespace AST {
   struct Node;
 }
 
-class Collect_variables;
+struct Collect_variables;
 
 
 struct SymbolEnvironment {

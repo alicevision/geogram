@@ -39,7 +39,7 @@ set(FULL_WARNINGS
 )
 
 # Activate c++ 2011
-add_flags(CMAKE_CXX_FLAGS -std=c++11)
+add_flags(CMAKE_CXX_FLAGS -std=c++11 -Wno-c++98-compat -Wno-gnu-zero-variadic-macro-arguments)
 
 # Compile with full warnings by default
 add_definitions(${FULL_WARNINGS})
@@ -55,10 +55,8 @@ endif()
 # Note: they are added to CMAKE CXX and C flags later on, because the
 # way add_flags() works may remove the second "-s" argument.
 # Note: TOTAL_MEMORY needs to be a multiple of 16M
-set(EM_FLAGS_RELEASE -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 )
-set(EM_FLAGS_DEBUG -O2 -s ASSERTIONS=2 -s SAFE_HEAP=1 -g -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 )
-#set(EM_FLAGS_DEBUG -s ASSERTIONS=2 -s SAFE_HEAP=1 -g -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 )
-
+set(EM_FLAGS_RELEASE -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 -s WASM=0)
+set(EM_FLAGS_DEBUG -O2 -s ASSERTIONS=2 -s SAFE_HEAP=1 -g -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 -s WASM=0)
 
 # Profiler compilation flags
 if(VORPALINE_WITH_GPROF)

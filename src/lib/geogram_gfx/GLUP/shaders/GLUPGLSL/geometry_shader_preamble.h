@@ -46,7 +46,9 @@ out VertexData {
     vec4 mesh_tex_coord;
 } VertexOut;                              
 
+#ifndef GLUP_NO_GL_CLIPPING    
 out float gl_ClipDistance[];
+#endif
 
 //****** Data abstraction **************
 
@@ -176,9 +178,11 @@ bool cell_is_clipped() {
 }                                                                  
 
 void emit_vertex(in int i, in vec4 mesh_tex_coord, in bool do_clip) {
+#ifndef GLUP_NO_GL_CLIPPING        
     if(glupIsEnabled(GLUP_CLIPPING)) {
         gl_ClipDistance[0] = clip_distance(vertex_clip_space_in(i),do_clip);
     }
+#endif    
     gl_Position = vertex_clip_space[i];
     VertexOut.vertex_clip_space = gl_Position;
     if(glupIsEnabled(GLUP_VERTEX_COLORS)) {

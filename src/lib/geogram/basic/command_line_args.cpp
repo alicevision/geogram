@@ -666,8 +666,10 @@ namespace {
 // "compatibility" as the default (except on Mac/OS that prefers "core")	
         declare_arg(
             "gfx:GL_profile",
-#ifdef GEO_OS_APPLE	    
+#if defined(GEO_OS_APPLE)
 	    "core",
+#elif defined(GEO_OS_ANDROID)
+	    "ES",	    
 #else
 	    "compatibility",	    
 #endif	    

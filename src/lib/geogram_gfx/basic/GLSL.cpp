@@ -49,6 +49,10 @@
 #include <cstdarg>
 #include <cstdio>
 
+#ifdef __clang__ 
+#  pragma GCC diagnostic ignored "-Wpointer-bool-conversion"
+#endif
+
 namespace {
 
     using namespace GEO;
@@ -295,7 +299,7 @@ namespace GEO {
 #ifdef GEO_GL_150
 #ifndef GEO_OS_APPLE
             // glGetStringi() is the new way of querying OpenGL implementation
-            if(glGetStringi != nullptr) {
+            if(glGetStringi) {
                 shading_language_ver_str = (const char*)glGetStringi(
                     GL_SHADING_LANGUAGE_VERSION, 0
                 );

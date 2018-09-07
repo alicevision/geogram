@@ -43,6 +43,16 @@
  *
  */
 
+#ifdef __ANDROID__
+
+#include <geogram/lua/lua_wrap.h>
+
+void init_lua_glup_viewer(lua_State* L) {
+    (void)L;
+}
+
+#else
+
 #include <geogram_gfx/lua/lua_glup_viewer.h>
 #include <geogram_gfx/glup_viewer/glup_viewer_gui.h>
 #include <geogram_gfx/glup_viewer/glup_viewer.h>
@@ -170,3 +180,4 @@ void init_lua_glup_viewer(lua_State* L) {
     lua_pop(L,1);
 }
 
+#endif

@@ -75,11 +75,11 @@ namespace {
 	/**
 	 * \copydoc RVDPolygonCallback::operator()
 	 */
-	virtual void operator() (
+	void operator() (
 	    index_t v,
 	    index_t t,
 	    const GEOGen::Polygon& P
-	) const {
+	) const override {
 	    // v can be an air particle.
 	    if(v >= n_) {
 		return;
@@ -338,15 +338,15 @@ namespace {
 	    chart_.bind(target_->facets.attributes(), "chart");
 	}
 
-	~ComputeRVDPolygonCallback() {
+	~ComputeRVDPolygonCallback() override {
 	    chart_.unbind();
 	}
 
-	virtual void operator() (
+	void operator() (
 	    index_t v,
 	    index_t t,
 	    const GEOGen::Polygon& P
-	) const {
+	) const override {
 	    geo_argused(v);
 	    geo_argused(t);
 	    

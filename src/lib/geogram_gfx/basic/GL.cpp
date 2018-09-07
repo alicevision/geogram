@@ -485,18 +485,15 @@ namespace GEO {
     }
     
     void draw_unit_textured_quad() {
+#ifdef GEO_GL_LEGACY
 	static bool initialized = false;
 	static bool vanillaGL = false;
 	if(!initialized) {
-#ifdef GEO_GL_LEGACY 		    
 	    vanillaGL = (
 		CmdLine::get_arg("gfx:GLUP_profile") == "VanillaGL"
 	    );
-#endif	    
 	    initialized = true;
 	}
-
-#ifdef GEO_GL_LEGACY
 	if(vanillaGL) {
 	    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	    glDisable(GL_LIGHTING);

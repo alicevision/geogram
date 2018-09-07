@@ -78,7 +78,9 @@ namespace GLUP {
     
     void Context_GLSL150::setup_GLUP_POINTS() {
         if(!use_core_profile_) {
+#ifdef GL_POINT_SPRITE	    
             glEnable(GL_POINT_SPRITE);
+#endif	    
         }
         set_primitive_info(
             GLUP_POINTS, GL_POINTS,
@@ -293,6 +295,10 @@ namespace GLUP {
     /******************* pseudo-files ******************************/
     
     static void OES_extensions(std::vector<GLSL::Source>& sources) {
+        // To be checked: seems that these functionalities are
+	// standard with OpenGL ES 3.0 and greater (which we
+	// imply because we use here in/out instead of attribute)
+#ifndef GEO_OS_ANDROID
         sources.push_back(
             "#ifdef GL_ES\n"
             "  #extension GL_OES_texture_3D : enable \n"
@@ -301,14 +307,19 @@ namespace GLUP {
             "  #extension GL_OES_tessellation_shader : enable \n"
             "#endif\n"
         );
+#endif	
     }
 
     void Context_GLSL150::get_vertex_shader_preamble_pseudo_file(
         std::vector<GLSL::Source>& sources
     ) {
-#ifdef GEO_OS_APPLE
+#if defined(GEO_OS_ANDROID)
+        sources.push_back("#version 320 es\n");
+	sources.push_back("precision lowp sampler3D;\n");
+	sources.push_back("#define GLUP_NO_GL_CLIPPING\n");
+#elif defined(GEO_OS_APPLE)
         sources.push_back("#version 150\n");
-#else
+#else	
         sources.push_back("#version 150 core\n");        
 #endif
         sources.push_back("#define GLUP_VERTEX_SHADER\n");
@@ -318,14 +329,22 @@ namespace GLUP {
     void Context_GLSL150::get_fragment_shader_preamble_pseudo_file(
         std::vector<GLSL::Source>& sources
     ) {
-#ifdef GEO_OS_APPLE
+#if defined(GEO_OS_ANDROID)
+        sources.push_back("#version 320 es\n");
+	sources.push_back("precision lowp sampler3D;\n");
+	sources.push_back("precision highp float;\n");	
+	sources.push_back("#define GLUP_NO_GL_CLIPPING\n");	
+#elif defined(GEO_OS_APPLE)
         sources.push_back("#version 150\n");
-#else
+#else	
         sources.push_back("#version 150 core\n");        
 #endif
+	
         sources.push_back(
-            "#define GLUP_FRAGMENT_SHADER\n"            
+            "#define GLUP_FRAGMENT_SHADER\n"
+	    "#ifndef GL_ES\n"
 	    "#extension GL_ARB_conservative_depth : enable\n"
+	    "#endif\n"
         );
 	
 	// Workaround for problem with picking and depth update
@@ -394,9 +413,13 @@ namespace GLUP {
     void Context_GLSL150::get_geometry_shader_preamble_pseudo_file(
         std::vector<GLSL::Source>& sources
     ) {
-#ifdef GEO_OS_APPLE
+#if defined(GEO_OS_ANDROID)
+        sources.push_back("#version 320 es\n");
+	sources.push_back("precision lowp sampler3D;\n");
+	sources.push_back("#define GLUP_NO_GL_CLIPPING\n");	
+#elif defined(GEO_OS_APPLE)
         sources.push_back("#version 150\n");
-#else
+#else	
         sources.push_back("#version 150 core\n");        
 #endif
         sources.push_back("#define GLUP_GEOMETRY_SHADER\n");

@@ -772,7 +772,7 @@ int main(int argc, char** argv) {
     );
 
     glup_viewer_set_window_title(
-        (char*) "Geogram Delaunay2d test"
+        "Geogram Delaunay2d test"
     );
 
     glup_viewer_set_screen_size(1024,800);

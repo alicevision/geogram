@@ -190,6 +190,16 @@ namespace GEO {
             return result;
         }
 
+	/**
+	 * \brief Tests whether this surface mesh has an intersection
+	 *  with a segment.
+	 * \param[in] q1 , q2 the two extremities of the segment.
+	 * \retval true if there exists an intersection between [q1 , q2]
+	 *  and a facet of the mesh.
+	 * \retval false otherwise.
+	 */
+	bool segment_intersection(const vec3& q1, const vec3& q2) const;
+	
     protected:
 
 
@@ -347,6 +357,19 @@ namespace GEO {
             index_t n, index_t b, index_t e
         ) const;
 
+        /**
+         * \brief The recursive function used by the implementation
+         *  of segment_intersection()
+	 * \param[in] q1 , q2 the segment
+         * \param[in] n index of the current node in the AABB tree
+         * \param[in] b index of the first facet in the subtree under node \p n
+         * \param[in] e one position past the index of the last facet in the
+         *  subtree under node \p n
+	 */
+	bool segment_intersection_recursive(
+	    const vec3& q1, const vec3& q2, index_t n, index_t b, index_t e
+	) const;
+	
     protected:
         vector<Box> bboxes_;
         Mesh& mesh_;

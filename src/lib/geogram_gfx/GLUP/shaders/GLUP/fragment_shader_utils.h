@@ -1,6 +1,6 @@
 
 
-#ifdef GL_ES
+#ifdef GLUP_ES_100
 // converts an integer into an ivec4. The components of
 // the ivec4 contains the 4 bytes of the integer.
 ivec4 int_to_ivec4(in int x) {

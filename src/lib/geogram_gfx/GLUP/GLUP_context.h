@@ -57,6 +57,10 @@
  * \brief Internal implementation of GLUP context.
  */
 
+#ifdef GEO_GL_NO_DOUBLES
+typedef double GLdouble;
+#endif
+
 namespace GLUP {
     using namespace GEO;
 

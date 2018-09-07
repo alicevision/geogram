@@ -19,7 +19,7 @@ void main() {
         clip_dist = dot(vertex_in, GLUP_VS.world_clip_plane);
     }                                                  
     if(glupIsEnabled(GLUP_PICKING)) {                      
-#ifdef GL_ES                                          
+#ifdef GLUP_ES_100
         primitive_id = float(int(vertex_id_in + 0.5)) + 0.5;
 #else                                                 
         primitive_id = int(vertex_id_in + 0.5);              

@@ -4,7 +4,7 @@
 #include <string>
 
 namespace AST {
-     class TranslationUnit;
+    struct TranslationUnit;
 }
 
 
