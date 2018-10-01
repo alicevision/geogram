@@ -64,24 +64,6 @@ namespace {
     using namespace GEO;
 
     /**
-     * \brief Tests whether two 2d points are identical.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \retval true if \p p1 and \p p2 have exactly the same
-     *  coordinates
-     * \retval false otherwise
-     */
-    bool points_are_identical_2d(
-        const double* p1,
-        const double* p2
-    ) {
-        return
-            (p1[0] == p2[0]) &&
-            (p1[1] == p2[1]) 
-        ;
-    }
-
-    /**
      * \brief Computes the (approximate) orientation predicate in 2d.
      * \details Computes the sign of the (approximate) signed volume of
      *  the triangle p0, p1, p2
@@ -920,7 +902,7 @@ namespace GEO {
         iv1 = 1;
         while(
             iv1 < nb_vertices() &&
-            points_are_identical_2d(
+            PCK::points_are_identical_2d(
                 vertex_ptr(iv0), vertex_ptr(iv1)
             )
         ) {

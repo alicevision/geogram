@@ -231,6 +231,7 @@ extern GLUP_VIEWER_API GLfloat* glup_viewer_get_background_color(void);
 extern GLUP_VIEWER_API GLfloat* glup_viewer_get_background_color2(void);
 
 extern GLUP_VIEWER_API float* glup_viewer_get_scene_quaternion(void);
+extern GLUP_VIEWER_API float* glup_viewer_get_scene_translation(void);
 extern GLUP_VIEWER_API float* glup_viewer_get_light_matrix(void);
 extern GLUP_VIEWER_API float* glup_viewer_get_light_quaternion(void);
 extern GLUP_VIEWER_API float* glup_viewer_get_clip_quaternion(void);

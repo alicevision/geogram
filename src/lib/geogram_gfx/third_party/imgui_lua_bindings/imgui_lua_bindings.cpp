@@ -1,13 +1,5 @@
 /* [Bruno] */
 
-#ifdef __GNUC__
-#ifndef __ICC
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#ifdef __clang__
-#pragma GCC diagnostic ignored "-Wformat-security"
-#endif
-#endif
-#endif
 
 #ifdef _MSC_VER
 # pragma warning( disable: 4244 )
@@ -27,6 +19,15 @@ extern "C" {
 #include <geogram/third_party/lua/lualib.h>
 #include <geogram/third_party/lua/lauxlib.h>
 }
+
+#ifdef __GNUC__
+#ifndef __ICC
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+#endif
+#endif
 
 
 // THIS IS FOR LUA 5.3 although you can make a few changes for other versions

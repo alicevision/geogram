@@ -78,6 +78,15 @@ namespace GEO {
          */
         MeshFacetsAABB(Mesh& M, bool reorder = true);
 
+
+	/**
+	 * \brief Gets the mesh.
+	 * \return a const reference to the mesh.
+	 */
+	const Mesh& mesh() const {
+	    return mesh_;
+	}
+	
         /**
          * \brief Computes all the pairs of intersecting facets.
          * \param[in] action ACTION::operator(index_t,index_t) is
@@ -199,6 +208,23 @@ namespace GEO {
 	 * \retval false otherwise.
 	 */
 	bool segment_intersection(const vec3& q1, const vec3& q2) const;
+
+
+	/**
+	 * \brief Finds the intersection between a segment and a surface that
+	 *  is nearest to the first extremity of the segment.
+	 * \param[in] q1 , q2 the two extremities of the segment.
+	 * \param[out] t if there was an intersection, it is t*q2 + (1-t)*q1
+	 * \param[out] f the intersected nearest facet or index_t(-1) if there
+	 *  was no intersection.
+	 * \retval true if there exists at least an intersection between [q1 , q2]
+	 *  and a facet of the mesh.
+	 * \retval false otherwise.
+	 */
+	bool segment_nearest_intersection(
+	    const vec3& q1, const vec3& q2, double& t, index_t& f
+	) const;
+
 	
     protected:
 
@@ -361,14 +387,38 @@ namespace GEO {
          * \brief The recursive function used by the implementation
          *  of segment_intersection()
 	 * \param[in] q1 , q2 the segment
+	 * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
          * \param[in] n index of the current node in the AABB tree
          * \param[in] b index of the first facet in the subtree under node \p n
          * \param[in] e one position past the index of the last facet in the
          *  subtree under node \p n
+	 * \retval true if their was an intersection
+	 * \retval false otherwise
 	 */
 	bool segment_intersection_recursive(
-	    const vec3& q1, const vec3& q2, index_t n, index_t b, index_t e
+	    const vec3& q1, const vec3& q2, const vec3& dirinv,
+	    index_t n, index_t b, index_t e
 	) const;
+
+        /**
+         * \brief The recursive function used by the implementation
+         *  of segment_nearest_intersection()
+	 * \param[in] q1 , q2 the segment
+	 * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+         * \param[in] n index of the current node in the AABB tree
+         * \param[in] b index of the first facet in the subtree under node \p n
+         * \param[in] e one position past the index of the last facet in the
+         *  subtree under node \p n
+	 * \param[in,out] t the coordinate along [q1,q2] of the nearest 
+	 *   intersection so-far.
+	 * \param[in,out] f the nearest intersected facet so-far.
+	 */
+	void segment_nearest_intersection_recursive(
+	    const vec3& q1, const vec3& q2, const vec3& dirinv,
+	    index_t n, index_t b, index_t e,
+	    double& t, index_t& f
+	) const;
+
 	
     protected:
         vector<Box> bboxes_;
@@ -402,6 +452,14 @@ namespace GEO {
          */
         MeshCellsAABB(Mesh& M, bool reorder = true);
 
+	/**
+	 * \brief Gets the mesh.
+	 * \return a const reference to the mesh.
+	 */
+	const Mesh& mesh() const {
+	    return mesh_;
+	}
+	
         /**
          * \brief Finds the index of a tetrahedron that contains a query point
          * \param[in] p a const reference to the query point

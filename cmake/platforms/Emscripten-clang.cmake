@@ -55,8 +55,15 @@ endif()
 # Note: they are added to CMAKE CXX and C flags later on, because the
 # way add_flags() works may remove the second "-s" argument.
 # Note: TOTAL_MEMORY needs to be a multiple of 16M
-set(EM_FLAGS_RELEASE -O3 -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 -s WASM=0)
-set(EM_FLAGS_DEBUG -O2 -s ASSERTIONS=2 -s SAFE_HEAP=1 -g -s USE_GLFW=3 -s TOTAL_MEMORY=268435456 -s WASM=0)
+set(EM_COMMON_FLAGS
+  -s WASM=0    
+  -s USE_GLFW=3
+  -s TOTAL_MEMORY=268435456
+  -s EXPORTED_FUNCTIONS='["_main","_file_system_changed_callback"]'
+  -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall"]'
+)
+set(EM_FLAGS_RELEASE -O3  ${EM_COMMON_FLAGS})
+set(EM_FLAGS_DEBUG -O2 -s ASSERTIONS=2 -s SAFE_HEAP=1 -g ${EM_COMMON_FLAGS})
 
 # Profiler compilation flags
 if(VORPALINE_WITH_GPROF)

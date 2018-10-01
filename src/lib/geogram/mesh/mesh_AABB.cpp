@@ -50,6 +50,14 @@
 #include <geogram/numerics/predicates.h>
 #include <geogram/basic/geometry_nd.h>
 
+#ifdef __SSE2__ 
+#include <emmintrin.h>
+#endif
+
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+
 namespace {
 
     using namespace GEO;
@@ -350,6 +358,58 @@ namespace {
     }
 
     /**
+     * \brief Tests whether a segment intersects a triangle and has
+     *   an intersection nearer than the intersection computed so far.
+     * \param[in] q1 , q2 the two extremities of the segment.
+     * \param[in] p1 , p2 , p3 the three vertices of the triangle.
+     * \param[in,out] nearest_t coordinate along [q1,q2] of the nearest
+     *  intersection computed so far.
+     * \retval true if [q1,q2] has an intersection with (p1, p2, p3) that
+     *  is nearer than the intersection computed so far.
+     * \retval false otherwise.
+     */
+    bool segment_triangle_nearest_intersection(
+	const vec3& q1, const vec3& q2,
+	const vec3& p1, const vec3& p2, const vec3& p3,
+	double& nearest_t
+    ) {
+	if(!segment_triangle_intersection(q1,q2,p1,p2,p3)) {
+	    return false;
+	}
+
+
+	// TODO: there is probably simpler/faster
+	// for instance:
+	// | p1 p2 p3 (tq2 + (1-t)q1) |
+	// | 1  1  1  1               | = 0
+
+
+	// Normal vector of the triangle
+	
+	vec3 N = cross(p2-p1,p3-p1);
+
+	// Plane equation: dot(N,p) = dot(N,p1)
+	// dot(q1 + t(q2-q1),N) = dot(p1, N)
+	// dot(q1,N) + t dot(q2-q1,N) = dot(p1,N)
+	// t = (dot(p1,N) - dot(q1,N)) / (dot(q2,N) - dot(q1,N))
+
+	double denom = dot(q2,N) - dot(q1,N);
+	if(::fabs(denom) < 1e-20) {
+	    return false;
+	}
+
+	double t = (dot(p1,N) - dot(q1,N)) / denom;
+	      
+	
+	if(t < 0.0 || t > 1.0 || t > nearest_t) {
+	    return false;
+	}
+	nearest_t = t;
+	return true;
+    }
+
+    
+    /**
      * \brief Tests whether there is an intersection between a segment
      *  and a mesh facet.
      * \param[in] q1 , q2 the extremities of the segment
@@ -361,73 +421,127 @@ namespace {
         const Mesh& M,
         index_t f
     ) {
-        geo_debug_assert(M.facets.nb_vertices(f) == 3);
         index_t c = M.facets.corners_begin(f);
         const vec3& p1 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-        ++c;
-        const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-        ++c;
-        const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-	return segment_triangle_intersection(q1, q2, p1, p2, p3);
+	++c;
+	while(c+1 != M.facets.corners_end(f)) {
+	    const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
+	    const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c+1));
+	    if(segment_triangle_intersection(q1, q2, p1, p2, p3)) {
+		return true;
+	    }
+	    ++c;
+	}
+	return false;
     }
+
+    /**
+     * \brief Tests whether there is an intersection between a segment
+     *  and a mesh facet.
+     * \param[in] q1 , q2 the extremities of the segment
+     * \param[in] M the mesh
+     * \param[in] f the facet
+     * \param[in,out] nearest_t coordinate along [q1,q2] of the
+     *  nearest intersection so far
+     * \param[in,out] nearest_f index of the nearest intersected
+     *  facet so far
+     */
+    bool segment_mesh_facet_nearest_intersection(
+	const vec3& q1, const vec3& q2,
+        const Mesh& M, index_t f,
+	double& nearest_t, index_t& nearest_f
+    ) {
+        index_t c = M.facets.corners_begin(f);
+        const vec3& p1 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
+	++c;
+	while(c+1 != M.facets.corners_end(f)) {
+	    const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
+	    const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c+1));
+	    if(
+		segment_triangle_nearest_intersection(
+		    q1, q2, p1, p2, p3, nearest_t
+		)
+	    ) {
+		nearest_f = f;
+		return true;
+	    }
+	    ++c;
+	}
+	return false;
+    }
+
+    inline double max3(double x1, double x2, double x3) {
+	return std::max(x1,std::max(x2,x3));
+    }
+
+    inline double min3(double x1, double x2, double x3) {
+	return std::min(x1,std::min(x2,x3));
+    }
+
+
+    // https://tavianator.com/fast-branchless-raybounding-box-intersections/
+    // https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
+    // http://www.flipcode.com/archives/SSE_RayBox_Intersection_Test.shtml
+    // http://psgraphics.blogspot.com/2016/02/ray-box-intersection-and-fmin.html
     
     /**
      * \brief Tests whether a segment intersects a box.
-     * \param[in] q1 , q2 the two extremities of the segment.
+     * \param[in] q1 the first extremity of the segment.
+     * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+     *   where q2 denotes the second extremity of the segment.
      * \param[in] box the box.
      * \retval true if [q1,q2] intersects the box.
      * \retval false otherwise.
      */
     bool segment_box_intersection(
-	const vec3& q1, const vec3& q2, const Box& box
+	const vec3& q1, const vec3& dirinv, const Box& box
     ) {
-	// Ref: https://www.gamedev.net/forums/topic/338987-aabb---line-segment-intersection-test/
-	vec3 d(
-	    0.5*(q2.x - q1.x),
-	    0.5*(q2.y - q1.y),
-	    0.5*(q2.z - q1.z)
-	);
+        // This version: slab method.
+	// Step 1: compute
+	// (tx1, tx2) : parameters of intersection with slab {xmin <= x <= xmax}
+	// (ty1, ty2) : parameters of intersection with slab {ymin <= y <= ymax}
+	// (tz1, tz2) : parameters of intersection with slab {zmin <= z <= zmax}
+	//   (note: they are unordered, it is possible that tx1 > tx2)
+	// This defines three intervals:
+	//  Ix = [ min(tx1,tx2) ... max(tx1,tx2) ] 
+	//  Iy = [ min(ty1,ty2) ... max(ty1,ty2) ] 
+	//  Iz = [ min(tz1,tz2) ... max(tz1,tz2) ]
+	// The intersection between [q1,q2] and the slab {xmin <= x <= xmax} is
+	//  the set of points {q1 + t(q2-q1)} where t in Ix
 	
-	vec3 e(
-	    0.5*(box.xyz_max[0] - box.xyz_min[0]),
-	    0.5*(box.xyz_max[1] - box.xyz_min[1]),
-	    0.5*(box.xyz_max[2] - box.xyz_min[2])	    
-	);
+        // Q: what does it do if one of the fracs is zero ?
+	//   normally the tests with inf do what they should
+	//   (to be tested)
 	
-	vec3 c(
-	    q1.x + d.x - 0.5*(box.xyz_min[0] + box.xyz_max[0]),
-	    q1.y + d.y - 0.5*(box.xyz_min[1] + box.xyz_max[1]),
-	    q1.z + d.z - 0.5*(box.xyz_min[2] + box.xyz_max[2])
-	);
+	double tx1 = dirinv.x*(box.xyz_min[0] - q1.x);
+	double tx2 = dirinv.x*(box.xyz_max[0] - q1.x);
 
-	vec3 ad(fabs(d.x), fabs(d.y), fabs(d.z));
+	double ty1 = dirinv.y*(box.xyz_min[1] - q1.y);
+	double ty2 = dirinv.y*(box.xyz_max[1] - q1.y);
+
+	double tz1 = dirinv.z*(box.xyz_min[2] - q1.z);
+	double tz2 = dirinv.z*(box.xyz_max[2] - q1.z);
+
+	// now compute the intersection of the three intervals 
+	//      Ix /\ Iy /\ Iz
+	//   this gives us the range of t that corresponds to points in the
+	//   box (because the box is the intersection of the 3 slabs)
+	// it starts at the maximum of the left bounds of the 3 intervals
+	// it stops at the minimum of the right bounds of the 3 intervals
 	
-	if (fabs(c[0]) > e[0] + ad[0]) {
-	    return false;
-	}
+	double tmin =
+	    max3(std::min(tx1,tx2), std::min(ty1,ty2), std::min(tz1,tz2));
 	
-	if (fabs(c[1]) > e[1] + ad[1]) {
-	    return false;
-	}
-	 
-	if (fabs(c[2]) > e[2] + ad[2]) {
-	    return false;
-	}
-  
-	if (fabs(d[1] * c[2] - d[2] * c[1]) > e[1] * ad[2] + e[2] * ad[1]) {
-	    return false;
-	}
+	double tmax =
+	    min3(std::max(tx1,tx2), std::max(ty1,ty2), std::max(tz1,tz2));	
+
+	// There is no intersection if the interval is empty (tmin > tmax)
+	// or if the interval is outside [0,1]
 	
-	if (fabs(d[2] * c[0] - d[0] * c[2]) > e[2] * ad[0] + e[0] * ad[2]) {
-	    return false;
-	}
-	
-	if (fabs(d[0] * c[1] - d[1] * c[0]) > e[0] * ad[1] + e[1] * ad[0]) {
-	    return false;
-	}
-	
-	return true;
+	return (tmax >= 0.0) && (tmin < tmax) && (tmin <= 1.0);
     }
+
+
 }
 
 /****************************************************************************/
@@ -440,10 +554,7 @@ namespace GEO {
         mesh_(M) {
         if(!M.facets.are_simplices()) {
             mesh_repair(
-		M,
-		MeshRepairMode(
-		    MESH_REPAIR_TRIANGULATE | MESH_REPAIR_QUIET
-		 )
+		M, MeshRepairMode(MESH_REPAIR_TRIANGULATE | MESH_REPAIR_QUIET)
 	    );
         }
         if(reorder) {
@@ -562,13 +673,18 @@ namespace GEO {
 
 
     bool MeshFacetsAABB::segment_intersection(const vec3& q1, const vec3& q2) const {
-	return segment_intersection_recursive(q1, q2, 1, 0, mesh_.facets.nb());
+	vec3 dirinv(
+	    1.0/(q2.x-q1.x),
+	    1.0/(q2.y-q1.y),
+	    1.0/(q2.z-q1.z)
+	);
+	return segment_intersection_recursive(q1, q2, dirinv, 1, 0, mesh_.facets.nb());
     }
 
     bool MeshFacetsAABB::segment_intersection_recursive(
-	const vec3& q1, const vec3& q2, index_t n, index_t b, index_t e
+	const vec3& q1, const vec3& q2, const vec3& dirinv, index_t n, index_t b, index_t e
     ) const {
-	if(!segment_box_intersection(q1, q2, bboxes_[n])) {
+	if(!segment_box_intersection(q1, dirinv, bboxes_[n])) {
 	    return false;
 	}
         if(b + 1 == e) {
@@ -578,11 +694,45 @@ namespace GEO {
         index_t childl = 2 * n;
         index_t childr = 2 * n + 1;
 	return (
-	    segment_intersection_recursive(q1, q2, childl, b, m) ||
-	    segment_intersection_recursive(q1, q2, childr, m, e)
+	    segment_intersection_recursive(q1, q2, dirinv, childl, b, m) ||
+	    segment_intersection_recursive(q1, q2, dirinv, childr, m, e)
 	);
     }
 
+    bool MeshFacetsAABB::segment_nearest_intersection(
+	const vec3& q1, const vec3& q2, double& t, index_t& f
+    ) const {
+	vec3 dirinv(
+	    1.0/(q2.x-q1.x),
+	    1.0/(q2.y-q1.y),
+	    1.0/(q2.z-q1.z)
+	);
+	f = index_t(-1);
+	t = Numeric::max_float64();
+	segment_nearest_intersection_recursive(
+	    q1, q2, dirinv, 1, 0, mesh_.facets.nb(), t, f
+	);
+	return (f != index_t(-1));
+    }
+    
+    void MeshFacetsAABB::segment_nearest_intersection_recursive(
+	const vec3& q1, const vec3& q2, const vec3& dirinv, index_t n, index_t b, index_t e,
+	double& t, index_t& f
+    ) const {
+	if(!segment_box_intersection(q1, dirinv, bboxes_[n])) {
+	    return;
+	}
+        if(b + 1 == e) {
+	    segment_mesh_facet_nearest_intersection(q1, q2, mesh_, b, t, f);
+	    return;
+	}
+        index_t m = b + (e - b) / 2;
+        index_t childl = 2 * n;
+        index_t childr = 2 * n + 1;
+	segment_nearest_intersection_recursive(q1, q2, dirinv, childl, b, m, t, f);
+	segment_nearest_intersection_recursive(q1, q2, dirinv, childr, m, e, t, f);
+    }
+    
     
 /****************************************************************************/
 

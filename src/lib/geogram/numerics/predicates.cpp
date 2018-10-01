@@ -2290,6 +2290,47 @@ namespace GEO {
 	    }
 	    return result;
 	}
+
+	bool points_are_identical_2d(
+	    const double* p1,
+	    const double* p2
+	) {
+	    return
+		(p1[0] == p2[0]) &&
+		(p1[1] == p2[1]) 
+	    ;
+	}
+
+	bool points_are_identical_3d(
+	    const double* p1,
+	    const double* p2
+	) {
+	    return
+		(p1[0] == p2[0]) &&
+		(p1[1] == p2[1]) &&
+		(p1[2] == p2[2])
+	    ;
+	}
+
+	bool points_are_colinear_3d(
+	    const double* p1,
+	    const double* p2,
+	    const double* p3
+	) {
+	    // Colinearity is tested by using four coplanarity
+	    // tests with four points that are not coplanar.
+	    // TODO: use PCK::aligned_3d() instead (to be tested)	
+	    static const double q000[3] = {0.0, 0.0, 0.0};
+	    static const double q001[3] = {0.0, 0.0, 1.0};
+	    static const double q010[3] = {0.0, 1.0, 0.0};
+	    static const double q100[3] = {1.0, 0.0, 0.0};
+	    return
+		PCK::orient_3d(p1, p2, p3, q000) == ZERO &&
+		PCK::orient_3d(p1, p2, p3, q001) == ZERO &&
+		PCK::orient_3d(p1, p2, p3, q010) == ZERO &&
+		PCK::orient_3d(p1, p2, p3, q100) == ZERO
+	    ;
+	}
 	
         void initialize() {
             expansion::initialize();

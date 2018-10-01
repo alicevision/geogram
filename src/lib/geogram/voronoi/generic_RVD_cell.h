@@ -60,6 +60,7 @@
  * \note This file contains functions and classes used by the 
  *  internal implementation of GEO::GenericVoronoiDiagram. 
  *  They are not meant to be used directly by client code.
+ *  Users who whant similar functionalities may use GEO::ConvexCell instead.
  */
 
 namespace GEOGen {

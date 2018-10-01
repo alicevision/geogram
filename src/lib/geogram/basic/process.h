@@ -59,25 +59,10 @@
 
 namespace GEO {
 
-/**
- * \def GEO_THREAD_LOCAL
- * \brief Declares a variable local to the current thread.
- * \par Example
- * \code
- *    GEO_THREAD_LOCAL int x = 5;
- * \endcode
- * \note Variables declared as thread local need to be initialized
- *   with a constant value.
- */
-
-#if defined(GEO_COMPILER_GCC_FAMILY) 
-#define GEO_THREAD_LOCAL __thread
-#elif defined(GEO_COMPILER_MSVC) || defined(GEO_COMPILER_INTEL)
-#define GEO_THREAD_LOCAL __declspec(thread)
-#elif defined(GEO_COMPILER_EMSCRIPTEN)
-#define GEO_THREAD_LOCAL __thread    
-#else
-#error "Unknown compiler"
+// thread_local is supposed to be supported by c++0x,
+// but some old MSVC compilers do not have it.    
+#if defined(GEO_COMPILER_MSVC) && !defined(thread_local)
+#  define thread_local __declspec(thread)
 #endif
 
 

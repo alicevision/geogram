@@ -81,6 +81,38 @@ namespace {
 #endif    
 
 
+namespace {
+    // [Bruno Levy] functions for management of HighDPI displays.
+
+#ifndef __EMSCRIPTEN__    
+    /**
+     * \brief Computes the pixel ratio for hidpi devices.
+     * \details Uses the current GLFW window.
+     */
+    double pixel_ratio() {
+	int buf_size[2];
+	int win_size[2];
+	GLFWwindow* window = glfwGetCurrentContext();
+	glfwGetFramebufferSize(window, &buf_size[0], &buf_size[1]);
+	glfwGetWindowSize(window, &win_size[0], &win_size[1]);
+	return double(buf_size[0]) / double(win_size[0]);
+    }
+
+    /**
+     * \brief Computes the scaling factor for hidpi devices.
+     * \details Uses the current GLFW window.
+     */
+    double hidpi_scaling() {
+	float xscale, yscale;
+	GLFWwindow* window = glfwGetCurrentContext();
+	glfwGetWindowContentScale(window, &xscale, &yscale);
+	return 0.5 * double(xscale + yscale);
+    }
+#endif
+    
+}
+
+
 TextEditor::TextEditor()
 	: mLineSpacing(0.0f)
 	, mUndoIndex(0)
@@ -473,7 +505,14 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	// [Bruno Levy] read font size from current font (instead of default font)
 	ImGuiContext& g = *GImGui;
 	auto xadv = (g.Font->IndexAdvanceX['X']);
-	mCharAdvance = ImVec2(xadv, g.Font->FontSize + mLineSpacing); // TODO: apply pixel scaling for HiDPI displays.
+
+	// [Bruno Levy] apply highdpi scaling
+#ifdef __EMSCRIPTEN__
+	float s = 1.0f;
+#else	
+	float s = 1.0f / pixel_ratio();
+#endif	
+	mCharAdvance = ImVec2(s*xadv, s*(g.Font->FontSize + mLineSpacing)); // TODO: apply pixel scaling for HiDPI displays.
 
         //[Bruno Levy] commented-out (I prefer to use default style)
         // ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));

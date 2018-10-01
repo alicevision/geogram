@@ -107,6 +107,7 @@ void main() {
 	    {
 		vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);
 		vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);
+		
 		mat3 M = transpose(
 		    mat3(
 			GLUP.projection_matrix[0].xyz,
@@ -114,7 +115,17 @@ void main() {
 			GLUP.projection_matrix[2].xyz
 		    )
 		);
+
+// I do not know why it is reversed, to be checked
+// (maybe it is just my test program that does not
+// have the same transform orientation, but then I
+// do not understand why it gives the same result as
+// the desktop version with GLUPES2...)		
+#ifdef GL_ES
+		N = normalize(M*cross(U,V));		
+#else		
 		N = -normalize(M*cross(U,V));
+#endif		
 	    }
 	}
 	result = glup_lighting(result, N);

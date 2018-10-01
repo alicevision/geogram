@@ -27,7 +27,10 @@ HEADERS="../api/defs.h \
 ../basic/stopwatch.h \
 ../basic/command_line.h \
 ../basic/command_line_args.h \
+../voronoi/convex_cell.h \
 delaunay.h \
+periodic.h \
+periodic_delaunay_3d.h \
 "
 
 SOURCES="../basic/memory.h \
@@ -78,6 +81,9 @@ delaunay.cpp \
 delaunay_2d.cpp \
 delaunay_3d.cpp \
 parallel_delaunay_3d.cpp \
+../voronoi/convex_cell.cpp \
+periodic.cpp \
+periodic_delaunay_3d.cpp \
 ../basic/common.cpp
 "
 

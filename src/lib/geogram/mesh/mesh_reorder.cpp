@@ -47,6 +47,7 @@
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/mesh/mesh_repair.h>
 #include <geogram/mesh/index.h>
+#include <geogram/delaunay/periodic.h>
 #include <geogram/basic/permutation.h>
 #include <geogram/basic/process.h>
 #include <geogram/basic/logger.h>
@@ -1294,5 +1295,159 @@ namespace GEO {
             threshold, ratio, depth, levels
         );
     }
+}
+
+/**********************************************************************/
+
+namespace {
+    using namespace GEO;
+    
+    /**
+     * \details Exposes an interface compatible with the requirement
+     *   of Hilbert sort templates for a raw array of vertices.
+     */
+    class PeriodicVertexArray3d {
+    public:
+        /**
+         * \brief Constructs a new PeriodicVertexArray.
+	 * \param[in] nb_vertices total number of vertices, including
+	 *   the 27 copies.
+         * \param[in] base address of the points.
+         * \param[in] stride number of doubles between
+         *  two consecutive points.
+	 * \param[in] period the edge length of the periodic domain.
+         */
+        PeriodicVertexArray3d(
+            index_t nb_vertices,
+            const double* base, index_t stride,
+	    double period = 1.0
+        ) :
+            base_(base),
+            stride_(stride) {
+            nb_vertices_ = nb_vertices;
+	    nb_real_vertices_ = nb_vertices_ / 27;
+	    geo_debug_assert(nb_vertices % 27 == 0);
+
+	    
+	    for(index_t i=0; i<27; ++i) {
+		for(index_t j=0; j<3; ++j) {
+		    xlat_[i][j] = period * double(Periodic::translation[i][j]);
+		}
+	    }
+        }
+
+        /**
+         * \brief Gets a point coordinate by its index and coordinate.
+         * \param[in] i the index of the point.
+	 * \param[in] coord the coordinate.
+         * \return the value of the coordinate.
+         */
+	double point_coord(index_t i, index_t coord) const {
+	    index_t instance = i / nb_real_vertices_;
+	    i = i % nb_real_vertices_;
+            return (base_ + i * stride_)[coord] + xlat_[instance][coord];
+        }
+
+    private:
+        const double* base_;
+        index_t stride_;
+        index_t nb_vertices_;
+	index_t nb_real_vertices_;
+	double xlat_[27][3];
+    };
+
+    /**
+     * \brief Exposes an interface compatible with the requirement
+     *  of Hilbert sort templates for a raw array of vertices.
+     */
+    class PeriodicVertexMesh3d {
+    public:
+        /**
+         * \brief Constructs a new VertexMesh.
+	 * \param[in] nb_vertices total number of vertices, including
+	 *   the 27 copies.
+         * \param[in] base address of the points
+         * \param[in] stride number of doubles between
+         *  two consecutive points
+         */
+        PeriodicVertexMesh3d(
+            index_t nb_vertices,
+            const double* base, index_t stride, double period
+	) : vertices(nb_vertices, base, stride, period) {
+        }
+	
+        PeriodicVertexArray3d vertices;
+    };
+
+    /**
+     * \brief Drop-in replacement of Hilbert_vcmp for
+     *  periodic vertices.
+     * \details Needed because point_ptr() is not defined,
+     *  we need to use point_coord() instead.
+     */
+    template <int COORD, bool UP, class MESH>
+    struct Hilbert_vcmp_periodic {
+    };
+
+    /**
+     * \brief Drop-in replacement of Hilbert_vcmp for
+     *  periodic vertices, specialization for UP.
+     * \details Needed because point_ptr() is not defined,
+     *  we need to use point_coord() instead.
+     */
+    template <int COORD>
+    struct Hilbert_vcmp_periodic<COORD, true, PeriodicVertexMesh3d> {
+        Hilbert_vcmp_periodic(const PeriodicVertexMesh3d& mesh) :
+            mesh_(mesh) {
+        }
+        bool operator() (index_t i1, index_t i2) {
+            return
+                mesh_.vertices.point_coord(i1,COORD) <
+                mesh_.vertices.point_coord(i2,COORD);
+        }
+        const PeriodicVertexMesh3d& mesh_;
+    };
+
+    /**
+     * \brief Drop-in replacement of Hilbert_vcmp for
+     *  periodic vertices, specialization for !UP.
+     * \details Needed because point_ptr() is not defined,
+     *  we need to use point_coord() instead.
+     */
+    template <int COORD>
+    struct Hilbert_vcmp_periodic<COORD, false, PeriodicVertexMesh3d> {
+        Hilbert_vcmp_periodic(const PeriodicVertexMesh3d& mesh) :
+            mesh_(mesh) {
+        }
+        bool operator() (index_t i1, index_t i2) {
+            return
+                mesh_.vertices.point_coord(i1,COORD) <
+                mesh_.vertices.point_coord(i2,COORD);
+        }
+        const PeriodicVertexMesh3d& mesh_;
+    };
+    
+}
+
+namespace GEO {
+
+    void Hilbert_sort_periodic(
+	index_t nb_vertices, const double* vertices,
+	vector<index_t>& sorted_indices,
+	index_t dimension,
+        index_t stride,
+	vector<index_t>::iterator b,
+	vector<index_t>::iterator e,
+	double period
+    ) {
+	geo_assert(dimension == 3); // Only implemented for 3D.	
+	geo_argused(sorted_indices); // Accessed through b and e.
+        std::random_shuffle(b,e);
+	PeriodicVertexMesh3d M(nb_vertices, vertices, stride, period);
+	HilbertSort3d<Hilbert_vcmp_periodic, PeriodicVertexMesh3d>(
+	    M, b, e
+	);
+    }
+
 }
 

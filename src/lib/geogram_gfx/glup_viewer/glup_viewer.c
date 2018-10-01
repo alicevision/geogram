@@ -273,6 +273,10 @@ float* glup_viewer_get_scene_quaternion() {
     return cur_rot;
 }
 
+float* glup_viewer_get_scene_translation() {
+    return cur_xlat;
+}
+
 float* glup_viewer_get_light_quaternion() {
     return cur_rot_light;
 }

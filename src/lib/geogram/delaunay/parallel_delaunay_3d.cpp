@@ -76,7 +76,7 @@ namespace {
      */
     index_t thread_safe_random(index_t choices_in) {
         signed_index_t choices = signed_index_t(choices_in);
-        static GEO_THREAD_LOCAL long int randomseed = 1l ;
+        static thread_local long int randomseed = 1l ;
         if (choices >= 714025l) {
             long int newrandom = (randomseed * 1366l + 150889l) % 714025l;
             randomseed = (newrandom * 1366l + 150889l) % 714025l;
@@ -99,95 +99,9 @@ namespace {
      *  per thread.
      */
     index_t thread_safe_random_4() {
-        static GEO_THREAD_LOCAL long int randomseed = 1l ;
+        static thread_local long int randomseed = 1l ;
         randomseed = (randomseed * 1366l + 150889l) % 714025l;
         return index_t(randomseed % 4);
-    }
-
-    /**
-     * \brief Tests whether two 3d points are identical.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \retval true if \p p1 and \p p2 have exactly the same
-     *  coordinates
-     * \retval false otherwise
-     */
-    bool points_are_identical_3d_(
-        const double* p1,
-        const double* p2
-    ) {
-        return
-            (p1[0] == p2[0]) &&
-            (p1[1] == p2[1]) &&
-            (p1[2] == p2[2])
-        ;
-    }
-
-    /**
-     * \brief Tests whether three 3d points are colinear.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \param[in] p3 third point
-     * \retval true if \p p1, \p p2 and \p p3 are colinear
-     * \retbal false otherwise
-     */
-    bool points_are_colinear_3d_(
-        const double* p1,
-        const double* p2,
-        const double* p3
-    ) {
-        // Colinearity is tested by using four coplanarity
-        // tests with four points that are not coplanar.
-	// TODO: use PCK::aligned_3d() instead (to be tested)
-        static const double q000[3] = {0.0, 0.0, 0.0};
-        static const double q001[3] = {0.0, 0.0, 1.0};
-        static const double q010[3] = {0.0, 1.0, 0.0};
-        static const double q100[3] = {1.0, 0.0, 0.0};
-        return
-            PCK::orient_3d(p1, p2, p3, q000) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q001) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q010) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q100) == ZERO
-        ;
-    }
-
-    /**
-     * \brief Computes the (approximate) orientation predicate in 3d.
-     * \details Computes the sign of the (approximate) signed volume of
-     *  the tetrahedron p0, p1, p2, p3.
-     * \param[in] p0 first vertex of the tetrahedron
-     * \param[in] p1 second vertex of the tetrahedron
-     * \param[in] p2 third vertex of the tetrahedron
-     * \param[in] p3 fourth vertex of the tetrahedron
-     * \retval POSITIVE if the tetrahedron is oriented positively
-     * \retval ZERO if the tetrahedron is flat
-     * \retval NEGATIVE if the tetrahedron is oriented negatively
-     * \todo check whether orientation is inverted as compared to 
-     *   Shewchuk's version.
-     */
-    inline Sign orient_3d_inexact_(
-        const double* p0, const double* p1,
-        const double* p2, const double* p3
-    ) {
-        double a11 = p1[0] - p0[0] ;
-        double a12 = p1[1] - p0[1] ;
-        double a13 = p1[2] - p0[2] ;
-        
-        double a21 = p2[0] - p0[0] ;
-        double a22 = p2[1] - p0[1] ;
-        double a23 = p2[2] - p0[2] ;
-        
-        double a31 = p3[0] - p0[0] ;
-        double a32 = p3[1] - p0[1] ;
-        double a33 = p3[2] - p0[2] ;
-
-        double Delta = det3x3(
-            a11,a12,a13,
-            a21,a22,a23,
-            a31,a32,a33
-        );
-
-        return geo_sgn(Delta);
     }
 }
 
@@ -571,7 +485,7 @@ namespace GEO {
             iv1 = 1;
             while(
                 iv1 < nb_vertices() &&
-                points_are_identical_3d_(
+                PCK::points_are_identical_3d(
                     vertex_ptr(iv0), vertex_ptr(iv1)
                     )
                 ) {
@@ -584,7 +498,7 @@ namespace GEO {
             iv2 = iv1 + 1;
             while(
                 iv2 < nb_vertices() &&
-                points_are_colinear_3d_(
+                PCK::points_are_colinear_3d(
                     vertex_ptr(iv0), vertex_ptr(iv1), vertex_ptr(iv2)
                     )
                 ) {
@@ -1591,7 +1505,7 @@ namespace GEO {
                      // convention as in CGAL).
                      const double* pv_bkp = pv[f];
                      pv[f] = p;
-                     Sign ori = orient_3d_inexact_(pv[0], pv[1], pv[2], pv[3]);
+                     Sign ori = PCK::orient_3d_inexact(pv[0], pv[1], pv[2], pv[3]);
                      
                      //   If the orientation is not negative, then we cannot
                      // walk towards t_next, and examine the next candidate

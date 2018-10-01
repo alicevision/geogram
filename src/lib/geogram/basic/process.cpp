@@ -256,7 +256,7 @@ namespace {
      *  to export thread local storage variables in 
      *  DLLs.
      */
-    GEO_THREAD_LOCAL Thread* geo_current_thread_ = nullptr;
+    thread_local Thread* geo_current_thread_ = nullptr;
 }
 
 namespace GEO {

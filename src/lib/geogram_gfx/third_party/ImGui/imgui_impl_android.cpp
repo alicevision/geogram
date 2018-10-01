@@ -319,7 +319,6 @@ int32_t ImGui_ImplAndroid_KeyEvent(
 
     if(action == AKEY_EVENT_ACTION_DOWN) {
 	if(key == AKEYCODE_BACK) {
-	    ImGui::debug_printf("Show virtual keyboard\n");
 	    AndroidUtils::set_soft_keyboard_visibility(app, true);
 	} else {
 	    jint unicode = AndroidUtils::keycode_to_unicode(

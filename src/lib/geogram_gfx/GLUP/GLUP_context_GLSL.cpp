@@ -115,14 +115,17 @@ namespace GLUP {
                 "//stage GL_VERTEX_SHADER\n"
                 "//import <GLUPGLSL/vertex_shader.h>\n",
                 "//stage GL_FRAGMENT_SHADER\n"
-                "//import <GLUPGLSL/fragment_shader.h>\n",
+                "//import <GLUPGLSL/fragment_shader.h>\n"
+#ifndef GEO_OS_ANDROID
+		,
                 "//stage GL_GEOMETRY_SHADER\n"
                 "//import <GLUPGLSL/geometry_shader_preamble.h>\n"
                 "void main() {\n"
                 "    gl_PrimitiveID = gl_PrimitiveIDIn;\n"
                 "    get_vertices();\n"
                 "    draw_triangle(0,1,2,true);\n"
-                "}\n"                
+                "}\n"
+#endif		
             )
        );
     }
@@ -135,7 +138,9 @@ namespace GLUP {
                 "//stage GL_VERTEX_SHADER\n"
                 "//import <GLUPGLSL/vertex_shader.h>\n",
                 "//stage GL_FRAGMENT_SHADER\n"
-                "//import <GLUPGLSL/fragment_shader.h>\n",
+                "//import <GLUPGLSL/fragment_shader.h>\n"
+#ifndef GEO_OS_ANDROID
+		,
                 "//stage GL_GEOMETRY_SHADER\n"
                 "//import <GLUPGLSL/geometry_shader_preamble.h>\n"
                 "void main() {\n"
@@ -143,6 +148,7 @@ namespace GLUP {
                 "    get_vertices();\n"
                 "    draw_quad(0,1,3,2,true);\n"
                 "}\n"
+#endif				
             )
         );
     }
@@ -316,6 +322,8 @@ namespace GLUP {
 #if defined(GEO_OS_ANDROID)
         sources.push_back("#version 320 es\n");
 	sources.push_back("precision lowp sampler3D;\n");
+	sources.push_back("precision highp float;\n");
+	sources.push_back("precision highp int;\n");		
 	sources.push_back("#define GLUP_NO_GL_CLIPPING\n");
 #elif defined(GEO_OS_APPLE)
         sources.push_back("#version 150\n");
@@ -332,7 +340,8 @@ namespace GLUP {
 #if defined(GEO_OS_ANDROID)
         sources.push_back("#version 320 es\n");
 	sources.push_back("precision lowp sampler3D;\n");
-	sources.push_back("precision highp float;\n");	
+	sources.push_back("precision highp float;\n");
+	sources.push_back("precision highp int;\n");		
 	sources.push_back("#define GLUP_NO_GL_CLIPPING\n");	
 #elif defined(GEO_OS_APPLE)
         sources.push_back("#version 150\n");
@@ -416,6 +425,8 @@ namespace GLUP {
 #if defined(GEO_OS_ANDROID)
         sources.push_back("#version 320 es\n");
 	sources.push_back("precision lowp sampler3D;\n");
+	sources.push_back("precision highp float;\n");
+	sources.push_back("precision highp int;\n");		
 	sources.push_back("#define GLUP_NO_GL_CLIPPING\n");	
 #elif defined(GEO_OS_APPLE)
         sources.push_back("#version 150\n");
