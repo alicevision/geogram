@@ -56,9 +56,6 @@
 
 namespace GEO {
 
-    CentroidalVoronoiTesselation*
-    CentroidalVoronoiTesselation::instance_ = nil;
-
     CentroidalVoronoiTesselation::CentroidalVoronoiTesselation(
         Mesh* mesh, coord_index_t dim, const std::string& delaunay
     ) {
@@ -72,8 +69,8 @@ namespace GEO {
         delaunay_ = Delaunay::create(dimension_, delaunay);
         RVD_ = RestrictedVoronoiDiagram::create(delaunay_, mesh);
         mesh_ = mesh;
-        geo_assert(instance_ == nil);
-        instance_ = this;
+        geo_assert(cvt_instance_ == nil);
+        cvt_instance_ = this;
         progress_ = nil;
 	geo_cite("Lloyd82leastsquares");
 	geo_cite("Du:1999:CVT:340312.340319");
@@ -100,8 +97,8 @@ namespace GEO {
             );
         }
         mesh_ = mesh;
-        geo_assert(instance_ == nil);
-        instance_ = this;
+        geo_assert(cvt_instance_ == nil);
+        cvt_instance_ = this;
         progress_ = nil;
 	geo_cite("Lloyd82leastsquares");
 	geo_cite("Du:1999:CVT:340312.340319");
@@ -109,7 +106,7 @@ namespace GEO {
     }
 
     CentroidalVoronoiTesselation::~CentroidalVoronoiTesselation() {
-        instance_ = nil;
+        cvt_instance_ = nil;
     }
 
     bool CentroidalVoronoiTesselation::compute_initial_sampling(
@@ -353,7 +350,7 @@ namespace GEO {
     void CentroidalVoronoiTesselation::funcgrad_CB(
         index_t n, double* x, double& f, double* g
     ) {
-        instance_->funcgrad(n, x, f, g);
+        cvt_instance_->funcgrad(n, x, f, g);
     }
 
     void CentroidalVoronoiTesselation::newiteration_CB(
@@ -364,7 +361,7 @@ namespace GEO {
         geo_argused(f);
         geo_argused(g);
         geo_argused(gnorm);
-        instance_->newiteration();
+        cvt_instance_->newiteration();
     }
 
     void CentroidalVoronoiTesselation::compute_R3_embedding() {

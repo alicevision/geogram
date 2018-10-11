@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -182,8 +182,7 @@ namespace GEO {
         INIT_HLBFGS(parameter, hlbfgs_info);
         hlbfgs_info[3] = b_m1qn3_ ? 1 : 0; // determines whether we use m1qn3
         hlbfgs_info[4] = (int) max_iter_;  // max iterations
-        hlbfgs_info[5] =
-            GEO::CmdLine::get_arg_bool("debug") ? 1 : 0;  // verbose
+        hlbfgs_info[5] = 0;  // verbose
         hlbfgs_info[10] = b_cg_ ? 1 : 0; // determines whether we use cg
         parameter[5] = 0; // disabled
         parameter[6] = epsg_;
@@ -250,7 +249,7 @@ namespace GEO {
         hlbfgs_info[4] = (int) max_iter_;  // max iterations
         hlbfgs_info[6] = (int) T_;  // update interval of hessian
         hlbfgs_info[7] = 1;   // 0: without hessian, 1: with accurate hessian
-        
+
         HLBFGS(
             (int) n_,
             (int) m_,

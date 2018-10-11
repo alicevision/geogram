@@ -182,6 +182,17 @@ list(APPEND sources
 	"src/lib/geogram/third_party/rply/rply.c"
 	"src/lib/geogram/third_party/rply/rply.h"
 	"src/lib/geogram/third_party/LM7/libmeshb7.c"
+  "src/lib/geogram/third_party/HLBFGS/HLBFGS_BLAS.cpp"
+  "src/lib/geogram/third_party/HLBFGS/HLBFGS_BLAS.h"
+  "src/lib/geogram/third_party/HLBFGS/HLBFGS.cpp"
+  "src/lib/geogram/third_party/HLBFGS/HLBFGS.h"
+  "src/lib/geogram/third_party/HLBFGS/ICFS.cpp"
+  "src/lib/geogram/third_party/HLBFGS/ICFS.h"
+  "src/lib/geogram/third_party/HLBFGS/LineSearch.cpp"
+  "src/lib/geogram/third_party/HLBFGS/LineSearch.h"
+  "src/lib/geogram/third_party/HLBFGS/Lite_Sparse_Matrix.cpp"
+  "src/lib/geogram/third_party/HLBFGS/Lite_Sparse_Matrix.h"
+  "src/lib/geogram/third_party/HLBFGS/Sparse_Entry.h"
   #"src/lib/geogram/bibliography/embedded_references.cpp"
   #"src/lib/geogram/bibliography/bibliography.cpp"
   #"src/lib/geogram/bibliography/bibliography.h"
@@ -211,5 +222,7 @@ target_include_directories(geogram PUBLIC
 target_link_libraries(geogram PUBLIC zlibstatic)
 
 target_compile_features(geogram PUBLIC cxx_std_17)
+
+target_compile_definitions(geogram PUBLIC -DGEOGRAM_WITH_HLBFGS)
 
 #target_compile_definitions(geogram PUBLIC)
