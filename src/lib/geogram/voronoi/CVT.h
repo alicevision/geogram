@@ -416,6 +416,13 @@ namespace GEO {
             point_is_locked_.clear();
         }
 
+        /**
+         * \brief Computes the 3d representation of the Nd points.
+         * \details It projects the points onto the Nd surface, then recovers
+         *  the 3d coordinates by barycentric interpolation.
+         */
+        void compute_R3_embedding();
+
     protected:
         /**
          * \brief Callback for the numerical solver.
@@ -439,13 +446,6 @@ namespace GEO {
          * \param[in,out] g gradient of the objective function
          */
         void constrain_points(double* g) const;
-
-        /**
-         * \brief Computes the 3d representation of the Nd points.
-         * \details It projects the points onto the Nd surface, then recovers
-         *  the 3d coordinates by barycentric interpolation.
-         */
-        void compute_R3_embedding();
 
         bool show_iterations_;
         coord_index_t dimension_;
