@@ -17,7 +17,7 @@
 namespace GEO {
 
 namespace Process {
-  inline  
+  inline
   void initialize() {}
 
   inline
@@ -33,7 +33,7 @@ namespace Process {
   bool is_running_threads() { return false; }
 
   inline
-  index_t maximum_concurrent_threads() { 
+  index_t maximum_concurrent_threads() {
     return 8; // ?
   }
 };
@@ -51,7 +51,7 @@ void parallel_for(Functor&& ff,
   }
 
   if (interleaved) {
-    std::cout << "interleaved!" << std::endl;
+    // std::cout << "interleaved!" << std::endl;
   }
 
   if (threads_per_core != 1) {

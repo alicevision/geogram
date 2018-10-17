@@ -60,8 +60,11 @@
 
 namespace GEO {
 
+    class CentroidalVoronoiTesselation;
     class RestrictedVoronoiDiagram;
     class ProgressTask;
+
+    thread_local static CentroidalVoronoiTesselation* cvt_instance_ = nullptr;
 
     /**
      * \brief CentroidalVoronoiTesselation is the main component
@@ -254,8 +257,8 @@ namespace GEO {
          * \pre There is no current CentroidalVoronoiTesselation.
          */
         void make_current() {
-            geo_assert(instance_ == nil);
-            instance_ = this;
+            geo_assert(cvt_instance_ == nil);
+            cvt_instance_ = this;
         }
 
         /**
@@ -268,8 +271,8 @@ namespace GEO {
          * \pre This CentroidalVoronoiTesselation is the current one.
          */
         void done_current() {
-            geo_assert(instance_ == this);
-            instance_ = nil;
+            geo_assert(cvt_instance_ == this);
+            cvt_instance_ = nil;
         }
 
     public:
@@ -413,6 +416,13 @@ namespace GEO {
             point_is_locked_.clear();
         }
 
+        /**
+         * \brief Computes the 3d representation of the Nd points.
+         * \details It projects the points onto the Nd surface, then recovers
+         *  the 3d coordinates by barycentric interpolation.
+         */
+        void compute_R3_embedding();
+
     protected:
         /**
          * \brief Callback for the numerical solver.
@@ -437,14 +447,6 @@ namespace GEO {
          */
         void constrain_points(double* g) const;
 
-        /**
-         * \brief Computes the 3d representation of the Nd points.
-         * \details It projects the points onto the Nd surface, then recovers
-         *  the 3d coordinates by barycentric interpolation.
-         */
-        void compute_R3_embedding();
-
-        static CentroidalVoronoiTesselation* instance_;
         bool show_iterations_;
         coord_index_t dimension_;
         Delaunay_var delaunay_;

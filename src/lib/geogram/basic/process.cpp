@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -253,7 +253,7 @@ namespace {
      *  pointer to the current thread.
      * \details It cannot be a static member of class
      *  Thread, because Visual C++ does not accept
-     *  to export thread local storage variables in 
+     *  to export thread local storage variables in
      *  DLLs.
      */
     GEO_THREAD_LOCAL Thread* geo_current_thread_ = nil;
@@ -268,7 +268,7 @@ namespace GEO {
     Thread* Thread::current() {
         return geo_current_thread_;
     }
-    
+
     Thread::~Thread() {
     }
 
@@ -327,7 +327,7 @@ namespace GEO {
         size_t os_used_memory();
         size_t os_max_used_memory();
         std::string os_executable_filename();
-        
+
         void initialize() {
 
             Environment* env = Environment::instance();
@@ -348,7 +348,7 @@ namespace GEO {
             }
 
 	    if(::getenv("GEO_NO_SIGNAL_HANDLER") == NULL) {
-		os_install_signal_handlers();
+		// os_install_signal_handlers();
 	    }
 
             // Initialize Process default values
@@ -363,24 +363,24 @@ namespace GEO {
 
         void show_stats() {
 
-            Logger::out("Process") << "Total elapsed time: " 
+            Logger::out("Process") << "Total elapsed time: "
                                    << SystemStopwatch::now() - start_time_
                                    << "s" << std::endl;
 
             const size_t K=size_t(1024);
             const size_t M=K*K;
             const size_t G=K*M;
-            
+
             size_t max_mem = Process::max_used_memory() ;
             size_t r = max_mem;
-            
+
             size_t mem_G = r / G;
             r = r % G;
             size_t mem_M = r / M;
             r = r % M;
             size_t mem_K = r / K;
             r = r % K;
-            
+
             std::string s;
             if(mem_G != 0) {
                 s += String::to_string(mem_G)+"G ";
@@ -395,7 +395,7 @@ namespace GEO {
                 s += String::to_string(r);
             }
 
-            Logger::out("Process") << "Maximum used memory: " 
+            Logger::out("Process") << "Maximum used memory: "
                                    << max_mem << " (" << s << ")"
                                    << std::endl;
         }
@@ -427,7 +427,7 @@ namespace GEO {
         std::string executable_filename() {
             return os_executable_filename();
         }
-        
+
         void set_thread_manager(ThreadManager* thread_manager) {
             thread_manager_ = thread_manager;
         }
@@ -505,7 +505,7 @@ namespace GEO {
                 num_threads = 1;
             } else if(num_threads > number_of_cores()) {
                 Logger::warn("Process")
-                    << "Cannot allocate " << num_threads 
+                    << "Cannot allocate " << num_threads
                     << " for multithreading"
                     << std::endl;
                 num_threads = number_of_cores();
