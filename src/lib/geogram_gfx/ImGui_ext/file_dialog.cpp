@@ -330,11 +330,11 @@ namespace GEO {
         ImGui::Begin(
             (std::string(
                 save_mode_ ? "Save as...##" : "Load...##"
-             )+String::to_string(this)).c_str(),
+	     )+String::to_string(this)).c_str(),
             &visible_,
             ImGuiWindowFlags_NoCollapse 
         );
-        
+
         if(ImGui::Button("parent")) {
             set_directory("../");
         }

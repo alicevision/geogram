@@ -266,6 +266,7 @@ namespace ImGui {
 	}
 	GEO::FileDialog* dlg = file_dialogs[label];
 	dlg->draw();
+	
 	std::string result = dlg->get_and_reset_selected_file();
 	if(result != "") {
 	    if(result.length() + 1 >= filename_buff_len) {

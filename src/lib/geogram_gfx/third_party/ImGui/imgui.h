@@ -59,6 +59,7 @@
 #endif
 
 #ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wpragmas"         // [Bruno Levy]
 #pragma GCC diagnostic ignored "-Wunknown-pragmas" // [Bruno Levy]
 #ifndef __clang__    
 #pragma GCC diagnostic ignored "-Wclass-memaccess" // [Bruno Levy]

@@ -1,0 +1,28 @@
+
+--This line, and those below, will be ignored--
+
+M    src/AndroidApps/VorpalineDemo/app/src/main/cpp/CMakeLists.txt
+M    src/AndroidApps/VorpalineDemo/app/src/main/cpp/android_main.cpp
+M    src/lib/geogram/CMakeLists.txt
+M    src/lib/geogram/basic/common.cpp
+A    src/lib/geogram/image
+AM   src/lib/geogram/image/color.h
+AM   src/lib/geogram/image/colormap.cpp
+AM   src/lib/geogram/image/colormap.h
+AM   src/lib/geogram/image/image.cpp
+AM   src/lib/geogram/image/image.h
+AM   src/lib/geogram/image/image_library.cpp
+AM   src/lib/geogram/image/image_library.h
+A    src/lib/geogram/image/image_rasterizer.cpp
+A    src/lib/geogram/image/image_rasterizer.h
+AM   src/lib/geogram/image/image_serializer.cpp
+AM   src/lib/geogram/image/image_serializer.h
+AM   src/lib/geogram/image/image_serializer_pgm.cpp
+AM   src/lib/geogram/image/image_serializer_pgm.h
+A    src/lib/geogram/image/image_serializer_stb.cpp
+AM   src/lib/geogram/image/image_serializer_stb.h
+AM   src/lib/geogram/image/image_serializer_xpm.cpp
+AM   src/lib/geogram/image/image_serializer_xpm.h
+AM   src/lib/geogram/image/morpho_math.cpp
+AM   src/lib/geogram/image/morpho_math.h
+M    src/lib/geogram/points/kd_tree.h

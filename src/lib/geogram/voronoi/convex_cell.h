@@ -47,10 +47,10 @@
 #define GEOGRAM_VORONOI_CONVEX_CELL
 
 #ifndef STANDALONE_CONVEX_CELL
-#  include <geogram/basic/common.h>
-#  include <geogram/basic/memory.h>
-#  include <geogram/basic/numeric.h>
-#  include <geogram/basic/geometry.h>
+#include <geogram/basic/common.h>
+#include <geogram/basic/memory.h>
+#include <geogram/basic/numeric.h>
+#include <geogram/basic/geometry.h>
 #endif
 
 #include <string>

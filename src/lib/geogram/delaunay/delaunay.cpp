@@ -283,8 +283,9 @@ namespace GEO {
             }
         }
         parallel_for(
-            parallel_for_member_callback(this, &Delaunay::store_neighbors_CB),
-            0, nb_vertices(), 1, true
+	    0, nb_vertices(),
+	    [this](index_t i) { store_neighbors_CB(i); },
+	    1, true
         );
     }
 

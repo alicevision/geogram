@@ -342,6 +342,11 @@ inline char atomic_bittestandreset_x86(volatile unsigned int* ptr, unsigned int 
 #pragma intrinsic(_WriteBarrier)
 #pragma intrinsic(_ReadWriteBarrier)
 
+#  ifdef GEO_COMPILER_MINGW
+inline void geo_pause() {
+}
+#  endif
+
 #endif // GEO_OS_WINDOWS
 
 #endif

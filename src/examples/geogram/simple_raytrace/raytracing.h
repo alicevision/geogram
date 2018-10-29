@@ -478,6 +478,10 @@ namespace GEO {
 	    ImGui::PushID(this);
 	    bool result = false;
 	    ImGui::Separator();
+	    if(ImGui::Button("X")) {
+		to_delete_ = this;
+	    }
+	    ImGui::SameLine();
 	    ImGui::Text("%s", name().c_str());
 	    if(edit_color("Diffuse", material().Kd)) {
 		result = true;
@@ -493,8 +497,11 @@ namespace GEO {
      protected:
 	std::string name_;
 	Material material_;
+	static Object* to_delete_;
     };
 
+    Object* Object::to_delete_ = nullptr;
+    
     /*******************************************************************/
 
     /**
@@ -620,7 +627,7 @@ namespace GEO {
 
     /**
      * \brief Light object.
-     * \detail A Light appears as a colored sphere. The radius does not play 
+     * \details A Light appears as a colored sphere. The radius does not play
      *  a role in the lighting, this is just a point light.
      */
     class Light : public Sphere {
@@ -662,7 +669,11 @@ namespace GEO {
 	 bool draw_gui() override {
 	    ImGui::PushID(this);
 	    bool result = false;
-	    ImGui::Separator();	    
+	    ImGui::Separator();
+	    if(ImGui::Button("X")) {
+		to_delete_ = this;
+	    }
+	    ImGui::SameLine();
 	    ImGui::Text("%s", name().c_str());
 	    if(ImGui::Checkbox("##On", &on_)) {
 		result = true;
@@ -916,6 +927,34 @@ namespace GEO {
 	 */
 	virtual bool draw_gui() override {
 	    bool result = false;
+	    
+	    for(index_t i=0; i<objects_.size(); ++i) {
+		if(to_delete_ == objects_[i]) {
+		    delete objects_[i];
+		    objects_.erase(objects_.begin() + std::ptrdiff_t(i));
+		    result = true;
+		    break;
+		} 		
+	    }
+
+	    for(index_t i=0; i<real_objects_.size(); ++i) {
+		if(to_delete_ == real_objects_[i]) {
+		    real_objects_.erase(
+			real_objects_.begin() + std::ptrdiff_t(i)
+		    );
+		    break;
+		} 		
+	    }
+
+	    for(index_t i=0; i<lights_.size(); ++i) {
+		if(to_delete_ == lights_[i]) {
+		    lights_.erase(lights_.begin() + std::ptrdiff_t(i));
+		    break;
+		} 		
+	    }
+
+	    to_delete_ = nullptr;
+	    
 	    for(index_t i=0; i<objects_.size(); ++i) {
 		if(objects_[i]->draw_gui()) {
 		    result = true;
@@ -1048,7 +1087,18 @@ namespace GEO {
 	    p[2] = 1.0-y;
 	}
     }
-    
+
+    inline vec3 random_color() {
+	vec3 result;
+	while(length2(result) < 0.1) {
+	    result = vec3(
+		Numeric::random_float64(),
+		Numeric::random_float64(),
+		Numeric::random_float64()
+	    );
+	}
+	return result;
+    }
 }
 
 

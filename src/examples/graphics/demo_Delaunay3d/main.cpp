@@ -279,11 +279,11 @@ namespace {
 	    	    );
 		
 		    glupBegin(GLUP_SPHERES);
-		    for(index_t i=0; i<points_.size()/3; ++i) {
+		    for(index_t v=0; v<points_.size()/3; ++v) {
 			glupVertex4d(
-			    points_[3*i],
-			    points_[3*i+1],
-			    points_[3*i+2],
+			    points_[3*v],
+			    points_[3*v+1],
+			    points_[3*v+2],
 			    R
 			);
 		    }

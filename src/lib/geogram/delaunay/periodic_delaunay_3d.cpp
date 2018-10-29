@@ -119,8 +119,8 @@ namespace {
      *  of the integer.
      */
     inline index_t pop_count(index_t x) {
-	geo_debug_assert(sizeof(index_t) == 4);
-#if defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+	static_assert(sizeof(index_t) == 4, "Only supported with 32 bit indices");
+#if defined(GEO_COMPILER_GCC_FAMILY)
 	return index_t(__builtin_popcount(x));
 #elif defined(GEO_COMPILER_MSVC)
 	return index_t(__popcnt(x));
@@ -1623,7 +1623,7 @@ namespace GEO {
             geo_debug_assert(t < max_t());
             geo_debug_assert(!owns_tet(t));
 
-#ifdef GEO_OS_WINDOWS
+#if defined(GEO_COMPILER_MSVC)
            // Note: comparand and exchange parameter are swapped in Windows API
            // as compared to __sync_val_compare_and_swap !!
             interfering_thread_ =
@@ -3679,8 +3679,8 @@ namespace GEO {
 	    vertex_ptr(0),
 	    reorder_,
 	    3, dimension(), 
-	    reorder_.begin() + b,
-	    reorder_.begin() + e,
+	    reorder_.begin() + long(b),
+	    reorder_.begin() + long(e),
 	    period_
 	);
 	
@@ -3923,54 +3923,56 @@ namespace GEO {
 	index_t nb_cells_on_boundary = 0;
 	index_t nb_cells_outside_cube = 0;
 
-	static Process::spinlock lock = GEOGRAM_SPINLOCK_INIT;
+	Process::spinlock lock = GEOGRAM_SPINLOCK_INIT;
 
-#ifdef GEO_OPENMP
-        #pragma omp parallel for
-#endif	
-	FOR(v, nb_vertices_non_periodic_) {
+	parallel_for_slice(
+	    0, nb_vertices_non_periodic_,		     
+	    [this,&lock,&nb_cells_on_boundary,&nb_cells_outside_cube](
+		index_t from, index_t to
+	    ) {
+		ConvexCell C;
+		vector<index_t> neighbors;
 
-#ifdef GEO_OPENMP
-	    static thread_local ConvexCell C;
-	    static thread_local vector<index_t> neighbors;
-#else
-	    ConvexCell C;
-	    vector<index_t> neighbors;
-#endif
-	    bool use_instance[27];
-	    bool cell_is_on_boundary = false;
-	    bool cell_is_outside_cube = false;
+	      for(index_t v=from; v<to; ++v) {
+		  bool use_instance[27];
+		  bool cell_is_on_boundary = false;
+		  bool cell_is_outside_cube = false;
+		  
+		  // Determines the periodic vertices to create, that is,
+		  // whenever the cell of the current vertex has an intersection
+		  // with one of the 27 cubes, an instance needs to be created there.
+		  index_t nb_instances = get_periodic_vertex_instances_to_create(
+		      v, C, neighbors, use_instance,
+		      cell_is_on_boundary, cell_is_outside_cube
+		  );
 
-	    // Determines the periodic vertices to create, that is,
-	    // whenever the cell of the current vertex has an intersection
-	    // with one of the 27 cubes, an instance needs to be created there.
-	    index_t nb_instances = get_periodic_vertex_instances_to_create(
-		v, C, neighbors, use_instance,
-		cell_is_on_boundary, cell_is_outside_cube
-	    );
 
-	    if(cell_is_on_boundary) {
-		++nb_cells_on_boundary;
-	    }
+		  Process::acquire_spinlock(lock);
+		  
+		  if(cell_is_on_boundary) {
+		      ++nb_cells_on_boundary;
+		  }
 
-	    if(cell_is_outside_cube) {
-		++nb_cells_outside_cube;
-	    }
+		  if(cell_is_outside_cube) {
+		      ++nb_cells_outside_cube;
+		  }
 	    
-	    // Append the new periodic vertices in the list of vertices.
-	    // (we put them in the reorder_ vector that is always used
-	    //  to do the insertions).
-	    if(nb_instances > 0) {
-		Process::acquire_spinlock(lock);
-		for(index_t instance=1; instance<27; ++instance) {
-		    if(use_instance[instance]) {
-			vertex_instances_[v] |= (1u << instance);
-			reorder_.push_back(make_periodic_vertex(v,instance));
-		    }
-		}
-		Process::release_spinlock(lock);		
-	    }
-	}
+		  // Append the new periodic vertices in the list of vertices.
+		  // (we put them in the reorder_ vector that is always used
+		  //  to do the insertions).
+		  if(nb_instances > 0) {
+		      for(index_t instance=1; instance<27; ++instance) {
+			  if(use_instance[instance]) {
+			      vertex_instances_[v] |= (1u << instance);
+			      reorder_.push_back(make_periodic_vertex(v,instance));
+			  }
+		      }
+		  }
+		  
+		  Process::release_spinlock(lock);		
+	      }
+	   }
+	);
 
 
 	if(benchmark_mode_) {

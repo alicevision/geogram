@@ -261,8 +261,9 @@ void glupBindUniformState(GLUPuint program) {
 }
 
 
-#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE)
-#else
+#if !defined(GEO_OS_EMSCRIPTEN) && \
+    !defined(GEO_OS_APPLE) && \
+    !defined(GEO_OS_ANDROID)
 
 /**
  * \brief Tests whether tessellation shaders are supported by OpenGL.

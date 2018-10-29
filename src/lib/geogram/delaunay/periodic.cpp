@@ -91,6 +91,5 @@ namespace GEO {
 	false, false, false, false, true,  true,
 	false, true,  true
     };
-    
 }
 

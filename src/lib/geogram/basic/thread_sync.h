@@ -122,7 +122,7 @@ namespace GEO {
             unlock_mutex_android(&x);
         }
 
-#elif defined(GEO_OS_LINUX) 
+#elif defined(GEO_OS_LINUX) || defined(GEO_COMPILER_MINGW)
 
         /** A lightweight synchronization structure. */
         typedef unsigned char spinlock;
@@ -183,7 +183,7 @@ namespace GEO {
         }
 #endif // __MAC_10_12
 
-#elif defined(GEO_OS_WINDOWS)
+#elif defined(GEO_OS_WINDOWS) && !defined(GEO_COMPILER_MINGW)
 
         /** A lightweight synchronization structure. */
         typedef short spinlock;
@@ -669,7 +669,7 @@ namespace GEO {
                 geo_thread_sync_assert(i < size());
                 index_t w = i >> 5;
                 index_t b = i & 31;
-                while(_interlockedbittestandset(&spinlocks_[w], b)) {
+                while(_interlockedbittestandset((long *)(&spinlocks_[w]), long(b))) {
                     // Intel recommends to have a PAUSE asm instruction
                     // in the spinlock loop. Under MSVC/Windows,
                     // YieldProcessor() is a macro that calls the
@@ -696,7 +696,7 @@ namespace GEO {
                 // Note2: We do not need here _WriteBarrier() since
                 // _interlockedbittestandreset
                 // "acts as a full barrier in VC2005" according to the doc
-                _interlockedbittestandreset(&spinlocks_[w], b);
+                _interlockedbittestandreset((long*)(&spinlocks_[w]), long(b));
             }
 
         private:

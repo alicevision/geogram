@@ -1358,7 +1358,7 @@ namespace GEO {
             geo_debug_assert(t < max_t());
             geo_debug_assert(!owns_tet(t));
 
-#ifdef GEO_OS_WINDOWS
+#if defined(GEO_COMPILER_MSVC) 
            // Note: comparand and exchange parameter are swapped in Windows API
            // as compared to __sync_val_compare_and_swap !!
             interfering_thread_ =

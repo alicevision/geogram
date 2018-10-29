@@ -47,6 +47,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <cctype>
+#include <cmath>
 
 namespace {
     double g_Time = 0.0;
@@ -54,6 +55,7 @@ namespace {
     float g_mouseY = 0.0f;
     bool  g_mousePressed[5] = {false, false, false, false, false};
     bool  g_resetKeys = false;
+    ImGui_ImplAndroid_MouseUserCallback g_mouse_CB = nullptr;
 }
 
 // Some utilities functions that interact with Android.
@@ -65,9 +67,17 @@ namespace AndroidUtils {
     // Converts a keycode to a unicode.
     // deviceId, keyCode, metaState can be obtained from the InputEvent.
     jint keycode_to_unicode(
-	struct android_app* app, int32_t deviceId, int32_t keyCode, int32_t metaState
+	struct android_app* app,
+	int32_t deviceId, int32_t keyCode, int32_t metaState
     );
 }
+
+void ImGui_ImplAndroid_SetMouseUserCallback(
+    ImGui_ImplAndroid_MouseUserCallback CB
+) {
+    g_mouse_CB = CB;
+}
+
 
 
 bool ImGui_ImplAndroid_Init(struct android_app* app) {
@@ -205,6 +215,20 @@ int32_t  ImGui_ImplAndroid_FingerEvent(
     }
     g_mouseX = AMotionEvent_getX(event, nb_fingers-1);
     g_mouseY = AMotionEvent_getY(event, nb_fingers-1);
+
+    // Emulate zoom, button 3
+    if(!ImGui::GetIO().WantCaptureMouse && g_mouse_CB != nullptr && nb_fingers == 2) {
+	float x1 = AMotionEvent_getX(event, 0);
+	float y1 = AMotionEvent_getY(event, 0);
+	float x2 = AMotionEvent_getX(event, 1);
+	float y2 = AMotionEvent_getY(event, 1);
+	float length = sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+	g_mouse_CB(0.0f, length, 3);
+	g_mousePressed[0] = false;
+	g_mousePressed[1] = false;
+	g_mousePressed[2] = false;	
+    }
+
     
     return 1;
 }
@@ -260,6 +284,7 @@ int32_t  ImGui_ImplAndroid_MouseEvent(
 	io.MouseWheelH += hscroll;
 	io.MouseWheel  += vscroll;
     }
+
     
     return 1;    
 }
@@ -281,6 +306,21 @@ int32_t ImGui_ImplAndroid_MotionEvent(
 	default:
 	    break;
     }
+
+    if(!ImGui::GetIO().WantCaptureMouse && g_mouse_CB != nullptr) {
+	int btn = -1;
+	if(g_mousePressed[0]) {
+	    btn = 0;
+	} else if(g_mousePressed[1]) {
+	    btn = 1;
+	} else if(g_mousePressed[2]) {
+	    btn = 2;
+	}
+	if(btn != -1) {
+	    g_mouse_CB(g_mouseX, g_mouseY, btn);
+	}
+    }
+    
     return result;
 }
 

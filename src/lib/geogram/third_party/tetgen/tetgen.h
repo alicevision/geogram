@@ -65,6 +65,7 @@
 // [Bruno] I got too many complaints in tetgen so I "close my eyes" :-)
 #ifdef __GNUC__
 #ifndef __ICC
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #pragma GCC diagnostic ignored "-Wunused-parameter"

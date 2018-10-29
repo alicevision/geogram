@@ -105,7 +105,7 @@ namespace GEO {
             else if(path_in.at(0) != '/' && path_in.at(0) != '\\') {
                 current += get_current_working_directory();
             }
-            for(size_t i = start_at; i < path.size(); i++) {
+            for(size_t i = size_t(start_at); i < path.size(); i++) {
                 current += "/";
                 current += path[i];
                 if(path[i].at(0) == '.' &&

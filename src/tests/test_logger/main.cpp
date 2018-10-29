@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     }
     try {
 	DoIt doit;
-	parallel_for(doit, 0, 10000);
+	parallel_for(0, 10000, doit);
     }
     catch(const std::exception& e) {
         std::cerr << "Received an exception: " << e.what() << std::endl;

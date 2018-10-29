@@ -808,73 +808,52 @@ namespace {
                 return;
             }
 
-            // Parallel sorting
+            // Parallel sorting (2 then 4 then 8 sorts in parallel)
+
+// Unfortunately we cannot access consts for template arguments in lambdas in all
+// compilers (gcc is OK but not MSVC) so I'm using (ugly) macros here...
+	    
+#          define COORDX 0
+#          define COORDY 1
+#          define COORDZ 2
+#          define UPX false
+#          define UPY false
+#          define UPZ false
+	    
             m0_ = b;
             m8_ = e;
-            m4_ = reorder_split(m0_, m8_, CMP<0, false, MESH>(M));
-            parallel_for(*this, 0, 2);    // computes m2,m6 in parallel
-            parallel_for(*this, 10, 14);  // computes m1,m3,m5,m7 in parallel
-            parallel_for(*this, 20, 28);  // sorts the 8 subsets in parallel
-        }
+            m4_ = reorder_split(m0_, m8_, CMP<COORDX, UPX, MESH>(M));
 
-        /**
-         * \brief The callback for the
-         *  multithreaded implementation (used internally).
-         * \param[in] i the job index, that determines the job to be
-         *  done by one of the threads. The job index \p i can be one
-         *  of 0,1 (first level), 10,11,12,13 (second level) or
-         *  20,21,22,23,24,25,26,27 (third level).
-         */
-        void operator() (index_t i) {
-            const int COORDX = 0, COORDY = 1, COORDZ = 2;
-            const bool UPX = false, UPY = false, UPZ = false;
-            switch(i) {
-                case 0:
-                    m2_ = reorder_split(m0_, m4_, CMP<COORDY, UPY, MESH>(M_));
-                    break;
-                case 1:
-                    m6_ = reorder_split(m4_, m8_, CMP<COORDY, !UPY, MESH>(M_));
-                    break;
-                case 10:
-                    m1_ = reorder_split(m0_, m2_, CMP<COORDZ, UPZ, MESH>(M_));
-                    break;
-                case 11:
-                    m3_ = reorder_split(m2_, m4_, CMP<COORDZ, !UPZ, MESH>(M_));
-                    break;
-                case 12:
-                    m5_ = reorder_split(m4_, m6_, CMP<COORDZ, UPZ, MESH>(M_));
-                    break;
-                case 13:
-                    m7_ = reorder_split(m6_, m8_, CMP<COORDZ, !UPZ, MESH>(M_));
-                    break;
-                case 20:
-                    sort<COORDZ, UPZ, UPX, UPY>(M_, m0_, m1_);
-                    break;
-                case 21:
-                    sort<COORDY, UPY, UPZ, UPX>(M_, m1_, m2_);
-                    break;
-                case 22:
-                    sort<COORDY, UPY, UPZ, UPX>(M_, m2_, m3_);
-                    break;
-                case 23:
-                    sort<COORDX, UPX, !UPY, !UPZ>(M_, m3_, m4_);
-                    break;
-                case 24:
-                    sort<COORDX, UPX, !UPY, !UPZ>(M_, m4_, m5_);
-                    break;
-                case 25:
-                    sort<COORDY, !UPY, UPZ, !UPX>(M_, m5_, m6_);
-                    break;
-                case 26:
-                    sort<COORDY, !UPY, UPZ, !UPX>(M_, m6_, m7_);
-                    break;
-                case 27:
-                    sort<COORDZ, !UPZ, !UPX, UPY>(M_, m7_, m8_);
-                    break;
-                default:
-                    geo_assert_not_reached;
-                    break;
-            }
+	    
+	    parallel(
+		[this]() { m2_ = reorder_split(m0_, m4_, CMP<COORDY,  UPY, MESH>(M_)); },
+		[this]() { m6_ = reorder_split(m4_, m8_, CMP<COORDY, !UPY, MESH>(M_)); }
+	    );
+
+	    parallel(
+		[this]() { m1_ = reorder_split(m0_, m2_, CMP<COORDZ,  UPZ, MESH>(M_)); },
+		[this]() { m3_ = reorder_split(m2_, m4_, CMP<COORDZ, !UPZ, MESH>(M_)); },
+		[this]() { m5_ = reorder_split(m4_, m6_, CMP<COORDZ,  UPZ, MESH>(M_)); },
+		[this]() { m7_ = reorder_split(m6_, m8_, CMP<COORDZ, !UPZ, MESH>(M_)); }
+	    );
+
+	    parallel(
+		[this]() { sort<COORDZ,  UPZ,  UPX,  UPY>(M_, m0_, m1_); },
+		[this]() { sort<COORDY,  UPY,  UPZ,  UPX>(M_, m1_, m2_); },
+		[this]() { sort<COORDY,  UPY,  UPZ,  UPX>(M_, m2_, m3_); },
+		[this]() { sort<COORDX,  UPX, !UPY, !UPZ>(M_, m3_, m4_); },
+		[this]() { sort<COORDX,  UPX, !UPY, !UPZ>(M_, m4_, m5_); },
+		[this]() { sort<COORDY, !UPY,  UPZ, !UPX>(M_, m5_, m6_); },
+		[this]() { sort<COORDY, !UPY,  UPZ, !UPX>(M_, m6_, m7_); },
+		[this]() { sort<COORDZ, !UPZ, !UPX,  UPY>(M_, m7_, m8_); }
+	    );
+
+#          undef COORDX
+#          undef COORDY
+#          undef COORDZ
+#          undef UPX
+#          undef UPY
+#          undef UPZ	    
         }
 
     private:
@@ -1301,6 +1280,41 @@ namespace GEO {
 
 namespace {
     using namespace GEO;
+
+    // Same as in delaunay/periodic.cpp,
+    // copied here for now because linker does not find
+    // it under Android.
+    int Periodic_translation[27][3] = {
+	{  0,  0,  0}, //13 -> 0   +   <-- zero displacement is first.
+	{ -1, -1, -1}, //0  -> 1   -
+	{ -1, -1,  0}, //1  -> 2   -
+	{ -1, -1,  1}, //2  -> 3   -
+	{ -1,  0, -1}, //3  -> 4   -
+	{ -1,  0,  0}, //4  -> 5   - 
+	{ -1,  0,  1}, //5  -> 6   -
+	{ -1,  1, -1}, //6  -> 7   -
+	{ -1,  1,  0}, //7  -> 8   -
+	{ -1,  1,  1}, //8  -> 9   - 
+	{  0, -1, -1}, //9  -> 10  -
+	{  0, -1,  0}, //10 -> 11  -
+	{  0, -1,  1}, //11 -> 12  -
+	{  0,  0, -1}, //12 -> 13  -
+	// (zero displacement was there)
+	{  0,  0,  1}, //14 -> 14  +
+	{  0,  1, -1}, //15 -> 15  -
+	{  0,  1,  0}, //16 -> 16  +
+	{  0,  1,  1}, //17 -> 17  +
+	{  1, -1, -1}, //18 -> 18  -
+	{  1, -1,  0}, //19 -> 19  -
+	{  1, -1,  1}, //20 -> 20  -
+	{  1,  0, -1}, //21 -> 21  -
+	{  1,  0,  0}, //22 -> 22  +
+	{  1,  0,  1}, //23 -> 23  +
+	{  1,  1, -1}, //24 -> 24  -
+	{  1,  1,  0}, //25 -> 25  +
+	{  1,  1,  1}  //26 -> 26  +
+    };
+
     
     /**
      * \details Exposes an interface compatible with the requirement
@@ -1331,7 +1345,7 @@ namespace {
 	    
 	    for(index_t i=0; i<27; ++i) {
 		for(index_t j=0; j<3; ++j) {
-		    xlat_[i][j] = period * double(Periodic::translation[i][j]);
+		    xlat_[i][j] = period * double(Periodic_translation[i][j]);
 		}
 	    }
         }

@@ -65,7 +65,14 @@ namespace GEO {
 #  define thread_local __declspec(thread)
 #endif
 
-
+// Older MAC OS X do not have thread_local
+#ifdef GEO_OS_APPLE
+# if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_9
+#  define thread_local
+#  define GEO_NO_THREAD_LOCAL    
+# endif
+#endif
+   
     /**
      * \brief Platform-independent base class for running threads.
      * \details
@@ -532,63 +539,10 @@ namespace GEO {
     }
 
     /**
-     * \brief Thread class used internally by parallel_for()
-     * \details ParallelForThread is a helper Thread class used internally by
-     * function parallel_for(). It executes a portion of the global loop
-     * controlled by parallel_for(). At each iteration, ParallelForThread
-     * executes an action specified by the template parameter Func
-     * which must be a functional object.
-     * \tparam Func functional object called at each iteration. It must accept a
-     * single argument of type index_t.
-     */
-    template <class Func>
-    class ParallelForThread : public Thread {
-    public:
-        /**
-         * \brief Creates a thread for the execution of a parallel_for()
-         * \param[in] func the functional object called at each iteration
-         * \param[in] from start index of the loop
-         * \param[in] to stop index of the loop
-         * \param[in] step loop step
-         */
-        ParallelForThread(
-            const Func& func, index_t from, index_t to, index_t step = 1
-        ) :
-            func_(func),
-            from_(from),
-            to_(to),
-            step_(step) {
-        }
-
-        /**
-         * \brief Starts the thread execution
-         * \details It executes the portion of loop configured in the
-         * constructor, calling the functional object at each iteration with
-         * the current iteration index.
-         */
-        virtual void run() {
-            for(index_t i = from_; i < to_; i += step_) {
-                const_cast<Func&> (func_)(i);
-            }
-        }
-
-    protected:
-        /** ParallelForThread destructor */
-        virtual ~ParallelForThread() {
-        }
-
-    private:
-        const Func& func_;
-        index_t from_;
-        index_t to_;
-        index_t step_;
-    };
-
-    /**
      * \brief Executes a loop with concurrent threads.
-     *
-     * Executes a parallel for loop from index \p to index \p to, calling
-     * functional object \p func at each iteration.
+     * \details
+     *   Executes a parallel for loop from index \p to index \p to, calling
+     *   functional object \p func at each iteration.
      *
      * Calling parallel_for(func, from, to) is equivalent
      * to the following loop, computed in parallel:
@@ -598,147 +552,101 @@ namespace GEO {
      * }
      * \endcode
      *
-     * When applicable, iterations are executed by concurrent ParallelForThread
-     * threads: the range of the loop is split in to several contiguous
-     * sub-ranges, each of them being executed by a separate
-     * ParallelForThread.
+     * When applicable, iterations are executed by concurrent threads: 
+     * the range of the loop is split in to several contiguous
+     * sub-ranges, each of them being executed by a separate thread.
      *
      * If parameter \p interleaved is set to true, the loop range is
-     * decomposed in interleaved index sets that are executed by the
-     * ParallelForThread. Interleaved execution may improve cache coherency.
+     * decomposed in interleaved index sets. Interleaved execution may 
+     * improve cache coherency.
      *
-     * \param[in] func functional object that accepts a single argument of
-     * type index_t.
-     * \param[in] from start index of the loop
-     * \param[in] to stop index of the loop
+     * \param[in] func function that takes an index_t.
+     * \param[in] from the first iteration index
+     * \param[in] to one position past the last iteration index
      * \param[in] threads_per_core number of threads to allocate per physical
      *  core (default is 1).
      * \param[in] interleaved if set to \c true, indices are allocated to
      * threads with an interleaved pattern.
-     *
-     * \tparam Func functional object called at each loop iteration. It
-     * must accept a single argument of type index_t.
-     *
-     * \see ParallelForThread
      */
-    template <class Func>
-    inline void parallel_for(
-        const Func& func, index_t from, index_t to,
+     void GEOGRAM_API parallel_for(
+        index_t from, index_t to, std::function<void(index_t)> func,
         index_t threads_per_core = 1,
         bool interleaved = false
-    ) {
-#ifdef GEO_OS_WINDOWS
-        // TODO: This is a limitation of WindowsThreadManager, to be fixed.
-        threads_per_core = 1;
-#endif
-
-        index_t nb_threads = std::min(
-            to - from,
-            Process::maximum_concurrent_threads() * threads_per_core
-        );
-
-	nb_threads = std::max(index_t(1), nb_threads);
-	
-        index_t batch_size = (to - from) / nb_threads;
-        if(Process::is_running_threads() || nb_threads == 1) {
-            for(index_t i = from; i < to; i++) {
-                const_cast<Func&> (func)(i);
-            }
-        } else {
-            ThreadGroup threads;
-            if(interleaved) {
-                for(index_t i = 0; i < nb_threads; i++) {
-                    threads.push_back(
-                        new ParallelForThread<Func>(
-                            func, from + i, to, nb_threads
-                        )
-                    );
-                }
-            } else {
-                index_t cur = from;
-                for(index_t i = 0; i < nb_threads; i++) {
-                    if(i == nb_threads - 1) {
-                        threads.push_back(
-                            new ParallelForThread<Func>(
-                                func, cur, to
-                            )
-                        );
-                    } else {
-                        threads.push_back(
-                            new ParallelForThread<Func>(
-                                func, cur, cur + batch_size
-                            )
-                        );
-                    }
-                    cur += batch_size;
-                }
-            }
-            Process::run_threads(threads);
-        }
-    }
+    );
 
     /**
-     * \brief Used to implement parallel_for_member_callback()
-     * \details Stores a pointer to an object and to a pointer
-     *  function for invoking it later.
-     * \tparam T object class
-     */
-    template <class T> class ParallelForMemberCallback {
-    public:
-        /**
-         * \brief Function pointer type.
-         */
-        typedef void (T::*fptr)(index_t);
-
-        /**
-         * \brief ParallelForMemberCallback constructor.
-         * \param[in] object a pointer to an object
-         * \param[in] f a pointer to a member function of the object,
-         *  that takes an index_t as an argument
-         */
-        ParallelForMemberCallback(T* object, fptr f) :
-            object_(object), f_(f) {
-        }
-
-        /**
-         * \brief Invokes the memorized function on the memorized object
-         *  with the argument \p i
-         * \param[in] i the argument to be passed to the function.
-         */
-        void operator()(index_t i) {
-            (*object_.*f_)(i);
-        }
-    private:
-        T* object_;
-        fptr f_;
-    };
-    
-    /**
-     * \brief Creates a member callback for parallel_for()
-     * \details This allows to run parallel_for() with a functional object
-     * that calls the member function \p fun on object \p obj.
-     * \par Example:
+     * \brief Executes a loop with concurrent threads.
+     *
+     * \details
+     * When applicable, iterations are executed by concurrent 
+     * threads: the range of the loop is split in to several contiguous
+     * sub-ranges, each of them being executed by a separate thread.
+     *
+     * Calling parallel_for(func, from, to) is equivalent
+     * to the following loop, computed in parallel:
      * \code
-     * struct MyClass {
-     *     void iteration(index_t i) { ... }
-     * };
-     * MyClass obj;
-     * parallel_for(
-     *     parallel_for_member_callback(&obj, &MyClass::iteration),
-     *     from, to
-     * );
+     *   func(from, i1);
+     *   func(i1, i2);
+     *   ...
+     *   func(in, to);
      * \endcode
-     * \param[in] obj pointer to an object of type T
-     * \param[in] fun pointer to a void member function of object \p obj that
-     * accepts a single argument of type index_t.
-     * \tparam T type of the target object
+     * where i1,i2,...in are automatically generated. Typically one interval
+     * per physical core is generated.
+     *
+     * \param[in] func functional object that accepts two arguments of
+     *  type index_t.
+     * \param[in] from first iteration index of the loop
+     * \param[in] to one position past the last iteration index
+     * \param[in] threads_per_core number of threads to allocate per physical
+     *  core (default is 1).
      */
+     void GEOGRAM_API parallel_for_slice(
+	 index_t from, index_t to, std::function<void(index_t, index_t)> func,
+	 index_t threads_per_core = 1
+     );
 
-    template <class T> ParallelForMemberCallback<T>
-    parallel_for_member_callback(T* obj, void (T::* fun)(index_t)) {
-        return ParallelForMemberCallback<T>(obj, fun);
-    }
-    
+     /**
+      * \brief Calls functions in parallel.
+      * \details Can be typically used with lambdas that capture this. See
+      *  mesh/mesh_reorder.cpp and points/kd_tree.cpp for examples.
+      * \param[in] f1 , f2 functions to be called in parallel.
+      */
+     void GEOGRAM_API parallel(
+	 std::function<void()> f1,
+	 std::function<void()> f2	 
+     );
+
+     /**
+      * \brief Calls functions in parallel.
+      * \details Can be typically used with lambdas that capture this. See
+      *  mesh/mesh_reorder.cpp and points/kd_tree.cpp for examples.
+      * \param[in] f1 , f2 , f3 , f4 functions to be called in parallel.
+      */
+     void GEOGRAM_API parallel(
+	 std::function<void()> f1,
+	 std::function<void()> f2,
+	 std::function<void()> f3,
+	 std::function<void()> f4	 
+     );
+
+     /**
+      * \brief Calls functions in parallel.
+      * \details Can be typically used with lambdas that capture this. See
+      *  mesh/mesh_reorder.cpp and points/kd_tree.cpp for examples.
+      * \param[in] f1 , f2 , f3 , f4 , f5 , f6 , f7 , f8 functions 
+      *  to be called in parallel.
+      */
+     void GEOGRAM_API parallel(
+	 std::function<void()> f1,
+	 std::function<void()> f2,
+	 std::function<void()> f3,
+	 std::function<void()> f4,
+	 std::function<void()> f5,
+	 std::function<void()> f6,
+	 std::function<void()> f7,
+	 std::function<void()> f8	 
+     );
+     
 }
 
 #endif

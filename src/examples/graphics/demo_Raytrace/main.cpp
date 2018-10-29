@@ -182,6 +182,9 @@ namespace {
 		    double(quaternion_[1]),
 		    double(quaternion_[3])
 		);
+
+		//M = M.inverse();
+		
 		pos = transform_point(pos,M);
 		
 		vec3 target(
@@ -296,6 +299,27 @@ namespace {
 	    return true;
 	}
 
+        void draw_application_menus() override {
+            if(ImGui::BeginMenu("New...")) {
+		if(ImGui::MenuItem("Sphere")) {
+		    scene_.add_object(                                       
+			new Sphere(vec3(0.5, 0.5, 0.5),0.25)
+		    )->set_diffuse_coefficient(random_color());
+		    scene_changed_ = true;
+		}
+		if(ImGui::MenuItem("Light")) {
+		    scene_.add_object(                                       
+			new Light(vec3(0.5, 0.5, 1.5),0.15,random_color())
+		    );
+		    scene_changed_ = true;
+		}
+		if(ImGui::MenuItem("Checkerboard")) {
+		    scene_.add_object(new HorizontalCheckerboardPlane(0.0));		    
+		    scene_changed_ = true;		    
+		}
+		ImGui::EndMenu();
+	    }
+	}
 	
     private:
 	Camera camera_;

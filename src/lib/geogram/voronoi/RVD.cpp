@@ -411,8 +411,8 @@ namespace {
                 arg_scalars_ = m;
                 spinlocks_.resize(delaunay_->nb_vertices());
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }
                 );
             }
         }
@@ -526,8 +526,8 @@ namespace {
                 arg_scalars_ = m;
                 spinlocks_.resize(delaunay_->nb_vertices());
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }
                 );
             }
         }
@@ -770,8 +770,8 @@ namespace {
                     part(t).funcval_ = 0.0;
                 }
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }		    
                 );
                 for(index_t t = 0; t < nb_parts(); t++) {
                     f += part(t).funcval_;
@@ -906,8 +906,8 @@ namespace {
                     part(t).funcval_ = 0.0;
                 }
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }		    
                 );
                 for(index_t t = 0; t < nb_parts(); t++) {
                     f += part(t).funcval_;
@@ -1050,8 +1050,8 @@ namespace {
                 }
 
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }	
                 );
 
                 f = 0.0;
@@ -1127,8 +1127,8 @@ namespace {
 		polygon_callback_->set_spinlocks(&spinlocks_);
 		// Note: callback begin()/end() is called in for_each_polygon()
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }			    
                 );
 		polygon_callback_->set_spinlocks(nullptr);
             }
@@ -1154,8 +1154,8 @@ namespace {
 		// Note: callback begin()/end() is
 		// called in for_each_polyhedron()		
                 parallel_for(
-                    parallel_for_member_callback(this, &thisclass::run_thread),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }
                 );
 		polyhedron_callback_->set_spinlocks(nullptr);
             }

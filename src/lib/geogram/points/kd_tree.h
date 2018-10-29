@@ -79,7 +79,7 @@ namespace GEO {
             index_t nb_points, const double* points, index_t stride
         );
 
-	/** \copydoc NearestNeighborSearch::get_nearest_beighbors() */
+	/** \copydoc NearestNeighborSearch::get_nearest_neighbors() */
         virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             const double* query_point,
@@ -87,7 +87,7 @@ namespace GEO {
             double* neighbors_sq_dist
         ) const;
 
-	/** \copydoc NearestNeighborSearch::get_nearest_beighbors() */
+	/** \copydoc NearestNeighborSearch::get_nearest_neighbors() */
         virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             const double* query_point,
@@ -96,7 +96,7 @@ namespace GEO {
 	    KeepInitialValues
         ) const;
 
-	/** \copydoc NearestNeighborSearch::get_nearest_beighbors() */	
+	/** \copydoc NearestNeighborSearch::get_nearest_neighbors() */	
         virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             index_t query_point,
@@ -457,13 +457,6 @@ namespace GEO {
          * \param[in] dim dimension of the points
          */
         BalancedKdTree(coord_index_t dim);
-
-    public:
-        /**
-         * \brief Used by multithread tree construction
-         * in the implementation of set_points()
-         */
-        void operator() (index_t i);
 
     protected:
         /**

@@ -982,13 +982,29 @@ NLMatrix nlCRSMatrixNewFromSparseMatrixSymmetric(NLSparseMatrix* M) {
 
 
 void nlMatrixCompress(NLMatrix* M) {
-    NLMatrix CRS = NULL;
+    NLMatrix result = NULL;
+    
+    if(
+	(*M)->type == NL_MATRIX_CRS &&
+	nlExtensionIsInitialized_MKL()
+    ) {
+	result = nlMKLMatrixNewFromCRSMatrix((NLCRSMatrix*)*M);
+	nlDeleteMatrix(*M);
+	*M = result;
+	return;
+    }
+    
     if((*M)->type != NL_MATRIX_SPARSE_DYNAMIC) {
         return;
     }
-    CRS = nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)*M);
+    
+    if(nlExtensionIsInitialized_MKL()) {
+	result = nlMKLMatrixNewFromSparseMatrix((NLSparseMatrix*)*M);
+    } else {
+	result = nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)*M);
+    }
     nlDeleteMatrix(*M);
-    *M = CRS;
+    *M = result;
 }
 
 NLuint nlMatrixNNZ(NLMatrix M) {

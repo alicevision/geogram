@@ -83,4 +83,22 @@ NLboolean nlExtensionIsInitialized_MKL(void);
  */
 extern NLMultMatrixVectorFunc NLMultMatrixVector_MKL;
 
+/**
+ * \brief Creates an optimized MKL matrix from a dynamic sparse matrix.
+ * \details The matrix \p M should have stored rows. Symmetric storage
+ *  is not supported yet.
+ * \param[in] M the dynamic sparse matrix.
+ * \return a pointer to the created matrix
+ */
+NLMatrix nlMKLMatrixNewFromSparseMatrix(NLSparseMatrix* M);
+
+/**
+ * \brief Creates an optimized MKL matrix from a CRS sparse matrix.
+ * \details The matrix \p M should have stored rows. Symmetric storage
+ *  is not supported yet.
+ * \param[in] M the dynamic sparse matrix.
+ * \return a pointer to the created matrix
+ */
+NLMatrix nlMKLMatrixNewFromCRSMatrix(NLCRSMatrix* M);
+
 #endif

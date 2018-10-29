@@ -163,10 +163,10 @@ namespace {
 
         /** \copydoc GEO::ThreadManager::enter_critical_section() */
 	void enter_critical_section() override {
-#if defined(GEO_OS_ANDROID)
-            lock_mutex_android(&mutex_);
-#elif defined(GEO_OS_ANDROID)
+#if defined(GEO_OS_RASPBERRY)
             lock_mutex_arm32(&mutex_);
+#elif defined(GEO_OS_ANDROID)
+            lock_mutex_android(&mutex_);
 #else
             pthread_mutex_lock(&mutex_);
 #endif

@@ -686,6 +686,146 @@ namespace GEO {
             target.xyz_max[c] = std::max(B1.xyz_max[c], B2.xyz_max[c]);
         }
     }
+
+   /*******************************************************************/
+
+    /**
+     * \brief Applies a 3d transform to a 3d vector.
+     * \details Convention is the same as in OpenGL, i.e.
+     *  vector is a row vector, multiplied on the left
+     *  of the transform.
+     *  Internally, the vector is converted into
+     *  a 4d vector, with w coordinate set to zero.
+     * \param[in] v the input 3d vector to be transformed
+     * \param[in] m the transform, as a 4x4 matrix, using
+     *  homogeneous coordinates
+     * \tparam FT type of the coordinates
+     * \return the transformed 3d vector
+     */
+    template <class FT> vecng<3,FT> transform_vector(
+        const vecng<3,FT>& v,
+        const Matrix<4,FT>& m
+    ){
+        index_t i,j ;
+        FT result[4] ;
+
+        for(i=0; i<4; i++) {
+            result[i] = 0 ;
+        }
+        for(i=0; i<4; i++) {
+            for(j=0; j<3; j++) {
+                result[i] += v[j] * m(j,i) ;
+            }
+        }
+        
+        return vecng<3,FT>(
+            result[0], result[1], result[2]
+        ) ; 
+    }
+
+    /**
+     * \brief Applies a 3d transform to a 3d point.
+     * \details Convention is the same as in OpenGL, i.e.
+     *  vector is a row vector, multiplied on the left
+     *  of the transform.
+     *  Internally, the point is converted into
+     *  a 4d vector, with w coordinate set to one. Transformed
+     *  coordinates are divided by the transformed w to form
+     *  a 3d point.
+     * \param[in] v the input 3d point to be transformed
+     * \param[in] m the transform, as a 4x4 matrix, using
+     *  homogeneous coordinates
+     * \tparam FT type of the coordinates
+     * \return the transformed 3d point
+     */
+    template <class FT> vecng<3,FT> transform_point(
+        const vecng<3,FT>& v,
+        const Matrix<4,FT>& m
+    ){
+        index_t i,j ;
+        FT result[4] ;
+        
+        for(i=0; i<4; i++) {
+            result[i] = 0 ;
+        }
+        for(i=0; i<4; i++) {
+            for(j=0; j<3; j++) {
+                result[i] += v[j] * m(j,i) ;
+            }
+            result[i] += m(3,i);
+        }
+    
+        return vecng<3,FT>(
+            result[0] / result[3],
+            result[1] / result[3],
+            result[2] / result[3] 
+        ) ; 
+    }
+
+    /**
+     * \brief Applies a 4d transform to a 4d point.
+     * \details Convention is the same as in OpenGL, i.e.
+     *  vector is a row vector, multiplied on the left
+     *  of the transform.
+     * \param[in] v the input 4d point to be transformed
+     * \param[in] m the transform, as a 4x4 matrix
+     * \tparam FT type of the coordinates
+     * \return the transformed 4d vector
+     */
+    template <class FT> vecng<4,FT> transform_vector(
+        const vecng<4,FT>& v,
+        const Matrix<4,FT>& m
+    ) {
+        index_t i,j ;
+        FT res[4] = {FT(0), FT(0), FT(0), FT(0)};
+        
+        for(i=0; i<4; i++) {
+            for(j=0; j<4; j++) {
+                res[i] += v[j] * m(j,i) ;
+            }
+        }
+    
+        return vecng<4,FT>(res[0], res[1], res[2], res[3]) ; 
+    }
+
+    /******************************************************************/
+    
+    /**
+     * \brief Creates a translation matrix from a vector.
+     * \details The translation matrix is in homogeneous coordinates,
+     *  with the same convention as OpenGL (transforms row vectors
+     *  mutliplied on the left).
+     * \param[in] T a const reference to the translation vector
+     * \return the translation matrix
+     */
+    inline mat4 create_translation_matrix(const vec3& T) {
+        mat4 result;
+        result.load_identity();
+        result(3,0) = T.x;
+        result(3,1) = T.y;
+        result(3,2) = T.z;
+        return result;
+    }
+    
+    /**
+     * \brief Creates a scaling matrix.
+     * \details The scaling matrix is in homogeneous coordinates,
+     *  with the same convention as OpenGL (transforms row vectors
+     *  mutliplied on the left).
+     * \param[in] s the scaling coefficient
+     * \return the scaling matrix
+     */
+    inline mat4 create_scaling_matrix(double s) {
+        mat4 result;
+        result.load_identity();
+        result(0,0) = s;
+        result(1,1) = s;
+        result(2,2) = s;        
+        return result;
+    }
+    
+    /******************************************************************/    
+    
 }
 
 #endif

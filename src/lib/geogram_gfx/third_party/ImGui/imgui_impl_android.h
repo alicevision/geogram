@@ -8,7 +8,9 @@
 #include <android_native_app_glue.h>
 
 // param app: if non-null, registers input handler to specified app.
-IMGUI_IMPL_API bool     ImGui_ImplAndroid_Init(struct android_app* app = nullptr);
+IMGUI_IMPL_API bool     ImGui_ImplAndroid_Init(
+    struct android_app* app = nullptr
+);
 
 IMGUI_IMPL_API void     ImGui_ImplAndroid_Shutdown();
 
@@ -24,4 +26,16 @@ IMGUI_IMPL_API void     ImGui_ImplAndroid_EndFrame();
 IMGUI_IMPL_API int32_t  ImGui_ImplAndroid_InputEvent(
     struct android_app* app, AInputEvent* event
 );
+
+typedef void (*ImGui_ImplAndroid_MouseUserCallback)(
+    float x, float y, int button
+);
+
+//   Registers a user mouse event handler called when no UI element
+// is under the mouse pointer.
+IMGUI_IMPL_API void ImGui_ImplAndroid_SetMouseUserCallback(
+    ImGui_ImplAndroid_MouseUserCallback CB
+);
+
+
 #endif

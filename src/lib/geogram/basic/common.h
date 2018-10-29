@@ -283,7 +283,10 @@ namespace GEO {
 #error "Unsupported operating system"
 #endif
 
-#if defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG) || defined(GEO_COMPILER_MINGW)
+#if defined(GEO_COMPILER_GCC)   || \
+    defined(GEO_COMPILER_CLANG) || \
+    defined(GEO_COMPILER_MINGW) || \
+    defined(GEO_COMPILER_EMSCRIPTEN)
 #define GEO_COMPILER_GCC_FAMILY
 #endif
 
@@ -311,10 +314,8 @@ namespace GEO {
 
 #if defined(GOMGEN)
 #define GEO_NORETURN
-#elif defined(GEO_COMPILER_CLANG) || \
-    defined(GEO_COMPILER_GCC)   || \
-    defined(GEO_COMPILER_EMSCRIPTEN) || \
-    defined(GEO_COMPILER_INTEL)
+#elif defined(GEO_COMPILER_GCC_FAMILY) || \
+      defined(GEO_COMPILER_INTEL) 
 #define GEO_NORETURN __attribute__((noreturn))
 #else
 #define GEO_NORETURN

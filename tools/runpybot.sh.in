@@ -22,5 +22,5 @@ fi
 
 if [ "$VORPALINE_WITH_GCOV" = 1 ]; then
     echo "Generating coverage report"
-    gcovr --xml --output=coverage.xml --verbose $VORPALINE_BUILD_DIR > coverage.log
+    gcovr --xml --output=coverage.xml --verbose -r $VORPALINE_SOURCE_DIR/src $VORPALINE_BUILD_DIR > coverage.log
 fi

@@ -56,7 +56,7 @@ namespace GEO {
 
     SystemStopwatch::SystemStopwatch() {
 #if defined(GEO_OS_WINDOWS)
-        start_ = GetTickCount();
+        start_ = long(GetTickCount());
 #elif defined(GEO_OS_EMSCRIPTEN)
         startf_ = now();
 #else
@@ -68,7 +68,7 @@ namespace GEO {
 
     double SystemStopwatch::elapsed_user_time() const {
 #if defined(GEO_OS_WINDOWS)
-        return double(GetTickCount() - start_) / 1000.0;
+        return double(long(GetTickCount()) - start_) / 1000.0;
 #elif defined(GEO_OS_EMSCRIPTEN)
         return now() - startf_;
 #else        

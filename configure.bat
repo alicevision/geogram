@@ -5,6 +5,14 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION 
 
+:: Check for options: [ --build_name_suffix suffix ]
+set buildNameSuffix=""
+if "%1" ==  "--build_name_suffix" (
+   set buildNameSuffix=%2
+   SHIFT & SHIFT
+)
+
+:: Read platform
 set opsys=%1
 
 :: Checking for CMake
@@ -54,8 +62,8 @@ echo.
 echo ============= Creating build system for %opsys% ============
 echo.
 
-if not exist build\%opsys% (
-    mkdir build\%opsys%
+if not exist build\%opsys%%buildNameSuffix% (
+    mkdir build\%opsys%%buildNameSuffix%
 )
 
 echo Using cmake generator %CMAKE_VS_GENERATOR%
@@ -68,7 +76,7 @@ if "%CMAKE_VS_GENERATOR_TOOLSET%" neq "" (
 
 
 ::set cmake_debug_options=--trace --debug-output
-pushd build\%opsys%
+pushd build\%opsys%%buildNameSuffix%
 cmake ..\.. %cmake_debug_options% %cmake_generator_options% -DVORPALINE_PLATFORM:STRING=%opsys% || exit /B 1
 popd
 
@@ -76,7 +84,7 @@ echo.
 echo ============== Vorpaline build configured ==================
 echo.
 echo To build vorpaline:
-echo - go to build/%opsys%
+echo - go to build/%opsys%%buildNameSuffix%
 echo - run 'cmake --build . --config=Release(or Debug) [--target=target_to_build]'
 echo.
 echo Note: local configuration can be specified in CMakeOptions.txt
@@ -86,5 +94,6 @@ echo.
 
 :: Clear globals
 
+set buildNameSuffix=
 set opsys=
 exit /B 0

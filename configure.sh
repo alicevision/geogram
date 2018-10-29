@@ -20,6 +20,7 @@ fi
 # Parse command line arguments
 
 cmake_options=
+build_name_suffix=
 while [ -n "$1" ]; do
     case "$1" in
         --debug)
@@ -49,6 +50,10 @@ while [ -n "$1" ]; do
             done
             exit
             ;;
+        --build_name_suffix=*)
+            build_name_suffix=`echo "$1" | sed 's/--build_name_suffix=\(.*\)$/\1/'`
+            shift
+            ;; 
             
         --help)
             cat <<END
@@ -91,6 +96,9 @@ OPTIONS
         Builds the project for memory analysis with Allinea's DDT installed in
         the specified directory: ddt-root-dir
 
+    --build_name_suffix=suffix-dir
+        Add a suffix to define the build directory
+
 PLATFORM
     Build platforms supported by Geogram/Vorpaline: use configure.sh --help-platforms
 END
@@ -125,9 +133,9 @@ if [ -z "$os" ]; then
         Darwin*)
             os=Darwin-clang-dynamic
             ;;
-	Linux*aarch64*Android)
-	    os=Android-aarch64-gcc-dynamic
-	    ;;
+        Linux*aarch64*Android)
+            os=Android-aarch64-gcc-dynamic
+            ;;
         *)
             echo "Error: OS not supported: $os"
             exit 1
@@ -153,7 +161,7 @@ for config in Release Debug; do
    echo ============= Creating makefiles for $platform ============
    echo
 
-   build_dir=build/$platform
+   build_dir=build/$platform$build_name_suffix
    mkdir -p $build_dir
    (cd $build_dir; cmake -DCMAKE_BUILD_TYPE:STRING=$config -DVORPALINE_PLATFORM:STRING=$os $cmake_options ../../)
 done
@@ -164,7 +172,7 @@ echo
 
 cat << EOF
 To build geogram:
-  - go to build/$os-Release or build/$os-Debug
+  - go to build/$os-Release$build_name_suffix or build/$os-Debug$build_name_suffix
   - run 'make' or 'cmake --build .'
 
 Note: local configuration can be specified in CMakeOptions.txt
