@@ -435,7 +435,7 @@ namespace GEO {
             const vec3& p,
             ACTION& action
         ) const {
-            containing_boxes_recursive(
+            containing_bboxes_recursive(
                 action, p, 1, 0, mesh_.cells.nb()
             );
         }
@@ -549,8 +549,8 @@ namespace GEO {
             index_t node_l = 2 * node;
             index_t node_r = 2 * node + 1;
 
-            containing_bbox_recursive(action, p, node_l, b, m);
-            containing_bbox_recursive(action, p, node_r, m, e);
+            containing_bboxes_recursive(action, p, node_l, b, m);
+            containing_bboxes_recursive(action, p, node_r, m, e);
         }
         
         vector<Box> bboxes_;
