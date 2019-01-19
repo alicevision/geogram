@@ -1000,8 +1000,5 @@ namespace GEO {
 	RVDPolyhedronCallback::process_polyhedron_mesh();
     }
     
-    
-    /********************************************************************/    
-    
 }
 

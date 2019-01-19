@@ -555,6 +555,17 @@ namespace GEO {
 	);
 
 	/**
+	 * \brief Computes the sign of the determinant of a 3x3 
+	 *  matrix formed by four 4d points.
+	 * \param[in] p0 , p1 , p2 , p3 the four points
+	 * \return the sign of the determinant of the matrix.
+	 */
+	Sign GEOGRAM_API det_4d(
+	    const double* p0, const double* p1,
+	    const double* p2, const double* p3
+	);
+	
+	/**
 	 * \brief Tests whether three points are aligned.
 	 * \param[in] p0 , p1 , p2 the three points
 	 * \retval true if the three points are aligned.

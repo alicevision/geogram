@@ -51,6 +51,9 @@
 #include <geogram/basic/memory.h>
 #include <geogram/basic/numeric.h>
 #include <geogram/basic/geometry.h>
+#  ifndef GEOGRAM_PSM
+#  include <geogram/basic/attributes.h>
+#  endif
 #endif
 
 #include <string>
@@ -67,6 +70,12 @@
  * \details Has its own types for points and vectors because it can be used
  *  independently from Geogram. In that case, define STANDALONE_CONVEX_CELL
  */
+
+#ifndef STANDALONE_CONVEX_CELL
+namespace GEO {
+    class Mesh;
+}
+#endif
 
 
 namespace VBW {
@@ -259,6 +268,18 @@ namespace VBW {
     inline double length(vec4 v) {
 	return ::sqrt(squared_length(v));
     }
+
+    /**
+     * \brief Computes the squared distance between a point and a plane
+     * \param[in] p the point
+     * \param[in] P the plane equation
+     * \return the squared distance between p and P
+     */
+    inline double squared_point_plane_distance(VBW::vec3 p, VBW::vec4 P) {
+	double result = P.x*p.x + P.y*p.y + P.z*p.z + P.w;
+	result = (result*result) / (P.x*P.x + P.y*P.y + P.z*P.z);
+	return result;
+    }
     
     /**
      * \brief Some constants for the flags
@@ -379,9 +400,9 @@ namespace VBW {
 /******************************************************************************/
 
     enum ConvexCellFlag {
-	None        = 0,
-	WithVGlobal = 1,
-	WithTFlags  = 2
+	None        = 0, /**< \brief default */
+	WithVGlobal = 1, /**< \brief store global vertex indices */ 
+	WithTFlags  = 2  /**< \brief store user triange flags */
     };
 
     typedef index_t ConvexCellFlags;
@@ -401,6 +422,47 @@ namespace VBW {
 	 */
 	ConvexCell(ConvexCellFlags flags = None);
 
+#ifndef STANDALONE_CONVEX_CELL
+	/**
+	 * \brief Specifies whether exact predicates should be used.
+	 * \param[in] x true if exact predicates should be used.
+	 * \details Not supported if ConvexCell distributed 
+	 *  as standalone file.
+	 */
+	void use_exact_predicates(bool x) {
+	    use_exact_predicates_ = x;
+	}
+#endif
+	
+	/**
+	 * \brief Tests whether global vertex indices are stored.
+	 * \retval true if global vertex indices are stored.
+	 * \retval false otherwise.
+	 */
+	bool has_vglobal() const {
+	    return has_vglobal_;
+	}
+
+	/**
+	 * \brief Tests whether triangle flags are stored.
+	 * \retval true if triangle flags are stored.
+	 * \retval false otherwise.
+	 */
+	bool has_tflags() const {
+	    return has_tflags_;
+	}
+
+	/**
+	 * \brief Creates vertex global indices if they are 
+	 *  not present.
+	 */
+	void create_vglobal() {
+	    if(!has_vglobal()) {
+		has_vglobal_ = true;
+		vglobal_.assign(max_v(), global_index_t(-1));
+	    }
+	}
+	
 	/**
 	 * \brief Removes all vertices and triangles from this
 	 *  ConvexCell.
@@ -437,12 +499,35 @@ namespace VBW {
 	 * \param[out] out a stream where to save the output.
 	 * \param[in] v_offset offset applied to vertex indices.
 	 * \param[in] shrink shrinking factor to ease visualization.
+	 * \param[in] borders_only if set, only facets that correspond
+	 *  to vertex global index -1 are saved.
 	 * \return the number of created vertices. 
 	 */
 	index_t save(
-	    std::ostream& out, index_t v_offset=1, double shrink=0.0
+	    std::ostream& out, index_t v_offset=1, double shrink=0.0,
+	    bool borders_only=false
 	) const;
-	
+
+#if !defined(STANDALONE_CONVEX_CELL) && !defined(GEOGRAM_PSM)
+	/**
+	 * \brief Appends the computed cell to a GEO::Mesh.
+	 * \param[out] mesh a pointer to the mesh.
+	 * \param[in] shrink shrinking factor to ease visualization.
+	 * \param[in] borders_only if set, only facets that correspond
+	 *  to vertex global index -1 are saved.
+	 * \param[in] facet_attr optional facet attribute that stores
+	 *  global facet (dual vertex) ids.
+	 * \note One needs to call mesh->facets.connect() afterwards to 
+	 *  have facets adjacencies. It is not called because one may 
+	 *  want to append multiple cells to the same mesh.
+	 */
+        void append_to_mesh(
+	    GEO::Mesh* mesh,
+	    double shrink=0.0, bool borders_only=false,
+	    GEO::Attribute<GEO::index_t>* facet_attr=nullptr
+	) const;
+#endif      
+      
 	/**
 	 * \brief Clips this convex cell by a new plane.
 	 * \details The positive side of the plane equation corresponds to
@@ -502,6 +587,19 @@ namespace VBW {
 	}
 
 	/**
+	 * \brief Directly creates a new vertex.
+	 * \param[in] P the plane equation attached to the vertex.
+	 * \param[in] v the global index associated with the vertex.
+	 * \return the index of the newly created vertex.
+	 * \pre global vertex indices are stored
+	 */
+	index_t create_vertex(vec4 P, global_index_t v) {
+	    index_t result = create_vertex(P);
+	    vglobal_[nb_v()-1] = v;
+	    return result;
+	}
+	
+	/**
 	 * \brief Directly creates a new triangle.
 	 * \param[in] i , j, k the three vertices of the
 	 *  triangle.
@@ -530,8 +628,18 @@ namespace VBW {
 	 *  calling this function.
 	 */
 	bool vertex_is_contributing(index_t v) const {
-	    geo_assert(!geometry_dirty_);
-	    return v2t_[v] != END_OF_LIST;
+	    if(!geometry_dirty_) {
+		return v2t_[v] != END_OF_LIST;
+	    }
+	    index_t t = first_valid_;
+	    while(t != END_OF_LIST) { 
+		TriangleWithFlags T = get_triangle_and_flags(t);
+		if(T.i == v || T.j == v || T.k == v) {
+		    return true;
+		}
+		t = index_t(T.flags);
+	    }
+	    return false;
 	}
 
        /**
@@ -576,13 +684,22 @@ namespace VBW {
 	vec3 barycenter() const;
 
 	/**
-	 * \brief Computes the squared radius with respect to a 
-	 *  center.
+	 * \brief Computes the squared radius of the smallest sphere
+	 *  containing the cell and centered on a point.
 	 * \return the maximum squared distance between center and
 	 *  all the vertices of the cell.
 	 */
 	double squared_radius(vec3 center) const;
 
+	/**
+	 * \brief Computes the squared radius of the largest sphere contained
+	 *  in the cell and centered on a point.
+	 * \return the minimum squared distance between center and
+	 *  all facets of the cell.
+	 */
+	double squared_inner_radius(vec3 center) const;
+
+	
 	/**
 	 * \brief Tests whether this ConvexCell is empty.
 	 * \details ConvexCell can be empty if everything was
@@ -609,6 +726,21 @@ namespace VBW {
 	    return vglobal_[lv];
 	}
 
+	/**
+	 * \brief Sets the global vertex index associated with a local 
+	 *  vertex index.
+	 * \details Vertex indices correspond to planes (remember,
+	 *  we are in dual form).
+	 * \param[in] lv the local vertex index
+	 * \param[in] v the global vertex index that corresponds to
+	 *  lv.
+	 */
+	void set_v_global_index(index_t lv, global_index_t v) {
+	    vbw_assert(has_vglobal_);
+	    vbw_assert(lv < nb_v());
+	    vglobal_[lv] = v;
+	}
+	
 	/**
 	 * \brief Tests whether a vertex with a given global index
 	 *  exists in this ConvexCell.
@@ -658,29 +790,59 @@ namespace VBW {
 	    return triangle_point_[t];
 	}
 
+	/**
+	 * \brief Gets the global index of a triangle vertex.
+	 * \param[in] t the triangle.
+	 * \param[in] llv one of 0,1,2.
+	 * \return the global index of the vertex.
+	 * \pre global indices are stored.
+	 */
 	global_index_t triangle_v_global_index(ushort t, index_t llv) const {
 	    Triangle T = get_triangle(t);
 	    ushort lv = ushort((llv==0)*T.i + (llv==1)*T.j + (llv==2)*T.k);
 	    return v_global_index(lv);
 	}
 
+	/**
+	 * \brief Gets the local index of a triangle vertex.
+	 * \param[in] t the triangle.
+	 * \param[in] llv one of 0,1,2.
+	 * \return the local index of the vertex, in 0..nb_v()-1
+	 */
 	index_t triangle_v_local_index(ushort t, index_t llv) const {
 	    Triangle T = get_triangle(t);
 	    return index_t((llv==0)*T.i + (llv==1)*T.j + (llv==2)*T.k);
 	}
-	
+
+	/**
+	 * \brief Tests whether a triangle is marked by the user.
+	 * \param[in] t the triangle.
+	 * \retval true if the triangle is marked.
+	 * \retval false otherwise.
+	 * \pre triangle flags are stored.
+	 */
 	bool triangle_is_user_marked(ushort t) {
 	    vbw_assert(has_tflags_);
 	    vbw_assert(t < max_t_);
 	    return (tflags_[t] != 0);
 	}
 
+	/**
+	 * \brief Sets the user mark on a triangle.
+	 * \param[in] t the triangle.
+	 * \pre triangle flags are stored.
+	 */
 	void triangle_user_mark(ushort t) {
 	    vbw_assert(has_tflags_);
 	    vbw_assert(t < max_t_);
 	    tflags_[t] = 1;
 	}
 
+	/**
+	 * \brief Resets the user mark on a triangle.
+	 * \param[in] t the triangle.
+	 * \pre triangle flags are stored.
+	 */
 	void triangle_user_unmark(ushort t) {
 	    vbw_assert(has_tflags_);
 	    vbw_assert(t < max_t_);
@@ -727,8 +889,6 @@ namespace VBW {
 	    }
 	    return true;
 	}
-
-
 	
 	/**
 	 * \brief Gets a triangle adjacent to another triangle by edge
@@ -984,6 +1144,22 @@ namespace VBW {
 	 */
 	void grow_v();
 
+
+      protected:
+
+	/**
+	 * \brief Changes a vertex plane equation.
+	 * \param[in] v the vertex.
+	 * \param[in] P the plane equation.
+	 * \details Does not update combinatorics.
+	 * \note Use with care, for experts only.
+	 */
+        void set_vertex_plane(index_t v, vec4 P) {
+	    vbw_assert(v < max_v());
+	    plane_eqn_[v] = P;
+	    geometry_dirty_ = true;
+	}
+	
       private:
 
 	/** \brief number of allocated triangles */
@@ -1055,6 +1231,13 @@ namespace VBW {
 	 * \brief True if triangle flags are stored.
 	 */
 	bool has_tflags_;
+
+#ifndef STANDALONE_CONVEX_CELL	
+	/**
+	 * \brief True if exact predicates should be used.
+	 */
+	bool use_exact_predicates_;
+#endif	
     };
 }
 

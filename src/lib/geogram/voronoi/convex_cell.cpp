@@ -45,13 +45,19 @@
 
 #include <geogram/voronoi/convex_cell.h>
 
+#ifndef STANDALONE_CONVEX_CELL
+#include <geogram/numerics/predicates.h>
+#include <geogram/mesh/mesh.h>
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <limits>
 
 namespace VBW {
-
+    
     ConvexCell::ConvexCell(ConvexCellFlags flags) :
 	max_t_(64),
 	max_v_(32),
@@ -59,6 +65,9 @@ namespace VBW {
 	vv2t_(max_v_*max_v_),
 	plane_eqn_(max_v_)
     {
+#ifndef STANDALONE_CONVEX_CELL
+	use_exact_predicates_ = true;
+#endif	
 	nb_t_ = 0;
 	nb_v_ = 0;
 	first_free_ = END_OF_LIST;
@@ -155,7 +164,7 @@ namespace VBW {
     
     
     index_t ConvexCell::save(
-	std::ostream& out, index_t v_offset, double shrink
+	std::ostream& out, index_t v_offset, double shrink, bool borders_only
     ) const {
 
 	vec3 g = make_vec3(0.0, 0.0, 0.0);
@@ -193,6 +202,13 @@ namespace VBW {
 	}
 	
 	for(index_t v=1; v<nb_v(); ++v) {
+	    if(borders_only &&
+	       has_vglobal() &&
+	       v_global_index(v) != global_index_t(-1) &&
+	       v_global_index(v) != global_index_t(-2) // This one for fluid free bndry
+	    ) {
+		continue;
+	    }
 	    if(v2t[v] != index_t(-1)) {
 		index_t t = v2t[v];
 		out << "f ";
@@ -208,6 +224,82 @@ namespace VBW {
 	return nt;
     }
 
+#if !defined(STANDALONE_CONVEX_CELL) && !defined(GEOGRAM_PSM)
+    
+    void ConvexCell::append_to_mesh(
+	GEO::Mesh* mesh, double shrink, bool borders_only,
+	GEO::Attribute<GEO::index_t>* facet_attr
+    ) const {
+
+	index_t v_offset = mesh->vertices.nb();
+	
+	vec3 g = make_vec3(0.0, 0.0, 0.0);
+	if(shrink != 0.0) {
+	    const_cast<ConvexCell*>(this)->compute_geometry();
+	    g = barycenter();
+	}
+	
+	vector<index_t> v2t(nb_v(),index_t(-1));
+	vector<index_t> t_index(nb_t(),index_t(-1));
+	index_t nt=0;
+
+	{
+	    index_t t = first_valid_;
+	    while(t != END_OF_LIST) { 
+		TriangleWithFlags T = get_triangle_and_flags(t);
+		vec4 p = compute_triangle_point(T);
+		p.x /= p.w;
+		p.y /= p.w;
+		p.z /= p.w;
+		p.w = 1.0;
+		if(shrink != 0.0) {
+		    p.x = shrink * g.x + (1.0 - shrink) * p.x;
+		    p.y = shrink * g.y + (1.0 - shrink) * p.y;
+		    p.z = shrink * g.z + (1.0 - shrink) * p.z;
+		}
+		mesh->vertices.create_vertex(p.data());
+		t_index[t] = nt;
+		++nt;
+		v2t[T.i] = t;
+		v2t[T.j] = t;
+		v2t[T.k] = t;
+		t = index_t(T.flags);
+	    }
+	}
+	
+	for(index_t v=1; v<nb_v(); ++v) {
+	    if(borders_only &&
+	       has_vglobal() &&
+	       v_global_index(v) != global_index_t(-1) &&
+	       v_global_index(v) != global_index_t(-2) // This one for fluid free bndry
+	    ) {
+		continue;
+	    }
+	    std::vector<index_t> facet_vertices;
+	    if(v2t[v] != index_t(-1)) {
+		index_t t = v2t[v];
+		do {
+		    facet_vertices.push_back(t_index[t]+v_offset);
+		    index_t lv = triangle_find_vertex(t,v);		   
+		    t = triangle_adjacent(t, (lv + 1)%3);
+		} while(t != v2t[v]);
+	    }
+	    if(facet_vertices.size() < 3) {
+		continue;
+	    }
+	    index_t f = mesh->facets.create_polygon(GEO::index_t(facet_vertices.size()));
+	    for(index_t i=0; i<facet_vertices.size(); ++i) {
+		mesh->facets.set_vertex(f, i, facet_vertices[i]);
+	    }
+	    if(facet_attr != nullptr && facet_attr->is_bound()) {
+		(*facet_attr)[f] = v_global_index(v);
+	    }
+	}
+	
+    }
+
+#endif
+    
     /***********************************************************************/
 
     bool ConvexCell::has_v_global_index(global_index_t v) const {
@@ -317,6 +409,46 @@ namespace VBW {
     bool ConvexCell::triangle_is_in_conflict(
 	TriangleWithFlags T, const vec4& eqn
     ) const {
+#ifndef STANDALONE_CONVEX_CELL
+	if(use_exact_predicates_) {
+	    if(T.i == VERTEX_AT_INFINITY) {
+		vec3 E  = make_vec3(eqn.x, eqn.y, eqn.z);
+		vec3 n2 = vertex_plane_normal(T.j);
+		vec3 n3 = vertex_plane_normal(T.k);
+		return(GEO::PCK::det_3d(E.data(), n2.data(), n3.data()) <= 0);
+	    }
+
+	    if(T.j == VERTEX_AT_INFINITY) {
+		vec3 E  = make_vec3(eqn.x, eqn.y, eqn.z);	    
+		vec3 n3 = vertex_plane_normal(T.k);
+		vec3 n1 = vertex_plane_normal(T.i);
+		return(GEO::PCK::det_3d(n1.data(), E.data(), n3.data()) <= 0);
+	    }
+
+	    if(T.k == VERTEX_AT_INFINITY) {
+		vec3 E  = make_vec3(eqn.x, eqn.y, eqn.z);	    	    
+		vec3 n1 = vertex_plane_normal(T.i);
+		vec3 n2 = vertex_plane_normal(T.j);
+		return(GEO::PCK::det_3d(n1.data(), n2.data(), E.data()) <= 0);
+	    } 
+	    
+	    //   The triangle is in conflict with eqn if the 
+	    // result of compute_triangle_point(t) injected in eqn 
+	    // has a negative sign.
+	    //   Examining the formula in compute_triangle_point(), this corresponds
+	    // to (minus) the 4x4 determinant of the 4 plane equations
+	    // developed w.r.t. the 4th column.
+	    // (see Edelsbrunner - Simulation of Simplicity for similar examples
+	    //  of computations).
+	
+	    vec4 p1 = vertex_plane(T.i);
+	    vec4 p2 = vertex_plane(T.j);
+	    vec4 p3 = vertex_plane(T.k);
+	    
+	    return(GEO::PCK::det_4d(p1.data(), p2.data(), p3.data(), eqn.data()) >= 0);
+	}
+#endif
+	
 	double det = 0.0;
 
 	// If one of the vertices of the triangle is the
@@ -713,6 +845,7 @@ namespace VBW {
     
     /***********************************************************************/
 
+    
     double ConvexCell::squared_radius(vec3 center) const {
 	double result = 0.0;
         index_t t = first_valid_;
@@ -729,6 +862,16 @@ namespace VBW {
 		result = std::max(result, squared_distance(center,p));
 	    }
 	    t = index_t(T.flags);
+	}
+	return result;
+    }
+
+    double ConvexCell::squared_inner_radius(vec3 center) const {
+	double result = std::numeric_limits<double>::max();
+	for(index_t v=0; v<nb_v(); ++v) {
+	    result = std::min(
+		result, squared_point_plane_distance(center, vertex_plane(v))
+	    );
 	}
 	return result;
     }

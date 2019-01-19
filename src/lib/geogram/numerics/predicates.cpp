@@ -72,6 +72,7 @@
 #include <geogram/numerics/predicates/orient2d.h>
 #include <geogram/numerics/predicates/orient3d.h>
 #include <geogram/numerics/predicates/det3d.h>
+#include <geogram/numerics/predicates/det4d.h>
 #include <geogram/numerics/predicates/dot3d.h>
 #include <geogram/numerics/predicates/aligned3d.h>
 
@@ -2265,6 +2266,46 @@ namespace GEO {
 	    return result;
 	}
 
+
+	Sign det_4d(
+	    const double* p0, const double* p1, const double* p2, const double* p3
+	) {
+	    Sign result = Sign(
+		det_4d_filter(p0, p1, p2, p3)
+	    );
+	    
+	    if(result == 0) {
+		const expansion& p0_0 = expansion_create(p0[0]);
+		const expansion& p0_1 = expansion_create(p0[1]);
+		const expansion& p0_2 = expansion_create(p0[2]);
+		const expansion& p0_3 = expansion_create(p0[3]);		
+		
+		const expansion& p1_0 = expansion_create(p1[0]);
+		const expansion& p1_1 = expansion_create(p1[1]);
+		const expansion& p1_2 = expansion_create(p1[2]);
+		const expansion& p1_3 = expansion_create(p1[3]);		
+		
+		const expansion& p2_0 = expansion_create(p2[0]);
+		const expansion& p2_1 = expansion_create(p2[1]);
+		const expansion& p2_2 = expansion_create(p2[2]);
+		const expansion& p2_3 = expansion_create(p2[3]);
+
+		const expansion& p3_0 = expansion_create(p3[0]);
+		const expansion& p3_1 = expansion_create(p3[1]);
+		const expansion& p3_2 = expansion_create(p3[2]);
+		const expansion& p3_3 = expansion_create(p3[3]);			
+
+		result = sign_of_expansion_determinant(
+		    p0_0, p0_1, p0_2, p0_3,
+		    p1_0, p1_1, p1_2, p1_3,
+		    p2_0, p2_1, p2_2, p2_3,
+		    p3_0, p3_1, p3_2, p3_3		    
+		);
+	    }
+	    return result;
+	}
+
+	
 	bool aligned_3d(
 	    const double* p0, const double* p1, const double* p2
 	) {

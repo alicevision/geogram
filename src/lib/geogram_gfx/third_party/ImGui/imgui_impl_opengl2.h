@@ -1,9 +1,13 @@
 /*
- * ImGui Renderer for: OpenGL2 (legacy OpenGL, fixed pipeline)
+ * dear imgui: Renderer for OpenGL2 (legacy OpenGL, fixed pipeline)
  * This needs to be used along with a Platform Binding (e.g. GLFW, SDL, Win32, custom..)
  *
  * Implemented features:
  *  [X] Renderer: User texture binding. Use 'GLuint' OpenGL texture identifier as void* / ImTextureID. Read the FAQ about ImTextureID in imgui.cpp.
+ *
+ * You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
+ * If you are new to dear imgui, read examples/README.txt and read the documentation at the top of imgui.cpp.
+ * https: *github.com/ocornut/imgui
  *
  * **DO NOT USE THIS CODE IF YOUR CODE/ENGINE IS USING MODERN OPENGL (SHADERS, VBO, VAO, etc.)**
  * **Prefer using the code in imgui_impl_opengl3.cpp**
@@ -24,6 +28,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#pragma once
 
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL2_Init();
 IMGUI_IMPL_API void     ImGui_ImplOpenGL2_Shutdown();

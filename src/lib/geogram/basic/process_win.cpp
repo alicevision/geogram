@@ -372,13 +372,6 @@ namespace {
     }
 
     /**
-     * Catches unexpected C++ exceptions
-     */
-    void unexpected_exception_handler() {
-        abnormal_program_termination("function unexpected() was called");
-    }
-
-    /**
      * Catches uncaught C++ exceptions
      */
     void uncaught_exception_handler() {
@@ -683,8 +676,7 @@ namespace GEO {
             typedef void (__cdecl * sighandler_t)(int);
             signal(SIGFPE, (sighandler_t) fpe_signal_handler);
 
-            // Install unexpected and uncaught c++ exception handlers
-            std::set_unexpected(unexpected_exception_handler);
+            // Install uncaught c++ exception handlers	    
             std::set_terminate(uncaught_exception_handler);
 
             // Install memory allocation handler

@@ -163,10 +163,9 @@ namespace {
 	 * \details In non-periodic mode, the cell is clipped by the domain.
 	 * \param[in] v the index of the vertex
 	 * \param[out] C the cell
-	 * \param[out] neighbors the Delaunay neighbors of the vertex
 	 */
-	void get_cell(index_t v, ConvexCell& C, vector<index_t>& neighbors) {
-	    delaunay_->copy_Laguerre_cell_from_Delaunay(v, C, neighbors);
+	void get_cell(index_t v, ConvexCell& C) {
+	    delaunay_->copy_Laguerre_cell_from_Delaunay(v, C, W_);
 	    if(!periodic_) {
 		C.clip_by_plane(vec4( 1.0, 0.0, 0.0, 0.0));
 		C.clip_by_plane(vec4(-1.0, 0.0, 0.0, 1.0));
@@ -300,10 +299,9 @@ namespace {
 
 	    if(draw_cells_) {
 		ConvexCell C;
-		vector<index_t> neighbors;
 		glupBegin(GLUP_TRIANGLES);
 		for(index_t v=0; v<points_.size()/3; ++v) {
-		    get_cell(v, C, neighbors);
+		    get_cell(v, C);
 		    if(draw_period_) {
 			for(index_t i=0; i<27; ++i) {
 			    draw_cell(C,i);
@@ -418,9 +416,8 @@ namespace {
 	void Lloyd_iteration() {
 	    vector<double> new_points(points_.size());
 	    ConvexCell C;
-	    vector<index_t> neighbors;
 	    for(index_t v=0; v<points_.size()/3; ++v) {
-		get_cell(v, C, neighbors);
+		get_cell(v, C);
 		vec3 g = C.barycenter();
 		new_points[3*v]   = g.x;
 		new_points[3*v+1] = g.y;
@@ -453,6 +450,7 @@ namespace {
 	float cells_shrink_;
 	vector<double> points_;
 	int nb_points_;
+	PeriodicDelaunay3d::IncidentTetrahedra W_;
     };
       
 }

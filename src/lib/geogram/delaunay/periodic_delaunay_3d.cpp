@@ -2837,7 +2837,8 @@ namespace GEO {
 	weights_(nullptr),
 	update_periodic_v_to_cell_(false),
 	has_empty_cells_(false),
-	nb_reallocations_(0)
+	nb_reallocations_(0),
+	convex_cell_exact_predicates_(true)
     {
 	geo_cite_with_info(
 	    "DBLP:journals/cj/Bowyer81",
@@ -3131,10 +3132,6 @@ namespace GEO {
 
 	index_t nb_tets = compress();
 
-	if(benchmark_mode_) {
-	    Logger::out("Delaunay") << "calling set_arrays()" << std::endl;
-	}
-
         set_arrays(
             nb_tets,
             cell_to_v_store_.data(),
@@ -3154,10 +3151,6 @@ namespace GEO {
 		geo_assert(t == index_t(-1) || t < nb_tets);
 	    }
 #endif	    
-	}
-	
-	if(benchmark_mode_) {
-	    Logger::out("Delaunay") << "called set_arrays()" << std::endl;
 	}
     }
 
@@ -3318,28 +3311,6 @@ namespace GEO {
         levels_ = levels;
     }
 
-    vec3 PeriodicDelaunay3d::vertex(index_t v) const {
-	if(!periodic_) {
-	    geo_debug_assert(v < nb_vertices());	    
-	    return vec3(vertices_ + 3*v);
-	}
-	index_t instance = v/nb_vertices_non_periodic_;
-	v = v%nb_vertices_non_periodic_;
-	vec3 result(vertices_ + 3*v);
-	result.x += double(translation[instance][0]) * period_;
-	result.y += double(translation[instance][1]) * period_;
-	result.z += double(translation[instance][2]) * period_;
-	return result;
-    }
-
-    double PeriodicDelaunay3d::weight(index_t v) const {
-	if(weights_ == nullptr) {
-	    return 0.0;
-	}
-	return periodic_ ? weights_[periodic_vertex_real(v)] : weights_[v] ;
-    }
-
-
     void PeriodicDelaunay3d::update_v_to_cell() {
         geo_assert(!is_locked_);  // Not thread-safe
         is_locked_ = true;
@@ -3470,24 +3441,14 @@ namespace GEO {
         is_locked_ = false;
     }
 
-    static inline bool contains(const vector<index_t>& neighbors, index_t t) {
-	for(index_t i=0; i<neighbors.size(); ++i) {
-	    if(neighbors[i] == t) {
-		return true;
-	    }
-	}
-	return false;
-    }
-
-    void PeriodicDelaunay3d::get_incident_tets(
-	index_t v, vector<index_t>& neighbors
-    ) const {
+    void PeriodicDelaunay3d::get_incident_tets(index_t v, IncidentTetrahedra& W) const {
 
 	geo_debug_assert(
 	    periodic_ || v < nb_vertices_non_periodic_
 	);
-	
-	neighbors.resize(0);
+
+	W.clear_incident_tets();
+
 	index_t t = index_t(-1);
 	if(v < nb_vertices_non_periodic_) {
 	    t = index_t(v_to_cell_[v]);
@@ -3513,28 +3474,27 @@ namespace GEO {
 
 	// TODO: different version if CICL is stored ?
 	{
-	    std::stack<index_t> S;
-	    neighbors.push_back(t);
-	    S.push(t);
-	    while(!S.empty()) {
-		t = S.top();
-		S.pop();
+	    W.add_incident_tet(t);
+	    W.S.push(t);
+	    while(!W.S.empty()) {
+		t = W.S.top();
+		W.S.pop();
 		const signed_index_t* T = &(cell_to_v_store_[4 * t]);
 		index_t lv = PeriodicDelaunay3dThread::find_4(T,signed_index_t(v));
 		index_t neigh = index_t(cell_to_cell_store_[4*t + (lv + 1)%4]);
-		if(neigh != index_t(-1) && !contains(neighbors, neigh)) {
-		    neighbors.push_back(neigh);
-		    S.push(neigh);
+		if(neigh != index_t(-1) && !W.has_incident_tet(neigh)) {
+		    W.add_incident_tet(neigh);
+		    W.S.push(neigh);
 		}
 		neigh = index_t(cell_to_cell_store_[4*t + (lv + 2)%4]);
-		if(neigh != index_t(-1) && !contains(neighbors, neigh)) {
-		    neighbors.push_back(neigh);
-		    S.push(neigh);
+		if(neigh != index_t(-1) && !W.has_incident_tet(neigh)) {
+		    W.add_incident_tet(neigh);
+		    W.S.push(neigh);
 		}
 		neigh = index_t(cell_to_cell_store_[4*t + (lv + 3)%4]);
-		if(neigh != index_t(-1) && !contains(neighbors, neigh)) {
-		    neighbors.push_back(neigh);
-		    S.push(neigh);
+		if(neigh != index_t(-1) && !W.has_incident_tet(neigh)) {
+		    W.add_incident_tet(neigh);
+		    W.S.push(neigh);
 		}
 	    }
 	}
@@ -3557,14 +3517,15 @@ namespace GEO {
     void PeriodicDelaunay3d::copy_Laguerre_cell_from_Delaunay(
 	GEO::index_t i,
 	ConvexCell& C,
-	GEO::vector<GEO::index_t>& neighbors
+	IncidentTetrahedra& W
     ) const {
-	
+	// Create global vertex indices if not present.
+	C.create_vglobal();
 	C.clear();
-	neighbors.resize(0);
 	
 	// Create the vertex at infinity.
-	C.create_vertex(vec4(0.0, 0.0, 0.0, 0.0));
+	C.create_vertex(vec4(0.0, 0.0, 0.0, 0.0), index_t(-1));
+	
 	GEO::vec3 Pi = vertex(i);
 	double wi = weight(i);
 	double Pi_len2 = Pi[0]*Pi[0] + Pi[1]*Pi[1] + Pi[2]*Pi[2];
@@ -3580,16 +3541,15 @@ namespace GEO {
 	    }
 	    do {
 		GEO::index_t f = copy_Laguerre_cell_facet_from_Delaunay(
-		    i, Pi, wi, Pi_len2, t, C, neighbors
+		    i, Pi, wi, Pi_len2, t, C, W
 		);
 		t = GEO::index_t(next_around_vertex(t,f));
 	    } while(t != GEO::index_t(vertex_cell(i)));
 	} else {
-	    GEO::vector<GEO::index_t> incident_tets;
-	    get_incident_tets(i,incident_tets);
-	    for(GEO::index_t tt=0; tt<incident_tets.size(); ++tt) {
+	    get_incident_tets(i,W);
+	    for(index_t t: W) {
 		copy_Laguerre_cell_facet_from_Delaunay(
-		    i, Pi, wi, Pi_len2, incident_tets[tt], C, neighbors
+		    i, Pi, wi, Pi_len2, t, C, W
 	        );
 	    }
 	}
@@ -3603,8 +3563,10 @@ namespace GEO {
 	double Pi_len2,
 	GEO::index_t t,
 	ConvexCell& C,
-	GEO::vector<GEO::index_t>& neighbors
+	IncidentTetrahedra& W
     ) const {
+	geo_argused(W);
+	
 	// Local tet vertex indices from facet
 	// and vertex in facet indices.
 	static GEO::index_t fv[4][3] = {
@@ -3615,37 +3577,28 @@ namespace GEO {
 	};
 	
 	GEO::index_t f = index(t,GEO::signed_index_t(i));
-	GEO::index_t jkl[3];   // Global index (in Delaunay) of triangle vertices
-	VBW::index_t l_jkl[3]; // Local index (in C) of triangle vertices
+	GEO::index_t jkl[3];  // Global index (in Delaunay) of triangle vertices
+	VBW::index_t l_jkl[3];// Local index (in C) of triangle vertices
 
-	const int VERTEX_AT_INFINITY = -1;
-	const int VERTEX_NOT_FOUND = -2;
 	
 	// Find or create the three vertices of the facet.
 	for(int lfv=0; lfv<3; ++lfv) {
+
 	    jkl[lfv] = GEO::index_t(cell_vertex(t, fv[f][lfv]));
-
-	    // Case 1: infinite vertex
-	    l_jkl[lfv] =
-		(jkl[lfv] == GEO::index_t(VERTEX_AT_INFINITY)) ?
-		VBW::index_t(VERTEX_AT_INFINITY) :
-		VBW::index_t(VERTEX_NOT_FOUND);
-
-	    // Case 2: vertex already created in C
-	    //  (retreive it)
-	    if(l_jkl[lfv] == VBW::index_t(VERTEX_NOT_FOUND)) {
-		for(GEO::index_t u=0; u<neighbors.size(); ++u) {
-		    if(neighbors[u] == jkl[lfv]) {
-			l_jkl[lfv] = VBW::index_t(u);
-			break;
-		    }
+	    l_jkl[lfv] = VBW::index_t(-1);
+	    
+	    // Vertex already created in C (note:
+	    // also works for vertex at infinity)
+	    for(VBW::index_t u=0; u<C.nb_v(); ++u) {
+		if(C.v_global_index(u) == jkl[lfv]) {
+		    l_jkl[lfv] = VBW::index_t(u);
+		    break;
 		}
 	    }
 
-	    // Case 3: vertex not found, create vertex in C
-	    if(l_jkl[lfv] == VBW::index_t(VERTEX_NOT_FOUND)) {
-		l_jkl[lfv] = VBW::index_t(neighbors.size());
-		neighbors.push_back(jkl[lfv]);
+	    // vertex not found, create vertex in C
+	    if(l_jkl[lfv] == VBW::index_t(-1)) {
+		l_jkl[lfv] = C.nb_v();
 		GEO::vec3 Pj = vertex(jkl[lfv]);
 		double wj = weight(jkl[lfv]);
 		double a = 2.0 * (Pi[0] - Pj[0]);
@@ -3654,14 +3607,13 @@ namespace GEO {
 		double d = ( Pj[0]*Pj[0] +
 			     Pj[1]*Pj[1] +
 			     Pj[2]*Pj[2] ) - Pi_len2 + wi - wj;
-		C.create_vertex(vec4(a,b,c,d));
+		C.create_vertex(vec4(a,b,c,d), jkl[lfv]);
 	    }
 	}
 
-	// Note1: l_jkl[.]+1 because vertex 0 in C is the vertex at infinity
-	// Note2: need to invert orientation (TODO: check why, I probably
+	// Note: need to invert orientation (TODO: check why, I probably
 	//  used opposite conventions in Delaunay and VBW, stupid me !!)
-	C.create_triangle(l_jkl[2]+1, l_jkl[1]+1, l_jkl[0]+1);
+	C.create_triangle(l_jkl[2], l_jkl[1], l_jkl[0]);
 
 	return f;
     }
@@ -3735,10 +3687,10 @@ namespace GEO {
     index_t PeriodicDelaunay3d::get_periodic_vertex_instances_to_create(
 	index_t v,
 	ConvexCell& C,
-	vector<index_t>& neighbors,
 	bool use_instance[27],
 	bool& cell_is_on_boundary,
-	bool& cell_is_outside_cube
+	bool& cell_is_outside_cube,
+	IncidentTetrahedra& W
     ) {	
 	// Integer translations associated with the six plane equations
 	// Note: indexing matches code below (order of the clipping
@@ -3752,7 +3704,7 @@ namespace GEO {
 	    { 0, 0,-1}
 	};
 
-	copy_Laguerre_cell_from_Delaunay(v, C, neighbors);
+	copy_Laguerre_cell_from_Delaunay(v, C, W);
 	geo_assert(!C.empty());
 	    
 	// Determine the periodic instances of the vertex to be created
@@ -3781,7 +3733,7 @@ namespace GEO {
 	if(C.empty()) {
 	    // Special case: cell is completely outside the cube.	    
 	    cell_is_outside_cube = true;
-	    copy_Laguerre_cell_from_Delaunay(v, C, neighbors);
+	    copy_Laguerre_cell_from_Delaunay(v, C, W);
 	    // Clip the cell with the 3x3x3 (rubic's) cube that
 	    // surrounds the cube. Not only this avoids generating
 	    // some unnecessary virtual vertices, but also, without
@@ -3931,7 +3883,8 @@ namespace GEO {
 		index_t from, index_t to
 	    ) {
 		ConvexCell C;
-		vector<index_t> neighbors;
+		C.use_exact_predicates(convex_cell_exact_predicates_);
+		IncidentTetrahedra W;
 
 	      for(index_t v=from; v<to; ++v) {
 		  bool use_instance[27];
@@ -3942,8 +3895,9 @@ namespace GEO {
 		  // whenever the cell of the current vertex has an intersection
 		  // with one of the 27 cubes, an instance needs to be created there.
 		  index_t nb_instances = get_periodic_vertex_instances_to_create(
-		      v, C, neighbors, use_instance,
-		      cell_is_on_boundary, cell_is_outside_cube
+		      v, C, use_instance,
+		      cell_is_on_boundary, cell_is_outside_cube,
+		      W
 		  );
 
 
@@ -3987,10 +3941,6 @@ namespace GEO {
 
 	insert_vertices(nb_vertices_non_periodic_, reorder_.size());
 
-	if(benchmark_mode_) {
-	    Logger::out("Periodic") << "Updating v_to_cell" << std::endl;
-	}
-	
 	// This flag to tell update_v_to_cell() to
 	// also update the table for periodic (virtual)
 	// vertices (the periodic_v_to_cell_ table).
@@ -4009,7 +3959,8 @@ namespace GEO {
 	// -----------------------------------------------------------		
 
 	{
-	    vector<index_t> incident_tets;
+	    IncidentTetrahedra W;
+
 	    // vertex_instances_ is used to implement v2t_ for virtual
 	    // vertices, we cannot modify it here, so we create a copy
 	    // that we will modify.
@@ -4023,9 +3974,8 @@ namespace GEO {
 		    
 		    if((vertex_instances_[v] & (1u << instance)) != 0) {
 			index_t vp = make_periodic_vertex(v, instance);
-			get_incident_tets(vp, incident_tets);
-			FOR(i, incident_tets.size()) {
-			    index_t t = incident_tets[i];
+			get_incident_tets(vp, W);
+			for(index_t t: W) {
 			    FOR(lv, 4) {
 				index_t wp = index_t(cell_vertex(t,lv));
 				if(wp != vp && wp != index_t(-1)) {
@@ -4067,13 +4017,14 @@ namespace GEO {
 
     void PeriodicDelaunay3d::check_volume() {
 	ConvexCell C;
-	vector<index_t> neighbors;
+	C.use_exact_predicates(convex_cell_exact_predicates_);	
 	
 	Logger::out("Periodic") << "Checking total volume..." << std::endl;
 	double sumV = 0;
+	IncidentTetrahedra W;
 	
 	FOR(v, nb_vertices_non_periodic_) {
-	    copy_Laguerre_cell_from_Delaunay(v, C, neighbors);
+	    copy_Laguerre_cell_from_Delaunay(v, C, W);
 #ifdef GEO_DEBUG	    
 	    for(
 		VBW::ushort t = C.first_triangle();
@@ -4117,9 +4068,10 @@ namespace GEO {
 	index_t v_off = 1;
 	
 	ConvexCell C;
-	vector<index_t> neighbors;
+	C.use_exact_predicates(convex_cell_exact_predicates_);		
+	IncidentTetrahedra W;
 	for(index_t vv=0; vv<nb_vertices_non_periodic_; ++vv) {
-	    copy_Laguerre_cell_from_Delaunay(vv, C, neighbors);
+	    copy_Laguerre_cell_from_Delaunay(vv, C, W);
 	    if(clipped) {
 		C.clip_by_plane(vec4( 1.0, 0.0, 0.0,  0.0));
 		C.clip_by_plane(vec4(-1.0, 0.0, 0.0,  period_));

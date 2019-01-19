@@ -50,6 +50,7 @@
 #include <geogram/voronoi/generic_RVD_vertex.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/basic/numeric.h>
+#include <geogram/basic/attributes.h>
 
 namespace GEOGen {
     class SymbolicVertex;
@@ -59,6 +60,7 @@ namespace GEOGen {
 
 namespace GEO {
     class RVDVertexMap;
+    class Mesh;
 
     namespace Process {
         class SpinLockArray;

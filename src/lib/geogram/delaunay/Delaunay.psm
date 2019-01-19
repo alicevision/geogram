@@ -71,6 +71,7 @@ SOURCES="../basic/memory.h \
 ../numerics/predicates/orient3d.h \
 ../numerics/predicates/dot3d.h \
 ../numerics/predicates/det3d.h \
+../numerics/predicates/det4d.h \
 ../numerics/predicates/aligned3d.h \
 ../numerics/predicates.cpp \
 delaunay_2d.h \

@@ -786,7 +786,19 @@ namespace GEO {
         bool are_simplices() const {
             return is_simplicial_;
         }
-        
+	
+        /**
+         * \brief Gets a pointer to the first element for iterating over
+         *  the corners of a facet
+         * \param[in] f the facet
+         * \return a pointer to the first corner of the facet
+         */
+	const index_t* corners_begin_ptr(index_t f) const {
+	    geo_debug_assert(!is_simplicial_);
+	    geo_debug_assert(f < nb());
+	    return &facet_ptr_[f];
+	}
+	
     protected:
         virtual void clear_store(
             bool keep_attributes, bool keep_memory = false
@@ -854,6 +866,31 @@ namespace GEO {
             return corner_adjacent_facet_[c];
         }
 
+        /**
+         * \brief Gets a pointer to the the facet index 
+	 *  that a corner is adjacent to
+         * \param[in] c the corner
+         * \return a pointer to the the facet index 
+	 *  that corner \p is adjacent to.
+         */
+        const index_t* adjacent_facet_ptr(index_t c) const {
+            geo_assert(c < nb());
+            return &corner_adjacent_facet_[c];
+        }
+
+
+        /**
+         * \brief Gets a pointer to the the facet index 
+	 *  that a corner is adjacent to
+         * \param[in] c the corner
+         * \return a pointer to the the facet index 
+	 *  that corner \p is adjacent to.
+         */
+	index_t* adjacent_facet_ptr(index_t c) {
+            geo_assert(c < nb());
+            return &corner_adjacent_facet_[c];
+        }
+	
         /**
          * \brief Sets the vertex that a corner is incident to
          * \param[in] c the corner
@@ -1736,6 +1773,27 @@ namespace GEO {
             adjacent_cell_[f] = c;
         }
 
+        /**
+         * \brief Gets a const pointer to a cell adjacent to a facet
+         * \param[in] f the facet, in 0..nb()-1
+         * \return a const pointer to the cell adjacent to facet \p f, or NO_FACET if \p f
+         *  is on the border
+         */
+        const index_t* adjacent_cell_ptr(index_t f) const {
+            geo_assert(f < nb());
+            return &adjacent_cell_[f];
+        }
+	
+        /**
+         * \brief Gets a pointer to a cell adjacent to a facet
+         * \param[in] f the facet, in 0..nb()-1
+         * \return a pointer to the cell adjacent to facet \p f, or NO_FACET if \p f
+         *  is on the border
+         */
+        index_t* adjacent_cell_ptr(index_t f) {
+            geo_assert(f < nb());
+            return &adjacent_cell_[f];
+        }
         
     protected:
         virtual void clear_store(
