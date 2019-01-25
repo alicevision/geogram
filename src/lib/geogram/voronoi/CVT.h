@@ -60,8 +60,11 @@
 
 namespace GEO {
 
+    class CentroidalVoronoiTesselation;
     class RestrictedVoronoiDiagram;
     class ProgressTask;
+
+    thread_local static CentroidalVoronoiTesselation* cvt_instance_ = nullptr;
 
     /**
      * \brief CentroidalVoronoiTesselation is the main component
@@ -254,8 +257,8 @@ namespace GEO {
          * \pre There is no current CentroidalVoronoiTesselation.
          */
         void make_current() {
-            geo_assert(instance_ == nullptr);
-            instance_ = this;
+            geo_assert(cvt_instance_ == nullptr);
+            cvt_instance_ = this;
         }
 
         /**
@@ -268,8 +271,8 @@ namespace GEO {
          * \pre This CentroidalVoronoiTesselation is the current one.
          */
         void done_current() {
-            geo_assert(instance_ == this);
-            instance_ = nullptr;
+            geo_assert(cvt_instance_ == this);
+            cvt_instance_ = nullptr;
         }
 
     public:
@@ -444,7 +447,6 @@ namespace GEO {
          */
         void compute_R3_embedding();
 
-        static CentroidalVoronoiTesselation* instance_;
         bool show_iterations_;
         coord_index_t dimension_;
         Delaunay_var delaunay_;
