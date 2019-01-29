@@ -95,7 +95,7 @@ namespace GEO {
         env->set_value("SVN revision", VORPALINE_SVN_REVISION);
 #endif
 
-        Logger::initialize();
+        if (!Logger::is_initialized()) { Logger::initialize(); }
         Process::initialize(flags);
         Progress::initialize();
         CmdLine::initialize();
