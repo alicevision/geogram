@@ -11,7 +11,7 @@
 #include <FPG/Symbol.h>
 #include <FPG/Location.h>
 
-class Visitor;
+struct Visitor;
 
 namespace AST {
 
@@ -33,8 +33,8 @@ struct Clone_context {
 
 
 struct Node {
-    friend class ::Visitor;
-    Node() : location(current_location), type(NULL) {}
+    friend struct ::Visitor;
+    Node() : location(current_location), type(nullptr) {}
     virtual ~Node() {}
     static std::string       context;
 
@@ -215,7 +215,7 @@ struct AssignmentExpression : public Expression {
 typedef std::list< Expression* > ExpressionList;
 
 struct FunctionCall : public Expression {
-    FunctionCall( FunctionType *fun_type, ExpressionList *exp_list, FunctionDefinition *called_function = NULL )
+    FunctionCall( FunctionType *fun_type, ExpressionList *exp_list, FunctionDefinition *called_function = nullptr )
        : fun_type( fun_type ),
          exp_list( exp_list ),
          called_function( called_function )
@@ -273,7 +273,7 @@ struct ExpressionStatement : public Statement {
     virtual void accept( Visitor *visitor );
     virtual ExpressionStatement* clone( Clone_context *context );
 
-    Expression *e; // can be NULL
+    Expression *e; // can be nullptr
 };
 
 typedef std::list< Statement*> StatementContainer;
@@ -311,7 +311,7 @@ struct CompoundStatement : public Statement {
 struct ConditionalStatement : public Statement {
     ConditionalStatement( Expression *cond,
                           Statement *then_branch,
-                          Statement *else_branch = NULL );
+                          Statement *else_branch = nullptr );
     void dump( int level );
     virtual Type* computeType();
     bool hasBreakOrReturnOnExit();
@@ -342,14 +342,14 @@ struct Declaration : public Statement {
 };
 
 struct VariableDeclaration : public Declaration {
-    VariableDeclaration( Variable *var ) : var( var ), initializer(NULL) {}
+    VariableDeclaration( Variable *var ) : var( var ), initializer(nullptr) {}
     void dump( int level );
     bool hasToplevelVariableDeclaration() { return true; }
     virtual void accept( Visitor *visitor );
     virtual VariableDeclaration* clone( Clone_context *context );
 
     Variable *var;
-    Expression *initializer; // only non-null after beautifying!
+    Expression *initializer; // only non-nullptr after beautifying!
 };
 
 
@@ -419,10 +419,10 @@ extern Node* clone_prime( Node*, Clone_context *context );
 
 template< class ASTElement >
 ASTElement*
-clone( ASTElement *e, Clone_context *context = NULL ) {
+clone( ASTElement *e, Clone_context *context = nullptr ) {
     AST::Node *n = clone_prime( e, context );
     e = dynamic_cast<ASTElement*>(n);
-    assert(e != NULL);
+    assert(e != nullptr);
     return e;
 }
 

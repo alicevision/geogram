@@ -44,7 +44,6 @@
  */
 
 #include <geogram/mesh/mesh_manifold_harmonics.h>
-#include <geogram/basic/logger.h>
 #include <geogram/basic/file_system.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_geometry.h>
@@ -206,7 +205,8 @@ namespace GEO {
 	Mesh& M, index_t nb_eigens,
 	LaplaceBeltramiDiscretization discretization,
 	const std::string& attribute_name,
-	double shift
+	double shift,
+	bool print_spectrum
     ) {
 
 	geo_cite("DBLP:conf/smi/Levy06");
@@ -271,8 +271,10 @@ namespace GEO {
 	
 	nlEigenSolve();
 
-	for(index_t i=0; i<nb_eigens; ++i) {
-	    Logger::out("MH") << i << ":" << nlGetEigenValue(i) << std::endl;
+	if(print_spectrum) {
+	    for(index_t i=0; i<nb_eigens; ++i) {
+		Logger::out("MH") << i << ":" << nlGetEigenValue(i) << std::endl;
+	    }
 	}
 	
 	nlDeleteContext(nlGetCurrent());

@@ -47,7 +47,19 @@
 #define GEOGRAM_GFX_IMGUI_EXT
 
 #include <geogram_gfx/basic/common.h>
+
+#ifdef GEO_COMPILER_CLANG
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+#endif
+
 #include <geogram_gfx/third_party/ImGui/imgui.h>
+
+#ifdef GEO_COMPILER_CLANG
+#pragma GCC diagnostic pop
+#endif
+
 
 /**
  * \file geogram_gfx/ImGui_ext/imgui_ext.h

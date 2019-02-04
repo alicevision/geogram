@@ -144,7 +144,7 @@ namespace GEO {
          * \param[in] visible_flag an optional pointer to application's
          *  variable that controls the visibility of this Console.
          */
-        Console(bool* visible_flag = nil);
+        Console(bool* visible_flag = nullptr);
         
         /**
          * \copydoc GEO::LoggerClient::div()
@@ -184,12 +184,12 @@ namespace GEO {
         /**
          * \brief Draws the console and handles the gui.
          * \param[in] visible an optional pointer to a visibility
-         *  flag, controlled by a close button if different from NULL.
+         *  flag, controlled by a close button if different from nullptr.
 	 * \param[in] with_window if true, then creates a new window
 	 *  using imgui::Begin() / imgui::End(), else caller is responsible
 	 *  for doing that.
          */
-        virtual void draw(bool* visible=NULL, bool with_window=true);
+        virtual void draw(bool* visible=nullptr, bool with_window=true);
 
 	int TextEditCallback(ImGuiTextEditCallbackData* data);
 
@@ -663,7 +663,7 @@ namespace GEO {
             T* target, void (T::*fptr)(void)
         ) {
             this->assert_nb_args_matches(0);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)();
             }
         }
@@ -688,7 +688,7 @@ namespace GEO {
             this->assert_nb_args_matches(1);            
             ARG0 a0;
             this->get_arg_by_index(0,a0);
-            if(target != nil && fptr != nil) {            
+            if(target != nullptr && fptr != nullptr) {            
                 (*target.*fptr)(a0);
             }
         }
@@ -715,7 +715,7 @@ namespace GEO {
             this->get_arg_by_index(0,a0);
             ARG1 a1;
             this->get_arg_by_index(1,a1);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)(a0,a1);
             }
         }
@@ -745,7 +745,7 @@ namespace GEO {
             this->get_arg_by_index(1,a1);
             ARG2 a2;
             this->get_arg_by_index(2,a2);
-            if(target != nil && fptr != nil) {            
+            if(target != nullptr && fptr != nullptr) {            
                 (*target.*fptr)(a0,a1,a2);
             }
         }
@@ -777,7 +777,7 @@ namespace GEO {
             this->get_arg_by_index(2,a2);
             ARG3 a3;
             this->get_arg_by_index(3,a3);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)(a0,a1,a2,a3);
             }
         }
@@ -812,7 +812,7 @@ namespace GEO {
             this->get_arg_by_index(3,a3);
             ARG4 a4;
             this->get_arg_by_index(4,a4);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)(a0,a1,a2,a3,a4);
             }
         }
@@ -849,7 +849,7 @@ namespace GEO {
             this->get_arg_by_index(4,a4);
             ARG5 a5;
             this->get_arg_by_index(5,a5);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)(a0,a1,a2,a3,a4,a5);
             }
         }
@@ -888,7 +888,7 @@ namespace GEO {
             this->get_arg_by_index(5,a5);
             ARG6 a6;
             this->get_arg_by_index(6,a6);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)(a0,a1,a2,a3,a4,a5,a6);
             }
         }
@@ -929,7 +929,7 @@ namespace GEO {
             this->get_arg_by_index(6,a6);
             ARG7 a7;
             this->get_arg_by_index(7,a7);
-            if(target != nil && fptr != nil) {
+            if(target != nullptr && fptr != nullptr) {
                 (*target.*fptr)(a0,a1,a2,a3,a4,a5,a6,a7);
             }
         }
@@ -948,7 +948,7 @@ namespace GEO {
             void (*fptr)(void)
         ) {
             this->assert_nb_args_matches(0);                                    
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)();
             }
         }
@@ -970,7 +970,7 @@ namespace GEO {
             this->assert_nb_args_matches(1);            
             ARG0 a0;
             this->get_arg_by_index(0,a0);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0);
             }
         }
@@ -994,7 +994,7 @@ namespace GEO {
             this->get_arg_by_index(0,a0);
             ARG1 a1;
             this->get_arg_by_index(1,a1);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1);
             }
         }
@@ -1020,7 +1020,7 @@ namespace GEO {
             this->get_arg_by_index(1,a1);
             ARG2 a2;
             this->get_arg_by_index(2,a2);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1,a2);
             }
         }
@@ -1048,7 +1048,7 @@ namespace GEO {
             this->get_arg_by_index(2,a2);
             ARG3 a3;
             this->get_arg_by_index(3,a3);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1,a2,a3);
             }
         }
@@ -1079,7 +1079,7 @@ namespace GEO {
             this->get_arg_by_index(3,a3);
             ARG4 a4;
             this->get_arg_by_index(4,a4);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1,a2,a3,a4);
             }
         }
@@ -1112,7 +1112,7 @@ namespace GEO {
             this->get_arg_by_index(4,a4);
             ARG5 a5;
             this->get_arg_by_index(5,a5);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1,a2,a3,a4,a5);
             }
         }
@@ -1147,7 +1147,7 @@ namespace GEO {
             this->get_arg_by_index(5,a5);
             ARG6 a6;
             this->get_arg_by_index(6,a6);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1,a2,a3,a4,a5,a6);
             }
         }
@@ -1184,7 +1184,7 @@ namespace GEO {
             this->get_arg_by_index(6,a6);
             ARG7 a7;
             this->get_arg_by_index(7,a7);
-            if(fptr != nil) {
+            if(fptr != nullptr) {
                 (*fptr)(a0,a1,a2,a3,a4,a5,a6,a7);
             }
         }
@@ -1548,7 +1548,7 @@ namespace GEO {
          * \copydoc CommandInvoker::auto_create_args()
          */
         virtual void auto_create_args() {
-            command_->invoke(FPTR(nil));            
+            command_->invoke(FPTR(nullptr));            
         }
         
     private:
@@ -1599,7 +1599,7 @@ namespace GEO {
          */
         
         virtual void auto_create_args() {
-            command_->invoke((T*)(nil), (TFPTR)(nil));            
+            command_->invoke((T*)(nullptr), (TFPTR)(nullptr));            
         }
 
         
@@ -1666,13 +1666,13 @@ namespace GEO {
          * \brief Application constructor.
          * \param[in] argc , argv command line arguments copied from main()
          * \param[in] usage the usage string
-	 * \param[in] lua_state an optional pointer to a LUA state or nil. If
-	 *  nil, then a LUA state is created.
+	 * \param[in] lua_state an optional pointer to a LUA state or nullptr. If
+	 *  nullptr, then a LUA state is created.
          * \see CmdLine::parse()
          */
         Application(
 	    int argc, char** argv, const std::string& usage,
-	    lua_State* lua_state = nil
+	    lua_State* lua_state = nullptr
 	);
 
         /**
@@ -2127,7 +2127,7 @@ namespace GEO {
         static SimpleMeshApplication* instance() {
             SimpleMeshApplication* result =
                 dynamic_cast<SimpleMeshApplication*>(Application::instance());
-            geo_assert(result != nil);
+            geo_assert(result != nullptr);
             return result;
         }
 

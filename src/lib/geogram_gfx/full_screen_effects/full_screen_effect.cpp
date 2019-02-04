@@ -57,7 +57,7 @@ namespace {
 	GLSL::PseudoFileProvider* provider, std::vector<GLSL::Source>& sources
     ) {
 	FullScreenEffectImpl* ctxt = dynamic_cast<FullScreenEffectImpl*>(provider);
-	geo_assert(ctxt != nil);
+	geo_assert(ctxt != nullptr);
 	ctxt->get_vertex_shader_preamble_pseudo_file(sources);
     }
 
@@ -65,7 +65,7 @@ namespace {
 	GLSL::PseudoFileProvider* provider, std::vector<GLSL::Source>& sources
     ) {
 	FullScreenEffectImpl* ctxt = dynamic_cast<FullScreenEffectImpl*>(provider);
-	geo_assert(ctxt != nil);
+	geo_assert(ctxt != nullptr);
 	ctxt->get_fragment_shader_preamble_pseudo_file(sources);
     }
 }

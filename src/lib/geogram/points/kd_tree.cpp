@@ -78,6 +78,7 @@ namespace {
             points_(points),
             stride_(stride),
             splitting_coord_(splitting_coord) {
+	    geo_argused(nb_points_);
         }
 
         /**
@@ -142,8 +143,8 @@ namespace GEO {
         for(index_t i = 0; i < nb_points; ++i) {
             const double* p = point_ptr(i);
             for(coord_index_t c = 0; c < dimension(); ++c) {
-                bbox_min_[c] = geo_min(bbox_min_[c], p[c]);
-                bbox_max_[c] = geo_max(bbox_max_[c], p[c]);
+                bbox_min_[c] = std::min(bbox_min_[c], p[c]);
+                bbox_max_[c] = std::max(bbox_max_[c], p[c]);
             }
         }
 	
@@ -445,15 +446,36 @@ namespace GEO {
             m8_ = nb_points();
             // Create the first level of the tree
             m4_ = split_kd_node(1, m0_, m8_);
+	    
             // Create the second level of the tree
             //  (using two threads)
-            parallel_for(*this, 2, 4);
+	    parallel(
+		[this]() { m2_ = split_kd_node(2, m0_, m4_); },
+		[this]() { m6_ = split_kd_node(3, m4_, m8_); }
+	    );
+	    
             // Create the third level of the tree
             //  (using four threads)
-            parallel_for(*this, 4, 8);
+	    parallel(
+		[this]() { m1_ = split_kd_node(4, m0_, m2_); },
+		[this]() { m3_ = split_kd_node(5, m2_, m4_); },
+		[this]() { m5_ = split_kd_node(6, m4_, m6_); },
+		[this]() { m7_ = split_kd_node(7, m6_, m8_); }		
+	    );
+
             // Create the fourth level of the tree
             //  (using eight threads)
-            parallel_for(*this, 8, 16);
+	    parallel(
+		[this]() { create_kd_tree_recursive(8 , m0_, m1_); },
+		[this]() { create_kd_tree_recursive(9 , m1_, m2_); },
+		[this]() { create_kd_tree_recursive(10, m2_, m3_); },
+		[this]() { create_kd_tree_recursive(11, m3_, m4_); },
+		[this]() { create_kd_tree_recursive(12, m4_, m5_); },
+		[this]() { create_kd_tree_recursive(13, m5_, m6_); },
+		[this]() { create_kd_tree_recursive(14, m6_, m7_); },
+		[this]() { create_kd_tree_recursive(15, m7_, m8_); }		
+	    );
+	    
         } else {
             create_kd_tree_recursive(1, 0, nb_points());
         }
@@ -462,62 +484,6 @@ namespace GEO {
 	// This is because "children at 2*n and 2*n+1" does not
 	// work with 0 !!
 	return 1;
-    }
-
-    
-    void BalancedKdTree::operator() (index_t i) {
-        switch(i) {
-            // Second level of the tree: create two nodes in
-            //  parallel.
-            case 2:
-                m2_ = split_kd_node(2, m0_, m4_);
-                break;
-            case 3:
-                m6_ = split_kd_node(3, m4_, m8_);
-                break;
-
-            // Third level of the tree: create four nodes in
-            // parallel.
-            case 4:
-                m1_ = split_kd_node(4, m0_, m2_);
-                break;
-            case 5:
-                m3_ = split_kd_node(5, m2_, m4_);
-                break;
-            case 6:
-                m5_ = split_kd_node(6, m4_, m6_);
-                break;
-            case 7:
-                m7_ = split_kd_node(7, m6_, m8_);
-                break;
-
-            // Fourth level of the tree: create eight subtrees
-            // in parallel.
-            case 8:
-                create_kd_tree_recursive(8, m0_, m1_);
-                break;
-            case 9:
-                create_kd_tree_recursive(9, m1_, m2_);
-                break;
-            case 10:
-                create_kd_tree_recursive(10, m2_, m3_);
-                break;
-            case 11:
-                create_kd_tree_recursive(11, m3_, m4_);
-                break;
-            case 12:
-                create_kd_tree_recursive(12, m4_, m5_);
-                break;
-            case 13:
-                create_kd_tree_recursive(13, m5_, m6_);
-                break;
-            case 14:
-                create_kd_tree_recursive(14, m6_, m7_);
-                break;
-            case 15:
-                create_kd_tree_recursive(15, m7_, m8_);
-                break;
-        }
     }
 
     index_t BalancedKdTree::split_kd_node(
@@ -689,7 +655,7 @@ namespace GEO {
 	double max_length = -1.0;
 	for(coord_index_t d=0; d<dimension(); ++d) {
 	    double length = bbox_max[d] - bbox_min[d];
-	    max_length = geo_max(max_length, length);
+	    max_length = std::max(max_length, length);
 	}
 
 	// Cutting coordinate
@@ -758,7 +724,7 @@ namespace GEO {
 	    if(l > r) {
 		break;
 	    }
-	    geo_swap(point_index_[l], point_index_[r]);
+	    std::swap(point_index_[l], point_index_[r]);
 	    ++l; --r;
 	}
 	int br1 = l;
@@ -773,7 +739,7 @@ namespace GEO {
 	    if(l > r) {
 		break;
 	    }
-	    geo_swap(point_index_[l], point_index_[r]);
+	    std::swap(point_index_[l], point_index_[r]);
 	    ++l; --r;
 	}
 	int br2 = l;

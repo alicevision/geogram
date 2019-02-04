@@ -10,8 +10,10 @@ int compute_config() {
     return result;                                      
 }                                                    
 
-void emit_isect_vertex(in int i, in vec4 mesh_tex_coord) {                   
-    gl_ClipDistance[0] = 1.0;                         
+void emit_isect_vertex(in int i, in vec4 mesh_tex_coord) {
+#ifndef GLUP_NO_GL_CLIPPING            
+    gl_ClipDistance[0] = 1.0;
+#endif    
     gl_Position = isect_point_clip_space[i];                     
     if(glupIsEnabled(GLUP_VERTEX_COLORS)) {
         VertexOut.color = isect_color[i];            

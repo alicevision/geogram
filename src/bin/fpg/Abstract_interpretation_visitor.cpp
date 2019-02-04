@@ -15,7 +15,7 @@
 #include <FPG/MSG.h>
 
 Abstract_interpretation_visitor::Abstract_interpretation_visitor( Abstract_value* initial_value )
- : expression_value( NULL ), initial_value( initial_value )
+ : expression_value( nullptr ), initial_value( initial_value )
 {}
 
 void
@@ -52,7 +52,7 @@ void
 Abstract_interpretation_visitor::visit( AST::UnaryExpression* uexp ) {
     MSG( "" )
     analyze( uexp->e );
-    //expression_value = NULL;
+    //expression_value = nullptr;
 }
 
 void
@@ -65,8 +65,8 @@ Abstract_interpretation_visitor::visit( AST::BinaryExpression* bexp) {
         expression_value = new_abstract_value();
         return;
     }
-    assert( value1 != NULL );
-    assert( value2 != NULL );
+    assert( value1 != nullptr );
+    assert( value2 != nullptr );
     switch( bexp->kind ) {
     case AST::BinaryExpression::ADD:
         expression_value = value1->add( value2, bexp );
@@ -119,7 +119,7 @@ void
 Abstract_interpretation_visitor::visit( AST::AssignmentExpression* aexp ) {
     // expression_value is passed upwards unchanged
     AST::IdentifierExpression *id_expr = dynamic_cast< AST::IdentifierExpression* >( aexp->e1 );
-    if( id_expr != NULL ) {
+    if( id_expr != nullptr ) {
         Variable *var = id_expr->var;
         Abstract_value *val = analyze( aexp->e2 );
         if( is_float(var->type) ) {
@@ -160,7 +160,7 @@ Abstract_interpretation_visitor::visit( AST::FunctionCall* funcall ) {
     // for non-external functions:
     if( !funcall->fun_type->is_extern ) {
         AST::FunctionDefinition *fun_def = funcall->called_function;
-        assert( fun_def != NULL );
+        assert( fun_def != nullptr );
         // now it's safe to create the new environment:
         value_env_stack.push( Value_environment() );
         std::vector< Abstract_value * >::iterator abs_arg_iter = abstract_arguments.begin();
@@ -176,7 +176,7 @@ Abstract_interpretation_visitor::visit( AST::FunctionCall* funcall ) {
                 ++abs_arg_iter;
             }
         }
-        return_values.push( NULL );
+        return_values.push( nullptr );
         analyze( fun_def->body );
 #if 0
         // NOTE: this is an ugly hack! in particular, if there was an assignment to one of the
@@ -201,7 +201,7 @@ Abstract_interpretation_visitor::visit( AST::FunctionCall* funcall ) {
         expression_value = return_values.top();
         return_values.pop();
         if( funcall->fun_type->getReturnType() != type_void ) {
-            assert( expression_value != NULL );
+            assert( expression_value != nullptr );
             MSG( "return value=" << expression_value )
         }
     } else
@@ -227,13 +227,13 @@ Abstract_interpretation_visitor::visit( AST::UnaryFunction* uf ) {
 void
 Abstract_interpretation_visitor::visit( AST::EmptyStatement* ) {
     // an emptystatement does not depend on anything
-    assert( expression_value == NULL );
+    assert( expression_value == nullptr );
 }
 
 void
 Abstract_interpretation_visitor::visit( AST::ExpressionStatement* expr_stmt ) {
     analyze( expr_stmt->e );
-    expression_value = NULL;
+    expression_value = nullptr;
 }
 
 void
@@ -275,7 +275,7 @@ Abstract_interpretation_visitor::visit( AST::Return* ret) {
     if( ret->e ) {
         analyze(ret->e);
         assert( return_values.size() > 0 );
-        if( return_values.top() == NULL ) {
+        if( return_values.top() == nullptr ) {
             MSG( "setting retval=" << expression_value )
             return_values.top() = expression_value;
         } else  if( is_float( ret->e->getType() ) && return_values.top() != expression_value ) {
@@ -284,7 +284,7 @@ Abstract_interpretation_visitor::visit( AST::Return* ret) {
             MSG( "result: " << return_values.top() )
         }
     }
-    expression_value = NULL;
+    expression_value = nullptr;
 }
 
 void
@@ -293,7 +293,7 @@ Abstract_interpretation_visitor::visit( AST::StatementList* slist ) {
         AST::Statement *stmt = *it;
         analyze(stmt);
         // statements have no expression value
-        assert( expression_value == NULL );
+        assert( expression_value == nullptr );
     }
 }
 
@@ -306,7 +306,7 @@ void
 Abstract_interpretation_visitor::visit( AST::FunctionDefinition* fundef ) {
     MSG( fundef->type->id )
     value_env_stack.push( Value_environment() );
-    return_values.push( NULL );
+    return_values.push( nullptr );
     FunctionType::ParameterList::iterator it;
     for( it = fundef->type->parameters.begin(); it != fundef->type->parameters.end(); ++it ) {
         Variable *var = *it;
@@ -327,7 +327,7 @@ Abstract_interpretation_visitor::visit( AST::FunctionDefinition* fundef ) {
     // toplevel return values are ignored, they are most probably of integer type anyway.
     return_values.pop();
     assert( return_values.size() == 0 );
-    assert( expression_value == NULL );
+    assert( expression_value == nullptr );
 }
 
 void
@@ -349,7 +349,7 @@ Abstract_interpretation_visitor::get_analysis_result( AST::Expression *e ) {
         }*/
         assert( analysis_result.find(e) != analysis_result.end() );
         Abstract_value *val = analysis_result[ e ];
-        assert( val != NULL );
+        assert( val != nullptr );
         return val;
     } else if( is_int(e->getType()) )
         return new_abstract_value();
@@ -360,8 +360,8 @@ Abstract_interpretation_visitor::get_analysis_result( AST::Expression *e ) {
 
 void
 Abstract_interpretation_visitor::update( AST::Expression *old_e, AST::Expression *new_e ) {
-    assert( old_e != NULL );
-    assert( new_e != NULL );
+    assert( old_e != nullptr );
+    assert( new_e != nullptr );
     if( is_float(old_e->getType()) ) {
         assert( is_float(new_e->getType()) );
         //old_e->dump(0);
@@ -419,18 +419,18 @@ Abstract_interpretation_visitor::is_defined_in_env( Variable* var ) {
 
 Abstract_value*
 Abstract_interpretation_visitor::analyze( AST::Node* n ) {
-    expression_value = NULL;
+    expression_value = nullptr;
     //std::cout << "xxxxxx analyze " << (unsigned int)n << std::endl;
     if( !is_bound( n->getType() ) ) {
         //std::cout << "xxxxxx accept " << (unsigned int)n << std::endl;
         n->accept( this );
-        if( is_float(n->getType()) && expression_value != NULL ) {
+        if( is_float(n->getType()) && expression_value != nullptr ) {
             AST::Expression *e = dynamic_cast<AST::Expression*>(n);
             assert( e );
             //std::cout << "xxxxxx create " << (unsigned int)e << std::endl;
             analysis_result[ e ] = expression_value;
         }
     }
-    return expression_value != NULL ? expression_value
+    return expression_value != nullptr ? expression_value
                                     : new_abstract_value();
 }

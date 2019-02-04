@@ -70,7 +70,7 @@ namespace {
      * \param[in] s fourth vertex of the tetrahedron
      * \param[out] t_circumcenter computed circumcenter of the tetrahedron
      * \param[out] squared_radius computed squared radius of the tetrahedron
-     * \param[out] dihedral_angles if non-NULL, 
+     * \param[out] dihedral_angles if non-nullptr, 
      *   computed dihedral angles of the tetrahedron
      * \return true if successful, false otherwise 
      *  (for instance, if the tetrahedron is flat).
@@ -79,7 +79,7 @@ namespace {
         const vec3& p, const vec3& q,
         const vec3& r, const vec3& s,
         vec3& t_circumcenter, double& squared_radius,
-        double* dihedral_angles = 0
+        double* dihedral_angles = nullptr
     ) {
 
         vec3 qp = q - p;

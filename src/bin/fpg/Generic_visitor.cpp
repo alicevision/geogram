@@ -49,7 +49,7 @@ Generic_visitor::visit( AST::ConditionalExpression* c ) {
     MSG("")
     handle( c->cond );
     handle( c->e1 );
-    assert( c->e2 != NULL );
+    assert( c->e2 != nullptr );
     handle( c->e2 );
 }
 
@@ -70,7 +70,7 @@ Generic_visitor::visit( AST::FunctionCall* fun_call ) {
     }
 
     AST::FunctionDefinition *fun_def = fun_call->called_function;
-    if( interprocedural && fun_def != NULL ) {
+    if( interprocedural && fun_def != nullptr ) {
         if( callgraph_cycle_detection.find( fun_def ) != callgraph_cycle_detection.end() ) {
             encountered_recursion = true;
         } else {
@@ -100,14 +100,14 @@ Generic_visitor::visit( AST::ConditionalStatement* s ) {
     MSG(s->location)
     handle( s->cond );
     handle( s->then_branch );
-    if( s->else_branch != NULL )
+    if( s->else_branch != nullptr )
         handle( s->else_branch );
 }
 
 void
 Generic_visitor::visit( AST::Return* r ) {
     MSG("")
-    if( r->e != NULL )
+    if( r->e != nullptr )
         handle( r->e );
 }
 

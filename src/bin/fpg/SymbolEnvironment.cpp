@@ -70,7 +70,7 @@ void
 SymbolEnvironment::add( FunctionType* function ) {
     MSG( function->id );
     assert( env.size() == 1 );
-    if( findFunction( function->id, function->non_bound_arity() ) != NULL )
+    if( findFunction( function->id, function->non_bound_arity() ) != nullptr )
         throw ParseError( "function " + (function->id) + " already declared!", AST::current_location );
     functions[function->id].push_back( function );
 }
@@ -97,7 +97,7 @@ SymbolEnvironment::add_fun_def( AST::FunctionDefinition* fun_def ) {
     assert( env.size() == 1 );
     std::string id = fun_def->type->id;
     unsigned int arity = fun_def->type->non_bound_arity();
-    if( findFunctionDef( id, arity ) != NULL )
+    if( findFunctionDef( id, arity ) != nullptr )
         throw ParseError( "function " + (id) + " already defined!", AST::current_location );
     function_definitions[ fun_def->type ] = fun_def;
 }
@@ -114,7 +114,7 @@ SymbolEnvironment::findVariable( const std::string& id )
     if(var)
        return var;
     }
-    return NULL;
+    return nullptr;
 }
 
 Type*
@@ -126,7 +126,7 @@ SymbolEnvironment::findType( const std::string& id ) {
         if( it != env[size_t(block)]->types.end() )
             return it->second;
     }
-    return NULL;
+    return nullptr;
 }
 
 FunctionType*
@@ -140,7 +140,7 @@ SymbolEnvironment::findFunction( const std::string& id, unsigned int arity ) {
                 return *it2;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 bool
@@ -152,9 +152,9 @@ SymbolEnvironment::hasFunction( const std::string& id ) {
 AST::FunctionDefinition*
 SymbolEnvironment::findFunctionDef( const std::string& id, unsigned int arity ) {
     FunctionType *t = findFunction( id, arity );
-    if( t != NULL )
+    if( t != nullptr )
         return function_definitions[t];
-    return NULL;
+    return nullptr;
 }
 
 AST::FunctionDefinition*
@@ -181,9 +181,9 @@ struct Resolve_function_calls : public Generic_visitor {
         MSG(funcall->fun_type->id)
         // handle function arguments also:
         Generic_visitor::visit( funcall );
-        /*if( funcall->fun_type == NULL ) {
+        /*if( funcall->fun_type == nullptr ) {
             FunctionType *fun_type = env.findFunction( funcall->id, funcall->exp_list->size() );
-            if( fun_type == NULL ) {
+            if( fun_type == nullptr ) {
                 std::stringstream errmsg;
                 errmsg << "no function declaration found for " << funcall->id << " and arity " << funcall->exp_list->size();
                 throw RuntimeError( errmsg.str(), funcall->location );
@@ -192,10 +192,10 @@ struct Resolve_function_calls : public Generic_visitor {
         }*/
 
         if( funcall->fun_type->is_extern )
-            funcall->called_function = NULL;
+            funcall->called_function = nullptr;
         else {
             AST::FunctionDefinition *fun_def = env.findFunctionDef( funcall->fun_type );
-            if( fun_def == NULL ) {
+            if( fun_def == nullptr ) {
                 std::stringstream errmsg;
                 errmsg << "no definition found for " << funcall->fun_type->id << " and arity " << funcall->exp_list->size();
                 throw RuntimeError( errmsg.str(), funcall->location );
@@ -237,7 +237,7 @@ SymbolEnvironment::clear() {
 std::string
 random_identifier( unsigned int size ) {
     char *result = static_cast<char*>(malloc((size+3)/4 + 1));
-    assert( result != NULL );
+    assert( result != nullptr );
     const char pool[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghjklmnopqrstuvwxyz0123456789";
     result[size] = 0;
     while( size > 0 ) {

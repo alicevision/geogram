@@ -67,6 +67,6 @@ void GEOGRAM_GFX_API init_lua_glup_viewer(lua_State* L);
 #ifdef __cplusplus
 }
 #endif
-    
+
 #endif
 

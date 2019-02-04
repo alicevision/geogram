@@ -53,6 +53,10 @@
 #ifndef OPENNL_BLAS_H
 #define OPENNL_BLAS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * \brief The opaque structure used by the BLAS abstraction layer.
  */
@@ -341,13 +345,13 @@ struct NLBlas {
  * \return NL_TRUE if device and CPU use the same address space.
  * \retval NL_FALSE otherwise.
  */
-NLboolean nlBlasHasUnifiedMemory(NLBlas_t blas);
+NLAPI NLboolean NLAPIENTRY nlBlasHasUnifiedMemory(NLBlas_t blas);
 
 /**
  * \brief Restes the flops and memory used statistics.
  * \param[in] blas a pointer to the BLAS abstraction layer.
  */
-void nlBlasResetStats(NLBlas_t blas);
+NLAPI void NLAPIENTRY nlBlasResetStats(NLBlas_t blas);
 
 /**
  * \brief Gets the number of floating point operations per
@@ -355,7 +359,7 @@ void nlBlasResetStats(NLBlas_t blas);
  *  layer or since the latest call to nlBlasResetStats().
  * \return the number of GFlops.
  */
-double nlBlasGFlops(NLBlas_t blas);
+NLAPI double NLAPIENTRY nlBlasGFlops(NLBlas_t blas);
 
 /**
  * \brief Gets the currently used amount of memory 
@@ -365,7 +369,7 @@ double nlBlasGFlops(NLBlas_t blas);
  * \param[in] type one of NL_HOST_MEMORY, NL_DEVICE_MEMORY.
  * \return the amount of used memory, in bytes.
  */
-NLulong nlBlasUsedRam(NLBlas_t blas, NLmemoryType type);
+NLAPI NLulong NLAPIENTRY nlBlasUsedRam(NLBlas_t blas, NLmemoryType type);
 
 /**
  * \brief Gets the high mark of used amount of memory
@@ -375,14 +379,14 @@ NLulong nlBlasUsedRam(NLBlas_t blas, NLmemoryType type);
  * \param[in] type one of NL_HOST_MEMORY, NL_DEVICE_MEMORY.
  * \return the high mark of the used memory, in bytes.
  */
-NLulong nlBlasMaxUsedRam(NLBlas_t blas, NLmemoryType type);
+NLAPI NLulong NLAPIENTRY nlBlasMaxUsedRam(NLBlas_t blas, NLmemoryType type);
 
 /**
  * \brief Gets a pointer to the BLAS abstraction layer for
  *  BLAS operation on the host CPU.
  * \return a pointer to the BLAS abstraction layer.
  */
-NLBlas_t nlHostBlas(void);
+NLAPI NLBlas_t NLAPIENTRY nlHostBlas(void);
 
 /**
  * \brief Allocates a vector of doubles;
@@ -404,5 +408,9 @@ NLBlas_t nlHostBlas(void);
     blas->Free(blas,memtype,(size_t)(dim)*sizeof(double),ptr)
 
 /******************************************************************************/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

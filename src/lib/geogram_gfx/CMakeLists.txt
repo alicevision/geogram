@@ -5,8 +5,6 @@ configure_file(geogram_gfx.pc.in ${PROJECT_BINARY_DIR}/geogram_gfx${VORPALINE_VE
 add_subdirectory(third_party)
 
 aux_source_directories(SOURCES "Source Files"                .)
-aux_source_directories(SOURCES "Source Files\\glut_viewer"   glut_viewer)
-aux_source_directories(SOURCES "Source Files\\glup_viewer"   glup_viewer)
 aux_source_directories(SOURCES "Source Files\\ImGui_ext"     ImGui_ext)
 aux_source_directories(SOURCES "Source Files\\api"           api)
 aux_source_directories(SOURCES "Source Files\\basic"         basic)
@@ -14,6 +12,11 @@ aux_source_directories(SOURCES "Source Files\\mesh"          mesh)
 aux_source_directories(SOURCES "Source Files\\GLUP"          GLUP)
 aux_source_directories(SOURCES "Source Files\\GLUP\\shaders" GLUP/shaders)
 aux_source_directories(SOURCES "Source Files\\full_screen_effects" full_screen_effects)
+
+
+if(NOT ANDROID)
+  aux_source_directories(SOURCES "Source Files\\glup_viewer"   glup_viewer)
+endif()
 
 if(GEOGRAM_WITH_LUA)
    aux_source_directories(SOURCES "Source Files\\lua"           lua)
@@ -30,7 +33,9 @@ set_target_properties(geogram_gfx PROPERTIES
                       SOVERSION ${VORPALINE_VERSION_MAJOR}
 		      FOLDER "GEOGRAM")
 
-target_link_libraries(geogram_gfx glfw)
+if(NOT ANDROID)
+  target_link_libraries(geogram_gfx glfw)
+endif()
 
 if(VORPALINE_BUILD_DYNAMIC)
     # Must provide all symbols at link time

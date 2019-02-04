@@ -69,8 +69,8 @@ namespace GEO {
 
     InstanceRepo::Instance* InstanceRepo::get(const std::string& name) {
         const Registry& r = get_registry();
-        Registry::const_iterator i = r.find(name);
-        return i == r.end() ? nil : i->second.get();
+        auto i = r.find(name);
+        return i == r.end() ? nullptr : i->second.get();
     }
 }
 

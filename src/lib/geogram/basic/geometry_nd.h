@@ -158,7 +158,7 @@ namespace GEO {
             double s = double(0.5) * (a + b + c);
             double A2 = s * (s - a) * (s - b) * (s - c);
             // the max is there to avoid some numerical problems.
-            return ::sqrt(geo_max(A2, 0.0));
+            return ::sqrt(std::max(A2, 0.0));
         }
 
         /**
@@ -274,7 +274,7 @@ namespace GEO {
             const POINT& Q1,
             const POINT& Q2,
             const POINT& Q3,
-            double* denom = nil
+            double* denom = nullptr
         ) {
             const POINT q2 = Q2 - Q1;
             const POINT q3 = Q3 - Q1;
@@ -293,7 +293,7 @@ namespace GEO {
             double lambda1 = s * ((a23 - a22) * l2 + (a12 - a13) * l3 + c31);
             double lambda2 = s * ((-a23) * l2 + (a13) * l3);
             double lambda3 = s * ((a22) * l2 + (-a12) * l3);
-            if(denom != nil) {
+            if(denom != nullptr) {
                 *denom = d;
             }
             return lambda1 * Q1 + lambda2 * Q2 + lambda3 * Q3;

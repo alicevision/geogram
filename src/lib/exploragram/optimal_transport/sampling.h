@@ -83,7 +83,7 @@ namespace GEO {
      * \param[in] func_str specification of the function to be used,
      *  in the form "(+|-)?func(^pow)?", where func is one of 
      *  X,Y,Z,R,sin,dist
-     * \param[in] distance_reference if func is "dist" and if non-nil,
+     * \param[in] distance_reference if func is "dist" and if non-nullptr,
      *  distance is computed relative to \p distance_reference, else it
      *  is computed relative to \p M.
      * \TODO the same thing is refered here as "mass", "density" and "weight",
@@ -92,7 +92,7 @@ namespace GEO {
     void EXPLORAGRAM_API set_density(
         Mesh& M, double mass1, double mass2,
         const std::string& func_str,
-        Mesh* distance_reference = nil
+        Mesh* distance_reference = nullptr
     );
 
 
@@ -123,7 +123,7 @@ namespace GEO {
         index_t nb_points, bool project_on_border,
         bool BRIO=true, bool multilevel=true,
         double ratio=0.125,
-        vector<index_t>* levels=nil        
+        vector<index_t>* levels=nullptr        
     );
 }
 

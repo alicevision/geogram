@@ -170,7 +170,7 @@ namespace {
         static DemoGlupApplication* instance() {
             DemoGlupApplication* result =
                 dynamic_cast<DemoGlupApplication*>(Application::instance());
-            geo_assert(result != nil);
+            geo_assert(result != nullptr);
             return result;
         }
         

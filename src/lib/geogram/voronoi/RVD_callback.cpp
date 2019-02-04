@@ -66,7 +66,7 @@ namespace {
 		if(result == index_t(-1)) {
 		    result = facet_region[f];
 		} else {
-		    result = geo_max(result, facet_region[f]);
+		    result = std::max(result, facet_region[f]);
 		}
 	    }
 	}
@@ -386,7 +386,7 @@ namespace {
 		)
 	    );
 	    if (angle <= 0) return 1024.;
-	    m = geo_max(m, M_PI - angle);
+	    m = std::max(m, M_PI - angle);
 	}
 	
 	FOR(other, pts.size()) {
@@ -565,7 +565,7 @@ namespace GEO {
     RVDCallback::RVDCallback() :
 	seed_(index_t(-1)),
 	simplex_(index_t(-1)),
-	spinlocks_(nil) {
+	spinlocks_(nullptr) {
     }
 
     RVDCallback::~RVDCallback() {
@@ -616,7 +616,7 @@ namespace GEO {
 	tessellate_non_convex_facets_(false),
 	use_mesh_(false),	
 	facet_is_skipped_(false),
-	vertex_map_(nil)
+	vertex_map_(nullptr)
     {
     }
 
@@ -715,7 +715,7 @@ namespace GEO {
 		    mesh_.vertices.create_vertex(geometry);
 		    mesh_vertex_sym_[v] = symb;
 		}
-		current_facet_.push_back(v);
+		base_current_facet_.push_back(v);
 	    } else {
 		vertex(geometry, symb);
 	    }
@@ -726,13 +726,13 @@ namespace GEO {
 	if(!facet_is_skipped_) {	
 	    if(use_mesh_) {
 		index_t f = mesh_.facets.nb();
-		mesh_.facets.create_polygon(current_facet_.size());
-		for(index_t i=0; i<current_facet_.size(); ++i) {
-		    mesh_.facets.set_vertex(f, i, current_facet_[i]);
+		mesh_.facets.create_polygon(base_current_facet_.size());
+		for(index_t i=0; i<base_current_facet_.size(); ++i) {
+		    mesh_.facets.set_vertex(f, i, base_current_facet_[i]);
 		}
 		mesh_facet_seed_[f] = facet_seed();
 		mesh_facet_tet_[f] = facet_tet();
-		current_facet_.resize(0);
+		base_current_facet_.resize(0);
 	    } else {
 		end_facet();
 	    }
@@ -747,7 +747,7 @@ namespace GEO {
 	    process_polyhedron_mesh();
 	    mesh_.clear(true,true);
 	    delete vertex_map_;
-	    vertex_map_ = nil;
+	    vertex_map_ = nullptr;
 	} else {
 	    end_polyhedron();
 	}
@@ -867,8 +867,8 @@ namespace GEO {
 
     BuildRVDMesh::BuildRVDMesh(Mesh& output_mesh) :
 	output_mesh_(output_mesh), shrink_(0.0) {
-	cell_vertex_map_ = nil;
-	global_vertex_map_ = nil;
+	cell_vertex_map_ = nullptr;
+	global_vertex_map_ = nullptr;
 	current_cell_id_ = 0;
 	generate_ids_ = false;
     }
@@ -880,10 +880,10 @@ namespace GEO {
 	    vertex_id_.unbind();
 	    facet_seed_id_.unbind();
 	    delete global_vertex_map_;
-	    global_vertex_map_ = nil;
+	    global_vertex_map_ = nullptr;
 	}
 	delete cell_vertex_map_;
-	cell_vertex_map_ = nil;
+	cell_vertex_map_ = nullptr;
     }
     
     void BuildRVDMesh::set_generate_ids(bool x) {
@@ -911,7 +911,7 @@ namespace GEO {
 	    vertex_id_.unbind();
 	    facet_seed_id_.unbind();
 	    delete global_vertex_map_;
-	    global_vertex_map_ = nil;
+	    global_vertex_map_ = nullptr;
 	}
     }
     
@@ -999,9 +999,6 @@ namespace GEO {
 	}
 	RVDPolyhedronCallback::process_polyhedron_mesh();
     }
-    
-    
-    /********************************************************************/    
     
 }
 

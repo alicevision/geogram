@@ -46,6 +46,7 @@
 
 #if (defined (WIN32) || defined(_WIN64))
 #include <windows.h>
+#  define NL_DLL_EXT ".dll"
 #else
 #include <sys/types.h>
 #include <sys/times.h> 
@@ -53,6 +54,11 @@
 
 #if defined(GEO_DYNAMIC_LIBS) && defined(NL_OS_UNIX)
 #include <dlfcn.h>
+#ifdef NL_OS_APPLE
+#  define NL_DLL_EXT ".dylib"
+#else
+#  define NL_DLL_EXT ".so"
+#endif
 #endif
 
 /******************************************************************************/
@@ -132,10 +138,18 @@ NLdll nlOpenDLL(const char* name, NLenum flags_in) {
     if(result == NULL) {
 	if((flags_in & NL_LINK_QUIET) == 0) {	
 	    nl_fprintf(stderr,"Did not find %s,\n", name);
-	    nl_fprintf(stderr,"Retrying with libgeogram_num_3rdparty.so\n");
+	    nl_fprintf(
+		stderr,
+		"Retrying with libgeogram_num_3rdparty"
+		NL_DLL_EXT
+		"\n"
+	    );
 	}
 	if((flags_in & NL_LINK_USE_FALLBACK) != 0) {
-	    result=dlopen("libgeogram_num_3rdparty.so", flags);
+	    result=dlopen(
+		"libgeogram_num_3rdparty" NL_DLL_EXT,
+		flags
+	    );
 	    if(result == NULL) {
 		if((flags_in & NL_LINK_QUIET) == 0) {		    
 		    nlError("nlOpenDLL/dlopen",dlerror());
@@ -176,9 +190,13 @@ NLdll nlOpenDLL(const char* name, NLenum flags) {
     if(result == NULL && ((flags & NL_LINK_USE_FALLBACK) != 0)) {
 	if((flags & NL_LINK_QUIET) == 0) {
 	    nl_fprintf(stderr,"Did not find %s,\n", name);
-	    nl_fprintf(stderr,"Retrying with geogram_num_3rdparty\n");
+	    nl_fprintf(
+		stderr,
+		"Retrying with geogram_num_3rdparty"
+		NL_DLL_EXT
+		"\n");
 	}
-        result=LoadLibrary("geogram_num_3rdparty.dll");
+        result=LoadLibrary("geogram_num_3rdparty" NL_DLL_EXT);
     }
     return result;
 }
@@ -200,7 +218,7 @@ NLdll nlOpenDLL(const char* name, NLenum flags) {
     nl_arg_used(flags);
 #ifdef NL_OS_UNIX
     nlError("nlOpenDLL","Was not compiled with dynamic linking enabled");
-    nlError("nlOpenDLL","(see VORPALINE_BUILD_DYNAMIC in CMakeLists.txt)");        
+    nlError("nlOpenDLL","(see VORPALINE_BUILD_DYNAMIC in CMakeLists.txt)");
 #else    
     nlError("nlOpenDLL","Not implemented");
 #endif    

@@ -105,7 +105,7 @@ namespace GEO {
             /**
              * \brief Source constructor.
              */
-            Source() : text_(nil) {
+            Source() : text_(nullptr) {
             }
 
             /**
@@ -271,8 +271,8 @@ namespace GEO {
          */
         GLuint GEOGRAM_GFX_API compile_program_with_includes_no_link(
             PseudoFileProvider* provider,
-            const char* shader1, const char* shader2 = nil, const char* shader3 = nil,
-            const char* shader4 = nil, const char* shader5 = nil, const char* shader6 = nil
+            const char* shader1, const char* shader2 = nullptr, const char* shader3 = nullptr,
+            const char* shader4 = nullptr, const char* shader5 = nullptr, const char* shader6 = nullptr
         );
 
         
@@ -327,24 +327,24 @@ namespace GEO {
             GLenum target,
             const char* source1,
             const char* source2,
-            const char* source3 = nil,
-            const char* source4 = nil,
-            const char* source5 = nil,
-            const char* source6 = nil,
-            const char* source7 = nil,
-            const char* source8 = nil,
-            const char* source9 = nil,
-            const char* source10 = nil,
-            const char* source11 = nil,
-            const char* source12 = nil,
-            const char* source13 = nil,
-            const char* source14 = nil,
-            const char* source15 = nil,
-            const char* source16 = nil,
-            const char* source17 = nil,
-            const char* source18 = nil,
-            const char* source19 = nil,
-            const char* source20 = nil            
+            const char* source3 = nullptr,
+            const char* source4 = nullptr,
+            const char* source5 = nullptr,
+            const char* source6 = nullptr,
+            const char* source7 = nullptr,
+            const char* source8 = nullptr,
+            const char* source9 = nullptr,
+            const char* source10 = nullptr,
+            const char* source11 = nullptr,
+            const char* source12 = nullptr,
+            const char* source13 = nullptr,
+            const char* source14 = nullptr,
+            const char* source15 = nullptr,
+            const char* source16 = nullptr,
+            const char* source17 = nullptr,
+            const char* source18 = nullptr,
+            const char* source19 = nullptr,
+            const char* source20 = nullptr            
         );
 
 

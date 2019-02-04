@@ -47,7 +47,7 @@ void
 
 
     //AST::FunctionDefinition *fun_def = symbol_env.findFunctionDef( funcall->fun_type->id );
-    //assert( fun_def != NULL );
+    //assert( fun_def != nullptr );
 
     // postprocessing
     param_iter = funcall->fun_type->parameters.begin();

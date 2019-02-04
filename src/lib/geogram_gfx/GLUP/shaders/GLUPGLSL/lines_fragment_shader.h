@@ -5,7 +5,9 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUP/fragment_shader_utils.h>
 
+#ifndef GLUP_NO_GL_CLIPPING        
 in float gl_ClipDistance[];                                
+#endif
 
 in VertexData {                            
     vec4 color;                             
@@ -14,10 +16,12 @@ in VertexData {
 
 void main() {
 
-#ifdef GL_ES    
+#ifdef GL_ES
+#ifndef GLUP_NO_GL_CLIPPING            
     if(glupIsEnabled(GLUP_CLIPPING) && (gl_ClipDistance[0] < 0.0)) {
         discard;                                                
-    }                                                          
+    }
+#endif    
 #endif
     
     if(glupIsEnabled(GLUP_PICKING)) {

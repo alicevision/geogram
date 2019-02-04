@@ -68,7 +68,7 @@
 
 namespace GEO {
 
-    OptimalTransportMap* OptimalTransportMap::instance_ = nil;
+    OptimalTransportMap* OptimalTransportMap::instance_ = nullptr;
 
     OptimalTransportMap::Callback::~Callback() {
     }
@@ -108,7 +108,7 @@ namespace GEO {
         newton_ = false;
 	verbose_ = true;
         
-        instance_ = nil;
+        instance_ = nullptr;
         constant_nu_ = 0.0;
         total_mass_ = 0.0;
         current_call_iter_ = 0;
@@ -124,8 +124,8 @@ namespace GEO {
 
         w_did_not_change_ = false;
         measure_of_smallest_cell_ = 0.0;
-	callback_ = nil;
-	Laguerre_centroids_ = nil;
+	callback_ = nullptr;
+	Laguerre_centroids_ = nullptr;
 
 	linsolve_epsilon_ = 0.001;
 	linsolve_maxiter_ = 1000;
@@ -136,16 +136,19 @@ namespace GEO {
 	linear_solver_ = OT_PRECG;
 
 	nb_air_particles_ = 0;
-	air_particles_ = nil;
+	air_particles_ = nullptr;
 	air_particles_stride_ = 0;
 	air_fraction_ = 0.0;
 
 	clip_by_balls_ = false;
+
+	user_H_g_ = false;	
+	user_H_ = nullptr;
     }
 
     OptimalTransportMap::~OptimalTransportMap() {
 	delete callback_;
-	callback_ = nil;
+	callback_ = nullptr;
     }
     
     void OptimalTransportMap::set_points(
@@ -211,7 +214,13 @@ namespace GEO {
         w_did_not_change_ = false;
 
 	if(max_iterations == 0) {
+	    if(Laguerre_centroids_ != nullptr) {
+		callback_->set_Laguerre_centroids(Laguerre_centroids_);
+	    }
 	    funcgrad(n,weights_.data(),fk,gk.data());
+	    if(Laguerre_centroids_ != nullptr) {
+		callback_->set_Laguerre_centroids(nullptr);
+	    }
 	}
 
 	// Inner iteration control for linesearch
@@ -235,10 +244,10 @@ namespace GEO {
             if(epsilon0 == 0.0) {
 	        epsilon0 = measure_of_smallest_cell_;
 	        FOR(i,n) {
-		  epsilon0 = geo_min(epsilon0, nu(i));
+		  epsilon0 = std::min(epsilon0, nu(i));
 		}
 		if(nb_air_particles_ != 0.0) {
-		    epsilon0 = geo_min(epsilon0, air_fraction_ * total_mass_);
+		    epsilon0 = std::min(epsilon0, air_fraction_ * total_mass_);
 		}
                 epsilon0 = 0.5 * epsilon0;
             }
@@ -281,14 +290,14 @@ namespace GEO {
                 }
 
                 // Compute cell measures and nbZ.
-		if(Laguerre_centroids_ != nil) {
+		if(Laguerre_centroids_ != nullptr) {
 		    callback_->set_Laguerre_centroids(Laguerre_centroids_);
 		}
 		
 		funcgrad(n,weights_.data(),fk,gk.data());
 
-		if(Laguerre_centroids_ != nil) {
-		    callback_->set_Laguerre_centroids(nil);
+		if(Laguerre_centroids_ != nullptr) {
+		    callback_->set_Laguerre_centroids(nullptr);
 		}
 
 		if(verbose_) {
@@ -351,13 +360,17 @@ namespace GEO {
 	    FOR(i,n) {
 		total_nu += nu(i);
 	    }
-	    std::cerr << "total nu=" << total_nu << std::endl;
-	    std::cerr << "total mass=" << total_mass_ << std::endl;
+	    if(verbose_) {
+		std::cerr << "total nu=" << total_nu << std::endl;
+		std::cerr << "total mass=" << total_mass_ << std::endl;
+	    }
 	    if(::fabs(total_nu - total_mass_)/total_mass_ > 0.01) {
-		Logger::warn("OTM") << "Specified nu do not sum to domain measure"
-				    << std::endl;
-		Logger::warn("OTM") << "rescaling..."
-				    << std::endl;
+		Logger::warn("OTM")
+		    << "Specified nu do not sum to domain measure"
+		    << std::endl;
+		Logger::warn("OTM")
+		    << "rescaling..."
+		    << std::endl;
 	    }
 	    FOR(i,n) {
 		set_nu(i, nu(i) * total_mass_ / total_nu);
@@ -401,10 +414,10 @@ namespace GEO {
         optimizer->optimize(weights_.data());
 	callback_->set_eval_F(false);
 	
-        instance_ = nil;
+        instance_ = nullptr;
         // To make sure everything is reset properly
         double dummy = 0;
-        funcgrad(n, weights_.data(), dummy, nil);
+        funcgrad(n, weights_.data(), dummy, nullptr);
 	if(verbose_) {
 	    Logger::out("OTM")
 		<< "Used " << current_call_iter_ << " iterations" << std::endl;
@@ -497,11 +510,11 @@ namespace GEO {
 	callback_->set_eval_F(true);		
         optimizer->optimize(weights_.data());
 	callback_->set_eval_F(false);			
-        instance_ = nil;
+        instance_ = nullptr;
         
         // To make sure everything is reset properly
         double dummy = 0;
-        funcgrad(n, weights_.data(), dummy, nil);
+        funcgrad(n, weights_.data(), dummy, nullptr);
     }
 
     void OptimalTransportMap::optimize_levels(
@@ -589,7 +602,7 @@ namespace GEO {
             // Step 1: determine the (dim+1)d embedding from the weights
             double W = 0.0;
             for(index_t p = 0; p < n; ++p) {
-                W = geo_max(W, w[p]);
+                W = std::max(W, w[p]);
             }
 	    for(index_t p = 0; p < n; ++p) {
 		// Yes, dimension_ and not dimension_ -1,
@@ -604,7 +617,7 @@ namespace GEO {
 		
             // Step 2: compute function and gradient
             {
-		Stopwatch* SW = nil;
+		Stopwatch* SW = nullptr;
 		if(newton_) {
 		    if(verbose_) {
 			SW = new Stopwatch("Power diagram");
@@ -622,7 +635,7 @@ namespace GEO {
             update_sparsity_pattern();
         }
         
-        if(g == nil) {
+        if(g == nullptr) {
             if(pretty_log_) {
                 CmdLine::ui_clear_line();
                 CmdLine::ui_message(last_stats_ + "\n");
@@ -646,7 +659,7 @@ namespace GEO {
 	}
 	
 	{
-	    Stopwatch* W = nil;
+	    Stopwatch* W = nullptr;
 	    if(verbose_ && newton_) {
 		W = new Stopwatch("RVD");
 		Logger::out("OTM") << "In RVD (funcgrad)..." << std::endl;
@@ -671,7 +684,7 @@ namespace GEO {
             measure_of_smallest_cell_ = Numeric::max_float64();
             for(index_t i=0; i<n; ++i) {
                 measure_of_smallest_cell_ =
-                    geo_min(measure_of_smallest_cell_, g[i]);
+                    std::min(measure_of_smallest_cell_, g[i]);
 	        if(g[i] == 0.0) {
 		    ++nb_empty_cells;
 		}
@@ -685,7 +698,7 @@ namespace GEO {
 		    ++nb_empty_cells;
 		}
 		measure_of_smallest_cell_ =
-		    GEO::geo_min(measure_of_smallest_cell_, air_mass);
+		    std::min(measure_of_smallest_cell_, air_mass);
 	    }
         }
         
@@ -714,7 +727,7 @@ namespace GEO {
 
         for(index_t p = 0; p < n; ++p) {
             double cur_diff = ::fabs(g[p]);
-            max_diff = geo_max(max_diff, cur_diff);
+            max_diff = std::max(max_diff, cur_diff);
             avg_diff += cur_diff / double(n);
         }
 
@@ -801,7 +814,7 @@ namespace GEO {
         index_t n, const double* w, double& f, double* g
     ) {
 	callback_->set_Newton_step(true);
-	funcgrad(n,(double*)w,f,g);
+	funcgrad(n,const_cast<double*>(w),f,g);
 	callback_->set_Newton_step(false);
     }
     
@@ -852,7 +865,8 @@ namespace GEO {
 		nlSolverParameteri(NL_PRECONDITIONER, NL_PRECOND_JACOBI);
 		nlSolverParameteri(NL_SYMMETRIC, NL_TRUE);
 		nlSolverParameterd(NL_THRESHOLD, linsolve_epsilon_);
-		nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));                
+		nlSolverParameteri(NL_MAX_ITERATIONS, NLint(linsolve_maxiter_));
+
 		break;
 	    case OT_SUPERLU:
 		nlSolverParameteri(NL_SOLVER, NL_PERM_SUPERLU_EXT);		
@@ -861,8 +875,8 @@ namespace GEO {
 		nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT);		
 		break;
 	}
-
 	nlEnable(NL_VARIABLES_BUFFER);
+	nlEnable(NL_NO_VARIABLES_INDIRECTION); 
         nlBegin(NL_SYSTEM);
 	nlBindBuffer(NL_VARIABLES_BUFFER, 0, x, NLuint(sizeof(double)));
         nlBegin(NL_MATRIX);
@@ -891,6 +905,50 @@ namespace GEO {
 	}
         nlDeleteContext(nlGetCurrent());
     }
+
+    void OptimalTransportMap::compute_P1_Laplacian(
+	const double* w, NLMatrix Laplacian, double* measures
+    ) {
+	index_t n = index_t(points_dimp1_.size() / dimp1_) - nb_air_particles_;
+
+	if(measures != nullptr) {
+	    Memory::clear(measures, n*sizeof(double));
+	}
+
+	user_H_g_ = true;
+	user_H_ = Laplacian;
+	callback_->set_Newton_step(true);
+
+	// Step 1: determine the (dim+1)d embedding from the weights
+	double W = 0.0;
+	for(index_t p = 0; p < n; ++p) {
+	    W = std::max(W, w[p]);
+	}
+	for(index_t p = 0; p < n; ++p) {
+	    // Yes, dimension_ and not dimension_ -1,
+	    // for instance in 2d, x->0, y->1, W->2
+	    points_dimp1_[dimp1_ * p + dimension_] = ::sqrt(W - w[p]);
+	}
+
+	if(nb_air_particles_ != 0) {
+	    for(index_t p = 0; p < nb_air_particles_; ++p) {
+		points_dimp1_[dimp1_ * (n + p) + dimension_] = ::sqrt(W - 0.0);
+	    }		
+	}
+		
+	// Step 2: compute Laplacian and cell measures.
+	delaunay_->set_vertices((n + nb_air_particles_), points_dimp1_.data());
+	callback_->set_w(w,n);
+	callback_->set_g(measures);
+	callback_->set_nb_threads(Process::maximum_concurrent_threads());
+	call_callback_on_RVD();
+
+	callback_->set_Newton_step(false);
+	user_H_g_ = false;
+	user_H_ = nullptr;
+    }
+
+
     
     /**********************************************************************/
 }

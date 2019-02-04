@@ -147,10 +147,10 @@ namespace GEO {
             dimension_(dimension) {
         }
 
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 	    bool ignore_tex_coords = false; 
 	        //!ioflags.has_attribute(MESH_VERTEX_TEX_COORD);
 	    
@@ -241,11 +241,11 @@ namespace GEO {
 			facet_tex_vertices.resize(0);
                         
                         for(index_t i = 1; i < in.nb_fields(); i++) {
-			    char* tex_vertex_str = nil;
+			    char* tex_vertex_str = nullptr;
                             for(char* ptr = in.field(i); *ptr != '\0'; ptr++) {
                                 if(*ptr == '/') {
 				    if(!ignore_tex_coords &&
-				       tex_vertex_str == nil) {
+				       tex_vertex_str == nullptr) {
 					tex_vertex_str = ptr+1;
 				    }
                                     *ptr = '\0';
@@ -280,7 +280,7 @@ namespace GEO {
                             }
                             facet_vertices.push_back(vertex_index-1);
 
-			    if(tex_vertex_str != nil &&
+			    if(tex_vertex_str != nullptr &&
 			       tex_vertex_str[0] != '\0' &&
 			       tex_vertex_str[0] != '/' 
 			    ) {
@@ -399,10 +399,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_assert(M.vertices.dimension() >= dimension_);
             std::ofstream out(filename.c_str());
             if(!out) {
@@ -415,7 +415,7 @@ namespace GEO {
             bind_attributes(M, ioflags, false);
             
             std::vector<std::string> args;
-            //CmdLine::get_args(args);
+            CmdLine::get_args(args);
             for(index_t i = 0; i < args.size(); ++i) {
                 out << "# vorpaline " << args[i] << std::endl;
             }
@@ -492,12 +492,12 @@ namespace GEO {
         }
 
     protected:
-        virtual ~OBJIOHandler() {
+	~OBJIOHandler() override {
         }
 
-        virtual void bind_attributes(
+        void bind_attributes(
             const Mesh& M, const MeshIOFlags& flags, bool create
-	) {
+	) override {
 	    MeshIOHandler::bind_attributes(M, flags, create);
 	    
 	    tex_coord_.bind_if_is_defined(
@@ -519,7 +519,7 @@ namespace GEO {
 	    
 	}
 
-	virtual void unbind_attributes() {
+	void unbind_attributes() override {
 	    if(tex_coord_.is_bound()) {
 		tex_coord_.unbind();
 	    }
@@ -579,10 +579,10 @@ namespace GEO {
             keyword2nbv_[GmfEdges] = 2;            
         }
         
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 
             int ver, dim;
             int64_t mesh_file_handle = GmfOpenMesh(
@@ -800,8 +800,8 @@ namespace GEO {
                         // account for differences in the indexing
                         // convetions in .mesh/.meshb files w.r.t.
                         // geogram internal conventions.
-                        geo_swap(v[0], v[1]);
-                        geo_swap(v[4], v[5]);
+                        std::swap(v[0], v[1]);
+                        std::swap(v[4], v[5]);
                         
                         for(index_t lv=0; lv<8; ++lv) {
                             M.cells.set_vertex(
@@ -871,11 +871,11 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
-            bool use_doubles = true; // CmdLine::get_arg_bool("sys:use_doubles");
+        ) override {
+            bool use_doubles = CmdLine::get_arg_bool("sys:use_doubles");
             int64_t mesh_file_handle = GmfOpenMesh(
                 const_cast<char*>(filename.c_str()), GmfWrite,
                 (use_doubles ? GmfDouble : GmfFloat), 3
@@ -1100,7 +1100,7 @@ namespace GEO {
             if(FileSystem::extension(filename) == "mesh") {
                 FILE* f = fopen(filename.c_str(), "a");
                 std::vector<std::string> args;
-                //CmdLine::get_args(args);
+                CmdLine::get_args(args);
                 for(index_t i = 0; i < args.size(); i++) {
                     fprintf(f, "# vorpaline %s\n", args[i].c_str());
                 }
@@ -1253,7 +1253,7 @@ namespace GEO {
                 color_mult_(1.0),
                 current_color_(max_index_t()),
                 tristrip_index_(0),
-                load_colors_(false) {
+                load_colors_(true) {
             }
 
             /**
@@ -1268,9 +1268,9 @@ namespace GEO {
              * \return true on success, false otherwise
              */
             bool load() {
-                p_ply ply = ply_open(filename_.c_str(), nil, 0, nil);
+                p_ply ply = ply_open(filename_.c_str(), nullptr, 0, nullptr);
 
-                if(ply == nil) {
+                if(ply == nullptr) {
                     Logger::err("I/O")
                         << "Could not open file: " << filename_
                         << std::endl;
@@ -1372,7 +1372,7 @@ namespace GEO {
              * \param[in] ply the p_ply handle to the file
              */
             void check_for_colors(p_ply ply) {
-                p_ply_element element = nil;
+                p_ply_element element = nullptr;
 
                 bool has_r = false;
                 bool has_g = false;
@@ -1384,22 +1384,22 @@ namespace GEO {
 
                 for(;;) {
                     element = ply_get_next_element(ply, element);
-                    if(element == nil) {
+                    if(element == nullptr) {
                         break;
                     }
-                    const char* elt_name = nil;
-                    ply_get_element_info(element, &elt_name, nil);
+                    const char* elt_name = nullptr;
+                    ply_get_element_info(element, &elt_name, nullptr);
 
                     if(!strcmp(elt_name, "vertex")) {
-                        p_ply_property property = nil;
+                        p_ply_property property = nullptr;
                         for(;;) {
                             property = ply_get_next_property(element, property);
-                            if(property == nil) {
+                            if(property == nullptr) {
                                 break;
                             }
-                            const char* prop_name = nil;
+                            const char* prop_name = nullptr;
                             ply_get_property_info(
-                                property, &prop_name, nil, nil, nil
+                                property, &prop_name, nullptr, nullptr, nullptr
                             );
                             has_r = has_r || !strcmp(prop_name, "r");
                             has_g = has_g || !strcmp(prop_name, "g");
@@ -1441,6 +1441,31 @@ namespace GEO {
                 } else {
                     has_colors_ = false;
                 }
+
+		if(!has_colors_) {
+		    return;
+		}
+		
+		vertex_color_.bind_if_is_defined(
+		    mesh_.vertices.attributes(), "color"
+		);
+		if(vertex_color_.is_bound() &&
+		   vertex_color_.dimension() != 3
+		) {
+		    Logger::warn("PLY")
+			<< "Mesh already has a color attribute "
+			<< "that is not of dimension 3"
+			<< std::endl;
+		    has_colors_ = false;
+		    return;
+		}
+		if(!vertex_color_.is_bound()) {
+		    vertex_color_.create_vector_attribute(
+			mesh_.vertices.attributes(),
+			"color",
+			3
+		    );
+		}
             }
 
             /**
@@ -1451,9 +1476,11 @@ namespace GEO {
              * \return the PlyLoader associated with \p argument
              */
             static PlyLoader* loader(p_ply_argument argument) {
-                PlyLoader* result = nil;
-                ply_get_argument_user_data(argument, (void**) (&result), nil);
-                geo_debug_assert(result != nil);
+                PlyLoader* result = nullptr;
+                ply_get_argument_user_data(
+		    argument, (void**) (&result), nullptr
+		);
+                geo_debug_assert(result != nullptr);
                 return result;
             }
 
@@ -1513,7 +1540,7 @@ namespace GEO {
              */
             int add_vertex_data(p_ply_argument argument) {
                 long coord;
-                ply_get_argument_user_data(argument, nil, &coord);
+                ply_get_argument_user_data(argument, nullptr, &coord);
                 if(coord == 0) {
                     geo_debug_assert(mesh_.vertices.dimension() >= 3);
                     if(
@@ -1557,7 +1584,9 @@ namespace GEO {
              */
             int add_face_data(p_ply_argument argument) {
                 long length, value_index;
-                ply_get_argument_property(argument, nil, &length, &value_index);
+                ply_get_argument_property(
+		    argument, nullptr, &length, &value_index
+		);
                 if(value_index < 0) {
                     // Ignore negative values -
                     // this is not an error! (facet markers)
@@ -1595,7 +1624,9 @@ namespace GEO {
              */
             int add_tristrip_data(p_ply_argument argument) {
                 long length, value_index;
-                ply_get_argument_property(argument, nil, &length, &value_index);
+                ply_get_argument_property(
+		    argument, nullptr, &length, &value_index
+		);
                 if(value_index < 0) {
                     // Ignore negative values - this is not an error!
                     return 1;
@@ -1697,7 +1728,7 @@ namespace GEO {
              */
             int add_color_data(p_ply_argument argument) {
                 long coord;
-                ply_get_argument_user_data(argument, nil, &coord);
+                ply_get_argument_user_data(argument, nullptr, &coord);
                 if(coord == 0) {
                     geo_debug_assert(mesh_.vertices.dimension() >= 9);
                     if(current_color_ >= mesh_.vertices.nb()) {
@@ -1711,12 +1742,9 @@ namespace GEO {
 
                 if(coord == 0 || coord == 1 || coord == 2) {
                     double value =
-                        double(ply_get_argument_value(argument)) *
-                        color_mult_;
-                    geo_argused(value);
-                    // TODO: copy color into mesh
-                    // (note: use current_color_ - 1 since
-                    //  it was incremented before)
+                        double(ply_get_argument_value(argument)) * color_mult_;
+                    // (note: current_color_ - 1 because it was incremented before)
+		    vertex_color_[3*(current_color_ - 1) + index_t(coord)] = value;
                     return 1;
                 }
 
@@ -1744,42 +1772,61 @@ namespace GEO {
             bool load_colors_;
 
             vector<index_t> facet_vertices_;
+
+	    Attribute<double> vertex_color_;
         };
 
 
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             PlyLoader loader(filename, M, ioflags);
             return loader.load();
         }
         
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             p_ply oply = ply_create(
-                filename.c_str(), PLY_LITTLE_ENDIAN, NULL, 0, NULL
+                filename.c_str(), PLY_LITTLE_ENDIAN, nullptr, 0, nullptr
             );
 
-            if(oply == nil) {
+            if(oply == nullptr) {
                 return false;
             }
 
+	    Attribute<double> vertex_color;
+	    vertex_color.bind_if_is_defined(
+		M.vertices.attributes(), "color"
+	    );
+	    if(vertex_color.is_bound() && vertex_color.dimension() != 3) {
+		Logger::warn("IO")
+		    << "Mesh has vertex colors but attribut dim is not 3 (ignoring them)"
+		    << std::endl;
+		vertex_color.unbind();
+	    }
+
             // Create element and properties for vertices
             e_ply_type coord_type = PLY_FLOAT;
+	    e_ply_type color_type = PLY_UINT8;
             ply_add_element(oply, "vertex", long(M.vertices.nb()));
             ply_add_property(oply, "x", coord_type, coord_type, coord_type);
             ply_add_property(oply, "y", coord_type, coord_type, coord_type);
             ply_add_property(oply, "z", coord_type, coord_type, coord_type);
+	    if(vertex_color.is_bound()) {
+		ply_add_property(oply, "red",   color_type, color_type, color_type);
+		ply_add_property(oply, "green", color_type, color_type, color_type);
+		ply_add_property(oply, "blue",  color_type, color_type, color_type);
+	    }
 
             if(ioflags.has_element(MESH_FACETS)) {
                 // Create element and properties for facets
                 // (determine best index types)
                 index_t max_facet_size = 0;
                 for(index_t f = 0; f < M.facets.nb(); ++f) {
-                    max_facet_size = geo_max(
+                    max_facet_size = std::max(
                         max_facet_size, M.facets.nb_vertices(f)
                     );
                 }
@@ -1798,7 +1845,7 @@ namespace GEO {
             }
 
             std::vector<std::string> args;
-            //CmdLine::get_args(args);
+            CmdLine::get_args(args);
             for(index_t i = 0; i < args.size(); i++) {
                 ply_add_comment(oply, ("vorpaline " + args[i]).c_str());
             }
@@ -1816,6 +1863,12 @@ namespace GEO {
                 for(index_t coord = 0; coord < 3; coord++) {
                     ply_write(oply, xyz[coord]);
                 }
+		if(vertex_color.is_bound()) {
+		    const double* rgb = &vertex_color[v*3];
+		    for(index_t coord = 0; coord < 3; coord++) {
+			ply_write(oply, Numeric::uint8(255.0*rgb[coord]));
+		    }
+		}
             }
 
             if(ioflags.has_element(MESH_FACETS)) {
@@ -1851,10 +1904,10 @@ namespace GEO {
          *  and elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
             
             // Note: Vertices indexes start by 0 in off format.
@@ -2007,10 +2060,10 @@ namespace GEO {
          *  should be saved
          * \return true on success, false otherwise
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             std::ofstream output(filename.c_str());
             if(!output) {
                 return false;
@@ -2233,12 +2286,12 @@ namespace GEO {
          *   elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             FILE* F = fopen(filename.c_str(), "rb");
-            if(F == nil) {
+            if(F == nullptr) {
                 return false;
             }
 
@@ -2287,10 +2340,10 @@ namespace GEO {
          *   and elements should be saved
          * \return true on success, false otherwise
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 
             bind_attributes(M, ioflags, false);
 
@@ -2355,24 +2408,28 @@ namespace GEO {
          *   elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
+	    index_t nb_vertices = get_nb_vertices(filename);
+	    if(nb_vertices == index_t(-1)) {
+		return false;
+	    }
+
+	    M.vertices.create_vertices(nb_vertices);
+
             LineInput in(filename);
             if(!in.OK()) {
                 return false;
             }
-            
             Attribute<double> normal;
-            
             index_t cur_v = 0;
             while(!in.eof() && in.get_line()) {
                 in.get_fields();
                 switch(in.nb_fields()) {
                     case 1:
-                        M.vertices.create_vertices(in.field_as_uint(0));
                         break;
                     case 2:
                     case 3:
@@ -2417,10 +2474,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
 
             if(M.vertices.dimension() < 3) {
@@ -2478,6 +2535,48 @@ namespace GEO {
             
             return true;
         }
+
+      protected:
+	
+	/**
+	 * \brief Gets the number of vertices in the file.
+	 * \details Some xyz files do not have the number of
+	 *  points specified in them. For these files, this
+	 *  function reads the entire file once and counts the
+	 *  points. It is better to do so, because it makes it
+	 *  possible to allocate the points once we known the 
+	 *  required size, instead of growing.
+	 * \param[in] filename the name of the file.
+	 * \return the number of vertices in the file, or
+	 *  index_t(-1) if the file could not be opened.
+	 */
+	index_t get_nb_vertices(const std::string& filename) {
+	    index_t result = 0;
+	    LineInput in(filename);
+            if(!in.OK()) {
+                return index_t(-1);
+            }
+            while(!in.eof() && in.get_line()) {
+                in.get_fields();
+                switch(in.nb_fields()) {
+                    case 1:
+                        return in.field_as_uint(0);
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 6:
+			++result;
+                    break;
+                    default:
+                        Logger::err("I/O")
+                            << "Line " << in.line_number()
+                            << ": wrong number of fields"
+                            << std::endl;
+                        return index_t(-1);
+                }
+            }
+            return result;
+        }
     };
     
 
@@ -2496,10 +2595,10 @@ namespace GEO {
          *   elements should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
 
             LineInput in(filename);
@@ -2526,10 +2625,10 @@ namespace GEO {
             return true;
         }
 
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
 
             std::ofstream out(filename.c_str());
@@ -2585,10 +2684,10 @@ namespace GEO {
          *  should be read
          * \return true on success, false otherwise
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             LineInput in(filename);
             if(!in.OK()) {
                 return false;
@@ -2797,10 +2896,10 @@ namespace GEO {
          * should be saved
          * \return true on success, false otherwise
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename, 
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
             geo_argused(ioflags);
             
             if(M.vertices.dimension() < dimension_) {
@@ -2922,7 +3021,7 @@ namespace GEO {
          *  elements should be loaded
          * \return true on success, false otherwise.
          */
-        bool load(
+        virtual bool load(
             InputGeoFile& in,
             Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
@@ -2996,7 +3095,7 @@ namespace GEO {
          *  should be saved
          * \return true on success, false otherwise.
          */
-        virtual bool save(
+	virtual bool save(
             const Mesh& M, OutputGeoFile& out,
             const MeshIOFlags& ioflags = MeshIOFlags(),
             bool save_command_line = false
@@ -3006,7 +3105,7 @@ namespace GEO {
                 if(save_command_line) {
                     // Save command line in file
                     std::vector<std::string> args;
-                    //CmdLine::get_args(args);
+                    CmdLine::get_args(args);
                     out.write_command_line(args);
                 }
                 
@@ -3174,10 +3273,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::load()
          */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             bool result = true;
             try {
                 InputGeoFile in(filename);
@@ -3195,15 +3294,15 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::save()
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             bool result = true;
             try {
                 OutputGeoFile out(
                     filename,
-                    1 //index_t(CmdLine::get_arg_int("sys:compression_level"))
+                    index_t(CmdLine::get_arg_int("sys:compression_level"))
                 );
                 result = save(M, out, ioflags, true);
             }  catch(const GeoFileException& exc) {
@@ -3514,10 +3613,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::save()
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             geo_argused(M);
             geo_argused(filename);
             geo_argused(ioflags);
@@ -3535,10 +3634,10 @@ namespace GEO {
      */ 
     class PDBIOHandler : public MeshIOHandler {
     public:
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 	    geo_argused(ioflags);
 	    M.clear();
 	    M.vertices.set_dimension(3);
@@ -3591,10 +3690,10 @@ namespace GEO {
         /**
          * \copydoc MeshIOHandler::save()
          */
-        virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-        ) {
+        ) override {
             geo_argused(M);
             geo_argused(filename);
             geo_argused(ioflags);
@@ -3630,10 +3729,10 @@ namespace GEO {
 	/**
 	 * \copydoc MeshIOHandler::load()
 	 */
-        virtual bool load(
+	bool load(
             const std::string& filename, Mesh& M,
             const MeshIOFlags& ioflags
-        ) {
+        ) override {
 	    geo_argused(ioflags);
 	    M.clear();
 	    M.vertices.set_dimension(3);
@@ -3882,10 +3981,10 @@ namespace GEO {
 	/**
 	 * \copydoc MeshIOHandler::save()
 	 */
-	virtual bool save(
+	bool save(
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags = MeshIOFlags()
-	) {
+	) override {
 	    geo_argused(ioflags);
 	    
 	    Attribute<int> vertex_id;
@@ -3914,7 +4013,7 @@ namespace GEO {
 	    {
 		index_t nb_vertices = 0;
 		FOR(v, M.vertices.nb()) {
-		    nb_vertices = geo_max(nb_vertices, index_t(vertex_id[v]));
+		    nb_vertices = std::max(nb_vertices, index_t(vertex_id[v]));
 		}
 		++nb_vertices;
 		vector<index_t> vid_to_v(nb_vertices);
@@ -3999,8 +4098,7 @@ namespace GEO {
 			    index_t(vertex_id[M.facet_corners.vertex(c2)]);
 			bindex K(iv1, iv2, bindex::KEEP_ORDER);
 			index_t ie = index_t(-1);
-			std::map<bindex,index_t>::const_iterator it =
-			    edge_to_id.find(K);
+			auto it = edge_to_id.find(K);
 			if(it == edge_to_id.end()) {
 			    ie = 2*edge_to_id[bindex(iv1,iv2)]+1;
 			} else {
@@ -4016,7 +4114,7 @@ namespace GEO {
 	    
 	    index_t nb_cells = 0;
 	    FOR(f, M.facets.nb()) {
-		nb_cells = geo_max(nb_cells, index_t(cell_id[f]));
+		nb_cells = std::max(nb_cells, index_t(cell_id[f]));
 	    }
 	    ++nb_cells;
 	    
@@ -4139,6 +4237,370 @@ namespace GEO {
 	}
 	
     };
+
+/****************************************************************************/
+
+    const index_t id_offset_msh = 1;
+    const index_t msh2geo_hex[8] = {1, 3, 7, 5, 0, 2, 6, 4 };
+    const index_t msh2geo_def[8] = {0, 1, 2, 3, 4, 5, 6, 7 };
+    const index_t celltype_geo2msh[5] = {4, 5, 6, 7}; 
+
+    /**
+     * \brief Support for GMSH file format.
+     * \details By Maxence Reberol.
+     */
+    class GEOGRAM_API MSHIOHandler : public MeshIOHandler {
+      public:
+	MSHIOHandler() {
+	}
+
+	bool verify_file_format(const std::string& filename) {
+	    LineInput in(filename);
+	    if (!in.OK()) return false;
+	    in.get_line();
+	    in.get_fields();
+	    if (in.field_matches(0, "$MeshFormat")) {
+		in.get_line();
+		in.get_fields();
+		if (in.field_as_double(0) == 2.2
+		    && in.field_as_uint(1) == 0
+		    && in.field_as_uint(2) == 8
+		) return true;
+	    }
+	    return false;
+	}
+
+	bool read_vertices(const std::string& filename, Mesh& M) {
+	    LineInput in(filename);
+	    while (in.get_line()) {
+		in.get_fields();
+		if (in.field_matches(0, "$Nodes")) {
+		    in.get_line();
+		    in.get_fields();
+		    geo_assert(in.nb_fields() == 1);
+		    M.vertices.create_vertices(in.field_as_uint(0));
+		    for (index_t v = 0; v < M.vertices.nb(); ++v){
+			in.get_line();
+			in.get_fields();
+			geo_assert(in.nb_fields() == 4);
+			double pt[4] = {
+			    in.field_as_double(1),
+			    in.field_as_double(2),
+			    in.field_as_double(3)
+			};
+			set_mesh_point(M, v, pt, 3);
+		    }
+		} else if (in.field_matches(0, "$EndNodes"))  {
+		    return true; 
+		}
+	    }
+	    return false;
+	}
+	bool read_elements(const std::string& filename, Mesh& M) {
+	    index_t nb_elements = 0;
+	    index_t nb_edges = 0;
+	    index_t nb_tri = 0;
+	    index_t nb_quad = 0;
+	    index_t nb_tet = 0;
+	    index_t nb_hex = 0;
+	    index_t nb_pyr = 0;
+	    index_t nb_pri = 0;
+	    index_t nb_oth = 0;
+	    { /* First pass to get the number of each element type */
+		LineInput in(filename);
+		while (in.get_line()) {
+		    in.get_fields();
+		    if (in.field_matches(0, "$Elements")) {
+			in.get_line();
+			in.get_fields();
+			geo_assert(in.nb_fields() == 1);
+			nb_elements = in.field_as_uint(0);
+			for (index_t e = 0; e < nb_elements; ++e){
+			    in.get_line();
+			    in.get_fields();
+			    if      (in.field_as_uint(1) == 1) nb_edges += 1;
+			    else if (in.field_as_uint(1) == 2) nb_tri += 1;
+			    else if (in.field_as_uint(1) == 3) nb_quad += 1;
+			    else if (in.field_as_uint(1) == 4) nb_tet += 1;
+			    else if (in.field_as_uint(1) == 5) nb_hex += 1;
+			    else if (in.field_as_uint(1) == 6) nb_pri += 1;
+			    else if (in.field_as_uint(1) == 7) nb_pyr += 1;
+			    else { nb_oth += 1; }
+			}
+			if (nb_oth > 0) {
+			    Logger::warn("I/O")
+				<< nb_oth
+				<< " elements with type unsupported"
+				<< std::endl;
+			}
+		    }
+		}
+		M.edges.create_edges(nb_edges);
+		M.facets.create_triangles(nb_tri);
+		M.facets.create_quads(nb_quad);
+		M.cells.create_tets(nb_tet);
+		M.cells.create_hexes(nb_hex);
+		M.cells.create_pyramids(nb_pyr);
+		M.cells.create_prisms(nb_pri);
+	    }
+	    { /* Second pass to fill the content of the mesh */
+		/* Re-use the number of elts as counters */
+		nb_edges = 0;
+		index_t nb_facets = 0;
+		index_t nb_cells = 0;
+		LineInput in(filename);
+		while (in.get_line()) {
+		    in.get_fields();
+		    if (in.field_matches(0, "$Elements")) {
+			in.get_line();
+			in.get_fields();
+			geo_assert(in.field_as_uint(0) == nb_elements);
+			for (index_t e = 0; e < nb_elements; ++e){
+			    in.get_line();
+			    in.get_fields();
+			    index_t nb_tags = in.field_as_uint(2);
+			    index_t offset = 3 + nb_tags;
+			    if (in.field_as_uint(1) == 1) {
+				index_t nbv = 2;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.edges.set_vertex(
+					nb_edges, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_edges += 1;
+			    } else if (in.field_as_uint(1) == 2) {
+				index_t nbv = 3;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.facets.set_vertex(
+					nb_facets, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_facets += 1;
+			    } else if (in.field_as_uint(1) == 3) {
+				index_t nbv = 4;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.facets.set_vertex(
+					nb_facets, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_facets += 1;
+			    } else if (in.field_as_uint(1) == 4) {
+				index_t nbv = 4;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    } else if (in.field_as_uint(1) == 5) {
+				index_t nbv = 8;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, msh2geo_hex[j],
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    } else if (in.field_as_uint(1) == 6) {
+				index_t nbv = 6;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    } else if (in.field_as_uint(1) == 7) {
+				index_t nbv = 5;
+				geo_debug_assert(
+				    in.nb_fields() == offset + nbv
+				);
+				for (index_t j = 0; j < nbv; ++j) {
+				    M.cells.set_vertex(
+					nb_cells, j,
+					in.field_as_uint(offset + j) - 1
+				    );
+				}
+				nb_cells += 1;
+			    }
+			}
+		    }
+		}
+	    }
+	    return true;
+	}
+
+	bool load(
+	    const std::string& filename, Mesh& M,
+	    const MeshIOFlags& ioflags
+	) override {
+	    geo_argused(ioflags);
+	    M.clear();
+	    M.vertices.set_dimension(3);
+	    try {
+		if (!verify_file_format(filename)) {
+		    Logger::err("I/O")
+			<< "$MeshFormat not supported" << std::endl;
+		    return false;
+		}
+		if (!read_vertices(filename, M)) {
+		    Logger::err("I/O")
+			<< "failed to read vertices" << std::endl;
+		    return false;
+		}
+		if (!read_elements(filename, M)) {
+		    Logger::err("I/O")
+			<< "failed to read elements" << std::endl;
+		    return false;
+		}
+	    } catch(const std::string& what) {
+		Logger::err("I/O") << what << std::endl;
+		return false;
+	    } catch(const std::exception& ex) {
+		Logger::err("I/O") << ex.what() << std::endl;
+		return false;
+	    } catch(...) {
+		Logger::err("I/O") << "Caught exception" << std::endl;
+		return false;
+	    }
+	    return true;
+	}
+
+	bool save(
+	    const Mesh& M_in, const std::string& filename, 
+	    const MeshIOFlags& ioflags
+	) override {
+
+	    Mesh M(M_in.vertices.dimension());
+	    M.copy(M_in, true);
+
+	    M.vertices.remove_isolated();
+
+	    Attribute<int> region;
+	    Attribute<int> bdr_region;
+	    if (M.cells.attributes().is_defined("region")) {
+		region.bind(M.cells.attributes(), "region");
+	    }
+	    if (M.facets.attributes().is_defined("bdr_region")) {
+		bdr_region.bind(M.facets.attributes(), "bdr_region");
+	    }
+
+	    std::ofstream out( filename.c_str() ) ;
+	    out.precision( 16 ) ;
+
+	    /* Header */
+	    out << "$MeshFormat\n";
+	    out << "2.2 0 " << sizeof(double) << std::endl;
+	    out << "$EndMeshFormat\n";
+
+	    /* Vertices */
+	    out << "$Nodes" << std::endl ;
+	    out << M.vertices.nb() << std::endl ;
+	    for( index_t v = 0; v < M.vertices.nb(); v++ ) {
+		out << v + id_offset_msh << " "
+		    << M.vertices.point_ptr(v)[0] << " "
+		    << M.vertices.point_ptr(v)[1] << " "
+		    << M.vertices.point_ptr(v)[2] << '\n' ;
+	    }
+	    out << "$EndNodes" << std::endl ;
+
+	    /* Elements */
+	    index_t nb_tet = 0;
+	    index_t nb_hex = 0;
+	    index_t nb_pyr = 0;
+	    index_t nb_pri = 0;
+	    for(index_t c = 0; c != M.cells.nb(); ++c){
+		if(M.cells.type(c) == GEO::MESH_TET){
+		    ++nb_tet;
+		} else if(M.cells.type(c) == GEO::MESH_HEX){
+		    ++nb_hex;
+		} else if(M.cells.type(c) == GEO::MESH_PYRAMID){
+		    ++nb_pyr;
+		} else if(M.cells.type(c) == GEO::MESH_PRISM){
+		    ++nb_pri;
+		}
+	    }
+	    index_t nb_elt = nb_tet + nb_hex + nb_pyr + nb_pri;
+	    if (ioflags.has_element(MESH_FACETS)) nb_elt += M.facets.nb();
+
+	    out << "$Elements" << std::endl ;
+	    out << nb_elt << std::endl ;
+	    index_t elt_id = 0; /* starts at 1, common for faces and cells */
+	    if (ioflags.has_element(MESH_FACETS)) {
+		for (index_t f = 0; f < M.facets.nb(); ++f) {
+		    int attr_value = 0;
+		    if (bdr_region.is_bound()){
+			attr_value = bdr_region[f];
+		    }
+		    int type = -1;
+		    if (M.facets.nb_vertices(f) == 3) {
+			type = 2;
+		    } else if (M.facets.nb_vertices(f) == 4) {
+			type = 3;
+		    } else {
+			geo_assert_not_reached
+			    }
+		    elt_id += 1;
+		    out << elt_id << " " << type << " " << "2" << " "
+			<< attr_value << " " << attr_value << " ";
+		    for (index_t li = 0; li < M.facets.nb_vertices(f); ++li) {
+			out << M.facets.vertex(f, li) + id_offset_msh << " ";
+		    }
+		    out << std::endl;
+		}
+	    }
+	    for (index_t c = 0; c < M.cells.nb(); ++c) {
+		if (M.cells.type(c) == GEO::MESH_CONNECTOR) {
+		    continue;
+		}
+		int attr_value = 0;
+		if (region.is_bound()) attr_value = region[c];
+		const index_t* msh2geo =
+		    (M.cells.type(c) == GEO::MESH_HEX) ?
+		    msh2geo_hex : msh2geo_def;
+		elt_id += 1;
+
+		/* Write to file, format is:
+		 *   elm-number elm-type number-of-tags < tag > ...
+		 *   node-number-list
+		 */
+		out << elt_id << " " << celltype_geo2msh[M.cells.type(c)]
+		    << " " << "1" << " " << attr_value << " ";
+		for (index_t li = 0; li < M.cells.nb_vertices(c); ++li) {
+		    out << M.cells.vertex(c, msh2geo[li]) + id_offset_msh
+			<< " ";
+		}
+		out << std::endl;
+	    }
+	    out << "$EndElements" << std::endl;
+	    
+	    out.close();
+	    return true;
+	}
+    };
+    
 }
 
 /****************************************************************************/
@@ -4165,7 +4627,7 @@ namespace GEO {
 
         bool result = false;
         MeshIOHandler_var handler = MeshIOHandler::get_handler(filename);
-        if(handler != nil) {
+        if(handler != nullptr) {
             try {
                 result = handler->load(filename, M, ioflags);
             }
@@ -4223,7 +4685,7 @@ namespace GEO {
             << std::endl;
 
         MeshIOHandler_var handler = MeshIOHandler::get_handler(filename);
-        if(handler != nil && handler->save(M, filename, ioflags)) {
+        if(handler != nullptr && handler->save(M, filename, ioflags)) {
             return true;
         }
 
@@ -4240,14 +4702,14 @@ namespace GEO {
         MeshIOHandler* handler = MeshIOHandlerFactory::create_object(
             format
         );
-        if(handler != nil) {
+        if(handler != nullptr) {
             return handler;
         }
 
         Logger::err("I/O")
             << "Unsupported file format: " << format
             << std::endl;
-        return nil;
+        return nullptr;
     }
 
     MeshIOHandler* MeshIOHandler::get_handler(
@@ -4327,6 +4789,7 @@ namespace GEO {
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb");
         geo_register_MeshIOHandler_creator(PDBIOHandler, "pdb1");
         geo_register_MeshIOHandler_creator(OVMIOHandler, "ovm");
+        geo_register_MeshIOHandler_creator(MSHIOHandler, "msh");	
     }
 
     

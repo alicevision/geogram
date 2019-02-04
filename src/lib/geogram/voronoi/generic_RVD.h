@@ -141,15 +141,15 @@ namespace GEOGen {
             tets_begin_ = UNSPECIFIED_RANGE;
             tets_end_ = UNSPECIFIED_RANGE;
             connected_components_priority_ = false;
-            facet_seed_marking_ = nil;
+            facet_seed_marking_ = nullptr;
             connected_component_changed_ = false;
             current_connected_component_ = 0;
             cur_stamp_ = -1;
             current_facet_ = GEO::max_index_t();
             current_seed_ = GEO::max_index_t();
-            current_polygon_ = nil;
+            current_polygon_ = nullptr;
             current_tet_ = GEO::max_index_t();
-            current_polyhedron_ = nil;
+            current_polyhedron_ = nullptr;
         }
 
         /**
@@ -917,7 +917,7 @@ namespace GEOGen {
                 // Find a vertex of the current cell,
                 // that will be used as the 'origin'
                 // vertex
-                const Vertex* v0 = nil;
+                const Vertex* v0 = nullptr;
                 index_t t0;
                 for(t0 = 0; t0 < C.max_t(); ++t0) {
                     if(C.triangle_is_used(t0)) {
@@ -927,7 +927,7 @@ namespace GEOGen {
                 }
 
                 // If current cell is empty, return
-                if(v0 == nil) {
+                if(v0 == nullptr) {
                     return;
                 }
 
@@ -1352,7 +1352,7 @@ namespace GEOGen {
                 facets_begin_ = 0;
                 facets_end_ = mesh_->facets.nb();
             }
-            current_polygon_ = nil;
+            current_polygon_ = nullptr;
             GEO::vector<index_t> seed_stamp(
                 delaunay_->nb_vertices(), index_t(-1)
             );
@@ -1448,7 +1448,7 @@ namespace GEOGen {
                     }
                 }
             }
-            current_polygon_ = nil;
+            current_polygon_ = nullptr;
         }
 
         /**
@@ -1625,7 +1625,7 @@ namespace GEOGen {
                     }
                 }
             }
-            current_polyhedron_ = nil;
+            current_polyhedron_ = nullptr;
         }
 
 
@@ -1664,7 +1664,7 @@ namespace GEOGen {
 	    geo_assert(tets_begin_ != UNSPECIFIED_RANGE);
 	    geo_assert(tets_end_ != UNSPECIFIED_RANGE);
 	    
-            current_polyhedron_ = nil;
+            current_polyhedron_ = nullptr;
             init_get_neighbors();
 
             std::deque<TetSeed> adjacent_seeds;
@@ -1814,7 +1814,7 @@ namespace GEOGen {
                     }
                 }
             }
-            facet_seed_marking_ = nil;
+            facet_seed_marking_ = nullptr;
         }
 
 	
@@ -1825,7 +1825,7 @@ namespace GEOGen {
          * \param[in] s index of the seed
          */
         bool facet_seed_is_visited(index_t f, index_t s) const {
-            geo_debug_assert(facet_seed_marking_ != nil);
+            geo_debug_assert(facet_seed_marking_ != nullptr);
             return facet_seed_marking_->is_marked(FacetSeed(f, s));
         }
 
@@ -1840,7 +1840,7 @@ namespace GEOGen {
         signed_index_t get_facet_seed_connected_component(
             index_t f, index_t s
         ) const {
-            geo_debug_assert(facet_seed_marking_ != nil);
+            geo_debug_assert(facet_seed_marking_ != nullptr);
             return facet_seed_marking_->get_connected_component(
                 FacetSeed(f, s)
             );
@@ -1894,7 +1894,7 @@ namespace GEOGen {
                 facets_end_ = mesh_->facets.nb();
             }
 
-            current_polygon_ = nil;
+            current_polygon_ = nullptr;
             init_get_neighbors();
 
             std::deque<FacetSeed> adjacent_seeds;
@@ -2026,7 +2026,7 @@ namespace GEOGen {
                     }
                 }
             }
-            facet_seed_marking_ = nil;
+            facet_seed_marking_ = nullptr;
         }
 
         /**
@@ -2071,7 +2071,7 @@ namespace GEOGen {
             // is guaranteed to have the facet in its Voronoi
             // cell from the point of view of symbolic
             // perturbation).
-            if(exact_ && delaunay_nn_ != nil) {
+            if(exact_ && delaunay_nn_ != nullptr) {
                 // TODO: may need more than 10
                 index_t neighbors[10];
                 double neighbors_sq_dist[10];
@@ -2115,7 +2115,7 @@ namespace GEOGen {
                 ping = &P2;
                 pong = &P1;
             } else {
-                GEO::geo_swap(ping, pong);
+                std::swap(ping, pong);
             }
         }
 
@@ -2135,7 +2135,7 @@ namespace GEOGen {
             Polygon* pong = &P2;
 
             // Clip current facet by current Voronoi cell (associated with seed)
-            if(delaunay_nn_ != nil) {
+            if(delaunay_nn_ != nullptr) {
                 clip_by_cell_SR(seed, ping, pong);   // "Security Radius" mode.
             } else {
                 clip_by_cell(seed, ping, pong);   // Standard mode.
@@ -2189,7 +2189,7 @@ namespace GEOGen {
                         const double* geo_restrict pk = ping->vertex(k).point();
                         geo_assume_aligned(pk, geo_dim_alignment(DIM));
                         dik = GEO::Geom::distance2(pi, pk, dimension());
-                        R2 = GEO::geo_max(R2, dik);
+                        R2 = std::max(R2, dik);
                     }
                     geo_decl_aligned(double dij);
                     const double* geo_restrict pj = delaunay_->vertex_ptr(j);
@@ -2218,7 +2218,7 @@ namespace GEOGen {
                     nb_neighbors++;
                 }
 
-                nb_neighbors = GEO::geo_min(
+                nb_neighbors = std::min(
                     nb_neighbors,
                     delaunay_nn_->nb_vertices() - 1
                 );
@@ -2290,7 +2290,7 @@ namespace GEOGen {
          */
         void intersect_cell_cell(index_t seed, Polyhedron& C) {
             // Clip current facet by current Voronoi cell (associated with seed)
-            if(delaunay_nn_ != nil) {
+            if(delaunay_nn_ != nullptr) {
                 clip_by_cell_SR(seed, C);   // "Security Radius" mode.
             } else {
                 clip_by_cell(seed, C);   // Standard mode.
@@ -2339,7 +2339,7 @@ namespace GEOGen {
                             C.triangle_dual(k).point();
                         geo_assume_aligned(pk, geo_dim_alignment(DIM));
                         dik = GEO::Geom::distance2(pi, pk, dimension());
-                        R2 = GEO::geo_max(R2, dik);
+                        R2 = std::max(R2, dik);
                     }
                     geo_decl_aligned(double dij);
                     const double* geo_restrict pj = delaunay_->vertex_ptr(j);
@@ -2367,7 +2367,7 @@ namespace GEOGen {
                     nb_neighbors++;
                 }
 
-                nb_neighbors = GEO::geo_min(
+                nb_neighbors = std::min(
                     nb_neighbors,
                     delaunay_nn_->nb_vertices() - 1
                 );

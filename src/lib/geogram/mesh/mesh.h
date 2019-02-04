@@ -137,16 +137,17 @@ namespace GEO {
         index_t create_sub_elements(index_t nb) {
             index_t result = nb_;
             if(nb_ + nb > attributes_.size()) {
-                index_t new_size=nb_ + nb;
+                index_t new_capacity=nb_ + nb;
                 if(nb < 128) {
-                    new_size = geo_max(index_t(16),attributes_.size());
-                    while(new_size < nb_ + nb) {
-                        new_size *= 2;
+                    new_capacity = std::max(index_t(16),attributes_.size());
+                    while(new_capacity < nb_ + nb) {
+                        new_capacity *= 2;
                     }
                 }
-                attributes_.resize(new_size);
+                attributes_.reserve(new_capacity);
             }
             nb_ += nb;
+	    attributes_.resize(nb_);
             return result;
         }
 
@@ -157,10 +158,12 @@ namespace GEO {
         index_t create_sub_element() {
             index_t result = nb_;
             ++nb_;
-            if(attributes_.size() < nb_) {
-                index_t new_size = geo_max(index_t(16),attributes_.size()*2);
-                attributes_.resize(new_size);
+            if(attributes_.capacity() < nb_) {
+                index_t new_capacity =
+		    std::max(index_t(16),attributes_.capacity()*2);
+		attributes_.reserve(new_capacity);
             }
+	    attributes_.resize(nb_);
             return result;
         }
 
@@ -472,7 +475,7 @@ namespace GEO {
             geo_debug_assert(v < nb());            
             geo_debug_assert(!single_precision());
             geo_debug_assert(dimension() >= 3);
-            return *(vec3*)(&point_[v*point_.dimension()]);
+            return *(const vec3*)(&point_[v*point_.dimension()]);
         }
         
         /**
@@ -783,7 +786,19 @@ namespace GEO {
         bool are_simplices() const {
             return is_simplicial_;
         }
-        
+	
+        /**
+         * \brief Gets a pointer to the first element for iterating over
+         *  the corners of a facet
+         * \param[in] f the facet
+         * \return a pointer to the first corner of the facet
+         */
+	const index_t* corners_begin_ptr(index_t f) const {
+	    geo_debug_assert(!is_simplicial_);
+	    geo_debug_assert(f < nb());
+	    return &facet_ptr_[f];
+	}
+	
     protected:
         virtual void clear_store(
             bool keep_attributes, bool keep_memory = false
@@ -851,6 +866,31 @@ namespace GEO {
             return corner_adjacent_facet_[c];
         }
 
+        /**
+         * \brief Gets a pointer to the the facet index 
+	 *  that a corner is adjacent to
+         * \param[in] c the corner
+         * \return a pointer to the the facet index 
+	 *  that corner \p is adjacent to.
+         */
+        const index_t* adjacent_facet_ptr(index_t c) const {
+            geo_assert(c < nb());
+            return &corner_adjacent_facet_[c];
+        }
+
+
+        /**
+         * \brief Gets a pointer to the the facet index 
+	 *  that a corner is adjacent to
+         * \param[in] c the corner
+         * \return a pointer to the the facet index 
+	 *  that corner \p is adjacent to.
+         */
+	index_t* adjacent_facet_ptr(index_t c) {
+            geo_assert(c < nb());
+            return &corner_adjacent_facet_[c];
+        }
+	
         /**
          * \brief Sets the vertex that a corner is incident to
          * \param[in] c the corner
@@ -1293,6 +1333,17 @@ namespace GEO {
     protected:
 
         /**
+         * \brief Indicates that the stored elements are only triangles.
+         */
+        void is_simplicial() {
+	    if(!is_simplicial_) {
+		is_simplicial_ = true;
+		facet_ptr_.resize(1);
+		facet_ptr_[0] = 0;
+	    }
+	}
+	
+        /**
          * \brief Indicates that the stored elements are no
          *  longer only triangles.
          * \details Creates the facet pointers for the pre-existing
@@ -1312,7 +1363,10 @@ namespace GEO {
         MeshVertices& vertices_;        
         MeshFacetCornersStore& facet_corners_;
         friend class Mesh;
-        friend class GeogramIOHandler;                
+        friend class GeogramIOHandler;
+	friend void GEOGRAM_API tessellate_facets(
+	    Mesh& M, index_t max_nb_vertices
+	);
     };
     
     /*************************************************************************/
@@ -1719,6 +1773,27 @@ namespace GEO {
             adjacent_cell_[f] = c;
         }
 
+        /**
+         * \brief Gets a const pointer to a cell adjacent to a facet
+         * \param[in] f the facet, in 0..nb()-1
+         * \return a const pointer to the cell adjacent to facet \p f, or NO_FACET if \p f
+         *  is on the border
+         */
+        const index_t* adjacent_cell_ptr(index_t f) const {
+            geo_assert(f < nb());
+            return &adjacent_cell_[f];
+        }
+	
+        /**
+         * \brief Gets a pointer to a cell adjacent to a facet
+         * \param[in] f the facet, in 0..nb()-1
+         * \return a pointer to the cell adjacent to facet \p f, or NO_FACET if \p f
+         *  is on the border
+         */
+        index_t* adjacent_cell_ptr(index_t f) {
+            geo_assert(f < nb());
+            return &adjacent_cell_[f];
+        }
         
     protected:
         virtual void clear_store(
@@ -1928,7 +2003,7 @@ namespace GEO {
             // faces is created for each cell, so that a single cell
             // pointer is used for both.
             
-            index_t cell_size = geo_max(desc.nb_vertices, desc.nb_facets);
+            index_t cell_size = std::max(desc.nb_vertices, desc.nb_facets);
             index_t first_cell = nb();
             index_t co = cell_corners_.nb();
             

@@ -63,7 +63,6 @@ namespace GEO {
      * \param[out] centroids a pointer to the computed centroids of 
      *  the Laguerre cells that correspond to the optimal transport of
      *  the uniform measure to the points
-     * \param[in] parallel_pow if true, use parallel power diagram algorithm
      * \param[in] cb an optional RVD polyhedron callback to be called on the
      *  restricted power diagram once it is computed.
      */
@@ -72,9 +71,9 @@ namespace GEO {
         index_t nb_points,
         const double* points,
         double* centroids,
-	bool parallel_pow=true,
-	RVDPolyhedronCallback* cb=nil,
-	bool verbose=false
+	RVDPolyhedronCallback* cb=nullptr,
+	bool verbose=false,
+	index_t nb_iter=2000
     );
     
     /**

@@ -64,24 +64,6 @@ namespace {
     using namespace GEO;
 
     /**
-     * \brief Tests whether two 2d points are identical.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \retval true if \p p1 and \p p2 have exactly the same
-     *  coordinates
-     * \retval false otherwise
-     */
-    bool points_are_identical_2d(
-        const double* p1,
-        const double* p2
-    ) {
-        return
-            (p1[0] == p2[0]) &&
-            (p1[1] == p2[1]) 
-        ;
-    }
-
-    /**
      * \brief Computes the (approximate) orientation predicate in 2d.
      * \details Computes the sign of the (approximate) signed volume of
      *  the triangle p0, p1, p2
@@ -180,10 +162,10 @@ namespace GEO {
             cell_neigh_stride_ = 3;
         }
         cur_stamp_ = 0;
-        debug_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay");
-        verbose_debug_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay_verbose");
+        debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay");
+        verbose_debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay_verbose");
         debug_mode_ = (debug_mode_ || verbose_debug_mode_);
-        benchmark_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay_benchmark");
+        benchmark_mode_ = CmdLine::get_arg_bool("dbg:delaunay_benchmark");
     }
 
     Delaunay2d::~Delaunay2d() {
@@ -192,7 +174,7 @@ namespace GEO {
     void Delaunay2d::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
-        Stopwatch* W = nil;
+        Stopwatch* W = nullptr;
         if(benchmark_mode_) {
             W = new Stopwatch("DelInternal");
         }
@@ -360,13 +342,13 @@ namespace GEO {
                 old2new[infinite_ptr] = finite_ptr;
                 ++nb_finite_cells_;
                 for(index_t lf=0; lf<3; ++lf) {
-                    geo_swap(
+		    std::swap(
                         cell_to_cell_store_[3*finite_ptr + lf],
                         cell_to_cell_store_[3*infinite_ptr + lf]
                     );
                 }
                 for(index_t lv=0; lv<3; ++lv) {
-                    geo_swap(
+		    std::swap(
                         cell_to_v_store_[3*finite_ptr + lv],
                         cell_to_v_store_[3*infinite_ptr + lv]
                     );
@@ -605,7 +587,7 @@ namespace GEO {
         index_t t = hint;
         index_t t_pred = NO_TRIANGLE;
         Sign orient_local[3];
-        if(orient == nil) {
+        if(orient == nullptr) {
             orient = orient_local;
         }
 
@@ -920,7 +902,7 @@ namespace GEO {
         iv1 = 1;
         while(
             iv1 < nb_vertices() &&
-            points_are_identical_2d(
+            PCK::points_are_identical_2d(
                 vertex_ptr(iv0), vertex_ptr(iv1)
             )
         ) {
@@ -942,7 +924,7 @@ namespace GEO {
             return false;
         }
 	if(s == NEGATIVE) {
-	    geo_swap(iv1,iv2);
+	    std::swap(iv1,iv2);
 	}
 	    
         // Create the first triangle

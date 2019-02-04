@@ -66,7 +66,7 @@ namespace {
     size_t safe_strncpy(
         char* dest, const char* source, size_t max_dest_size
     ) {
-        strncpy(dest, source, max_dest_size);
+        strncpy(dest, source, max_dest_size-1);
         dest[max_dest_size-1] = '\0';
         return strlen(dest);
     }
@@ -106,8 +106,8 @@ namespace GEO {
         save_mode_(save_mode),
         are_you_sure_(false)
     {
-#ifdef GEO_OS_WINDOWS
-	directory_ = FileSystem::home_directory() + "/";
+#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
+	directory_ = FileSystem::documents_directory() + "/";
 #else	
         directory_ = FileSystem::get_current_working_directory() + "/";
 #endif	
@@ -118,7 +118,7 @@ namespace GEO {
     }
 
     FileDialog::FileDialog() :
-        application_(nil),
+        application_(nullptr),
         visible_(false),
         current_write_extension_index_(0),        
         pinned_(false),
@@ -127,7 +127,11 @@ namespace GEO {
         save_mode_(false),
         are_you_sure_(false)
     {
+#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
+	directory_ = FileSystem::documents_directory() + "/";
+#else	
         directory_ = FileSystem::get_current_working_directory() + "/";
+#endif	
 	current_file_index_ = 0;
 	current_directory_index_ = 0;
 	current_write_extension_index_ = 0;
@@ -290,7 +294,7 @@ namespace GEO {
             } else {
 		selected_file_ = file;
                 if(
-		    application_ != nil &&
+		    application_ != nullptr &&
 		    application_->save(file)
 		) {
 		    Logger::out("I/O") << "Saved "
@@ -299,7 +303,7 @@ namespace GEO {
             }
         } else {
 	    selected_file_ = file;
-	    if(application_ != nil) {
+	    if(application_ != nullptr) {
 		application_->load(file);
 	    }
         }
@@ -326,17 +330,17 @@ namespace GEO {
         ImGui::Begin(
             (std::string(
                 save_mode_ ? "Save as...##" : "Load...##"
-             )+String::to_string(this)).c_str(),
+	     )+String::to_string(this)).c_str(),
             &visible_,
             ImGuiWindowFlags_NoCollapse 
         );
-        
+
         if(ImGui::Button("parent")) {
             set_directory("../");
         }
         ImGui::SameLine();
         if(ImGui::Button("home")) {
-            set_directory(FileSystem::home_directory());
+            set_directory(FileSystem::documents_directory());
             update_files();
         }
         ImGui::SameLine();            
@@ -354,8 +358,9 @@ namespace GEO {
 	    }
 	}
 
-        
+	draw_disk_drives();
         ImGui::Separator();
+	
         {
             std::vector<std::string> path;
             String::split_string(directory_, '/', path);
@@ -384,11 +389,11 @@ namespace GEO {
             }
         }
 
-        const float footer_size = 30.0f;
+        const float footer_size = 35.0f*ImGui::scaling();
         {
             ImGui::BeginChild(
                 "##directories",
-                ImVec2(ImGui::GetWindowWidth() * 0.5f - 12.0f, -footer_size),
+                ImVec2(ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(), -footer_size),
                 true
             );
             for(index_t i=0; i<directories_.size(); ++i) {
@@ -407,7 +412,7 @@ namespace GEO {
         {
             ImGui::BeginChild(
                 "##files",
-                ImVec2(ImGui::GetWindowWidth() * 0.5f - 12.0f, -footer_size),
+                ImVec2(ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(), -footer_size),
                 true
             );
             for(index_t i=0; i<files_.size(); ++i) {
@@ -438,7 +443,7 @@ namespace GEO {
                 }
                 ImGui::SameLine();
                 ImGui::PushItemWidth(
-                    save_mode_ ? -80.0f*ImGui::scaling() : -1.0f
+                    save_mode_ ? -80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
                 );
                 if(ImGui::InputText(
                        "##filename",
@@ -468,10 +473,10 @@ namespace GEO {
 
                 if(save_mode_) {
                     ImGui::SameLine();
-                    ImGui::PushItemWidth(-1.0);
+                    ImGui::PushItemWidth(-5.0f*ImGui::scaling());
 
                     if(
-		       application_ != nil &&
+		       application_ != nullptr &&
 		       extensions_.size() == 0
 		    ) {
                         String::split_string(
@@ -519,7 +524,7 @@ namespace GEO {
         }
         if(
             ImGui::BeginPopupModal(
-                "File exists", NULL, ImGuiWindowFlags_AlwaysAutoResize
+                "File exists", nullptr, ImGuiWindowFlags_AlwaysAutoResize
             )
         ) {
             ImGui::Text(
@@ -548,12 +553,12 @@ namespace GEO {
 	if(!FileSystem::is_file(filename)) {
 	    return false;
 	}
-	if(application_ != nil) {
+	if(application_ != nullptr) {
 	    return application_->can_load(filename);
 	}
 	std::string ext = FileSystem::extension(filename);
 	for(size_t i=0; i<extensions_.size(); ++i) {
-	    if(extensions_[i] == ext) {
+	    if(extensions_[i] == ext || extensions_[i] == "*") {
 		return true;
 	    }
 	}
@@ -564,6 +569,23 @@ namespace GEO {
     void FileDialog::set_extensions(const std::string& extensions) {
 	extensions_.clear();
 	GEO::String::split_string(extensions, ';', extensions_);
+    }
+
+    void FileDialog::draw_disk_drives() {
+#ifdef GEO_OS_WINDOWS	
+	DWORD drives = GetLogicalDrives();
+	for(DWORD b=0; b<16; ++b) {
+	    if((drives & (1u << b)) != 0) {
+		std::string drive;
+		drive += char('A' + char(b));
+		drive += ":";
+		if(ImGui::Button(drive.c_str())) {
+		    set_directory(drive);
+		}
+		ImGui::SameLine();
+	    }
+	}
+#endif	
     }
     
 }

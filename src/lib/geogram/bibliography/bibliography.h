@@ -86,7 +86,7 @@ namespace GEO {
 	    const char* ref,
 	    const char* file, int line,
 	    const char* function,
-	    const char* info = nil
+	    const char* info = nullptr
 	);
 
 	/**

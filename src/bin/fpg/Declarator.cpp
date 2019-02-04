@@ -11,7 +11,7 @@ IdentifierDeclarator::declare( Type *base_type, std::string &id ) const {
 Type*
 FunctionDeclarator::declare( Type *base_type, std::string &id ) const {
     // decl should be some form of IdentifierDeclarator. type not needed.
-    decl->declare( NULL, id );
+    decl->declare( nullptr, id );
 
     // prepare function type
     FunctionType *fun = new FunctionType( id, base_type );

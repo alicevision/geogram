@@ -53,7 +53,6 @@
 #include <geogram/delaunay/delaunay_tetgen.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/command_line.h>
-#include <fstream>
 
 namespace GEO {
 
@@ -103,7 +102,7 @@ namespace GEO {
 	delaunay->set_keep_regions(keep_regions);
 	
         try {
-            delaunay->set_vertices(0,nil); // No additional vertex
+            delaunay->set_vertices(0,nullptr); // No additional vertex
         } catch(const Delaunay::InvalidInput& error_report) {
             if(CmdLine::get_arg_bool("dbg:tetgen")) {
                 Logger::err("Tetgen") << "Reporting intersections in tetgen_intersections.obj"

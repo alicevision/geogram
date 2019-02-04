@@ -55,6 +55,13 @@
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/version.h>
 #include <geogram/bibliography/bibliography.h>
+
+#include <geogram/image/image.h>
+#include <geogram/image/image_library.h>
+#include <geogram/image/image_serializer_stb.h>
+#include <geogram/image/image_serializer_xpm.h>
+#include <geogram/image/image_serializer_pgm.h>
+
 #include <sstream>
 #include <iomanip>
 
@@ -64,7 +71,7 @@
 
 namespace GEO {
 
-    void initialize() {
+    void initialize(int flags) {
 	static bool initialized = false;
 
 	if(initialized) {
@@ -82,16 +89,16 @@ namespace GEO {
 #endif
 
 #ifndef GEOGRAM_PSM
-        //Environment* env = Environment::instance();
-        //env->set_value("version", VORPALINE_VERSION);
-        //env->set_value("release_date", VORPALINE_BUILD_DATE);
-        //env->set_value("SVN revision", VORPALINE_SVN_REVISION);
+        Environment* env = Environment::instance();
+        env->set_value("version", VORPALINE_VERSION);
+        env->set_value("release_date", VORPALINE_BUILD_DATE);
+        env->set_value("SVN revision", VORPALINE_SVN_REVISION);
 #endif
 
-        Logger::initialize();
-        Process::initialize();
+        if (!Logger::is_initialized()) { Logger::initialize(); }
+        Process::initialize(flags);
         Progress::initialize();
-        //CmdLine::initialize();
+        CmdLine::initialize();
         PCK::initialize();
         Delaunay::initialize();
 
@@ -112,7 +119,9 @@ namespace GEO {
         geo_register_attribute_type<Numeric::uint8>("bool");
         geo_register_attribute_type<char>("char");
         geo_register_attribute_type<int>("int");
+        geo_register_attribute_type<unsigned int>("unsigned int");
         geo_register_attribute_type<index_t>("index_t");
+        geo_register_attribute_type<signed_index_t>("signed_index_t");
         geo_register_attribute_type<float>("float");
         geo_register_attribute_type<double>("double");
 
@@ -136,11 +145,25 @@ namespace GEO {
             }
         );
 #endif
+
+#ifndef GEOGRAM_PSM
+        ImageLibrary::initialize() ;
+
+        geo_declare_image_serializer<ImageSerializerSTBReadWrite>("png");
+        geo_declare_image_serializer<ImageSerializerSTBReadWrite>("jpg");
+        geo_declare_image_serializer<ImageSerializerSTBReadWrite>("jpeg");
+        geo_declare_image_serializer<ImageSerializerSTBReadWrite>("tga");
+        geo_declare_image_serializer<ImageSerializerSTBReadWrite>("bmp");
+
+        geo_declare_image_serializer<ImageSerializer_xpm>("xpm") ;
+        geo_declare_image_serializer<ImageSerializer_pgm>("pgm") ;
+#endif
+
 	initialized = true;
     }
 
     void terminate() {
-        /*if(
+        if(
             CmdLine::arg_is_declared("sys:stats") &&
             CmdLine::get_arg_bool("sys:stats")
         ) {
@@ -149,17 +172,18 @@ namespace GEO {
             Process::show_stats();
         }
 
-        PCK::terminate();*/
+        PCK::terminate();
 
 #ifndef GEOGRAM_PSM
+        ImageLibrary::terminate() ;
 	Biblio::terminate();
 #endif
 
         Progress::terminate();
         Process::terminate();
-        //CmdLine::terminate();
+        CmdLine::terminate();
         Logger::terminate();
-        //Environment::terminate();
+        Environment::terminate();
     }
 }
 

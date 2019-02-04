@@ -498,7 +498,7 @@ namespace {
             // Orient t like the largest incident component
             index_t comp = adj_cnx[largest_neigh_comp];
 
-            cnx_.resize(geo_max(t+1, cnx_.size()));
+            cnx_.resize(std::max(t+1, cnx_.size()));
             cnx_[t] = comp;
             ++cnx_size_[comp];
             if(adj_ori[largest_neigh_comp] == -1) {
@@ -1441,9 +1441,9 @@ namespace {
          */
         Co3NeRestrictedVoronoiDiagram() :
             nb_points_(0),
-            p_(nil),
+            p_(nullptr),
             p_stride_(0),
-            n_(nil),
+            n_(nullptr),
             n_stride_(0),
             radius_(0.0),
             NN_(NearestNeighborSearch::create(3)),
@@ -1480,9 +1480,9 @@ namespace {
         void clear() {
             NN_.reset();
             nb_points_ = 0;
-            p_ = nil;
+            p_ = nullptr;
             p_stride_ = 0;
-            n_ = nil;
+            n_ = nullptr;
             n_stride_ = 0;
             nb_neighbors_ = 0;
         }
@@ -1496,7 +1496,7 @@ namespace {
         void init(Mesh& M) {
             geo_assert(M.vertices.dimension() >= 3);
             geo_assert(M.vertices.dimension() == 3 || NN_->stride_supported());
-            double* normals_pointer = nil;
+            double* normals_pointer = nullptr;
             {
                 Attribute<double> normal;
                 normal.bind_if_is_defined(M.vertices.attributes(), "normal");
@@ -1505,11 +1505,11 @@ namespace {
                 }
             }
 
-            if(normals_pointer == nil) {
+            if(normals_pointer == nullptr) {
                 init(
                     M.vertices.nb(),
                     M.vertices.point_ptr(0), M.vertices.dimension(),
-                    nil, 0
+                    nullptr, 0
                 );
             } else {
                 init(
@@ -1590,7 +1590,7 @@ namespace {
          *  associated with the point
          */
         const vec3& normal(index_t i) const {
-            geo_debug_assert(n_ != nil);
+            geo_debug_assert(n_ != nullptr);
             geo_debug_assert(i < nb_points());
             return *(vec3*) (n_ + i * n_stride_);
             // Yes I know, this is a bit ugly...
@@ -1602,7 +1602,7 @@ namespace {
          * \param[in] N the normal
          */
         void set_normal(index_t i, const vec3& N) const {
-            geo_debug_assert(n_ != nil);
+            geo_debug_assert(n_ != nullptr);
             geo_debug_assert(i < nb_points());
             double* n = n_ + i * n_stride_;
             n[0] = N.x;
@@ -1727,7 +1727,7 @@ namespace {
         static double squared_radius(const vec3& p, const Polygon& P) {
             double result = 0.0;
             for(index_t i = 0; i < P.nb_vertices(); i++) {
-                result = geo_max(result, distance2(p, P.vertex(i).point()));
+                result = std::max(result, distance2(p, P.vertex(i).point()));
             }
             return result;
         }
@@ -1857,11 +1857,11 @@ namespace {
         ) const {
             get_circle(i, P, N);
 
-            index_t nb_neigh = geo_min(index_t(nb_points() - 1), index_t(20));
+            index_t nb_neigh = std::min(index_t(nb_points() - 1), index_t(20));
             index_t jj = 0;
 
             // just in case, limit to 1000 neighbors.
-            index_t max_neigh = geo_min(index_t(1000), nb_points() - 1);
+            index_t max_neigh = std::min(index_t(1000), nb_points() - 1);
 
             while(nb_neigh < max_neigh) {
                 if(P.nb_vertices() < 3) {
@@ -1890,7 +1890,7 @@ namespace {
                 } else {
                     nb_neigh++;
                 }
-                nb_neigh = geo_min(nb_neigh, nb_points()-1);
+                nb_neigh = std::min(nb_neigh, nb_points()-1);
             }
         }
 
@@ -1900,7 +1900,7 @@ namespace {
          * \return the number of neighbors
          */
         index_t nb_neighbors() const {
-            return geo_min(nb_neighbors_,nb_points()-1);
+            return std::min(nb_neighbors_,nb_points()-1);
         }
 
         /**
@@ -2088,7 +2088,7 @@ namespace {
          * \brief Does the actual computation of this thread.
          * \details The actual computation is determined by set_mode().
          */
-        virtual void run() {
+	void run() override {
             switch(mode_) {
                 case CO3NE_NORMALS:
                     run_normals();

@@ -46,6 +46,7 @@
 #ifdef GEOGRAM_WITH_PDEL
 
 #include <geogram/delaunay/parallel_delaunay_3d.h>
+#include <geogram/delaunay/cavity.h>
 #include <geogram/mesh/mesh_reorder.h>
 #include <geogram/numerics/predicates.h>
 #include <geogram/basic/geometry.h>
@@ -62,72 +63,6 @@
 #pragma GCC diagnostic ignored "-Wweak-vtables"
 #endif
 
-
-#ifdef GEO_OS_WINDOWS
-
-namespace {
-    using namespace GEO;
-    
-    // Emulation of pthread mutexes using Windows API
-
-    typedef CRITICAL_SECTION pthread_mutex_t;
-    typedef unsigned int pthread_mutexattr_t;
-    
-    inline int pthread_mutex_lock(pthread_mutex_t *m) {
-        EnterCriticalSection(m);
-        return 0;
-    }
-
-    inline int pthread_mutex_unlock(pthread_mutex_t *m) {
-        LeaveCriticalSection(m);
-        return 0;
-    }
-        
-    inline int pthread_mutex_trylock(pthread_mutex_t *m) {
-        return TryEnterCriticalSection(m) ? 0 : EBUSY; 
-    }
-
-    inline int pthread_mutex_init(pthread_mutex_t *m, pthread_mutexattr_t *a) {
-        geo_argused(a);
-        InitializeCriticalSection(m);
-        return 0;
-    }
-
-    inline int pthread_mutex_destroy(pthread_mutex_t *m) {
-        DeleteCriticalSection(m);
-        return 0;
-    }
-
-    // Emulation of pthread condition variables using Windows API
-
-    typedef CONDITION_VARIABLE pthread_cond_t;
-    typedef unsigned int pthread_condattr_t;
-
-    inline int pthread_cond_init(pthread_cond_t *c, pthread_condattr_t *a) {
-        geo_argused(a);
-        InitializeConditionVariable(c);
-        return 0;
-    }
-
-    inline int pthread_cond_destroy(pthread_cond_t *c) {
-        geo_argused(c);
-        return 0;
-    }
-
-    inline int pthread_cond_broadcast(pthread_cond_t *c) {
-        WakeAllConditionVariable(c);
-        return 0;
-    }
-
-    inline int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m) {
-        SleepConditionVariableCS(c, m, INFINITE);
-        return 0;
-    }
-}
-
-
-#endif
-
 namespace {
     using namespace GEO;
 
@@ -141,7 +76,7 @@ namespace {
      */
     index_t thread_safe_random(index_t choices_in) {
         signed_index_t choices = signed_index_t(choices_in);
-        static GEO_THREAD_LOCAL long int randomseed = 1l ;
+        static thread_local long int randomseed = 1l ;
         if (choices >= 714025l) {
             long int newrandom = (randomseed * 1366l + 150889l) % 714025l;
             randomseed = (newrandom * 1366l + 150889l) % 714025l;
@@ -164,95 +99,9 @@ namespace {
      *  per thread.
      */
     index_t thread_safe_random_4() {
-        static GEO_THREAD_LOCAL long int randomseed = 1l ;
+        static thread_local long int randomseed = 1l ;
         randomseed = (randomseed * 1366l + 150889l) % 714025l;
         return index_t(randomseed % 4);
-    }
-
-    /**
-     * \brief Tests whether two 3d points are identical.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \retval true if \p p1 and \p p2 have exactly the same
-     *  coordinates
-     * \retval false otherwise
-     */
-    bool points_are_identical_3d_(
-        const double* p1,
-        const double* p2
-    ) {
-        return
-            (p1[0] == p2[0]) &&
-            (p1[1] == p2[1]) &&
-            (p1[2] == p2[2])
-        ;
-    }
-
-    /**
-     * \brief Tests whether three 3d points are colinear.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \param[in] p3 third point
-     * \retval true if \p p1, \p p2 and \p p3 are colinear
-     * \retbal false otherwise
-     */
-    bool points_are_colinear_3d_(
-        const double* p1,
-        const double* p2,
-        const double* p3
-    ) {
-        // Colinearity is tested by using four coplanarity
-        // tests with four points that are not coplanar.
-	// TODO: use PCK::aligned_3d() instead (to be tested)
-        static const double q000[3] = {0.0, 0.0, 0.0};
-        static const double q001[3] = {0.0, 0.0, 1.0};
-        static const double q010[3] = {0.0, 1.0, 0.0};
-        static const double q100[3] = {1.0, 0.0, 0.0};
-        return
-            PCK::orient_3d(p1, p2, p3, q000) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q001) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q010) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q100) == ZERO
-        ;
-    }
-
-    /**
-     * \brief Computes the (approximate) orientation predicate in 3d.
-     * \details Computes the sign of the (approximate) signed volume of
-     *  the tetrahedron p0, p1, p2, p3.
-     * \param[in] p0 first vertex of the tetrahedron
-     * \param[in] p1 second vertex of the tetrahedron
-     * \param[in] p2 third vertex of the tetrahedron
-     * \param[in] p3 fourth vertex of the tetrahedron
-     * \retval POSITIVE if the tetrahedron is oriented positively
-     * \retval ZERO if the tetrahedron is flat
-     * \retval NEGATIVE if the tetrahedron is oriented negatively
-     * \todo check whether orientation is inverted as compared to 
-     *   Shewchuk's version.
-     */
-    inline Sign orient_3d_inexact_(
-        const double* p0, const double* p1,
-        const double* p2, const double* p3
-    ) {
-        double a11 = p1[0] - p0[0] ;
-        double a12 = p1[1] - p0[1] ;
-        double a13 = p1[2] - p0[2] ;
-        
-        double a21 = p2[0] - p0[0] ;
-        double a22 = p2[1] - p0[1] ;
-        double a23 = p2[2] - p0[2] ;
-        
-        double a31 = p3[0] - p0[0] ;
-        double a32 = p3[1] - p0[1] ;
-        double a33 = p3[2] - p0[2] ;
-
-        double Delta = det3x3(
-            a11,a12,a13,
-            a21,a22,a23,
-            a31,a32,a33
-        );
-
-        return geo_sgn(Delta);
     }
 }
 
@@ -304,7 +153,7 @@ namespace GEO {
             nb_vertices_ = master_->nb_vertices();
             vertices_ = master_->vertex_ptr(0);
             weighted_ = master_->weighted_;
-            heights_ = weighted_ ? master_->heights_.data() : nil;
+            heights_ = weighted_ ? master_->heights_.data() : nullptr;
             dimension_ = master_->dimension();
             vertex_stride_ = dimension_;
             reorder_ = master_->reorder_.data();
@@ -342,14 +191,14 @@ namespace GEO {
             v3_ = index_t(-1);
             v4_ = index_t(-1);
 
-            pthread_cond_init(&cond_, nil);
-            pthread_mutex_init(&mutex_, nil);
+            pthread_cond_init(&cond_, nullptr);
+            pthread_mutex_init(&mutex_, nullptr);
         }
 
         /**
          * \brief Delaunay3dThread destructor.
          */
-        ~Delaunay3dThread() {
+        ~Delaunay3dThread() override {
             pthread_mutex_destroy(&mutex_);
             pthread_cond_destroy(&cond_);
         }
@@ -420,7 +269,7 @@ namespace GEO {
             }
             geo_debug_assert(work_begin_ != -1);
             geo_debug_assert(work_end_ != -1);
-            return index_t(geo_max(work_end_ - work_begin_ + 1,0));
+            return std::max(index_t(work_end_ - work_begin_ + 1),index_t(0));
         }
 
         /**
@@ -450,7 +299,7 @@ namespace GEO {
          * \details The point sequence was previously defined
          *  by set_work(). 
          */
-        virtual void run() {
+	void run() override {
             
             finished_ = false;
 
@@ -636,7 +485,7 @@ namespace GEO {
             iv1 = 1;
             while(
                 iv1 < nb_vertices() &&
-                points_are_identical_3d_(
+                PCK::points_are_identical_3d(
                     vertex_ptr(iv0), vertex_ptr(iv1)
                     )
                 ) {
@@ -649,7 +498,7 @@ namespace GEO {
             iv2 = iv1 + 1;
             while(
                 iv2 < nb_vertices() &&
-                points_are_colinear_3d_(
+                PCK::points_are_colinear_3d(
                     vertex_ptr(iv0), vertex_ptr(iv1), vertex_ptr(iv2)
                     )
                 ) {
@@ -678,7 +527,7 @@ namespace GEO {
             geo_debug_assert(s != ZERO);
             
             if(s == NEGATIVE) {
-                geo_swap(iv2, iv3);
+                std::swap(iv2, iv3);
             }
 
             // Create the first tetrahedron
@@ -727,6 +576,44 @@ namespace GEO {
             return t0;
         }
 
+
+	 /**
+	  * \brief Creates a star of tetrahedra filling the conflict 
+	  *  zone.
+          * \param[in] v the index of the point to be inserted
+	  * \details This function is used when the Cavity computed 
+	  *  when traversing the conflict zone is OK, that is to say
+	  *  when its array sizes were not exceeded.
+          * \return the index of one the newly created tetrahedron
+	  */
+	index_t stellate_cavity(index_t v) {
+	    index_t new_tet = index_t(-1);
+
+	    for(index_t f=0; f<cavity_.nb_facets(); ++f) {
+		index_t old_tet = cavity_.facet_tet(f);
+		index_t lf = cavity_.facet_facet(f);
+		index_t t_neigh = index_t(tet_adjacent(old_tet, lf));
+		signed_index_t v1 = cavity_.facet_vertex(f,0);
+		signed_index_t v2 = cavity_.facet_vertex(f,1);
+		signed_index_t v3 = cavity_.facet_vertex(f,2);
+		new_tet = new_tetrahedron(signed_index_t(v), v1, v2, v3);
+		set_tet_adjacent(new_tet, 0, t_neigh);
+		set_tet_adjacent(t_neigh, find_tet_adjacent(t_neigh,old_tet), new_tet);
+		cavity_.set_facet_tet(f, new_tet);
+	    }
+	
+	    for(index_t f=0; f<cavity_.nb_facets(); ++f) {
+		new_tet = cavity_.facet_tet(f);
+		index_t neigh1, neigh2, neigh3;
+		cavity_.get_facet_neighbor_tets(f, neigh1, neigh2, neigh3);
+		set_tet_adjacent(new_tet, 1, neigh1);
+		set_tet_adjacent(new_tet, 2, neigh2);
+		set_tet_adjacent(new_tet, 3, neigh3);		
+	    }
+	    
+	    return new_tet;
+	}
+	
         /**
          * \brief Inserts a point in the triangulation.
          * \param[in] v the index of the point to be inserted
@@ -785,6 +672,8 @@ namespace GEO {
             index_t t_bndry = NO_TETRAHEDRON;
             index_t f_bndry = index_t(-1);
 
+	    cavity_.clear();
+	    
             bool ok = find_conflict_zone(v,t,t_bndry,f_bndry);
 
             // When in multithreading mode, we cannot allocate memory
@@ -846,8 +735,12 @@ namespace GEO {
             // their neighbors, therefore no other thread can interfere, and
             // we can update the triangulation.
 
-            index_t new_tet =
-                stellate_conflict_zone_iterative(v,t_bndry,f_bndry);
+	    index_t new_tet = index_t(-1);
+	    if(cavity_.OK()) {
+		new_tet = stellate_cavity(v);
+	    } else {
+		new_tet = stellate_conflict_zone_iterative(v,t_bndry,f_bndry);
+	    }
 
        
             // Recycle the tetrahedra of the conflict zone.
@@ -980,6 +873,12 @@ namespace GEO {
                         // a tet to create.
                         if(!tet_is_marked_as_conflict(t2)) {
                             ++nb_tets_to_create_;
+			    cavity_.new_facet(
+				t, lf,
+				tet_vertex(t, tet_facet_vertex(lf,0)),
+				tet_vertex(t, tet_facet_vertex(lf,1)),
+				tet_vertex(t, tet_facet_vertex(lf,2))
+			    );
                         }
                         continue;
                     }
@@ -1010,6 +909,12 @@ namespace GEO {
                     t_boundary_ = t;
                     f_boundary_ = lf;
                     ++nb_tets_to_create_;
+		    cavity_.new_facet(
+			t, lf,
+			tet_vertex(t, tet_facet_vertex(lf,0)),
+			tet_vertex(t, tet_facet_vertex(lf,1)),
+			tet_vertex(t, tet_facet_vertex(lf,2))
+		    );
                     geo_debug_assert(tet_adjacent(t,lf) == signed_index_t(t2));
                     geo_debug_assert(owns_tet(t));
                     geo_debug_assert(owns_tet(t2));
@@ -1052,14 +957,14 @@ namespace GEO {
             const double* pv[4];
             for(index_t i=0; i<4; ++i) {
                 signed_index_t v = tet_vertex(t,i);
-                pv[i] = (v == -1) ? nil : vertex_ptr(index_t(v));
+                pv[i] = (v == -1) ? nullptr : vertex_ptr(index_t(v));
             }
 
             // Check for virtual tetrahedra (then in_sphere()
             // is replaced with orient3d())
             for(index_t lf = 0; lf < 4; ++lf) {
 
-                if(pv[lf] == nil) {
+                if(pv[lf] == nullptr) {
 
                     // Facet of a virtual tetrahedron opposite to
                     // infinite vertex corresponds to
@@ -1144,7 +1049,7 @@ namespace GEO {
          *  to that face, edge or vertex.
          * \param[in] p a pointer to the coordinates of the point
          * \param[out] orient a pointer to an array of four Sign%s
-         *  or nil. If non-nil, returns the orientation with respect
+         *  or nullptr. If non-nullptr, returns the orientation with respect
          *  to the four facets of the tetrahedron that contains \p p.
          * \retval the index of a tetrahedron that contains \p p.
          *  If the point is outside the convex hull of
@@ -1157,7 +1062,7 @@ namespace GEO {
          */
          index_t locate(
             const double* p, index_t hint = NO_TETRAHEDRON,
-            Sign* orient = nil
+            Sign* orient = nullptr
          ) {
              //   Try improving the hint by using the 
              // inexact locate function. This gains
@@ -1228,7 +1133,7 @@ namespace GEO {
              index_t t = hint;
              index_t t_pred = NO_TETRAHEDRON;
              Sign orient_local[4];
-             if(orient == nil) {
+             if(orient == nullptr) {
                  orient = orient_local;
              }
 
@@ -1453,7 +1358,7 @@ namespace GEO {
             geo_debug_assert(t < max_t());
             geo_debug_assert(!owns_tet(t));
 
-#ifdef GEO_OS_WINDOWS
+#if defined(GEO_COMPILER_MSVC) 
            // Note: comparand and exchange parameter are swapped in Windows API
            // as compared to __sync_val_compare_and_swap !!
             interfering_thread_ =
@@ -1600,7 +1505,7 @@ namespace GEO {
                      // convention as in CGAL).
                      const double* pv_bkp = pv[f];
                      pv[f] = p;
-                     Sign ori = orient_3d_inexact_(pv[0], pv[1], pv[2], pv[3]);
+                     Sign ori = PCK::orient_3d_inexact(pv[0], pv[1], pv[2], pv[3]);
                      
                      //   If the orientation is not negative, then we cannot
                      // walk towards t_next, and examine the next candidate
@@ -2006,7 +1911,7 @@ namespace GEO {
             cell_to_cell_store_[4 * result + 2] = -1;
             cell_to_cell_store_[4 * result + 3] = -1;
 
-            max_used_t_ = geo_max(max_used_t_, result);
+            max_used_t_ = std::max(max_used_t_, result);
 
             --nb_free_;
             return result;
@@ -2665,6 +2570,13 @@ namespace GEO {
          *  halfedge extremities local indices.
          */
         static char halfedge_facet_[4][4];
+
+	/**
+	 * \brief Stores the triangles on the boundary
+	 *  of the cavity, for faster generation of the
+	 *  new tetrahedra.
+	 */
+	Cavity cavity_;
     };
 
 
@@ -2753,7 +2665,7 @@ namespace GEO {
     void ParallelDelaunay3d::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
-        Stopwatch* W = nil ;
+        Stopwatch* W = nullptr ;
         if(benchmark_mode_) {
             W = new Stopwatch("DelInternal");
         }
@@ -2963,9 +2875,6 @@ namespace GEO {
         delete W;
 
         if(debug_mode_) {
-//            Delaunay3dThread* thread0 = 
-//                static_cast<Delaunay3dThread*>(threads_[0].get());
-            
             for(index_t i=0; i<threads_.size(); ++i) {
                 std::cerr << i << " : " <<
                     static_cast<Delaunay3dThread*>(threads_[i].get())
@@ -3061,13 +2970,13 @@ namespace GEO {
                 old2new[infinite_ptr] = finite_ptr;
                 ++nb_finite_cells_;
                 for(index_t lf=0; lf<4; ++lf) {
-                    geo_swap(
+                    std::swap(
                         cell_to_cell_store_[4*finite_ptr + lf],
                         cell_to_cell_store_[4*infinite_ptr + lf]
                     );
                 }
                 for(index_t lv=0; lv<4; ++lv) {
-                    geo_swap(
+                    std::swap(
                         cell_to_v_store_[4*finite_ptr + lv],
                         cell_to_v_store_[4*infinite_ptr + lv]
                     );

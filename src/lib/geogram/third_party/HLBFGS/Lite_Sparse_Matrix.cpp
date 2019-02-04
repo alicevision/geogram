@@ -96,7 +96,7 @@ void Lite_Sparse_Matrix::end_fill_entry() {
 
 std::ostream & operator<<(std::ostream & s, Lite_Sparse_Matrix* A) {
     s.precision(16);
-    if (A == NULL) {
+    if (A == nullptr) {
         s << "matrix pointer is NULL !\n ";
     }
     

@@ -142,7 +142,7 @@ namespace GEO {
      * \details It is used to accelerate incremental insertion
      *  in Delaunay triangulation. See the following reference:
      *  -Incremental constructions con brio. Nina Amenta, Sunghee Choi,
-     *   Gunter Rote, Simposium on Computational Geometry conf. proc.,
+     *   Gunter Rote, Symposium on Computational Geometry conf. proc.,
      *   2003
      * \param[in] nb_vertices number of vertices to sort
      * \param[in] vertices pointer to the coordinates of the vertices
@@ -153,7 +153,7 @@ namespace GEO {
      * \param[in] threshold minimum size of interval to be sorted
      * \param[in] ratio splitting ratio between current interval and
      *  the rest to be sorted
-     * \param[out] levels if non-nil, indices that correspond to level l are
+     * \param[out] levels if non-nullptr, indices that correspond to level l are
      *   in the range levels[l] (included) ... levels[l+1] (excluded)
      */
     void GEOGRAM_API compute_BRIO_order(
@@ -163,8 +163,36 @@ namespace GEO {
         index_t stride = 3,
         index_t threshold = 64,
         double ratio = 0.125,
-        vector<index_t>* levels = nil
+        vector<index_t>* levels = nullptr
     );
+
+    /**
+     * \brief Spatially sort a set of vertices in periodic space.
+     * \param[in] nb_vertices total number of vertices, including the
+     *  virtual periodic copies. This is 27 times the number of stored vertices.
+     * \param[in] vertices pointer to the coordinates of the vertices
+     * \param[in,out] sorted_indices a vector of vertex indices, sorted
+     * \param[in] dimension number of vertices coordinates. Only 3 is supported.
+     * \param[in] stride number of doubles between two consecutive vertices
+     *  spatially on exit
+     * \param[in] first index of the first element in \p sorted_indices
+     *  to be sorted
+     * \param[in] last one position past the index of the last element 
+     *  in \p sorted_indices to be sorted
+     * \param[in] period the translation to be applied in periodic mode
+     */
+    void GEOGRAM_API Hilbert_sort_periodic(
+	index_t nb_vertices, const double* vertices,
+	vector<index_t>& sorted_indices,
+	index_t dimension,
+        index_t stride,
+	vector<index_t>::iterator first,
+	vector<index_t>::iterator last,
+	double period = 1.0
+    );
+
+    
+    
 }
 
 #endif

@@ -27,7 +27,10 @@ HEADERS="../api/defs.h \
 ../basic/stopwatch.h \
 ../basic/command_line.h \
 ../basic/command_line_args.h \
+../voronoi/convex_cell.h \
 delaunay.h \
+periodic.h \
+periodic_delaunay_3d.h \
 "
 
 SOURCES="../basic/memory.h \
@@ -68,15 +71,20 @@ SOURCES="../basic/memory.h \
 ../numerics/predicates/orient3d.h \
 ../numerics/predicates/dot3d.h \
 ../numerics/predicates/det3d.h \
+../numerics/predicates/det4d.h \
 ../numerics/predicates/aligned3d.h \
 ../numerics/predicates.cpp \
 delaunay_2d.h \
+cavity.h \
 delaunay_3d.h \
 parallel_delaunay_3d.h \
 delaunay.cpp \
 delaunay_2d.cpp \
 delaunay_3d.cpp \
 parallel_delaunay_3d.cpp \
+../voronoi/convex_cell.cpp \
+periodic.cpp \
+periodic_delaunay_3d.cpp \
 ../basic/common.cpp
 "
 

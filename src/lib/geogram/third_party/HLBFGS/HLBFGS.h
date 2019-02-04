@@ -126,10 +126,10 @@ public:
         HESSIAN_MATRIX(int N) {
             n = N;
             nnz = 0;
-            values = 0;
-            rowind = 0;
-            colptr = 0;
-            diag = 0;
+            values = nullptr;
+            rowind = nullptr;
+            colptr = nullptr;
+            diag   = nullptr;
         }
         ~HESSIAN_MATRIX() {
         }

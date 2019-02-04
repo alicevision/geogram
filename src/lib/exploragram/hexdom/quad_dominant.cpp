@@ -351,7 +351,7 @@ namespace GEO {
         Mesh m_bak;
         m_bak.copy(*m);
 
-        while (1) {
+        for(;;) {
             split_edges_by_iso_uvs(m, uv_name, singular_name);
             facets_split(m, uv_name, singular_name);
 
@@ -868,7 +868,7 @@ namespace GEO {
 		//epsilon = 0;
         vector<BBox> locked_regions;
 //        int cnt = 0;
-        while (1) {
+        for(;;) {
 			vector<index_t> invalid_m ;
 			vector<index_t> invalid_bak ;
 			vector<index_t> intersections;

@@ -36,7 +36,7 @@
  *  floating point numbers that receives the geometry of the grid points.
  * \param[out] normals an array of (1 + u_count) x (1 + v_count) x 3
  *  floating point numbers that receives the normal vectors at each grid point.
- *  If set to NULL, then no normal is computed.
+ *  If set to nullptr, then no normal is computed.
  * \param[in] time the eversion time, between 0.0 and 1.0
  * \param[in] numStrips number of corrugations. If this is too small, there will
  *   be pinches in the eversion.

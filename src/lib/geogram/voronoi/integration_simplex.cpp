@@ -58,12 +58,12 @@ namespace GEO {
         volumetric_(volumetric),
         nb_points_(0),
         points_stride_(3),
-        points_(nil),
-        g_(nil),
+        points_(nullptr),
+        g_(nullptr),
         nb_frames_(nb_frames),
         nb_comp_per_frame_(nb_comp_per_frame),
         frames_(frames),
-        spinlocks_(nil),
+        spinlocks_(nullptr),
         varying_background_(false)
     {
     }

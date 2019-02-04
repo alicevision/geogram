@@ -36,7 +36,7 @@ struct FunctionDeclarator : public Declarator {
     typedef std::pair< Type*, Declarator* > ParameterDecl;
     typedef std::vector< ParameterDecl* >   ParameterDeclList;
 
-    FunctionDeclarator( Declarator *decl, ParameterDeclList *params = NULL ) : decl(decl), params(params) {}
+    FunctionDeclarator( Declarator *decl, ParameterDeclList *params = nullptr ) : decl(decl), params(params) {}
     Type* declare( Type *base_type, std::string &id ) const;
     Declarator *decl;
     ParameterDeclList *params;

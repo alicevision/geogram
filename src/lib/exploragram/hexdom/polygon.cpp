@@ -177,7 +177,7 @@ namespace GEO {
 		double dec_score[2] = { 0, 0 };
 		FOR(q, nbv / 2) {
 			FOR(d, 2)
-				dec_score[d] = geo_max(dec_score[d], std::abs(
+			    dec_score[d] = std::max(dec_score[d], std::abs(
 					det(pts[(q * 2 + 0 + d) % nbv] - pts[(q * 2 + 1 + d) % nbv],
 						pts[(q * 2 + 2 + d) % nbv] - pts[(q * 2 + 1 + d) % nbv])));
 		}
@@ -583,16 +583,16 @@ namespace GEO {
 				vec2 nBA = -nAB;
 
 				double worst_det = 1;
-				worst_det = geo_min(worst_det, det(nA1A2, nAB));
-				worst_det = geo_min(worst_det, det(nAB, nA1A0));
-				worst_det = geo_min(worst_det, det(nB1B2, nBA));
-				worst_det = geo_min(worst_det, det(nBA, nB1B0));
+				worst_det = std::min(worst_det, det(nA1A2, nAB));
+				worst_det = std::min(worst_det, det(nAB, nA1A0));
+				worst_det = std::min(worst_det, det(nB1B2, nBA));
+				worst_det = std::min(worst_det, det(nBA, nB1B0));
 
 				test_score = worst_det;
 
 
 				double AB_relative_length = floor((B[1] - A[1]).length() / ave_length);
-				test_nb_nv_pts = index_t(geo_max(0, int(AB_relative_length) - 1));
+				test_nb_nv_pts = index_t(std::max(0, int(AB_relative_length) - 1));
 
 				if (test_nb_nv_pts % 2 != int(d % 2)) {
 					if (test_nb_nv_pts == 0) test_nb_nv_pts = 1; else test_nb_nv_pts--;

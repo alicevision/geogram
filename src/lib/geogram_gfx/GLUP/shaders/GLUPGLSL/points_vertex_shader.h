@@ -14,14 +14,16 @@ out VertexData {
     float depth_radius;
 } VertexOut;
 
-void main() {                                              
+void main() {
+#ifndef GLUP_NO_GL_CLIPPING            
     if(glupIsEnabled(GLUP_CLIPPING)) {                               
         gl_ClipDistance[0] = dot(                           
             vertex_in, GLUP.world_clip_plane               
         );                                                  
     } else {                                                
         gl_ClipDistance[0] = 0.0;                            
-    }                                                       
+    }
+#endif    
     if(glupIsEnabled(GLUP_VERTEX_COLORS)) {                           
         VertexOut.color = color_in;                          
     }                                                       

@@ -57,6 +57,10 @@
  * \brief Internal implementation of GLUP context.
  */
 
+#ifdef GEO_GL_NO_DOUBLES
+typedef double GLdouble;
+#endif
+
 namespace GLUP {
     using namespace GEO;
 
@@ -334,7 +338,7 @@ namespace GLUP {
          * ImmediateBuffer constructor.
          */
         ImmediateBuffer() :
-            data_(nil),
+            data_(nullptr),
             dimension_(0),
             is_enabled_(false),
             VBO_(0) {
@@ -482,7 +486,7 @@ namespace GLUP {
             current_[1] = rhs.current_[1];
             current_[2] = rhs.current_[2];
             current_[3] = rhs.current_[3];
-            geo_assert(data_ == nil);
+            geo_assert(data_ == nullptr);
         }
         
     private:
@@ -640,7 +644,7 @@ namespace GLUP {
         /**
          * \brief StateVariableBase default constructor.
          */
-        StateVariableBase() : address_(nil), context_(nil) {
+        StateVariableBase() : address_(nullptr), context_(nullptr) {
         }
 
         /**
@@ -939,7 +943,7 @@ namespace GLUP {
             VAO(0),
             elements_VBO(0),
             nb_elements_per_primitive(0),
-            primitive_elements(nil),
+            primitive_elements(nullptr),
             vertex_gather_mode(false),
             implemented(false) {
         }
@@ -967,11 +971,10 @@ namespace GLUP {
          * \details Deletes the programs and vertex array object if need be.
          */
         ~PrimitiveInfo() {
-	    for(std::map<ShaderKey, GLuint>::iterator it=shader_map.begin();
-		it != shader_map.end(); ++it) {
-		if(it->second != 0) {
-		    glDeleteProgram(it->second);
-		    it->second = 0;
+	    for(auto& it : shader_map) {
+		if(it.second != 0) {
+		    glDeleteProgram(it.second);
+		    it.second = 0;
 		}
 	    }
             if(elements_VBO != 0) {
@@ -988,8 +991,7 @@ namespace GLUP {
 	}
 
 	GLuint program(ShaderKey k) const {
-	    std::map<ShaderKey, GLuint>::const_iterator it =
-		shader_map.find(k);
+	    auto it = shader_map.find(k);
 	    return ((it == shader_map.end()) ? 0 : it->second);
 	}
 	

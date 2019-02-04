@@ -53,6 +53,10 @@
  * \brief Internal OpenNL functions that implement preconditioners.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************/
 /* preconditioners */
 
@@ -63,7 +67,7 @@
  *  No reference to the input data is kept.
  * \return the Jacobi preconditioner
  */
-NLMatrix nlNewJacobiPreconditioner(NLMatrix M);
+NLAPI NLMatrix NLAPIENTRY nlNewJacobiPreconditioner(NLMatrix M);
 
 /**
  * \brief Creates a new SSOR preconditioner
@@ -74,6 +78,10 @@ NLMatrix nlNewJacobiPreconditioner(NLMatrix M);
  *  computations.
  * \return the SSOR preconditioner.
  */
-NLMatrix nlNewSSORPreconditioner(NLMatrix M, double omega);
+NLAPI NLMatrix NLAPIENTRY nlNewSSORPreconditioner(NLMatrix M, double omega);
 
+#ifdef __cplusplus
+}
+#endif
+    
 #endif

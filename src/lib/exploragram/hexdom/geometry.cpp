@@ -58,7 +58,7 @@ namespace GEO {
 	M.load_zero();
 	double isotrope_objective[6] = { 1, 1, 1, 0, 0, 0 };
 	double *RHS = anisotropy_as_xx_yy_zz_xy_yz_xz;
-	if (RHS == NULL)
+	if (RHS == nullptr)
 	    RHS = isotrope_objective;
 	FOR(e, 6){
 	    vec3 geom = P[cot_edges[e][1]] - P[cot_edges[e][0]];

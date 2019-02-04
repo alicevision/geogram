@@ -5,7 +5,9 @@
 //import <GLUP/current_profile/primitive.h>
 //import <GLUP/fragment_shader_utils.h>
 
+#ifndef GLUP_NO_GL_CLIPPING	
 in float gl_ClipDistance[];                                
+#endif
 
 in VertexData {                            
     vec4 vertex_clip_space;                       
@@ -58,10 +60,12 @@ vec4 glup_draw_mesh(in vec4 color, in vec4 mesh_tex_coord) {
 
 void main() {
 
-#ifdef GL_ES    
+#ifdef GL_ES
+#ifndef GLUP_NO_GL_CLIPPING    
     if(glupIsEnabled(GLUP_CLIPPING) && (gl_ClipDistance[0] < 0.0)) {
         discard;                                                
-    }                                                          
+    }
+#endif    
 #endif
     
     if(glupIsEnabled(GLUP_PICKING)) {
@@ -103,6 +107,7 @@ void main() {
 	    {
 		vec3 U = dFdx(FragmentIn.vertex_clip_space.xyz);
 		vec3 V = dFdy(FragmentIn.vertex_clip_space.xyz);
+		
 		mat3 M = transpose(
 		    mat3(
 			GLUP.projection_matrix[0].xyz,
@@ -110,7 +115,17 @@ void main() {
 			GLUP.projection_matrix[2].xyz
 		    )
 		);
+
+// I do not know why it is reversed, to be checked
+// (maybe it is just my test program that does not
+// have the same transform orientation, but then I
+// do not understand why it gives the same result as
+// the desktop version with GLUPES2...)		
+#ifdef GL_ES
+		N = normalize(M*cross(U,V));		
+#else		
 		N = -normalize(M*cross(U,V));
+#endif		
 	    }
 	}
 	result = glup_lighting(result, N);

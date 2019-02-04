@@ -92,16 +92,6 @@ namespace GEO {
             }
         }
 
-        /**
-         * \brief vecng default copy constructor.
-         * \param[in] rhs a const reference to the vecng to be copied
-         */
-        vecng(const vecng<DIM,T>& rhs) {
-            for(index_t i = 0; i < DIM; i++) {
-                data_[i] = rhs.data_[i];
-            }
-        }
-        
         // This one should never be called :
         // a template constructor cannot be a copy constructor
 
@@ -145,17 +135,6 @@ namespace GEO {
             for(index_t i = 0; i < DIM; i++) {
                 data_[i] = T(v[i]);
             }
-        }
-
-        /**
-         * \brief Assignment operator
-         * \details This copies coordinates of vector \p v to this vector.
-         * \param[in] v a vector of same dimension and same type
-         * \return a reference to this vector
-         */
-        vector_type& operator= (const vector_type& v) {
-            memcpy(data_, v.data(), DIM * sizeof(T));
-            return *this;
         }
 
         /**

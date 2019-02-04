@@ -3,6 +3,8 @@
 # Sets variable OPENGL_LIBRARIES to the list of GL and GLU libraries
 #
 
+set(OpenGL_GL_PREFERENCE GLVND)
+
 find_package(OpenGL)
 
 if(OPENGL_FOUND)

@@ -158,7 +158,7 @@ namespace GEO {
                 Logger::out("Mesh2") << "area:" << M2_area << std::endl;
             }
 
-            if(geo_abs(M2_area - M1_area) > tolerance * M1_area) {
+            if(std::abs(M2_area - M1_area) > tolerance * M1_area) {
                 if(verbose) {
                     Logger::err("Compare")
                         << "Areas differ"

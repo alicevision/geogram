@@ -298,7 +298,7 @@ namespace GEO {
          *  a local name.
          * \param[in] name the name of the variable
          * \return a pointer to the Environment that has \p name as a 
-         *  local variable, or nil if no such environment exists
+         *  local variable, or nullptr if no such environment exists
          */
         virtual Environment* find_environment(const std::string& name);
         

@@ -92,12 +92,12 @@ void yywarning( const std::string& s );
 
 
 AST::Expression*
-makeFunctionCall( const std::string &id, AST::ExpressionList *l = NULL );
+makeFunctionCall( const std::string &id, AST::ExpressionList *l = nullptr );
 
-static Type *base_type = NULL;
+static Type *base_type = nullptr;
 
-static Type            *init_type   = NULL;
-static AST::Expression *init_target = NULL;
+static Type            *init_type   = nullptr;
+static AST::Expression *init_target = nullptr;
 static EnumType* current_enum;
 static bool is_inline = false;
 static bool is_extern = false;
@@ -110,11 +110,11 @@ struct Group_rep {
 
 #line 112 "parse.tab.c" /* yacc.c:339  */
 
-# ifndef YY_NULLPTR
+# ifndef YY_nullptrPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
-#   define YY_NULLPTR nullptr
+#   define YY_nullptrPTR nullptr
 #  else
-#   define YY_NULLPTR 0
+#   define YY_nullptrPTR 0
 #  endif
 # endif
 
@@ -601,7 +601,7 @@ static const char *const yytname[] =
   "parameter_declaration", "group_options", "group_var_list",
   "single_group", "group_definition2", "group_definition",
   "function_definition", "@4", "translation_unit", "external_declaration",
-  "program", YY_NULLPTR
+  "program", YY_nullptrPTR
 };
 #endif
 
@@ -1115,11 +1115,11 @@ static int
 yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
                 yytype_int16 *yyssp, int yytoken)
 {
-  YYSIZE_T yysize0 = yytnamerr (YY_NULLPTR, yytname[yytoken]);
+  YYSIZE_T yysize0 = yytnamerr (YY_nullptrPTR, yytname[yytoken]);
   YYSIZE_T yysize = yysize0;
   enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
   /* Internationalized format string. */
-  const char *yyformat = YY_NULLPTR;
+  const char *yyformat = YY_nullptrPTR;
   /* Arguments of yyformat. */
   char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
   /* Number of reported tokens (one for the "unexpected", one per
@@ -1176,7 +1176,7 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
                   }
                 yyarg[yycount++] = yytname[yyx];
                 {
-                  YYSIZE_T yysize1 = yysize + yytnamerr (YY_NULLPTR, yytname[yyx]);
+                  YYSIZE_T yysize1 = yysize + yytnamerr (YY_nullptrPTR, yytname[yyx]);
                   if (! (yysize <= yysize1
                          && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
                     return 2;
@@ -1511,7 +1511,7 @@ yyreduce:
 #line 140 "parse.y" /* yacc.c:1646  */
     {
           Variable *var = symbol_env.findVariable( (yyvsp[0].string_const) );
-          if( var == NULL )
+          if( var == nullptr )
               yyerror( "variable " + std::string((yyvsp[0].string_const)) + " not declared" );
 
           (yyval.exp) = new AST::IdentifierExpression( var );
@@ -1833,7 +1833,7 @@ yyreduce:
 
   case 68:
 #line 352 "parse.y" /* yacc.c:1646  */
-    { (yyval.stm) = new AST::ConditionalStatement((yyvsp[-2].exp),(yyvsp[0].stm),NULL); }
+    { (yyval.stm) = new AST::ConditionalStatement((yyvsp[-2].exp),(yyvsp[0].stm),nullptr); }
 #line 1838 "parse.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1845,7 +1845,7 @@ yyreduce:
 
   case 70:
 #line 358 "parse.y" /* yacc.c:1646  */
-    { (yyval.stm) = new AST::Return(NULL); }
+    { (yyval.stm) = new AST::Return(nullptr); }
 #line 1850 "parse.tab.c" /* yacc.c:1646  */
     break;
 
@@ -1866,7 +1866,7 @@ yyreduce:
     {
             Type *t = (yyvsp[-2].type);
             AliasType *at = dynamic_cast<AliasType*>(t);
-            if( at != NULL )
+            if( at != nullptr )
                 t = at->base_type;
             symbol_env.add( new AliasType( (yyvsp[-1].string_const), t ) );
             //$$ = new AST::PlainText( std::string("typedef ") + $2->name() + " " + $3 + ";" );
@@ -1925,8 +1925,8 @@ yyreduce:
     {
             AST::AssignmentExpression *e = new AST::AssignmentExpression(init_target,(yyvsp[0].exp));
             (yyval.stm) = new AST::ExpressionStatement(e);
-            init_type = NULL;
-            init_target = NULL;
+            init_type = nullptr;
+            init_target = nullptr;
         }
 #line 1932 "parse.tab.c" /* yacc.c:1646  */
     break;
@@ -2009,8 +2009,8 @@ yyreduce:
             std::string id;
             Type *type = (yyvsp[0].declarator)->declare( base_type, id );
             FunctionType* fun_type = dynamic_cast<FunctionType*>(type);
-            if( fun_type != NULL ) {
-                if( symbol_env.findFunction( type->id, (unsigned int)(fun_type->parameters.size()) ) != NULL )
+            if( fun_type != nullptr ) {
+                if( symbol_env.findFunction( type->id, (unsigned int)(fun_type->parameters.size()) ) != nullptr )
                     yyerror( std::string( "function " ) + type->id + std::string( " already declared" ) );
                 else {
                     if( is_extern && is_float(fun_type->return_type) && !is_exact )
@@ -2136,7 +2136,7 @@ yyreduce:
 
   case 110:
 #line 557 "parse.y" /* yacc.c:1646  */
-    { (yyval.group_list) = NULL; }
+    { (yyval.group_list) = nullptr; }
 #line 2141 "parse.tab.c" /* yacc.c:1646  */
     break;
 
@@ -2174,7 +2174,7 @@ yyreduce:
 
                 symbol_env.add( var );
             }
-            if( (yyvsp[0].group_list) != NULL ) {
+            if( (yyvsp[0].group_list) != nullptr ) {
                 unsigned int group_index = 1;
                 std::list< Group_rep* >::iterator it;
                 for( it  = (yyvsp[0].group_list)->begin(); it != (yyvsp[0].group_list)->end(); ++it, ++group_index )
@@ -2187,7 +2187,7 @@ yyreduce:
                     {
                         //std::cout << *it2 << " ";
                         Variable *var = symbol_env.findVariable( *it2 );
-                        if( var == NULL )
+                        if( var == nullptr )
                             yyerror( std::string("undefined variable ") + *it2 );
                         var->group_index = group_index;
                         var->degree      = degree;
@@ -2493,10 +2493,10 @@ void yywarning( const std::string& s ) {
 inline
 AST::Expression*
 makeFunctionCall( const std::string &id, AST::ExpressionList *l ) {
-    if( l == NULL )
+    if( l == nullptr )
         l = new AST::ExpressionList();
     FunctionType *fun_type = symbol_env.findFunction( id, (unsigned int)(l->size()) );
-    if( fun_type == NULL ) {
+    if( fun_type == nullptr ) {
         yyerror( std::string("function ") + id + " not declared!" );
     }
     return new AST::FunctionCall( fun_type, l );

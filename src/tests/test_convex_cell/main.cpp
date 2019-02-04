@@ -389,8 +389,8 @@ int main(int argc, char** argv) {
 	    double xyz_max[3];
 	    get_bbox(C_mesh, xyz_min, xyz_max);
 	    double R = xyz_max[0]-xyz_min[0];
-	    R = geo_max(R, xyz_max[1]-xyz_min[1]);
-	    R = geo_max(R, xyz_max[2]-xyz_min[2]);	    
+	    R = std::max(R, xyz_max[1]-xyz_min[1]);
+	    R = std::max(R, xyz_max[2]-xyz_min[2]);	    
 	    FOR(v,C_mesh.vertices.nb()) {
 		double* p = C_mesh.vertices.point_ptr(v);
 		FOR(c,3) {

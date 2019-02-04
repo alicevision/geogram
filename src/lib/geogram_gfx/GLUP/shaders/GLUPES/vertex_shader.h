@@ -29,7 +29,7 @@ void main() {
     }                                                  
 
     if(glupIsEnabled(GLUP_PICKING)) {
-#ifdef GL_ES                                            
+#ifdef GLUP_ES_100
         // Note: we need to add 0.5, else there are some precision
         // issues, and the integer mod() operation creates random
         // values...

@@ -59,96 +59,6 @@
 // TODO: optimizations:
 // - convex hull traversal for nearest_vertex()
 
-namespace {
-    using namespace GEO;
-
-    /**
-     * \brief Tests whether two 3d points are identical.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \retval true if \p p1 and \p p2 have exactly the same
-     *  coordinates
-     * \retval false otherwise
-     */
-    bool points_are_identical_3d(
-        const double* p1,
-        const double* p2
-    ) {
-        return
-            (p1[0] == p2[0]) &&
-            (p1[1] == p2[1]) &&
-            (p1[2] == p2[2])
-        ;
-    }
-
-    /**
-     * \brief Tests whether three 3d points are colinear.
-     * \param[in] p1 first point
-     * \param[in] p2 second point
-     * \param[in] p3 third point
-     * \retval true if \p p1, \p p2 and \p p3 are colinear
-     * \retbal false otherwise
-     */
-    bool points_are_colinear_3d(
-        const double* p1,
-        const double* p2,
-        const double* p3
-    ) {
-        // Colinearity is tested by using four coplanarity
-        // tests with four points that are not coplanar.
-	// TODO: use PCK::aligned_3d() instead (to be tested)	
-        static const double q000[3] = {0.0, 0.0, 0.0};
-        static const double q001[3] = {0.0, 0.0, 1.0};
-        static const double q010[3] = {0.0, 1.0, 0.0};
-        static const double q100[3] = {1.0, 0.0, 0.0};
-        return
-            PCK::orient_3d(p1, p2, p3, q000) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q001) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q010) == ZERO &&
-            PCK::orient_3d(p1, p2, p3, q100) == ZERO
-        ;
-    }
-
-    /**
-     * \brief Computes the (approximate) orientation predicate in 3d.
-     * \details Computes the sign of the (approximate) signed volume of
-     *  the tetrahedron p0, p1, p2, p3.
-     * \param[in] p0 first vertex of the tetrahedron
-     * \param[in] p1 second vertex of the tetrahedron
-     * \param[in] p2 third vertex of the tetrahedron
-     * \param[in] p3 fourth vertex of the tetrahedron
-     * \retval POSITIVE if the tetrahedron is oriented positively
-     * \retval ZERO if the tetrahedron is flat
-     * \retval NEGATIVE if the tetrahedron is oriented negatively
-     * \todo check whether orientation is inverted as compared to 
-     *   Shewchuk's version.
-     */
-    inline Sign orient_3d_inexact(
-        const double* p0, const double* p1,
-        const double* p2, const double* p3
-    ) {
-        double a11 = p1[0] - p0[0] ;
-        double a12 = p1[1] - p0[1] ;
-        double a13 = p1[2] - p0[2] ;
-        
-        double a21 = p2[0] - p0[0] ;
-        double a22 = p2[1] - p0[1] ;
-        double a23 = p2[2] - p0[2] ;
-        
-        double a31 = p3[0] - p0[0] ;
-        double a32 = p3[1] - p0[1] ;
-        double a33 = p3[2] - p0[2] ;
-
-        double Delta = det3x3(
-            a11,a12,a13,
-            a21,a22,a23,
-            a31,a32,a33
-        );
-
-        return geo_sgn(Delta);
-    }
-}
-
 namespace GEO {
 
     char Delaunay3d::halfedge_facet_[4][4] = {
@@ -225,10 +135,10 @@ namespace GEO {
             cell_neigh_stride_ = 4;
         }
         cur_stamp_ = 0;
-        debug_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay");
-        verbose_debug_mode_ = false; //CmdLine::get_arg_bool("dbg:delaunay_verbose");
+        debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay");
+        verbose_debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay_verbose");
         debug_mode_ = (debug_mode_ || verbose_debug_mode_);
-        benchmark_mode_ = false;// CmdLine::get_arg_bool("dbg:delaunay_benchmark");
+        benchmark_mode_ = CmdLine::get_arg_bool("dbg:delaunay_benchmark");
     }
 
     Delaunay3d::~Delaunay3d() {
@@ -237,7 +147,7 @@ namespace GEO {
     void Delaunay3d::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
-        Stopwatch* W = nil;
+        Stopwatch* W = nullptr;
         if(benchmark_mode_) {
             W = new Stopwatch("DelInternal");
         }
@@ -406,13 +316,13 @@ namespace GEO {
                 old2new[infinite_ptr] = finite_ptr;
                 ++nb_finite_cells_;
                 for(index_t lf=0; lf<4; ++lf) {
-                    geo_swap(
+                    std::swap(
                         cell_to_cell_store_[4*finite_ptr + lf],
                         cell_to_cell_store_[4*infinite_ptr + lf]
                     );
                 }
                 for(index_t lv=0; lv<4; ++lv) {
-                    geo_swap(
+                    std::swap(
                         cell_to_v_store_[4*finite_ptr + lv],
                         cell_to_v_store_[4*infinite_ptr + lv]
                     );
@@ -553,7 +463,7 @@ namespace GEO {
                 // convention as in CGAL).
                 const double* pv_bkp = pv[f];
                 pv[f] = p;
-                Sign ori = orient_3d_inexact(pv[0], pv[1], pv[2], pv[3]);
+                Sign ori = PCK::orient_3d_inexact(pv[0], pv[1], pv[2], pv[3]);
 
                 //   If the orientation is not negative, then we cannot
                 // walk towards t_next, and examine the next candidate
@@ -641,7 +551,7 @@ namespace GEO {
         index_t t = hint;
         index_t t_pred = NO_TETRAHEDRON;
         Sign orient_local[4];
-        if(orient == nil) {
+        if(orient == nullptr) {
             orient = orient_local;
         }
 
@@ -741,6 +651,8 @@ namespace GEO {
         index_t& t_bndry, index_t& f_bndry,
         index_t& first, index_t& last
     ) {
+	cavity_.clear(); 
+	
         first = last = END_OF_LIST;
 
         //  Generate a unique stamp from current vertex index,
@@ -828,11 +740,23 @@ namespace GEO {
                 index_t t2 = index_t(tet_adjacent(t, lf));
 
                 if(
-                    tet_is_in_list(t2) || // known as conflict
-                    tet_is_marked(t2)     // known as non-conflict
+                    tet_is_in_list(t2)  // known as conflict
                 ) {
                     continue;
                 }
+
+                if(
+                    tet_is_marked(t2)     // known as non-conflict
+                ) {
+		    cavity_.new_facet(
+			t, lf,
+			tet_vertex(t, tet_facet_vertex(lf,0)),
+			tet_vertex(t, tet_facet_vertex(lf,1)),
+			tet_vertex(t, tet_facet_vertex(lf,2))
+		    );
+                    continue;
+                }
+		
 
                 if(tet_is_conflict(t2, p)) {
                     // Chain t2 in conflict list
@@ -848,6 +772,14 @@ namespace GEO {
                 f_bndry = lf;
                 // Mark t2 as visited (but not conflict)
                 mark_tet(t2);
+
+		cavity_.new_facet(
+		    t, lf,
+		    tet_vertex(t, tet_facet_vertex(lf,0)),
+		    tet_vertex(t, tet_facet_vertex(lf,1)),
+		    tet_vertex(t, tet_facet_vertex(lf,2))
+		);
+		
             }
         }
     }
@@ -951,7 +883,36 @@ namespace GEO {
         // (no need to push any return address).
         goto return_point;
     }
+                        
+    index_t Delaunay3d::stellate_cavity(index_t v) {
+	
+	index_t new_tet = index_t(-1);
+	
+	for(index_t f=0; f<cavity_.nb_facets(); ++f) {
+	    index_t old_tet = cavity_.facet_tet(f);
+	    index_t lf = cavity_.facet_facet(f);
+	    index_t t_neigh = index_t(tet_adjacent(old_tet, lf));
+	    signed_index_t v1 = cavity_.facet_vertex(f,0);
+	    signed_index_t v2 = cavity_.facet_vertex(f,1);
+	    signed_index_t v3 = cavity_.facet_vertex(f,2);
+	    new_tet = new_tetrahedron(signed_index_t(v), v1, v2, v3);
+	    set_tet_adjacent(new_tet, 0, t_neigh);
+	    set_tet_adjacent(t_neigh, find_tet_adjacent(t_neigh,old_tet), new_tet);
+	    cavity_.set_facet_tet(f, new_tet);
+	}
+	
+	for(index_t f=0; f<cavity_.nb_facets(); ++f) {
+	    new_tet = cavity_.facet_tet(f);
+	    index_t neigh1, neigh2, neigh3;
+	    cavity_.get_facet_neighbor_tets(f, neigh1, neigh2, neigh3);
+	    set_tet_adjacent(new_tet, 1, neigh1);
+	    set_tet_adjacent(new_tet, 2, neigh2);
+	    set_tet_adjacent(new_tet, 3, neigh3);		
+	}
 
+	return new_tet;
+    }
+    
     index_t Delaunay3d::insert(index_t v, index_t hint) {
        index_t t_bndry = NO_TETRAHEDRON;
        index_t f_bndry = index_t(-1);
@@ -973,7 +934,12 @@ namespace GEO {
            return NO_TETRAHEDRON;
        }
 
-       index_t new_tet = stellate_conflict_zone_iterative(v,t_bndry,f_bndry);
+       index_t new_tet = index_t(-1);
+       if(cavity_.OK()) {
+	   new_tet = stellate_cavity(v);
+       } else {
+	   new_tet = stellate_conflict_zone_iterative(v,t_bndry,f_bndry);
+       }
        
        // Recycle the tetrahedra of the conflict zone.
        cell_next_[last_conflict] = first_free_;
@@ -995,7 +961,7 @@ namespace GEO {
         iv1 = 1;
         while(
             iv1 < nb_vertices() &&
-            points_are_identical_3d(
+            PCK::points_are_identical_3d(
                 vertex_ptr(iv0), vertex_ptr(iv1)
             )
         ) {
@@ -1008,7 +974,7 @@ namespace GEO {
         iv2 = iv1 + 1;
         while(
             iv2 < nb_vertices() &&
-            points_are_colinear_3d(
+            PCK::points_are_colinear_3d(
                 vertex_ptr(iv0), vertex_ptr(iv1), vertex_ptr(iv2)
             )
         ) {
@@ -1037,7 +1003,7 @@ namespace GEO {
         geo_debug_assert(s != ZERO);
 
         if(s == NEGATIVE) {
-            geo_swap(iv2, iv3);
+            std::swap(iv2, iv3);
         }
 
         // Create the first tetrahedron

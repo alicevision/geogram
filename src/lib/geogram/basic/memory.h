@@ -101,12 +101,6 @@ namespace GEO {
 	typedef void (*function_pointer)();
 	
         /**
-         * \brief Value of the null pointer
-         * \internal Should be replaces by nullptr in C++11
-         */
-#define nil 0
-
-        /**
          * \brief Clears a memory block
          * \details Clears (set to zero) the first \p size bytes of array \p
          * addr.
@@ -142,7 +136,7 @@ namespace GEO {
 	inline pointer function_pointer_to_generic_pointer(function_pointer fptr) {
 	    // I know this is ugly, but I did not find a simpler warning-free
 	    // way that is portable between all compilers.
-	    pointer result = nil;
+	    pointer result = nullptr;
 	    ::memcpy(&result, &fptr, sizeof(pointer));
 	    return result;
 	}
@@ -159,7 +153,7 @@ namespace GEO {
 	inline function_pointer generic_pointer_to_function_pointer(pointer ptr) {
 	    // I know this is ugly, but I did not find a simpler warning-free
 	    // way that is portable between all compilers.
-	    function_pointer result = nil;
+	    function_pointer result = nullptr;
 	    ::memcpy(&result, &ptr, sizeof(pointer));
 	    return result;
 	}
@@ -176,7 +170,7 @@ namespace GEO {
 	inline function_pointer generic_pointer_to_function_pointer(void* ptr) {
 	    // I know this is ugly, but I did not find a simpler warning-free
 	    // way that is portable between all compilers.
-	    function_pointer result = nil;
+	    function_pointer result = nullptr;
 	    ::memcpy(&result, &ptr, sizeof(pointer));
 	    return result;
 	}
@@ -286,7 +280,7 @@ namespace GEO {
 #elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
             void* result;
             return posix_memalign(&result, alignment, size) == 0
-                   ? result : 0;
+                   ? result : nullptr;
 #elif defined(GEO_COMPILER_MSVC)
             return _aligned_malloc(size, alignment);
 #else
@@ -308,7 +302,7 @@ namespace GEO {
             free(p);
 #elif defined(GEO_COMPILER_INTEL)
             _mm_free(p);
-#elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#elif defined(GEO_COMPILER_GCC_FAMILY) 
             free(p);
 #elif defined(GEO_COMPILER_MSVC)
             _aligned_free(p);
@@ -334,7 +328,7 @@ namespace GEO {
 #define geo_decl_aligned(var) var
 #elif defined(GEO_COMPILER_INTEL)
 #define geo_decl_aligned(var) __declspec(aligned(GEO_MEMORY_ALIGNMENT)) var
-#elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#elif defined(GEO_COMPILER_GCC_FAMILY)
 #define geo_decl_aligned(var) var __attribute__((aligned(GEO_MEMORY_ALIGNMENT)))
 #elif defined(GEO_COMPILER_MSVC)
 #define geo_decl_aligned(var) __declspec(align(GEO_MEMORY_ALIGNMENT)) var
@@ -376,10 +370,12 @@ namespace GEO {
 #else
 #define geo_assume_aligned(var, alignment)        
 #endif        
-#elif defined(GEO_COMPILER_MSVC)
+#elif defined(GEO_COMPILER_MSVC) 
 #define geo_assume_aligned(var, alignment)
         // TODO: I do not know how to do that with MSVC
 #elif defined(GEO_COMPILER_EMSCRIPTEN)        
+#define geo_assume_aligned(var, alignment)
+#elif defined(GEO_COMPILER_MINGW)        
 #define geo_assume_aligned(var, alignment)
 #endif
 
@@ -395,7 +391,7 @@ namespace GEO {
          */
 #if   defined(GEO_COMPILER_INTEL)
 #define geo_restrict __restrict
-#elif defined(GEO_COMPILER_GCC) || defined(GEO_COMPILER_CLANG)
+#elif defined(GEO_COMPILER_GCC_FAMILY)
 #define geo_restrict __restrict__
 #elif defined(GEO_COMPILER_MSVC)
 #define geo_restrict __restrict
@@ -516,7 +512,7 @@ namespace GEO {
              * \return A pointer to the initial element in the block of storage
              */
             pointer allocate(
-                size_type nb_elt, ::std::allocator<void>::const_pointer hint = 0
+                size_type nb_elt, ::std::allocator<void>::const_pointer hint = nullptr
             ) {
                 geo_argused(hint);
                 pointer result = static_cast<pointer>(
@@ -715,12 +711,58 @@ namespace GEO {
             return baseclass::operator[] (index_t(i));
         }
 
+
+#ifdef GARGANTUA // If compiled with 64 bits index_t
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A reference to the element at position \p i in the vector.
+         */
+        T& operator[] (int i) {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A const reference to the element at position \p i 
+         *  in the vector.
+         */
+        const T& operator[] (int i) const {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A reference to the element at position \p i in the vector.
+         */
+        T& operator[] (unsigned int i) {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+
+        /**
+         * \brief Gets a vector element
+         * \param[in] i index of the element
+         * \return A const reference to the element at position \p i 
+         *  in the vector.
+         */
+        const T& operator[] (unsigned int i) const {
+            geo_debug_assert(i >= 0 && index_t(i) < size());
+            return baseclass::operator[] (index_t(i));
+        }
+#endif	
+	
         /**
          * \brief Gets a pointer to the array of elements
          * \return a pointer to the first element of the vector
          */
         T* data() {
-            return size() == 0 ? nil : &(*this)[0];
+            return size() == 0 ? nullptr : &(*this)[0];
         }
 
         /**
@@ -728,7 +770,7 @@ namespace GEO {
          * \return a const pointer to the first element of the vector
          */
         const T* data() const {
-            return size() == 0 ? nil : &(*this)[0];
+            return size() == 0 ? nullptr : &(*this)[0];
         }
 
     };

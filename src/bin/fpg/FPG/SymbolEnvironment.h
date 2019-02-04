@@ -13,7 +13,7 @@ namespace AST {
   struct Node;
 }
 
-class Collect_variables;
+struct Collect_variables;
 
 
 struct SymbolEnvironment {
@@ -32,7 +32,7 @@ struct SymbolEnvironment {
 
     // only when leaving a block, symbols are removed. so, no need for remove methods.
 
-    // if symbol not found, NULL is returned
+    // if symbol not found, nullptr is returned
     Variable* findVariable( const std::string& id );
     // if an alias type is registered that refers to t, t itself is returned (not the alias)
     // alias types cannot refer to another alias type, so the type returned here is a proper type

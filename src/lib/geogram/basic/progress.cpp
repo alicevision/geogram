@@ -148,33 +148,33 @@ namespace {
     class TerminalProgressClient : public ProgressClient {
     public:
         /** \copydoc GEO::ProgressClient::begin() */
-        virtual void begin() {
+	void begin() override {
             const ProgressTask* task = Progress::current_task();
-            //CmdLine::ui_progress(task->task_name(), 0, 0);
+            CmdLine::ui_progress(task->task_name(), 0, 0);
         }
 
         /** \copydoc GEO::ProgressClient::progress(index_t,index_t) */
-        virtual void progress(index_t step, index_t percent) {
+	void progress(index_t step, index_t percent) override {
             const ProgressTask* task = Progress::current_task();
-            //CmdLine::ui_progress(task->task_name(), step, percent);
+            CmdLine::ui_progress(task->task_name(), step, percent);
         }
 
         /** \copydoc GEO::ProgressClient::end(bool) */
-        virtual void end(bool canceled) {
+	void end(bool canceled) override {
             const ProgressTask* task = Progress::current_task();
             double elapsed = SystemStopwatch::now() - task->start_time();
             if(canceled) {
-              //CmdLine::ui_progress_canceled(
-              //      task->task_name(), elapsed, task->percent()
-              //  );
+                CmdLine::ui_progress_canceled(
+                    task->task_name(), elapsed, task->percent()
+                );
             } else {
-              //  CmdLine::ui_progress_time(task->task_name(), elapsed);
+                CmdLine::ui_progress_time(task->task_name(), elapsed);
             }
         }
 
     protected:
         /** \brief TerminalProgressClient destructor */
-        virtual ~TerminalProgressClient() {
+	~TerminalProgressClient() override {
         }
     };
 }
@@ -196,7 +196,7 @@ namespace GEO {
         }
 
         void terminate() {
-            set_client(nil);
+            set_client(nullptr);
         }
 
         void set_client(ProgressClient* client) {
@@ -204,7 +204,7 @@ namespace GEO {
         }
 
         const ProgressTask* current_task() {
-            return progress_tasks_.empty() ? nil : progress_tasks_.top();
+            return progress_tasks_.empty() ? nullptr : progress_tasks_.top();
         }
 
         void cancel() {
@@ -235,7 +235,7 @@ namespace GEO {
         task_name_(task_name),
         start_time_(SystemStopwatch::now()),
         quiet_(quiet),
-        max_steps_(geo_max(1u, max_steps)),
+        max_steps_(std::max(index_t(1), max_steps)),
         step_(0),
         percent_(0)
     {
@@ -250,7 +250,7 @@ namespace GEO {
         task_name_(task_name),
         start_time_(SystemStopwatch::now()),
         quiet_(Logger::instance()->is_quiet()),
-        max_steps_(geo_max(1u, max_steps)),
+        max_steps_(std::max(index_t(1), max_steps)),
         step_(0),
         percent_(0)
     {
@@ -273,12 +273,13 @@ namespace GEO {
     }
 
     void ProgressTask::reset(index_t max_steps) {
-        max_steps_ = geo_max(1u, max_steps);
+        max_steps_ = std::max(index_t(1), max_steps);
         reset();
     }
 
     void ProgressTask::next() {
         step_++;
+	step_ = std::min(step_, max_steps_);
         update();
     }
 
@@ -294,7 +295,7 @@ namespace GEO {
     }
 
     void ProgressTask::update() {
-        percent_ = geo_min(100u, step_ * 100u / max_steps_);
+        percent_ = std::min(index_t(100), index_t(step_ * 100 / max_steps_));
         if(!quiet_) {
             task_progress(step_, percent_);
         }

@@ -30,7 +30,7 @@ struct Static_filter_error : public Abstract_value {
 
     Static_filter_error* downcast( Abstract_value* value ) {
         Static_filter_error *f = dynamic_cast<Static_filter_error*>( value );
-        assert( f != NULL );
+        assert( f != nullptr );
         return f;
     }
 

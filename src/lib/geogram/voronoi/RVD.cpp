@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- *
+ * 
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine,
+ *     LORIA, INRIA Lorraine, 
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX
+ *     54506 VANDOEUVRE LES NANCY CEDEX 
  *     FRANCE
  *
  */
@@ -59,8 +59,6 @@
 #include <geogram/basic/argused.h>
 #include <geogram/basic/algorithm.h>
 #include <geogram/bibliography/bibliography.h>
-
-#include <functional>
 
 /*
  * There are three levels of implementation:
@@ -146,20 +144,20 @@ namespace {
             RVD_(delaunay, mesh) {
             use_exact_projection_ = false;
             is_slave_ = false;
-            master_ = nil;
+            master_ = nullptr;
             has_weights_ = false;
             if(mesh->vertices.attributes().is_defined("weight")) {
                 vertex_weight_.bind(mesh->vertices.attributes(), "weight");
                 has_weights_ = true;
             }
-            parts_ = nil;
+            parts_ = nullptr;
             nb_parts_ = 0;
             funcval_ = 0.0;
-            simplex_func_ = nil;
-	    polygon_callback_ = nil;
-	    polyhedron_callback_ = nil;
-            arg_vectors_ = nil;
-            arg_scalars_ = nil;
+            simplex_func_ = nullptr;
+	    polygon_callback_ = nullptr;
+	    polyhedron_callback_ = nullptr;
+            arg_vectors_ = nullptr;
+            arg_scalars_ = nullptr;
             thread_mode_ = MT_NONE;
             nb_triangles_ = 0;
         }
@@ -168,27 +166,27 @@ namespace {
          * \brief Constructor for parts, used in multithreading mode.
          */
         RVD_Nd_Impl() :
-            RestrictedVoronoiDiagram(nil, nil, nil, 0),
-            RVD_(nil, nil) {
+            RestrictedVoronoiDiagram(nullptr, nullptr, nullptr, 0),
+            RVD_(nullptr, nullptr) {
             use_exact_projection_ = false;
             is_slave_ = true;
-            master_ = nil;
-            mesh_ = nil;
-            parts_ = nil;
+            master_ = nullptr;
+            mesh_ = nullptr;
+            parts_ = nullptr;
             nb_parts_ = 0;
             facets_begin_ = -1;
             facets_end_ = -1;
             funcval_ = 0.0;
-            simplex_func_ = nil;
-	    polygon_callback_ = nil;
-	    polyhedron_callback_ = nil;
-            arg_vectors_ = nil;
-            arg_scalars_ = nil;
+            simplex_func_ = nullptr;
+	    polygon_callback_ = nullptr;
+	    polyhedron_callback_ = nullptr;
+            arg_vectors_ = nullptr;
+            arg_scalars_ = nullptr;
             thread_mode_ = MT_NONE;
             nb_triangles_ = 0;
         }
 
-        virtual void set_delaunay(Delaunay* delaunay) {
+	void set_delaunay(Delaunay* delaunay) override {
             baseclass::set_delaunay(delaunay);
             RVD_.set_delaunay(delaunay);
             for(index_t p = 0; p < nb_parts_; ++p) {
@@ -196,21 +194,21 @@ namespace {
             }
         }
 
-        virtual void set_check_SR(bool x) {
+	void set_check_SR(bool x) override {
             RVD_.set_check_SR(x);
             for(index_t p = 0; p < nb_parts_; ++p) {
                 parts_[p].set_check_SR(x);
             }
         }
 
-        virtual void set_exact_predicates(bool x) {
+	void set_exact_predicates(bool x) override {
             RVD_.set_exact_predicates(x);
             for(index_t p = 0; p < nb_parts_; ++p) {
                 parts_[p].set_exact_predicates(x);
             }
         }
 
-        virtual bool exact_predicates() const {
+	bool exact_predicates() const override {
             return RVD_.exact_predicates();
         }
 
@@ -265,7 +263,7 @@ namespace {
              * \brief Constructs a ComputeCentroids.
              * \param[out] mg where to store the centroids
              * \param[out] m where to store the masses
-             * \param[in] locks the array of locks
+             * \param[in] locks the array of locks 
              *  (or NoLocks in single thread mode)
              */
             ComputeCentroids(
@@ -328,7 +326,7 @@ namespace {
              * \brief Constructs a ComputeCentroidsWeighted.
              * \param[out] mg where to store the centroids
              * \param[out] m where to store the masses
-             * \param[in] locks the array of locks
+             * \param[in] locks the array of locks 
              *  (or NoLocks in single thread mode)
              */
             ComputeCentroidsWeighted(
@@ -376,10 +374,10 @@ namespace {
             LOCKS& locks_;
         };
 
-        virtual void compute_centroids_on_surface(double* mg, double* m) {
+	void compute_centroids_on_surface(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nil) {
+                if(master_ != nullptr) {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCentroidsWeighted<Process::SpinLockArray>(
@@ -413,8 +411,8 @@ namespace {
                 arg_scalars_ = m;
                 spinlocks_.resize(delaunay_->nb_vertices());
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }
                 );
             }
         }
@@ -505,10 +503,10 @@ namespace {
             LOCKS& locks_;
         };
 
-        virtual void compute_centroids_in_volume(double* mg, double* m) {
+	void compute_centroids_in_volume(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nil) {
+                if(master_ != nullptr) {
                     RVD_.for_each_tetrahedron(
                         ComputeCentroidsVolumetric<Process::SpinLockArray>(
                             mg, m, RVD_.delaunay(), master_->spinlocks_
@@ -528,8 +526,8 @@ namespace {
                 arg_scalars_ = m;
                 spinlocks_.resize(delaunay_->nb_vertices());
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }
                 );
             }
         }
@@ -555,10 +553,10 @@ namespace {
              * \brief Constructs a ComputeCVTFuncGrad.
              * \param[in] RVD the restricted Voronoi diagram
              * \param[out] f the computed function value
-             * \param[out] g the computed gradient of f,
+             * \param[out] g the computed gradient of f, 
              *   allocated by caller, and managed
              *  by caller
-             * \param[in] locks the array of locks
+             * \param[in] locks the array of locks 
              *  (or NoLocks in single thread mode)
              */
             ComputeCVTFuncGrad(
@@ -636,9 +634,9 @@ namespace {
              * \brief Constructs a ComputeCVTFuncGradWeighted.
              * \param[in] RVD the restricted Voronoi diagram
              * \param[out] f the computed function value
-             * \param[out] g the computed gradient of f,
+             * \param[out] g the computed gradient of f, 
              *  allocated by caller, and managed by caller
-             * \param[in] locks the array of locks
+             * \param[in] locks the array of locks 
              *  (or NoLocks in single thread mode)
              */
             ComputeCVTFuncGradWeighted(
@@ -731,10 +729,10 @@ namespace {
             const GenRestrictedVoronoiDiagram& RVD_;
         };
 
-        virtual void compute_CVT_func_grad_on_surface(double& f, double* g) {
+	void compute_CVT_func_grad_on_surface(double& f, double* g) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nil) {
+                if(master_ != nullptr) {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCVTFuncGradWeighted<Process::SpinLockArray>(
@@ -772,8 +770,8 @@ namespace {
                     part(t).funcval_ = 0.0;
                 }
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }		    
                 );
                 for(index_t t = 0; t < nb_parts(); t++) {
                     f += part(t).funcval_;
@@ -870,7 +868,7 @@ namespace {
                 locks_.acquire_spinlock(v);
                 for(coord_index_t c = 0; c < DIM; ++c) {
                     g_out[c] += 2.0 * mi * (
-                        0.75 * p0[c]
+                        0.75 * p0[c] 
                         - 0.25 * p1[c] - 0.25 * p2[c] - 0.25 * p3[c]
                     );
                 }
@@ -883,10 +881,10 @@ namespace {
             const GenRestrictedVoronoiDiagram& RVD_;
         };
 
-        virtual void compute_CVT_func_grad_in_volume(double& f, double* g) {
+	void compute_CVT_func_grad_in_volume(double& f, double* g) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nil) {
+                if(master_ != nullptr) {
                     RVD_.for_each_volumetric_integration_simplex(
                         ComputeCVTFuncGradVolumetric<Process::SpinLockArray>(
                             RVD_, f, g, master_->spinlocks_
@@ -908,8 +906,8 @@ namespace {
                     part(t).funcval_ = 0.0;
                 }
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }		    
                 );
                 for(index_t t = 0; t < nb_parts(); t++) {
                     f += part(t).funcval_;
@@ -923,7 +921,7 @@ namespace {
          * \brief Implementation class for computing function integrals
          *  and gradients over integration simplices.
          * \details To be used as a template argument
-         *    to RVD::for_each_triangle() and
+         *    to RVD::for_each_triangle() and 
          *    RVD::for_each_volumetric_integration_simplex()
          */
         class ComputeCVTFuncGradIntegrationSimplex {
@@ -936,9 +934,9 @@ namespace {
             ComputeCVTFuncGradIntegrationSimplex(
                 const GenRestrictedVoronoiDiagram& RVD,
                 IntegrationSimplex* F
-            ) :
+            ) : 
                 f_(0.0),
-                RVD_(RVD),
+                RVD_(RVD), 
                 simplex_func_(F) {
                 simplex_func_->reset_thread_local_storage();
             }
@@ -1004,15 +1002,15 @@ namespace {
             IntegrationSimplex* simplex_func_;
         };
 
-        virtual void compute_integration_simplex_func_grad(
+	void compute_integration_simplex_func_grad(
             double& f, double* g, IntegrationSimplex* F
-        ) {
+        ) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ == nil) {
+                if(master_ == nullptr) {
                     F->set_points_and_gradient(
                         delaunay()->dimension(),
-                        delaunay()->nb_vertices(),
+                        delaunay()->nb_vertices(), 
                         delaunay()->vertex_ptr(0),
                         g
                     );
@@ -1023,7 +1021,7 @@ namespace {
                 if(F->volumetric()) {
                     RVD_.for_each_volumetric_integration_simplex(
                         C,
-                        F->background_mesh_has_varying_attribute(),
+                        F->background_mesh_has_varying_attribute(),  
                         false   /* Coherent triangles */
                     );
                 } else {
@@ -1036,9 +1034,9 @@ namespace {
                 spinlocks_.resize(delaunay_->nb_vertices());
                 F->set_points_and_gradient(
                     delaunay()->dimension(),
-                    delaunay()->nb_vertices(),
+                    delaunay()->nb_vertices(), 
                     delaunay()->vertex_ptr(0),
-                    g,
+                    g, 
                     &spinlocks_
                 );
                 thread_mode_ = MT_INT_SMPLX;
@@ -1052,8 +1050,8 @@ namespace {
                 }
 
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }	
                 );
 
                 f = 0.0;
@@ -1061,7 +1059,7 @@ namespace {
                     f += part(t).funcval_;
                 }
             }
-        }
+        } 
 
         /********************************************************************/
 
@@ -1108,7 +1106,7 @@ namespace {
 	    GEO::RVDPolygonCallback& callback_;
         };
 
-
+	
         virtual void compute_with_polygon_callback(
 	    GEO::RVDPolygonCallback& polygon_callback
         ) {
@@ -1123,19 +1121,19 @@ namespace {
 			RVD_.connected_components_priority()
 		    );
                 }
-                spinlocks_.resize(delaunay_->nb_vertices());
+                spinlocks_.resize(delaunay_->nb_vertices());		
                 thread_mode_ = MT_POLYG;
 		polygon_callback_ = &polygon_callback;
 		polygon_callback_->set_spinlocks(&spinlocks_);
 		// Note: callback begin()/end() is called in for_each_polygon()
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }			    
                 );
-		polygon_callback_->set_spinlocks(nil);
+		polygon_callback_->set_spinlocks(nullptr);
             }
-        }
-
+        } 
+	
         virtual void compute_with_polyhedron_callback(
 	    GEO::RVDPolyhedronCallback& polyhedron_callback
         ) {
@@ -1149,21 +1147,21 @@ namespace {
 			RVD_.connected_components_priority()
 		    );
                 }
-                spinlocks_.resize(delaunay_->nb_vertices());
+                spinlocks_.resize(delaunay_->nb_vertices());		
                 thread_mode_ = MT_POLYH;
 		polyhedron_callback_ = &polyhedron_callback;
 		polyhedron_callback_->set_spinlocks(&spinlocks_);
 		// Note: callback begin()/end() is
-		// called in for_each_polyhedron()
+		// called in for_each_polyhedron()		
                 parallel_for(
-                    std::bind(&thisclass::run_thread, this, std::placeholders::_1),
-                    0, nb_parts()
+                    0, nb_parts(),
+		    [this](index_t i) { run_thread(i); }
                 );
-		polyhedron_callback_->set_spinlocks(nil);
+		polyhedron_callback_->set_spinlocks(nullptr);
             }
-        }
+        } 
 
-        /********************************************************************/
+        /********************************************************************/	
 
         /**
          * \brief Implementation class for explicitly constructing
@@ -1241,7 +1239,7 @@ namespace {
          *    a volumetric mesh that corresponds to the volumetric
          *    restricted Voronoi diagram.
          * \details To be used as a template argument
-         *    to RVD::for_each_volumetric_integration_simplex().
+         *    to RVD::for_each_volumetric_integration_simplex(). 
          *    The current Voronoi cell is reported in tetrahedron region.
          * \note For the moment, vertices are duplicated (will be fixed
          *  in a future version).
@@ -1449,10 +1447,10 @@ namespace {
             bool cell_borders_only_;
         };
 
-        virtual void compute_RVD(
+	void compute_RVD(
             Mesh& M, coord_index_t dim, bool cell_borders_only,
             bool integration_simplices
-        ) {
+        ) override {
             bool sym = RVD_.symbolic();
             RVD_.set_symbolic(true);
             if(volumetric_) {
@@ -1509,7 +1507,7 @@ namespace {
                         );
                     }
                 }
-
+                
                 M.clear(true); // keep attributes
 
                 M.vertices.assign_points(vertices,dim,true);
@@ -1518,7 +1516,7 @@ namespace {
 
                 // TODO: use Attribute::assign(vector, steal_args)
                 // when it is there...
-
+                
                 if(M.facets.nb() != 0) {
                     Attribute<index_t> facet_region_attr(
                         M.facets.attributes(), "region"
@@ -1536,7 +1534,7 @@ namespace {
                         cell_region_attr[c] = index_t(tet_regions[c]);
                     }
                 }
-
+                
                 if(cell_borders_only) {
                     mesh_repair(M, MESH_REPAIR_TOPOLOGY);
                 } else {
@@ -1564,7 +1562,7 @@ namespace {
             Mesh& M,
             Mesh& result,
             bool copy_symbolic_info
-        ) {
+        ) override {
             Mesh* tmp_mesh = mesh_;
             mesh_ = &M;
             RVD_.set_mesh(&M);
@@ -1578,12 +1576,12 @@ namespace {
 
         /********************************************************************/
 
-	virtual void for_each_polygon(
+	void for_each_polygon(
 	    GEO::RVDPolygonCallback& callback,
 	    bool symbolic,
 	    bool connected_comp_priority,
 	    bool parallel
-	) {
+	) override {
 	    bool sym_backup = RVD_.symbolic();
 	    RVD_.set_symbolic(symbolic);
 	    RVD_.set_connected_components_priority(connected_comp_priority);
@@ -1592,21 +1590,21 @@ namespace {
 		compute_with_polygon_callback(callback);
 	    } else {
 		PolygonCallbackAction action(RVD_,callback);
-		RVD_.for_each_polygon(action);
+		RVD_.for_each_polygon(action); 
 	    }
 	    callback.end();
 	    RVD_.set_symbolic(sym_backup);
 	    RVD_.set_connected_components_priority(false);
 	}
-
+	
         /********************************************************************/
-
-	virtual void for_each_polyhedron(
+	
+	void for_each_polyhedron(
 	    GEO::RVDPolyhedronCallback& callback,
 	    bool symbolic,
 	    bool connected_comp_priority,
 	    bool parallel
-	) {
+	) override {
 	    bool sym_backup = RVD_.symbolic();
 	    RVD_.set_symbolic(symbolic);
 	    RVD_.set_connected_components_priority(connected_comp_priority);
@@ -1615,15 +1613,15 @@ namespace {
 	    if(parallel) {
 		compute_with_polyhedron_callback(callback);
 	    } else {
-		RVD_.for_each_polyhedron(callback);
+		RVD_.for_each_polyhedron(callback); 
 	    }
 	    callback.end();
 	    RVD_.set_symbolic(sym_backup);
 	    RVD_.set_connected_components_priority(false);
 	}
-
+	
         /********************************************************************/
-
+        
         /**
          * \brief Does the actual computation for a specific part
          *    in multithread mode.
@@ -1665,9 +1663,9 @@ namespace {
             }
         }
 
-        virtual bool compute_initial_sampling_on_surface(
+	bool compute_initial_sampling_on_surface(
             double* p, index_t nb_points
-        ) {
+        ) override {
             geo_assert(mesh_->facets.are_simplices());
 
             // We do that here, since this triggers partitioning,
@@ -1676,9 +1674,9 @@ namespace {
             create_threads();
 
             if(facets_begin_ == -1 && facets_end_ == -1) {
-                // Logger::out("RVD")
-                //     << "Computing initial sampling on surface, using dimension="
-                //     << index_t(dimension_) << std::endl;
+                Logger::out("RVD")
+                    << "Computing initial sampling on surface, using dimension="
+                    << index_t(dimension_) << std::endl;
             }
 
             return mesh_generate_random_samples_on_surface<DIM>(
@@ -1686,9 +1684,9 @@ namespace {
             );
         }
 
-        virtual bool compute_initial_sampling_in_volume(
+	bool compute_initial_sampling_in_volume(
             double* p, index_t nb_points
-        ) {
+        ) override {
             geo_assert(mesh_->cells.nb() != 0);
 
             // We do that here, since this triggers partitioning,
@@ -1697,9 +1695,9 @@ namespace {
             create_threads();
 
             if(tets_begin_ == -1 && tets_end_ == -1) {
-                // Logger::out("RVD")
-                //     << "Computing initial sampling in volume, using dimension="
-                //     << index_t(dimension_) << std::endl;
+                Logger::out("RVD")
+                    << "Computing initial sampling in volume, using dimension="
+                    << index_t(dimension_) << std::endl;
             }
 
             return mesh_generate_random_samples_in_volume<DIM>(
@@ -1713,7 +1711,7 @@ namespace {
          * stores the vertices in a KdTree.
          */
         void prepare_projection() {
-            if(!mesh_vertices_.is_nil()) {
+            if(!mesh_vertices_.is_null()) {
                 return;
             }
 
@@ -1779,9 +1777,9 @@ namespace {
             mesh_vertices_->set_vertices(nb_vertices, mesh_vertices.data());
         }
 
-        virtual void project_points_on_surface(
+	void project_points_on_surface(
             index_t nb_points, double* points, vec3* nearest, bool do_project
-        ) {
+        ) override {
 
             prepare_projection();
 
@@ -1930,7 +1928,7 @@ namespace {
              * \param[in] seed_is_locked specifies for each seed whether it
              *   can be moved (to RVC centroid or projected on surface). If
              *   left uninitialized, all the seeds can be moved.
-             * \param[in] AABB an axis-aligned bounding box tree defined on
+             * \param[in] AABB an axis-aligned bounding box tree defined on 
              *   the input surface. It is used if one of (RDT_SELECT_NEAREST,
              *   RDT_PROJECT_ON_SURFACE) is set in \p mode. If needed and not
              *   specified, then a new one is created locally.
@@ -1942,7 +1940,7 @@ namespace {
                 coord_index_t dimension,
                 RDTMode mode,
                 const std::vector<bool>& seed_is_locked,
-                MeshFacetsAABB* AABB = nil
+                MeshFacetsAABB* AABB = nullptr
             ) :
                 RVD_(RVD),
                 dimension_(dimension),
@@ -1964,7 +1962,7 @@ namespace {
                     );
                 }
             }
-
+            
             /**
              * \brief The callback called for each restricted Voronoi cell.
              * \param[in] s1 index of current center vertex
@@ -1996,7 +1994,7 @@ namespace {
                         }
                     }
                 }
-
+                
                 // Accumulate mass and barycenter
                 index_t vbase = cur_vertex_ * dimension_;
                 for(index_t i = 1; i + 1 < P.nb_vertices(); ++i) {
@@ -2053,7 +2051,7 @@ namespace {
 
                 bool owns_AABB = false;
                 if(select_nearest_ || project_on_surface_) {
-                    if(AABB_ == nil) {
+                    if(AABB_ == nullptr) {
                         // Construct an axis-aligned bounding box tree,
                         // do not reorder the mesh (needs to be pre-reordered)
                         AABB_ = new MeshFacetsAABB(
@@ -2062,22 +2060,22 @@ namespace {
                         owns_AABB = true;
                     }
                 }
-
+                
                 if(cur_seed_ != -1) {
                     end_connected_component();
                 }
-
+                
                 if(prefer_seeds_) {
                     if(select_nearest_) {
                         for(index_t s=0; s<seed_to_vertex_.size(); ++s) {
                             if(
-                                seed_to_vertex_[s] != MULTI_COMP &&
+                                seed_to_vertex_[s] != MULTI_COMP && 
                                 seed_to_vertex_[s] != UNINITIALIZED &&
                                 seed_to_vertex_[s] != ON_BORDER
                             ) {
                                 index_t vbase = seed_to_vertex_[s] * dimension_;
 
-                                const double* seed_ptr =
+                                const double* seed_ptr = 
                                     RVD_.delaunay()->vertex_ptr(s);
 
 
@@ -2086,9 +2084,9 @@ namespace {
                                 // of the RVC, we now determine whether it
                                 // should be replaced by the
                                 // seed (or by a projection onto the surface).
-
+                                
                                 const double* vertex_ptr = &(vertices_[vbase]);
-
+                                
                                 //  If the seed is nearer to the surface
                                 // than the
                                 // centroid of the connected component of the
@@ -2106,7 +2104,7 @@ namespace {
                                     vec3(vertex_ptr),
                                     vertex_projection, vertex_dist
                                 );
-
+                                
                                 if(seed_dist < vertex_dist) {
                                     if(project_on_surface_) {
                                         for(
@@ -2142,16 +2140,16 @@ namespace {
                         //  Replace all points with the seeds (provided that
                         // they do not correspond to multiple
                         // connected components).
-
+                        
                         for(index_t s=0; s<seed_to_vertex_.size(); ++s) {
                             if(
-                                seed_to_vertex_[s] != MULTI_COMP &&
+                                seed_to_vertex_[s] != MULTI_COMP && 
                                 seed_to_vertex_[s] != UNINITIALIZED &&
                                 seed_to_vertex_[s] != ON_BORDER
                             ) {
                                 index_t vbase = seed_to_vertex_[s] * dimension_;
 
-                                const double* seed_ptr =
+                                const double* seed_ptr = 
                                     RVD_.delaunay()->vertex_ptr(s);
 
                                 for(coord_index_t c = 0; c < dimension_; ++c) {
@@ -2174,13 +2172,13 @@ namespace {
                         AABB_->nearest_facet(p,q,sq_dist);
                         vertices_[3*v  ] = q.x;
                         vertices_[3*v+1] = q.y;
-                        vertices_[3*v+2] = q.z;
+                        vertices_[3*v+2] = q.z;                        
                     }
                 }
 
                 if(owns_AABB) {
                     delete AABB_;
-                    AABB_ = nil;
+                    AABB_ = nullptr;
                 }
             }
 
@@ -2213,11 +2211,11 @@ namespace {
              * \brief Terminates the current connected component.
              */
             void end_connected_component() {
-
+                
                 if(
                     !use_RVC_centroids_ ||
                     seed_is_locked(index_t(cur_seed_)) ||
-                    component_on_border_
+                    component_on_border_ 
                 ) {
                     // Copy seed
                     index_t vbase = cur_vertex_ * dimension_;
@@ -2236,12 +2234,12 @@ namespace {
                     }
                 }
                 if(prefer_seeds_) {
-                    if(component_on_border_) {
+                    if(component_on_border_) {  
                         seed_to_vertex_[index_t(cur_seed_)] = ON_BORDER;
                     }
                     switch(seed_to_vertex_[index_t(cur_seed_)]) {
                     case UNINITIALIZED:
-                        seed_to_vertex_[index_t(cur_seed_)] = cur_vertex_;
+                        seed_to_vertex_[index_t(cur_seed_)] = cur_vertex_;                        
                         break;
                     case ON_BORDER:
                         break;
@@ -2307,13 +2305,13 @@ namespace {
             vector<index_t>& tetrahedra_;
         };
 
-        virtual void compute_RDT(
+	void compute_RDT(
             vector<index_t>& simplices,
             vector<double>& embedding,
             RDTMode mode,
             const vector<bool>& seed_is_locked,
             MeshFacetsAABB* AABB
-        ) {
+        ) override {
             if(volumetric_) {
                 // For the moment, only simple mode is supported
                 simplices.clear();
@@ -2332,7 +2330,7 @@ namespace {
                     const double*
 			p4 = delaunay()->vertex_ptr(simplices[4 * t + 3]);
                     if(PCK::orient_3d(p1, p2, p3, p4) < 0) {
-                        geo_swap(simplices[4 * t], simplices[4 * t + 1]);
+                        std::swap(simplices[4 * t], simplices[4 * t + 1]);
                     }
                 }
                 embedding.clear();
@@ -2367,7 +2365,7 @@ namespace {
                     embedding.reserve(dimension_ * delaunay_->nb_vertices());
                     for(index_t i = 0; i < delaunay_->nb_vertices(); i++) {
                         for(
-                            coord_index_t coord = 0;
+                            coord_index_t coord = 0; 
                             coord < dimension_; ++coord
                         ){
                              embedding.push_back(
@@ -2379,7 +2377,7 @@ namespace {
             }
         }
 
-        virtual void create_threads() {
+	void create_threads() override {
             // TODO: check if number of facets is not smaller than
             // number of threads
             // TODO: create parts even if facets range is specified
@@ -2428,32 +2426,32 @@ namespace {
             }
         }
 
-        virtual void set_volumetric(bool x) {
+	void set_volumetric(bool x) override {
             volumetric_ = x;
             for(index_t i = 0; i < nb_parts(); ++i) {
                 part(i).set_volumetric(x);
             }
         }
 
-        virtual void set_facets_range(
+        void set_facets_range(
             index_t facets_begin, index_t facets_end
-        ) {
+        ) override {
             RVD_.set_facets_range(facets_begin, facets_end);
             facets_begin_ = signed_index_t(facets_begin);
             facets_end_ = signed_index_t(facets_end);
         }
 
-        virtual void set_tetrahedra_range(
+	void set_tetrahedra_range(
             index_t tets_begin, index_t tets_end
-        ) {
+        ) override {
             RVD_.set_tetrahedra_range(tets_begin, tets_end);
             tets_begin_ = signed_index_t(tets_begin);
             tets_end_ = signed_index_t(tets_end);
         }
 
-        virtual void delete_threads() {
+	void delete_threads() override {
             delete[] parts_;
-            parts_ = nil;
+            parts_ = nullptr;
             nb_parts_ = 0;
         }
 
@@ -2477,11 +2475,11 @@ namespace {
 	/**
 	 * \copydoc RestrictedVoronoiDiagram::point_allocator()
 	 */
-	virtual GEOGen::PointAllocator* point_allocator() {
+	GEOGen::PointAllocator* point_allocator() override {
 	    return RVD_.point_allocator();
 	}
-
-
+	
+ 	
     protected:
 
         GenRestrictedVoronoiDiagram RVD_;
@@ -2508,7 +2506,7 @@ namespace {
 
 	// PolygonCallback mode.
 	RVDPolygonCallback* polygon_callback_;
-
+	
 	// PolyhedronCallback mode.
 	RVDPolyhedronCallback* polyhedron_callback_;
 
@@ -2525,7 +2523,7 @@ namespace {
         /**
          * \brief Destructor
          */
-        virtual ~RVD_Nd_Impl() {
+	~RVD_Nd_Impl() override {
             delete_threads();
         }
 
@@ -2548,15 +2546,15 @@ namespace GEO {
     ) {
 
 	geo_cite("DBLP:journals/tog/EdelsbrunnerM90");
-  geo_cite("DBLP:conf/compgeom/Shewchuk96");
-  geo_cite("meyer:inria-00344297");
-  geo_cite("DBLP:conf/gmp/YanWLL10");
-  geo_cite("DBLP:journals/cad/YanWLL13");
-  geo_cite("DBLP:journals/cad/Levy16");
-
+	geo_cite("DBLP:conf/compgeom/Shewchuk96");
+	geo_cite("meyer:inria-00344297");
+	geo_cite("DBLP:conf/gmp/YanWLL10");
+	geo_cite("DBLP:journals/cad/YanWLL13");
+	geo_cite("DBLP:journals/cad/Levy16");
+	
         delaunay->set_stores_neighbors(true);
-        RestrictedVoronoiDiagram* result = nil;
-        geo_assert(delaunay != nil);
+        RestrictedVoronoiDiagram* result = nullptr;
+        geo_assert(delaunay != nullptr);
         coord_index_t dim = delaunay->dimension();
         switch(dim) {
             case 2:
@@ -2587,15 +2585,15 @@ namespace GEO {
             default:
                 geo_assert_not_reached;
         }
-        //if(CmdLine::get_arg("algo:predicates") == "exact") {
-        //    result->set_exact_predicates(true);
-        //}
+        if(CmdLine::get_arg("algo:predicates") == "exact") {
+            result->set_exact_predicates(true);
+        } 
         return result;
     }
 
     void RestrictedVoronoiDiagram::set_delaunay(Delaunay* delaunay) {
         delaunay_ = delaunay;
-        if(delaunay_ != nil) {
+        if(delaunay_ != nullptr) {
             dimension_ = delaunay->dimension();
         } else {
             dimension_ = 0;
@@ -2632,7 +2630,7 @@ namespace GEO {
         vector<index_t> simplices;
         vector<double> embedding;
         compute_RDT(
-            simplices, embedding,
+            simplices, embedding, 
             mode, seed_is_locked,
             AABB
         );
@@ -2648,6 +2646,6 @@ namespace GEO {
         }
     }
 
-
+    
 }
 

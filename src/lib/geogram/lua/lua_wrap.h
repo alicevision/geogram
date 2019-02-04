@@ -262,7 +262,6 @@ namespace GEO {
 	    geo_argused(L);
 	    geo_argused(idx);
 	    geo_assert_not_reached;
-	    return false;
 	}
 
 	/**
@@ -271,7 +270,6 @@ namespace GEO {
 	 */
 	operator T() const {
 	    geo_assert_not_reached;
-	    return x_;
 	}
     protected:
 	T x_;

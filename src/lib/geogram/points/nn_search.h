@@ -81,7 +81,7 @@ namespace GEO {
          * - "ANN" - uses the standard ANN algorithm
          * - "BNN" - uses the optimized KdTree
          * - "default", uses the command line argument "algo:nn_search"
-         * \retval nil if \p name is not a valid search algorithm name
+         * \retval nullptr if \p name is not a valid search algorithm name
          * \retval otherwise, a pointer to a search algorithm object. The
          * returned pointer must be stored in a NearestNeighborSearch_var that
          * does automatic destruction:

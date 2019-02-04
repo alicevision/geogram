@@ -300,7 +300,7 @@ namespace GEO {
 			}
 
 			FOR(v, pyr_top_index.size()) X(m)[pyr_top_index[v]]
-				-= geo_max(0.0, .7*max_pyr_top_coeff[v])*ave_edge_length * pyr_Z[v];
+			    -= std::max(0.0, .7*max_pyr_top_coeff[v])*ave_edge_length * pyr_Z[v];
 
 			check_no_intersecting_faces(m);
 		}

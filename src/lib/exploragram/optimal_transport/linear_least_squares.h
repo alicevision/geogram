@@ -100,6 +100,21 @@ namespace GEO {
         double eval(const double* p) const;
 
     protected:
+
+        /**
+         * \brief Implementation of add_point() for degree 1.
+         * \param[in] p 3d coordinates of the point
+         * \param[in] v function value associated with \p p_in
+         */
+	void add_point_degree_1(const double* p, double v);
+
+        /**
+         * \brief Implementation of add_point() for degree 2.
+         * \param[in] p 3d coordinates of the point
+         * \param[in] v function value associated with \p p_in
+         */
+	void add_point_degree_2(const double* p, double v);	
+	
         /**
          * \brief Gets the dimension of the function basis.
          */

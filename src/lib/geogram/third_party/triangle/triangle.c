@@ -216,9 +216,15 @@
 #pragma warning ( disable: 4311 4312 )
 #endif
 
-// [Bruno] disable some warnings for ICC
+/* [Bruno] disable some warnings for ICC and MINGW */
+
 #ifdef __ICC
 #pragma warning disable 869 180 593
+#endif
+
+#if defined(__MINGW32__) || defined(__MINGW64)
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 #endif
 
 

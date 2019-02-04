@@ -92,7 +92,7 @@ namespace GEO {
         static InstanceType& instance() {
             const std::string name = typeid(InstanceType).name();
             Instance* instance = get(name);
-            if(instance == nil) {
+            if(instance == nullptr) {
                 instance = new InstanceType;
                 add(name, instance);
             }
@@ -176,8 +176,8 @@ namespace GEO {
          */
         static CreatorType find_creator(const std::string& name) {
             Factory& self = instance();
-            typename Registry::const_iterator i = self.registry_.find(name);
-            return i == self.registry_.end() ? nil : i->second;
+            auto i = self.registry_.find(name);
+            return i == self.registry_.end() ? nullptr : i->second;
         }
 
         /**
@@ -188,9 +188,8 @@ namespace GEO {
          */
         static void list_creators(std::vector<std::string>& names) {
             Factory& self = instance();
-            typename Registry::const_iterator i;
-            for(i = self.registry_.begin(); i != self.registry_.end(); ++i) {
-                names.push_back(i->first);
+            for(auto& it : self.registry_) {
+                names.push_back(it.first);
             }
         }
 
@@ -202,9 +201,8 @@ namespace GEO {
          */
         static bool has_creator(const std::string& name) {
             Factory& self = instance();
-            typename Registry::const_iterator i;
-            for(i = self.registry_.begin(); i != self.registry_.end(); ++i) {
-                if(i->first == name) {
+            for(auto& it : self.registry_) {
+                if(it.first == name) {
                     return true;
                 }
             }
@@ -313,7 +311,7 @@ namespace GEO {
         static Type* create_object(const std::string& name) {
             typename BaseClass::CreatorType creator =
                 BaseClass::find_creator(name);
-            return creator == nil ? nil : (* creator)();
+            return creator == nullptr ? nullptr : (* creator)();
         }
     };
 
@@ -367,7 +365,7 @@ namespace GEO {
         static Type* create_object(const std::string& name, const Param1& param1) {
             typename BaseClass::CreatorType creator =
                 BaseClass::find_creator(name);
-            return creator == nil ? nil : (* creator)(param1);
+            return creator == nullptr ? nullptr : (* creator)(param1);
         }
     };
 

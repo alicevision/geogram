@@ -85,7 +85,7 @@ namespace GEO {
          * \brief Creates an empty smart pointer
          */
         SmartPointer() :
-            pointer_(nil) {
+            pointer_(nullptr) {
         }
 
         /**
@@ -157,11 +157,11 @@ namespace GEO {
          * \brief Resets pointer
          * \details Releases ownership on the help pointer and resets it to
          * null. The smart pointer becomes as if it were default-constructed.
-         * \note P.reset() is equivalent to assigning a nil pointer: p = nil
+         * \note P.reset() is equivalent to assigning a nullptr pointer: p = nullptr
          */
         void reset() {
             T::unref(pointer_);
-            pointer_ = nil;
+            pointer_ = nullptr;
         }
 
         /**
@@ -172,7 +172,7 @@ namespace GEO {
          * \return the stored pointer if not null, or aborts otherwise.
          */
         T* operator-> () const {
-            geo_assert(pointer_ != nil);
+            geo_assert(pointer_ != nullptr);
             return pointer_;
         }
 
@@ -184,7 +184,7 @@ namespace GEO {
          * \return the stored pointer if not null, or aborts otherwise.
          */
         T& operator* () const {
-            geo_assert(pointer_ != nil);
+            geo_assert(pointer_ != nullptr);
             return *pointer_;
         }
 
@@ -208,8 +208,8 @@ namespace GEO {
          * \brief Check if stored pointer is null
          * \return \c true if the stored pointer is null, \c false otherwise.
          */
-        bool is_nil() const {
-            return pointer_ == nil;
+        bool is_null() const {
+            return pointer_ == nullptr;
         }
 
     private:

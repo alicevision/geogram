@@ -28,8 +28,9 @@
 #include <geogram_gfx/full_screen_effects/ambient_occlusion.h>
 #include <geogram_gfx/full_screen_effects/unsharp_masking.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
-#include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl3.h>
-#include <geogram_gfx/third_party/ImGui/imgui_impl_glfw_gl2.h>
+#include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
+#include <geogram_gfx/third_party/ImGui/imgui_impl_opengl2.h>
+#include <geogram_gfx/third_party/ImGui/imgui_impl_opengl3.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
 #include <geogram_gfx/third_party/imgui_fonts/roboto_medium.h>
 #include <geogram_gfx/third_party/imgui_fonts/cousine_regular.h>
@@ -98,27 +99,34 @@ void glup_viewer_gui_update() {
 void glup_viewer_gui_init(GLFWwindow* w) {
 
     ImGui::CreateContext();
-    
+    ImGuiIO& io = ImGui::GetIO(); 
+    ImGui_ImplGlfw_InitForOpenGL(w,false);
 #ifdef GEO_GL_LEGACY        
     vanillaGL = (strcmp(glupCurrentProfileName(), "VanillaGL") == 0);
     if(vanillaGL) {
         GEO::Logger::out("ImGUI") << "Viewer GUI init (Vanilla)"
                                   << std::endl;        
-        ImGui_ImplGlfwGL2_Init(w, false);        
+        ImGui_ImplOpenGL2_Init();        
     } else
 #endif
     {
         GEO::Logger::out("ImGUI") << "Viewer GUI init (GL3)"
-                                  << std::endl;        
-        ImGui_ImplGlfwGL3_Init(w, false);        
+                                  << std::endl;
+#if defined(GEO_OS_APPLE)
+        ImGui_ImplOpenGL3_Init("#version 330");	
+#elif defined(GEO_OS_ANDROID)
+	// TODO: have also version for OpenGL ES 2.0.
+        ImGui_ImplOpenGL3_Init("#version 300 es");
+#else	
+        ImGui_ImplOpenGL3_Init("#version 100");
+#endif	
     }
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 10.0f;
     style.FrameRounding = 10.0f;
     style.GrabRounding = 10.0f;
-    ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = NULL;
+    io.IniFilename = nullptr;
 
     io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
 	roboto_medium_compressed_data, roboto_medium_compressed_size, 16.0f
@@ -141,12 +149,13 @@ void glup_viewer_gui_init(GLFWwindow* w) {
 void glup_viewer_gui_cleanup() {
 #ifdef GEO_GL_LEGACY        
     if(vanillaGL) {    
-        ImGui_ImplGlfwGL2_Shutdown();
+        ImGui_ImplOpenGL2_Shutdown();
     } else
 #endif
     {
-        ImGui_ImplGlfwGL3_Shutdown();        
+        ImGui_ImplOpenGL3_Shutdown();        
     }
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
@@ -155,26 +164,28 @@ void glup_viewer_gui_begin_frame() {
     glup_viewer_gui_locked = true;
 #ifdef GEO_GL_LEGACY            
     if(vanillaGL) {
-        ImGui_ImplGlfwGL2_NewFrame();        
+        ImGui_ImplOpenGL2_NewFrame();        
     } else
 #endif        
     {
-        ImGui_ImplGlfwGL3_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
     }
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 }
 
 void glup_viewer_gui_end_frame() {
     GlupViewerDisplayFunc overlay_func = glup_viewer_get_overlay_func();
-    if(overlay_func != nil) {
+    if(overlay_func != nullptr) {
         overlay_func();
         ImGui::Render();
 #ifdef GEO_GL_LEGACY            	
 	if(vanillaGL) {
-	    ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
+	    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 	} else
 #endif	    
 	{
-	    ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+	    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
     }
     glup_viewer_gui_locked = false;
@@ -202,54 +213,24 @@ void glup_viewer_gui_mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods
 ) {
     glup_viewer_post_redisplay();
-#ifdef GEO_GL_LEGACY            
-    if(vanillaGL) {
-        ImGui_ImplGlfwGL2_MouseButtonCallback(window, button, action, mods);
-    } else
-#endif        
-    {
-        ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
-    }
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 }
 
 void glup_viewer_gui_scroll_callback(
     GLFWwindow* window, double xoffset, double yoffset
 ) {
-    glup_viewer_post_redisplay();    
-#ifdef GEO_GL_LEGACY            
-    if(vanillaGL) {
-        ImGui_ImplGlfwGL2_ScrollCallback(window, xoffset, yoffset);
-    } else
-#endif        
-    {
-        ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
-    }
+    ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 }
 
 void glup_viewer_gui_key_callback(
     GLFWwindow* window, int key, int scancode, int action, int mods
 ) {
-    glup_viewer_post_redisplay();    
-#ifdef GEO_GL_LEGACY            
-    if(vanillaGL) {
-        ImGui_ImplGlfwGL2_KeyCallback(window, key, scancode, action, mods);
-    } else
-#endif        
-    {
-        ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
-    }
+    ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 }
 
 void glup_viewer_gui_char_callback(GLFWwindow* window, unsigned int c) {
     glup_viewer_post_redisplay();    
-#ifdef GEO_GL_LEGACY            
-    if(vanillaGL) {
-        ImGui_ImplGlfwGL2_CharCallback(window, c);
-    } else
-#endif        
-    {
-        ImGui_ImplGlfwGL3_CharCallback(window, c);
-    }
+    ImGui_ImplGlfw_CharCallback(window, c);
 }
 
 void glup_viewer_gui_resize(int width, int height) {
@@ -285,15 +266,15 @@ GLboolean glup_viewer_set_effect(GLenum effect) {
 	    effect_ = new GEO::UnsharpMaskingImpl();
 	    break;
     }
-    GLboolean result = (effect_.is_nil() || effect_->OK()) ? GL_TRUE : GL_FALSE;
-    if(!effect_.is_nil() && !effect_->OK()) {
+    GLboolean result = (effect_.is_null() || effect_->OK()) ? GL_TRUE : GL_FALSE;
+    if(!effect_.is_null() && !effect_->OK()) {
 	effect_.reset();
     }
     return result;
 }
 
 void glup_viewer_effect_begin_frame() {
-    if(!effect_.is_nil()) {
+    if(!effect_.is_null()) {
 	int w,h;
 	glup_viewer_get_screen_size(&w,&h);
 	effect_->pre_render(GEO::index_t(w), GEO::index_t(h));
@@ -301,7 +282,7 @@ void glup_viewer_effect_begin_frame() {
 }
     
 void glup_viewer_effect_end_frame() {
-    if(!effect_.is_nil()) {
+    if(!effect_.is_null()) {
 	effect_->post_render();
     }
 }
@@ -327,7 +308,7 @@ extern "C" {
             GEO::FileSystem::is_file(all_files[0])
         ) {
             const char* pname = all_files[0].c_str();
-            drag_drop(nil, 1, &pname);
+            drag_drop(nullptr, 1, &pname);
         }
     }
 }

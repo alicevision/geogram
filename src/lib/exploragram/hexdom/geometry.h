@@ -50,7 +50,7 @@ namespace GEO {
 	double w[6];
 	double tetvol;
 
-	CoTan3D(vec3 P[4], double* anisotropy_as_xx_yy_zz_xy_yz_xz = NULL);
+	CoTan3D(vec3 P[4], double* anisotropy_as_xx_yy_zz_xy_yz_xz = nullptr);
 
 	index_t org(index_t e);
 	index_t dest(index_t e);

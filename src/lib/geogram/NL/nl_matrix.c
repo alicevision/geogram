@@ -329,6 +329,128 @@ void nlCRSMatrixConstructSymmetric(
     M->symmetric_storage = NL_TRUE;
 }
 
+
+void nlCRSMatrixConstructPattern(
+    NLCRSMatrix* M, NLuint m, NLuint n
+) {
+    M->m = m;
+    M->n = n;
+    M->type = NL_MATRIX_CRS;
+    M->destroy_func = (NLDestroyMatrixFunc)nlCRSMatrixDestroy;
+    if(NLMultMatrixVector_MKL != NULL) {
+	M->mult_func = (NLMultMatrixVectorFunc)NLMultMatrixVector_MKL;
+    } else {
+	M->mult_func = (NLMultMatrixVectorFunc)nlCRSMatrixMult;
+    }
+    M->nslices = 0;
+    M->val = NULL;
+    M->rowptr = NL_NEW_ARRAY(NLuint, m+1);
+    M->colind = NULL;
+    M->sliceptr = NULL;
+    M->symmetric_storage = NL_FALSE;
+}
+
+void nlCRSMatrixConstructPatternSymmetric(
+    NLCRSMatrix* M, NLuint n
+) {
+    M->m = n;
+    M->n = n;
+    M->type = NL_MATRIX_CRS;
+    M->destroy_func = (NLDestroyMatrixFunc)nlCRSMatrixDestroy;
+    M->mult_func = (NLMultMatrixVectorFunc)nlCRSMatrixMult;
+    M->nslices = 0;
+    M->val = NULL;
+    M->rowptr = NL_NEW_ARRAY(NLuint, n+1);
+    M->colind = NULL;
+    M->sliceptr = NULL;
+    M->symmetric_storage = NL_TRUE;
+}
+
+void nlCRSMatrixPatternSetRowLength(
+    NLCRSMatrix* M, NLuint i, NLuint n
+) {
+    nl_assert(i < M->m);
+    nl_assert(n <= M->n);
+    /* Test that matrix is in 'pattern' state */
+    nl_assert(M->colind == NULL);
+    nl_assert(M->val == NULL);
+    /* Store row length in rowptr */
+    M->rowptr[i+1] = n;
+}
+
+void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS);
+
+void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS) {
+    NLuint slice_size = CRS->rowptr[CRS->m] / CRS->nslices;
+    NLuint slice, cur_bound, cur_NNZ, cur_row;    
+    /* Create "slices" to be used by parallel sparse matrix vector product */
+    if(CRS->sliceptr != NULL) {
+	cur_bound = slice_size;
+	cur_NNZ = 0;
+	cur_row = 0;
+	CRS->sliceptr[0]=0;
+	for(slice=1; slice<CRS->nslices; ++slice) {
+	    while(cur_NNZ < cur_bound && cur_row < CRS->m) {
+		++cur_row;
+		cur_NNZ += CRS->rowptr[cur_row+1] - CRS->rowptr[cur_row];
+	    }
+	    CRS->sliceptr[slice] = cur_row;
+	    cur_bound += slice_size;
+	}
+	CRS->sliceptr[CRS->nslices]=CRS->m;
+    }
+}
+
+void nlCRSMatrixPatternCompile(NLCRSMatrix* M) {
+    NLuint nslices = 8; /* TODO get number of cores */
+    NLuint i;
+    NLuint nnz,k;
+    /* Test that matrix is in 'pattern' state */
+    nl_assert(M->colind == NULL);
+    nl_assert(M->val == NULL);
+    for(i=0; i<M->m; ++i) {
+	M->rowptr[i+1] += M->rowptr[i];
+    }
+    nnz = M->rowptr[M->m];
+    M->val = NL_NEW_ARRAY(double, nnz);
+    M->colind = NL_NEW_ARRAY(NLuint, nnz);
+    for(k=0; k<nnz; ++k) {
+	M->colind[k] = (NLuint)(-1);
+    }
+    M->sliceptr = NL_NEW_ARRAY(NLuint, nslices+1);
+    M->nslices  = nslices;
+    nlCRSMatrixComputeSlices(M);
+}
+
+void nlCRSMatrixAdd(
+    NLCRSMatrix* M, NLuint i, NLuint j, NLdouble value
+) {
+    NLuint jj;    
+    /* Test that matrix is in 'compiled' state */
+    nl_assert(M->colind != NULL);
+    nl_assert(M->val != NULL);
+    nl_assert(i < M->m);
+    nl_assert(j < M->n);
+    if(M->symmetric_storage && j > i) {
+	return;
+    }
+    for(jj=M->rowptr[i]; jj<M->rowptr[i+1]; ++jj) {
+	if(M->colind[jj] == j) {
+	    M->val[jj] += value;
+	    return;
+	} else if(M->colind[jj] == (NLuint)(-1)) {
+	    M->colind[jj] = j;
+	    M->val[jj] += value;
+	    return;
+	}
+    }
+    /* If this line is reached, it means that too many coefficients
+     * were added to row j, i.e. a number of coefficients larger than
+     * the row length previously declared with nlCRSMatrixPatternSetRowLength()
+     */
+    nl_assert_not_reached;
+}
+
 /******************************************************************************/
 /* SparseMatrix data structure */
 
@@ -780,9 +902,7 @@ void nlSparseMatrixAddColumn( NLSparseMatrix* M) {
 NLMatrix nlCRSMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
     NLuint nnz = nlSparseMatrixNNZ(M);
     NLuint nslices = 8; /* TODO: get number of cores */
-    NLuint slice, cur_bound, cur_NNZ, cur_row;
     NLuint i,ij,k; 
-    NLuint slice_size = nnz / nslices;
     NLCRSMatrix* CRS = NL_NEW(NLCRSMatrix);
 
     nl_assert(M->storage & NL_MATRIX_STORE_ROWS);
@@ -808,23 +928,7 @@ NLMatrix nlCRSMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
         }
     }
     CRS->rowptr[M->m] = k;
-        
-    /* Create "slices" to be used by parallel sparse matrix vector product */
-    if(CRS->sliceptr != NULL) {
-	cur_bound = slice_size;
-	cur_NNZ = 0;
-	cur_row = 0;
-	CRS->sliceptr[0]=0;
-	for(slice=1; slice<nslices; ++slice) {
-	    while(cur_NNZ < cur_bound && cur_row < M->m) {
-		++cur_row;
-		cur_NNZ += CRS->rowptr[cur_row+1] - CRS->rowptr[cur_row];
-	    }
-	    CRS->sliceptr[slice] = cur_row;
-	    cur_bound += slice_size;
-	}
-	CRS->sliceptr[nslices]=M->m;
-    }
+    nlCRSMatrixComputeSlices(CRS);
     return (NLMatrix)CRS;
 }
 
@@ -878,13 +982,29 @@ NLMatrix nlCRSMatrixNewFromSparseMatrixSymmetric(NLSparseMatrix* M) {
 
 
 void nlMatrixCompress(NLMatrix* M) {
-    NLMatrix CRS = NULL;
+    NLMatrix result = NULL;
+    
+    if(
+	(*M)->type == NL_MATRIX_CRS &&
+	nlExtensionIsInitialized_MKL()
+    ) {
+	result = nlMKLMatrixNewFromCRSMatrix((NLCRSMatrix*)*M);
+	nlDeleteMatrix(*M);
+	*M = result;
+	return;
+    }
+    
     if((*M)->type != NL_MATRIX_SPARSE_DYNAMIC) {
         return;
     }
-    CRS = nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)*M);
+    
+    if(nlExtensionIsInitialized_MKL()) {
+	result = nlMKLMatrixNewFromSparseMatrix((NLSparseMatrix*)*M);
+    } else {
+	result = nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)*M);
+    }
     nlDeleteMatrix(*M);
-    *M = CRS;
+    *M = result;
 }
 
 NLuint nlMatrixNNZ(NLMatrix M) {

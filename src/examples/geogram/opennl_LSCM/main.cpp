@@ -861,9 +861,9 @@ protected:
         // Project onto shortest bbox axis,
         // and lock extrema vertices
 
-        Vertex* vxmin = NULL;
+        Vertex* vxmin = nullptr;
         double  umin = 1e30;
-        Vertex* vxmax = NULL;
+        Vertex* vxmax = nullptr;
         double  umax = -1e30;
 
         for(i=0; i<mesh_->vertex.size(); i++) {
@@ -913,7 +913,7 @@ int main(int argc, char** argv) {
 	    spectral = true;
 	} else if(!strcmp(argv[i],"spectral=false")) {
 	    spectral = false;
-	} else if(strchr(argv[i],'=') == NULL) {
+	} else if(strchr(argv[i],'=') == nullptr) {
 	    filenames.push_back(argv[i]);
 	}
     }

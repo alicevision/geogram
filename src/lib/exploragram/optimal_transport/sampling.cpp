@@ -441,7 +441,7 @@ namespace GEO {
             }
         } break;
         case DENSITY_DIST: {
-            if(density_distance_reference != nil)  {
+            if(density_distance_reference != nullptr)  {
                 MeshFacetsAABB AABB(*density_distance_reference);
                 for(index_t v=0; v<M.vertices.nb(); ++v) {
                     mass[v] =
@@ -464,8 +464,8 @@ namespace GEO {
         double mass_min = Numeric::max_float64();
         double mass_max = Numeric::min_float64();
         for(index_t v=0; v<M.vertices.nb(); ++v) {
-            mass_min = geo_min(mass_min, mass[v]);
-            mass_max = geo_max(mass_max, mass[v]);
+            mass_min = std::min(mass_min, mass[v]);
+            mass_max = std::max(mass_max, mass[v]);
         }
 
         // Normalize mass, apply power, and rescale to (mass1 - mass2)
@@ -504,7 +504,7 @@ namespace GEO {
         } else {
             compute_single_level_sampling(CVT, nb_points);
         }
-        if(levels_out != nil) {
+        if(levels_out != nullptr) {
             *levels_out = levels;
         }
         if(project_on_border) {

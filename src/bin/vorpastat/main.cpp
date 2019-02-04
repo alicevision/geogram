@@ -84,7 +84,7 @@ namespace {
             double dist = mesh_one_sided_Hausdorff_distance(
                 M1, M2, sampling_step
             );
-            sym_dist = geo_max(sym_dist, dist);
+            sym_dist = std::max(sym_dist, dist);
             double dist_percent = dist / bbox_diag * 100.0;
             Logger::out("Hausdorff") << "Hausdorff distance M1->M2: "
                 << dist
@@ -99,7 +99,7 @@ namespace {
             double dist = mesh_one_sided_Hausdorff_distance(
                 M2, M1, sampling_step
             );
-            sym_dist = geo_max(sym_dist, dist);
+            sym_dist = std::max(sym_dist, dist);
             double dist_percent = dist / bbox_diag * 100.0;
             Logger::out("Hausdorff") << "Hausdorff distance M2->M1: "
                 << dist

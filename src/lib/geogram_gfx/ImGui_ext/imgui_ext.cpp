@@ -46,6 +46,7 @@
 #include <geogram_gfx/ImGui_ext/imgui_ext.h>
 #include <geogram_gfx/ImGui_ext/file_dialog.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
+#include <geogram_gfx/third_party/ImGui/imgui_internal.h>
 #include <geogram/basic/logger.h>
 #include <map>
 
@@ -55,12 +56,8 @@ namespace {
     std::map<std::string, GEO::FileDialog*> file_dialogs;
     
     void terminate() {
-	for(
-	    std::map<std::string, GEO::FileDialog*>::iterator it =
-		file_dialogs.begin(); it != file_dialogs.end();
-	    ++it
-	) {
-	    delete it->second;
+	for(auto& it : file_dialogs) {
+	    delete it.second;
 	}
     }
     
@@ -212,7 +209,14 @@ namespace {
 namespace ImGui {
 
     float scaling() {
-	return ImGui::GetIO().FontGlobalScale;
+	ImGuiContext& g = *GImGui;
+	float s = 1.0;
+	if(g.Font->FontSize > 40.0f) {
+	    s = g.Font->FontSize / 30.0f;
+	} else {
+	    s = g.Font->FontSize / 20.0f;	    
+	}
+	return s * ImGui::GetIO().FontGlobalScale;
     }
 
     void set_scaling(float x) {
@@ -238,7 +242,7 @@ namespace ImGui {
 	ImGuiExtFileDialogFlags flags
     ) {
 	initialize();	
-	GEO::FileDialog* dlg = nil;
+	GEO::FileDialog* dlg = nullptr;
 	if(file_dialogs.find(label) == file_dialogs.end()) {
 	    file_dialogs[label] = new GEO::FileDialog();
 	}
@@ -262,6 +266,7 @@ namespace ImGui {
 	}
 	GEO::FileDialog* dlg = file_dialogs[label];
 	dlg->draw();
+	
 	std::string result = dlg->get_and_reset_selected_file();
 	if(result != "") {
 	    if(result.length() + 1 >= filename_buff_len) {

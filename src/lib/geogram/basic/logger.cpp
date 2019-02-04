@@ -86,7 +86,7 @@ namespace GEO {
     }
 
     void LoggerStream::notify(const std::string& str) {
-        logger_->notify(this, str);
+	logger_->notify(this, str);
     }
 
     /************************************************************************/
@@ -125,25 +125,25 @@ namespace GEO {
     /************************************************************************/
 
     FileLogger::FileLogger() :
-        log_file_(nil) {
+        log_file_(nullptr) {
     }
 
     FileLogger::FileLogger(const std::string& file_name) :
-        log_file_(nil)
+        log_file_(nullptr)
     {
         set_file_name(file_name);
     }
 
     FileLogger::~FileLogger() {
         delete log_file_;
-        log_file_ = nil;
+        log_file_ = nullptr;
     }
 
     void FileLogger::set_file_name(const std::string& file_name) {
         log_file_name_ = file_name;
-        if(log_file_ != nil) {
+        if(log_file_ != nullptr) {
             delete log_file_;
-            log_file_ = nil;
+            log_file_ = nullptr;
         }
         if(log_file_name_.length() != 0) {
             log_file_ = new std::ofstream(log_file_name_.c_str());
@@ -151,7 +151,7 @@ namespace GEO {
     }
 
     void FileLogger::div(const std::string& title) {
-        if(log_file_ != nil) {
+        if(log_file_ != nullptr) {
             *log_file_
                 << "\n====[" << title << "]====\n"
                 << std::flush;
@@ -159,19 +159,19 @@ namespace GEO {
     }
 
     void FileLogger::out(const std::string& str) {
-        if(log_file_ != nil) {
+        if(log_file_ != nullptr) {
             *log_file_ << str << std::flush;
         }
     }
 
     void FileLogger::warn(const std::string& str) {
-        if(log_file_ != nil) {
+        if(log_file_ != nullptr) {
             *log_file_ << str << std::flush;
         }
     }
 
     void FileLogger::err(const std::string& str) {
-        if(log_file_ != nil) {
+        if(log_file_ != nullptr) {
             *log_file_ << str << std::flush;
         }
     }
@@ -194,7 +194,7 @@ namespace GEO {
     }
 
     bool Logger::is_initialized() {
-        return (instance_ != nil);
+        return (instance_ != nullptr);
     }
     
     bool Logger::set_local_value(
@@ -283,14 +283,11 @@ namespace GEO {
                 value = "*";
             } else {
                 value = "";
-                for(
-                    FeatureSet::const_iterator it = log_features_.begin();
-                    it != log_features_.end(); ++it
-                ) {
+                for(auto& it : log_features_) {
                     if(value.length() != 0) {
                         value += ';';
                     }
-                    value += *it;
+                    value += it;
                 }
             }
             return true;
@@ -298,14 +295,11 @@ namespace GEO {
 
         if(name == "log:features_exclude") {
             value = "";
-            for(
-                FeatureSet::const_iterator it = log_features_exclude_.begin();
-                it != log_features_exclude_.end(); ++it
-            ) {
+            for(auto& it : log_features_exclude_) {
                 if(value.length() != 0) {
                     value += ';';
                 }
-                value += *it;
+                value += it;
             }
             return true;
         }
@@ -342,6 +336,7 @@ namespace GEO {
         pretty_ = flag;
     }
 
+
     Logger::Logger() :
         out_(this),
         warn_(this),
@@ -351,7 +346,8 @@ namespace GEO {
         current_feature_changed_(false),
         quiet_(true),
         pretty_(true),
-        minimal_(false)
+        minimal_(false),
+	notifying_error_(false)
     {
         // Add a default client printing stuff to std::cout
         register_client(new ConsoleLogger());
@@ -364,10 +360,11 @@ namespace GEO {
     }
 
     Logger* Logger::instance() {
-        // Do not use geo_assert here: if the instance is nil, geo_assert will
+        // Do not use geo_assert here:
+	//  if the instance is nullptr, geo_assert will
         // call the Logger to print the assertion failure, thus ending in a
         // infinite loop.
-        if(instance_ == nil) {
+        if(instance_ == nullptr) {
             std::cerr
                 << "CRITICAL: Accessing uninitialized Logger instance"
                 << std::endl;
@@ -377,43 +374,51 @@ namespace GEO {
     }
 
     std::ostream& Logger::div(const std::string& title) {
-        return is_initialized() ?
+	std::ostream& result = 
+   	    (is_initialized() && !Process::is_running_threads()) ?
             instance()->div_stream(title) :
             (std::cerr << "=====" << title << std::endl);
+	return result;
     }
 
     std::ostream& Logger::out(const std::string& feature) {
-        return is_initialized() ?
+	std::ostream& result =
+	    (is_initialized() && !Process::is_running_threads()) ?
             instance()->out_stream(feature) :
             (std::cerr << "    [" << feature << "] ");
+	return result;
     }
 
     std::ostream& Logger::err(const std::string& feature) {
-        return is_initialized() ?
+	std::ostream& result = 
+	    (is_initialized() && !Process::is_running_threads()) ?	    
             instance()->err_stream(feature) :
             (std::cerr << "(E)-[" << feature << "] ");
+	return result;
     }
 
     std::ostream& Logger::warn(const std::string& feature) {
-        return is_initialized() ?
+	std::ostream& result = 
+	    (is_initialized() && !Process::is_running_threads()) ?	    	    
             instance()->warn_stream(feature) :
             (std::cerr << "(W)-[" << feature << "] ");
+	return result;
     }
 
     std::ostream& Logger::status() {
-        return is_initialized() ?
+	std::ostream& result =	
+	    (is_initialized() && !Process::is_running_threads()) ?	    	    	
             instance()->status_stream() :
             (std::cerr << "[status] ");
+	return result;
     }
 
     std::ostream& Logger::div_stream(const std::string& title) {
         if(!quiet_) {
             current_feature_changed_ = true;
             current_feature_.clear();
-
-            LoggerClients::iterator it;
-            for(it = clients_.begin(); it != clients_.end(); ++it) {
-                (*it)->div(title);
+            for(auto it : clients_) {
+                it->div(title);
             }
         }
         return out_;
@@ -458,9 +463,8 @@ namespace GEO {
                 CmdLine::ui_feature(current_feature_, current_feature_changed_)
                 + message;
 
-            LoggerClients::iterator it;
-            for(it = clients_.begin(); it != clients_.end(); ++it) {
-                (*it)->out(feat_msg);
+	    for(auto it : clients_) {
+                it->out(feat_msg);
             }
 
             current_feature_changed_ = false;
@@ -473,10 +477,9 @@ namespace GEO {
             CmdLine::ui_feature(current_feature_, current_feature_changed_)
             + msg;
 
-        LoggerClients::iterator it;
-        for(it = clients_.begin(); it != clients_.end(); ++it) {
-            (*it)->warn(feat_msg);
-            (*it)->status(msg);
+        for(auto it : clients_) {
+            it->warn(feat_msg);
+            it->status(msg);
         }
 
         current_feature_changed_ = false;
@@ -488,19 +491,24 @@ namespace GEO {
             CmdLine::ui_feature(current_feature_, current_feature_changed_)
             + msg;
 
-        LoggerClients::iterator it;
-        for(it = clients_.begin(); it != clients_.end(); ++it) {
-            (*it)->err(feat_msg);
-            (*it)->status(msg);
-        }
+	if(notifying_error_) {
+	    std::cerr << "Error while displaying error (!):"
+		      << feat_msg << std::endl;
+	} else {
+	    notifying_error_ = true;
+	    for(auto it : clients_) {
+		it->err(feat_msg);
+		it->status(msg);
+	    }
+	    notifying_error_ = false;
+	}
 
         current_feature_changed_ = false;
     }
 
     void Logger::notify_status(const std::string& message) {
-        LoggerClients::iterator it;
-        for(it = clients_.begin(); it != clients_.end(); ++it) {
-            (*it)->status(message);
+        for(auto it : clients_) {
+            it->status(message);
         }
 
         current_feature_changed_ = false;
@@ -539,7 +547,7 @@ extern "C" {
 
         // Get the number of characters to be printed.        
         va_start(args, format);
-        int nb = vsnprintf(nil, 0, format, args)+1; // +1, I don't know why...
+        int nb = vsnprintf(nullptr, 0, format, args)+1; // +1, I don't know why...
         va_end(args);
 
         // Generate the output string
@@ -596,7 +604,7 @@ extern "C" {
 
         // Get the number of characters to be printed.        
         va_start(args, format);
-        int nb = vsnprintf(nil, 0, format, args)+1; // +1, I don't know why...
+        int nb = vsnprintf(nullptr, 0, format, args)+1; // +1, I don't know why...
         va_end(args);
 
         // Generate the output string

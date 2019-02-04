@@ -35,12 +35,12 @@ void yywarning( const std::string& s );
 
 
 AST::Expression*
-makeFunctionCall( const std::string &id, AST::ExpressionList *l = NULL );
+makeFunctionCall( const std::string &id, AST::ExpressionList *l = nullptr );
 
-static Type *base_type = NULL;
+static Type *base_type = nullptr;
 
-static Type            *init_type   = NULL;
-static AST::Expression *init_target = NULL;
+static Type            *init_type   = nullptr;
+static AST::Expression *init_target = nullptr;
 static EnumType* current_enum;
 static bool is_inline = false;
 static bool is_extern = false;
@@ -139,7 +139,7 @@ identifier_expression
       :  IDENTIFIER
         {
           Variable *var = symbol_env.findVariable( $1 );
-          if( var == NULL )
+          if( var == nullptr )
               yyerror( "variable " + std::string($1) + " not declared" );
 
           $$ = new AST::IdentifierExpression( var );
@@ -349,13 +349,13 @@ compound_statement
 
 conditional_statement
       : IF '(' expression ')' statement
-        { $$ = new AST::ConditionalStatement($3,$5,NULL); }
+        { $$ = new AST::ConditionalStatement($3,$5,nullptr); }
       | IF '(' expression ')' statement ELSE statement
         { $$ = new AST::ConditionalStatement($3,$5,$7); }
       ;
 
 jump_statement
-      : RETURN ';'            { $$ = new AST::Return(NULL); }
+      : RETURN ';'            { $$ = new AST::Return(nullptr); }
       | RETURN expression ';' { $$ = new AST::Return($2);   }
       ;
 
@@ -366,7 +366,7 @@ declaration
         {
             Type *t = $2;
             AliasType *at = dynamic_cast<AliasType*>(t);
-            if( at != NULL )
+            if( at != nullptr )
                 t = at->base_type;
             symbol_env.add( new AliasType( $3, t ) );
             //$$ = new AST::PlainText( std::string("typedef ") + $2->name() + " " + $3 + ";" );
@@ -412,8 +412,8 @@ initializer
         {
             AST::AssignmentExpression *e = new AST::AssignmentExpression(init_target,$1);
             $$ = new AST::ExpressionStatement(e);
-            init_type = NULL;
-            init_target = NULL;
+            init_type = nullptr;
+            init_target = nullptr;
         }
       ;
 
@@ -464,8 +464,8 @@ declarator
             std::string id;
             Type *type = $1->declare( base_type, id );
             FunctionType* fun_type = dynamic_cast<FunctionType*>(type);
-            if( fun_type != NULL ) {
-                if( symbol_env.findFunction( type->id, (unsigned int)(fun_type->parameters.size()) ) != NULL )
+            if( fun_type != nullptr ) {
+                if( symbol_env.findFunction( type->id, (unsigned int)(fun_type->parameters.size()) ) != nullptr )
                     yyerror( std::string( "function " ) + type->id + std::string( " already declared" ) );
                 else {
                     if( is_extern && is_float(fun_type->return_type) && !is_exact )
@@ -554,7 +554,7 @@ group_definition2
     ;
 
 group_definition
-    :                   { $$ = NULL; }
+    :                   { $$ = nullptr; }
     | group_definition2 { $$ = $1;   }
     ;
 
@@ -586,7 +586,7 @@ function_definition
 
                 symbol_env.add( var );
             }
-            if( $3 != NULL ) {
+            if( $3 != nullptr ) {
                 unsigned int group_index = 1;
                 std::list< Group_rep* >::iterator it;
                 for( it  = $3->begin(); it != $3->end(); ++it, ++group_index )
@@ -599,7 +599,7 @@ function_definition
                     {
                         //std::cout << *it2 << " ";
                         Variable *var = symbol_env.findVariable( *it2 );
-                        if( var == NULL )
+                        if( var == nullptr )
                             yyerror( std::string("undefined variable ") + *it2 );
                         var->group_index = group_index;
                         var->degree      = degree;
@@ -658,10 +658,10 @@ void yywarning( const std::string& s ) {
 inline
 AST::Expression*
 makeFunctionCall( const std::string &id, AST::ExpressionList *l ) {
-    if( l == NULL )
+    if( l == nullptr )
         l = new AST::ExpressionList();
     FunctionType *fun_type = symbol_env.findFunction( id, (unsigned int)(l->size()) );
-    if( fun_type == NULL ) {
+    if( fun_type == nullptr ) {
         yyerror( std::string("function ") + id + " not declared!" );
     }
     return new AST::FunctionCall( fun_type, l );

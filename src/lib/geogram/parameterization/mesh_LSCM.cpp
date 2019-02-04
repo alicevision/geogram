@@ -74,7 +74,7 @@ namespace {
 	 *   store the texture coordinates.
 	 */
 	LSCM(Mesh& M, Attribute<double>& tex_coord, Attribute<double>& angle) :
-	    mesh_(M), tex_coord_(tex_coord), angle_(angle) {
+	    mesh_(M), tex_coord_(tex_coord), angle_(angle), eigen_(0) {
 	    geo_assert(tex_coord.dimension() == 2);
 	    locked_1_ = index_t(-1);
 	    locked_2_ = index_t(-1);
@@ -147,13 +147,19 @@ namespace {
 		    spectral_ = false;
 		}
 	    } else {
-		if(false && nlInitExtension("CHOLMOD")) {
+		/*
+		  // Direct solver, commented-out for now, 
+		  // causes problems with some configurations.
+		if(nlInitExtension("CHOLMOD")) {
 		    if(verbose_) {
 			Logger::out("LSCM") << "using CHOLMOD"
 					    << std::endl;
 		    }
 		    nlSolverParameteri(NL_SOLVER, NL_CHOLMOD_EXT);
-		} else {
+		} else 
+		*/
+
+		{
 		    if(verbose_) {
 			Logger::out("LSCM") << "using JacobiCG"
 					    << std::endl;

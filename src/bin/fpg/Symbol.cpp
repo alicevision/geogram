@@ -80,7 +80,7 @@ FunctionType::FunctionType( const FunctionType& other )
 void
 FunctionType::addParameter( Variable *var )
 {
-    assert( var != NULL );
+    assert( var != nullptr );
     parameters.push_back( var );
 }
 
@@ -137,7 +137,7 @@ BaseType::isEqual( Type *target_type ) const {
 bool
 PointerType::isConvertible( Type *target_type ) const {
     PointerType *pt = dynamic_cast< PointerType* >( target_type );
-    if( pt != NULL )
+    if( pt != nullptr )
         return base_type->isConvertible( pt->base_type );
     else
         return false;
@@ -146,7 +146,7 @@ PointerType::isConvertible( Type *target_type ) const {
 bool
 PointerType::isEqual( Type *target_type ) const {
     PointerType *pt = dynamic_cast< PointerType* >( target_type );
-    if( pt != NULL )
+    if( pt != nullptr )
         return base_type->isEqual( pt->base_type );
     else
         return false;

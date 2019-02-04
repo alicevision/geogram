@@ -1,45 +1,52 @@
-/* ImGui GLFW binding with OpenGL
- * In this binding, ImTextureID is used to store an OpenGL 'GLuint' texture identifier. Read the FAQ about ImTextureID in imgui.cpp.
+/*
+ * ImGui Platform Binding for: GLFW
+ * This needs to be used along with a Renderer (e.g. OpenGL3, Vulkan..)
+ * (Info: GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan graphics context creation, etc.)
  *
- * If your context is GL3/GL3 then prefer using the code in opengl3_example.
- * You *might* use this code with a GL3/GL4 context but make sure you disable the programmable pipeline by calling "glUseProgram(0)" before ImGui::Render().
- * We cannot do that from GL2 code because the function doesn't exist. 
+ * Implemented features:
+ *  [X] Platform: Clipboard support.
+ *  [X] Platform: Gamepad navigation mapping. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
+ *  [x] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange'. FIXME: 3 cursors types are missing from GLFW.
  *
  * You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
  * If you use this binding you'll need to call 4 functions: ImGui_ImplXXXX_Init(), ImGui_ImplXXXX_NewFrame(), ImGui::Render() and ImGui_ImplXXXX_Shutdown().
  * If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
  * https://github.com/ocornut/imgui
+ *
+ * About GLSL version:
+ * The 'glsl_version' initialization parameter defaults to "#version 150" if NULL.
+ * Only override if your GL version doesn't handle this GLSL version. Keep NULL if unsure!
  */
 
-/* [Bruno Levy] Modified 05/16/2016 - updated 11/26/2017: geogram GL API, C API and C comments. */
+/* [Bruno] C-style comment */
 
-#include <geogram_gfx/basic/GL.h>
-#ifdef GEO_GL_LEGACY
+#ifndef __ANDROID__ /* [Bruno] */
 
+/* [Bruno] */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct GLFWwindow;
 
-IMGUI_API bool        ImGui_ImplGlfwGL2_Init(GLFWwindow* window, bool install_callbacks);
-IMGUI_API void        ImGui_ImplGlfwGL2_Shutdown();
-IMGUI_API void        ImGui_ImplGlfwGL2_NewFrame();
+IMGUI_IMPL_API bool     ImGui_ImplGlfw_InitForOpenGL(GLFWwindow* window, bool install_callbacks);
+IMGUI_IMPL_API bool     ImGui_ImplGlfw_InitForVulkan(GLFWwindow* window, bool install_callbacks);
+IMGUI_IMPL_API void     ImGui_ImplGlfw_Shutdown();
+IMGUI_IMPL_API void     ImGui_ImplGlfw_NewFrame();
 
-// Use if you want to reset your rendering device without losing ImGui state.
-IMGUI_API void        ImGui_ImplGlfwGL2_InvalidateDeviceObjects();
-IMGUI_API bool        ImGui_ImplGlfwGL2_CreateDeviceObjects();
+/*
+ * GLFW callbacks (installed by default if you enable 'install_callbacks' during initialization)
+ * Provided here if you want to chain callbacks.
+ * You can also handle inputs yourself and use those as a reference.
+ */
+IMGUI_IMPL_API void     ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+IMGUI_IMPL_API void     ImGui_ImplGlfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+IMGUI_IMPL_API void     ImGui_ImplGlfw_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+IMGUI_IMPL_API void     ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c);
 
-// GLFW callbacks (registered by default to GLFW if you enable 'install_callbacks' during initialization)
-// Provided here if you want to chain callbacks yourself. You may also handle inputs yourself and use those as a reference.
-IMGUI_API void        ImGui_ImplGlfwGL2_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-IMGUI_API void        ImGui_ImplGlfwGL2_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-IMGUI_API void        ImGui_ImplGlfwGL2_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-IMGUI_API void        ImGui_ImplGlfwGL2_CharCallback(GLFWwindow* window, unsigned int c);
-
+/* [Bruno] */    
 #ifdef __cplusplus
 }
 #endif
-
-#endif
-
+    
+#endif /* __ANDROID__ [Bruno] */

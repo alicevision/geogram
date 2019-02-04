@@ -159,11 +159,11 @@ namespace {
 	/**
 	 * \copydoc RVDPolyhedronCallback::operator()
 	 */
-	virtual void operator() (
+	void operator() (
 	    index_t v,
 	    index_t t,
 	    const GEOGen::ConvexCell& C
-	) const {
+	) const override {
 	    // v can be an air particle.
 	    if(v >= n_) {
 		return;
@@ -174,7 +174,7 @@ namespace {
 	    double m, mgx, mgy, mgz;
 	    compute_m_and_mg(C, m, mgx, mgy, mgz);
 
-	    if(spinlocks_ != nil) {
+	    if(spinlocks_ != nullptr) {
 		spinlocks_->acquire_spinlock(v);
 	    }
 
@@ -187,13 +187,13 @@ namespace {
 		OTM_->add_i_right_hand_side(v,-m);
 	    }
 	    
-	    if(mg_ != nil) {
+	    if(mg_ != nullptr) {
 		mg_[3*v] += mgx;  
 		mg_[3*v+1] += mgy;
 		mg_[3*v+2] += mgz;
 	    }
 	    
-	    if(spinlocks_ != nil) {
+	    if(spinlocks_ != nullptr) {
 		spinlocks_->release_spinlock(v);
 	    }
 
@@ -204,7 +204,7 @@ namespace {
 
 	    if(eval_F_) {
 		Thread* thread = Thread::current();
-		index_t current_thread_id = (thread == nil) ? 0 : thread->id();
+		index_t current_thread_id = (thread == nullptr) ? 0 : thread->id();
 		double F = weighted_ ? eval_F_weighted(C, v) : eval_F(C, v);
 		const_cast<OTMPolyhedronCallback*>(this)->
 		    funcval_[current_thread_id] += F;
@@ -220,7 +220,7 @@ namespace {
 	 * \param[in] C a const reference to the current ConvexCell
 	 * \param[out] m , mgx , mgy , mgz the mass and the mass times the
 	 *  centroid of the ConvexCell. mgx, mgy and mgz are not computed
-	 *  if mg_ is nil.
+	 *  if mg_ is nullptr.
 	 */
 	void compute_m_and_mg(
 	    const GEOGen::ConvexCell& C, 
@@ -235,14 +235,14 @@ namespace {
 
 	    // Find one vertex V0 of the Convex Cell. It will be then decomposed
 	    // into tetrahedra radiating from V0.
-	    const GEOGen::Vertex* V0 = nil;
+	    const GEOGen::Vertex* V0 = nullptr;
 	    for(index_t ct=0; ct < C.max_t(); ++ct) {
 		if(C.triangle_is_used(ct)) {
 		    V0 = &C.triangle_dual(ct);
 		    break;
 		}
 	    }
-	    if(V0 == nil) {
+	    if(V0 == nullptr) {
 		return;
 	    }
 	    
@@ -268,15 +268,15 @@ namespace {
 		    index_t(ct), C.find_triangle_vertex(index_t(ct), cv)
 		);
 		const GEOGen::Vertex* V1 = &C.triangle_dual(first.t);
-		const GEOGen::Vertex* V2 = nil;
-		const GEOGen::Vertex* V3 = nil;
+		const GEOGen::Vertex* V2 = nullptr;
+		const GEOGen::Vertex* V3 = nullptr;
 		const double* p0 = V0->point();		
 		GEOGen::ConvexCell::Corner c = first;
 		do {
 		    V2 = V3;
 		    V3 = &C.triangle_dual(c.t);
 		    if(
-			V2 != nil && V3 != V1 &&
+			V2 != nullptr && V3 != V1 &&
 			V1 != V0 && V2 != V0 && V3 != V0
 		    ) {
 			const double* p1 = V1->point();
@@ -289,7 +289,7 @@ namespace {
 			    double w2 = V2->weight();
 			    double w3 = V3->weight();
 			    double S =  w0+w1+w2+w3;
-			    if(mg_ != nil) {
+			    if(mg_ != nullptr) {
 				mgx += 0.25*cur_m*(
 				    w0*p0[0]+w1*p1[0]+w2*p2[0]+w3*p3[0]
 				);
@@ -302,7 +302,7 @@ namespace {
 			    }
 			    cur_m *= (S/4.0);
 			} else {
-			    if(mg_ != nil) {
+			    if(mg_ != nullptr) {
 				mgx += 0.25*cur_m*(p0[0]+p1[0]+p2[0]+p3[0]);
 				mgy += 0.25*cur_m*(p0[1]+p1[1]+p2[1]+p3[1]);
 				mgz += 0.25*cur_m*(p0[2]+p1[2]+p2[2]+p3[2]);
@@ -365,13 +365,13 @@ namespace {
 		    index_t(ct), C.find_triangle_vertex(index_t(ct), cv)
 		);
 		const GEOGen::Vertex* V1 = &C.triangle_dual(first.t);
-		const GEOGen::Vertex* V2 = nil;
-		const GEOGen::Vertex* V3 = nil;		
+		const GEOGen::Vertex* V2 = nullptr;
+		const GEOGen::Vertex* V3 = nullptr;		
 		GEOGen::ConvexCell::Corner c = first;
 		do {
 		    V2 = V3;
 		    V3 = &C.triangle_dual(c.t);
-		    if(V2 != nil && V3 != V1) {
+		    if(V2 != nullptr && V3 != V1) {
 			double cur_m = GEO::Geom::triangle_area_3d(
 			    V1->point(),V2->point(),V3->point()
 			);
@@ -388,7 +388,7 @@ namespace {
 		const double* p1 = OTM_->point_ptr(v_adj);		
 		hij /= (2.0 * GEO::Geom::distance(p0,p1,3));		
 
-		if(spinlocks_ != nil) {
+		if(spinlocks_ != nullptr) {
 		    spinlocks_->acquire_spinlock(v);
 		}
 		
@@ -405,7 +405,7 @@ namespace {
 		    v, v, hij
                 );
 
-		if(spinlocks_ != nil) {
+		if(spinlocks_ != nullptr) {
 		    spinlocks_->release_spinlock(v);
 		}
 	    }
@@ -453,13 +453,13 @@ namespace {
 		    index_t(ct), C.find_triangle_vertex(index_t(ct), cv)
 		);
 		const GEOGen::Vertex* V1 = &C.triangle_dual(first.t);
-		const GEOGen::Vertex* V2 = nil;
-		const GEOGen::Vertex* V3 = nil;		
+		const GEOGen::Vertex* V2 = nullptr;
+		const GEOGen::Vertex* V3 = nullptr;		
 		GEOGen::ConvexCell::Corner c = first;
 		do {
 		    V2 = V3;
 		    V3 = &C.triangle_dual(c.t);
-		    if(V2 != nil && V3 != V1) {
+		    if(V2 != nullptr && V3 != V1) {
 			const double* p0 = OTM_->point_ptr(v);
 			const double* p1 = V1->point();
 			const double* p2 = V2->point();
@@ -501,14 +501,14 @@ namespace {
 	    
 	    // Find one vertex V0 of the Convex Cell. It will be then decomposed
 	    // into tetrahedra radiating from V0.
-	    const GEOGen::Vertex* V0 = nil;
+	    const GEOGen::Vertex* V0 = nullptr;
 	    for(index_t ct=0; ct < C.max_t(); ++ct) {
 		if(C.triangle_is_used(ct)) {
 		    V0 = &C.triangle_dual(ct);
 		    break;
 		}
 	    }
-	    if(V0 == nil) {
+	    if(V0 == nullptr) {
 		return F;
 	    }
 	    
@@ -533,14 +533,14 @@ namespace {
 		    index_t(ct), C.find_triangle_vertex(index_t(ct), cv)
 		);
 		const GEOGen::Vertex* V1 = &C.triangle_dual(first.t);
-		const GEOGen::Vertex* V2 = nil;
-		const GEOGen::Vertex* V3 = nil;
+		const GEOGen::Vertex* V2 = nullptr;
+		const GEOGen::Vertex* V3 = nullptr;
 		GEOGen::ConvexCell::Corner c = first;
 		do {
 		    V2 = V3;
 		    V3 = &C.triangle_dual(c.t);
 		    if(
-			V2 != nil && V3 != V1 &&
+			V2 != nullptr && V3 != V1 &&
 			V1 != V0 && V2 != V0 && V3 != V0
 		    ) {
 
@@ -640,7 +640,7 @@ namespace {
         }
         index_t nb_RVD_cells = 0;
         for(index_t c=0; c<mesh.cells.nb(); ++c) {
-            nb_RVD_cells = geo_max(nb_RVD_cells, cell_region[c]);
+            nb_RVD_cells = std::max(nb_RVD_cells, cell_region[c]);
         }
         ++nb_RVD_cells;
         vector<vec3> center(nb_RVD_cells, vec3(0.0, 0.0, 0.0));
@@ -676,8 +676,30 @@ namespace {
     }
 
 /**********************************************************************/
-    
+
+   /**
+    * \brief Gets the Delaunay implementation that best fits 
+    *  user desire.
+    * \param[in] user_delaunay the desired implementation.
+    * \return the available implementation nearest to user desire.
+    */
+   std::string default_delaunay(const std::string& user_delaunay)  {
+      std::string result = "PDEL";
+      if(user_delaunay != "default") {
+	 result = user_delaunay;
+      }
+#ifndef GEOGRAM_WITH_PDEL
+      if(result == "PDEL") {
+	 result = "BPOW";
+      }
+#endif
+      return result;
+   }
+   
+   
 }
+
+
 
 
 namespace GEO {
@@ -687,7 +709,7 @@ namespace GEO {
     ) : OptimalTransportMap(
 	3,
 	mesh,
-	(delaunay == "default") ? "PDEL" : delaunay,
+        default_delaunay(delaunay),			    
 	BRIO
     ) {
 	callback_ = new OTMPolyhedronCallback(this);
@@ -753,7 +775,7 @@ namespace GEO {
 	callback_->set_Laguerre_centroids(centroids);
 	callback_->set_g(g.data());
 	{
-	    Stopwatch* W = nil;
+	    Stopwatch* W = nullptr;
 	    if(newton_) {
 		W = new Stopwatch("RVD");
 		Logger::out("OTM") << "In RVD (centroids)..." << std::endl;
@@ -766,7 +788,7 @@ namespace GEO {
 		delete W;
 	    }
 	}
-	callback_->set_Laguerre_centroids(nil);	    
+	callback_->set_Laguerre_centroids(nullptr);	    
 	
         for(index_t v=0; v<nb_points(); ++v) {
             centroids[3*v  ] /= g[v];
@@ -794,9 +816,9 @@ namespace GEO {
         index_t nb_points,
         const double* points,
         double* centroids,
-	bool parallel_pow,
 	RVDPolyhedronCallback* cb,
-	bool verbose
+	bool verbose,
+	index_t nb_iter
     ) {
         omega->vertices.set_dimension(4);
 
@@ -805,7 +827,7 @@ namespace GEO {
         //  reorder the vertices)
         OptimalTransportMap3d OTM(
 	    omega,
-	    std::string(parallel_pow ? "PDEL" : "BPOW"),
+	    "PDEL",
 	    false
 	);
 
@@ -815,9 +837,9 @@ namespace GEO {
         OTM.set_epsilon(0.01);
 	OTM.set_Laguerre_centroids(centroids);
 	OTM.set_verbose(verbose);
-        OTM.optimize(1000);
+        OTM.optimize(nb_iter);
 
-	if(cb != nil) {
+	if(cb != nullptr) {
 	    OTM.RVD()->for_each_polyhedron(*cb,false,false,false);
 	}
 	

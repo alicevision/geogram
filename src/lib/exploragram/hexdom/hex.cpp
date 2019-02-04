@@ -223,7 +223,7 @@ namespace GEO {
 
 		// remove hex that are incompatible with quadtri
 		int sum_nb_hex_incompatible_with_quadtri = 0;
-		if (quadtri != NULL) {
+		if (quadtri != nullptr) {
 
 			int nb_hex_incompatible_with_quadtri = 0;
 

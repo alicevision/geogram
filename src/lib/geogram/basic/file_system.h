@@ -319,11 +319,17 @@ namespace GEO {
 
         /**
          * \brief Gets the current user's home directory.
+         * \return The path to the current user's home directory as a string.
+         */
+        std::string GEOGRAM_API home_directory();
+
+        /**
+         * \brief Gets the current user's home directory.
          * \details Under unix, it returns the content of the HOME environment
          *  variable. Under Windows, it returns the "My Documents" directory.
          * \return The path to the current user's home directory as a string.
          */
-        std::string GEOGRAM_API home_directory();
+        std::string GEOGRAM_API documents_directory();
     }
 }
 

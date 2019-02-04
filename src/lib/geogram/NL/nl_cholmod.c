@@ -285,6 +285,7 @@ static void nlTerminateExtension_CHOLMOD(void) {
         CHOLMOD()->cholmod_finish(&CHOLMOD()->cholmod_common);
         nlCloseDLL(CHOLMOD()->DLL_handle);
         CHOLMOD()->DLL_handle = NULL;
+	memset(CHOLMOD(), 0, sizeof(CHOLMODContext));
     }
 }
 
@@ -376,7 +377,9 @@ typedef struct {
 } NLCholmodFactorizedMatrix;
 
 static void nlCholmodFactorizedMatrixDestroy(NLCholmodFactorizedMatrix* M) {
-    CHOLMOD()->cholmod_free_factor(&M->L, &CHOLMOD()->cholmod_common);
+    if(nlExtensionIsInitialized_CHOLMOD()) {
+	CHOLMOD()->cholmod_free_factor(&M->L, &CHOLMOD()->cholmod_common);
+    }
 }
 
 static void nlCholmodFactorizedMatrixMult(

@@ -204,6 +204,7 @@ namespace GEO {
 		}
 
 		void HexDominant(Mesh* cavity, Mesh* hexahedrons, Mesh* result, bool with_pyramid,bool baudoin_carrier, bool vertex_puncher) {
+		    geo_argused(vertex_puncher);
 
 			{
 			    #ifndef HAS_TET2HEX

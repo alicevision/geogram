@@ -129,10 +129,10 @@ namespace GEO {
      * \param[out] moebius_facets a pointer to a vector. On exit,
      *  *moebius_facets[f] has a non-zero value if facet f is
      *  incident to an edge that could not be consistently oriented.
-     *  If nil, then this information is not returned.
+     *  If nullptr, then this information is not returned.
      */
     void GEOGRAM_API mesh_reorient(
-        Mesh& M, vector<index_t>* moebius_facets=nil
+        Mesh& M, vector<index_t>* moebius_facets=nullptr
     );
 
     /**

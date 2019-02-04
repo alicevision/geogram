@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -78,6 +78,15 @@ namespace GEO {
          */
         MeshFacetsAABB(Mesh& M, bool reorder = true);
 
+
+	/**
+	 * \brief Gets the mesh.
+	 * \return a const reference to the mesh.
+	 */
+	const Mesh& mesh() const {
+	    return mesh_;
+	}
+
         /**
          * \brief Computes all the pairs of intersecting facets.
          * \param[in] action ACTION::operator(index_t,index_t) is
@@ -109,7 +118,7 @@ namespace GEO {
          *  box that intersects \p box_in.
          * \tparam ACTION user action class, that needs to define
          * operator(index_t), where the parameter is the index
-         * of the triangle that has its bounding box intersecting 
+         * of the triangle that has its bounding box intersecting
          * \p box_in.
          */
         template< class ACTION >
@@ -121,7 +130,7 @@ namespace GEO {
                 action, box_in, 1, 0, mesh_.facets.nb()
             );
         }
-        
+
         /**
          * \brief Finds the nearest facet from an arbitrary 3d query point.
          * \param[in] p query point
@@ -168,7 +177,7 @@ namespace GEO {
             if(nearest_facet == NO_FACET) {
                 get_nearest_facet_hint(
                     p, nearest_facet, nearest_point, sq_dist
-                );                
+                );
             }
             nearest_facet_recursive(
                 p,
@@ -189,6 +198,33 @@ namespace GEO {
             nearest_facet(p, nearest_point, result);
             return result;
         }
+
+	/**
+	 * \brief Tests whether this surface mesh has an intersection
+	 *  with a segment.
+	 * \param[in] q1 , q2 the two extremities of the segment.
+	 * \retval true if there exists an intersection between [q1 , q2]
+	 *  and a facet of the mesh.
+	 * \retval false otherwise.
+	 */
+	bool segment_intersection(const vec3& q1, const vec3& q2) const;
+
+
+	/**
+	 * \brief Finds the intersection between a segment and a surface that
+	 *  is nearest to the first extremity of the segment.
+	 * \param[in] q1 , q2 the two extremities of the segment.
+	 * \param[out] t if there was an intersection, it is t*q2 + (1-t)*q1
+	 * \param[out] f the intersected nearest facet or index_t(-1) if there
+	 *  was no intersection.
+	 * \retval true if there exists at least an intersection between [q1 , q2]
+	 *  and a facet of the mesh.
+	 * \retval false otherwise.
+	 */
+	bool segment_nearest_intersection(
+	    const vec3& q1, const vec3& q2, double& t, index_t& f
+	) const;
+
 
     protected:
 
@@ -237,7 +273,7 @@ namespace GEO {
             bbox_intersect_recursive(action, box, node_l, b, m);
             bbox_intersect_recursive(action, box, node_r, m, e);
         }
-        
+
         /**
          * \brief Computes all the pairs of intersecting facets
          *  for two sub-trees of the AABB tree.
@@ -347,6 +383,43 @@ namespace GEO {
             index_t n, index_t b, index_t e
         ) const;
 
+        /**
+         * \brief The recursive function used by the implementation
+         *  of segment_intersection()
+	 * \param[in] q1 , q2 the segment
+	 * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+         * \param[in] n index of the current node in the AABB tree
+         * \param[in] b index of the first facet in the subtree under node \p n
+         * \param[in] e one position past the index of the last facet in the
+         *  subtree under node \p n
+	 * \retval true if their was an intersection
+	 * \retval false otherwise
+	 */
+	bool segment_intersection_recursive(
+	    const vec3& q1, const vec3& q2, const vec3& dirinv,
+	    index_t n, index_t b, index_t e
+	) const;
+
+        /**
+         * \brief The recursive function used by the implementation
+         *  of segment_nearest_intersection()
+	 * \param[in] q1 , q2 the segment
+	 * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+         * \param[in] n index of the current node in the AABB tree
+         * \param[in] b index of the first facet in the subtree under node \p n
+         * \param[in] e one position past the index of the last facet in the
+         *  subtree under node \p n
+	 * \param[in,out] t the coordinate along [q1,q2] of the nearest
+	 *   intersection so-far.
+	 * \param[in,out] f the nearest intersected facet so-far.
+	 */
+	void segment_nearest_intersection_recursive(
+	    const vec3& q1, const vec3& q2, const vec3& dirinv,
+	    index_t n, index_t b, index_t e,
+	    double& t, index_t& f
+	) const;
+
+
     protected:
         vector<Box> bboxes_;
         Mesh& mesh_;
@@ -368,7 +441,7 @@ namespace GEO {
          * \see containing_tet()
          */
         static const index_t NO_TET = index_t(-1);
-        
+
         /**
          * \brief Creates the Axis Aligned Bounding Boxes tree.
          * \param[in] M the input mesh. It can be modified,
@@ -378,6 +451,14 @@ namespace GEO {
          *  called else the algorithm will be pretty unefficient).
          */
         MeshCellsAABB(Mesh& M, bool reorder = true);
+
+	/**
+	 * \brief Gets the mesh.
+	 * \return a const reference to the mesh.
+	 */
+	const Mesh& mesh() const {
+	    return mesh_;
+	}
 
         /**
          * \brief Finds the index of a tetrahedron that contains a query point
@@ -404,7 +485,7 @@ namespace GEO {
          *  box that intersects \p box_in.
          * \tparam ACTION user action class, that needs to define
          * operator(index_t), where the parameter is the index
-         * of the cell that has its bounding box intersecting 
+         * of the cell that has its bounding box intersecting
          * \p box_in.
          */
         template< class ACTION >
@@ -439,7 +520,7 @@ namespace GEO {
                 action, p, 1, 0, mesh_.cells.nb()
             );
         }
-        
+
     protected:
 
         /**
@@ -488,7 +569,7 @@ namespace GEO {
             bbox_intersect_recursive(action, box, node_r, m, e);
         }
 
-        
+
         /**
          * \brief The recursive function used by the implementation
          *  of containing_tet().
@@ -502,7 +583,7 @@ namespace GEO {
          *  NO_TET if \p p is outside the mesh.
          */
         index_t containing_tet_recursive(
-            const vec3& p, bool exact, 
+            const vec3& p, bool exact,
             index_t n, index_t b, index_t e
         ) const;
 
@@ -533,7 +614,7 @@ namespace GEO {
         ) const {
             geo_debug_assert(e != b);
 
-            // Prune sub-tree that does not have intersection            
+            // Prune sub-tree that does not have intersection
             if(!bboxes_[node].contains(p)) {
                 return;
             }
@@ -552,11 +633,11 @@ namespace GEO {
             containing_bboxes_recursive(action, p, node_l, b, m);
             containing_bboxes_recursive(action, p, node_r, m, e);
         }
-        
+
         vector<Box> bboxes_;
         Mesh& mesh_;
     };
-    
+
 }
 
 #endif

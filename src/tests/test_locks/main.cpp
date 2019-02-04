@@ -114,25 +114,6 @@ namespace {
             Process::leave_critical_section();
         }
 
-        /**
-         * \brief Accesses the critical section with locking
-         * \details This function is executed by each thread: 
-         * it does nb_times random access in the critical section 
-         * using locking. In single_lock mode,
-         * the critical section is locked/unlocked entirely, otherwise, the
-         * accessed elements are locked/unlocked individually.
-         * \param[in] pid The id of the thread
-         */
-        void test_nolocks(index_t pid) {
-            index_t j = 0;
-            for(index_t i = 0; i < nb_times_; ++i) {
-                j = (j + 7) % index_t(data_.size());
-                data_[j] = signed_index_t(pid);
-                fast_pause();
-                data_[j] = -1;
-            }
-        }
-
     protected:
         /**
          * \brief Locks an critical section element
@@ -210,17 +191,13 @@ int main(int argc, char** argv) {
 
         if(CmdLine::get_arg_bool("locks")) {
             parallel_for(
-                parallel_for_member_callback(
-                    &lock_test, &LockTest::test_locks
-                ),
-                0, Process::max_threads()
+                0, Process::max_threads(),
+		std::bind(&LockTest::test_locks, &lock_test, std::placeholders::_1)
             );
         } else {
             parallel_for(
-                parallel_for_member_callback(
-                    &lock_test, &LockTest::test_nolocks
-                ),
-                0, Process::max_threads()
+                0, Process::max_threads(),
+		std::bind(&LockTest::test_locks, &lock_test, std::placeholders::_1)		
             );
         }
     }

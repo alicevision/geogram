@@ -103,32 +103,32 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::maximum_concurrent_threads() */
-        virtual index_t maximum_concurrent_threads() {
+	index_t maximum_concurrent_threads() override {
             SYSTEM_INFO sysinfo;
             GetSystemInfo(&sysinfo);
             return sysinfo.dwNumberOfProcessors;
         }
 
         /** \copydoc GEO::ThreadManager::enter_critical_section() */
-        virtual void enter_critical_section() {
+	void enter_critical_section() override {
             EnterCriticalSection(&lock_);
         }
 
         /** \copydoc GEO::ThreadManager::leave_critical_section() */
-        virtual void leave_critical_section() {
+	void leave_critical_section() override {
             LeaveCriticalSection(&lock_);
         }
 
     protected:
         /** \brief WindowsThreadManager destructor */
-        virtual ~WindowsThreadManager() {
+	~WindowsThreadManager() override {
             DeleteCriticalSection(&lock_);
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-        virtual void run_concurrent_threads(
+	void run_concurrent_threads(
             ThreadGroup& threads, index_t max_threads
-        ) {
+        ) override {
             // TODO: take max_threads into account
             geo_argused(max_threads);
 
@@ -136,7 +136,7 @@ namespace {
             for(index_t i = 0; i < threads.size(); i++) {
                 set_thread_id(threads[i],i);
                 threadsHandle[i] = CreateThread(
-                    NULL, 0, run_thread, (void*) &threads[i], 0, NULL
+                    nullptr, 0, run_thread, (void*) &threads[i], 0, nullptr
                 );
             }
             WaitForMultipleObjects(
@@ -184,11 +184,11 @@ namespace {
          * \brief Creates and initializes the Windows Threads Pool manager
          */
         WindowsThreadPoolManager() {
-            pool_ = CreateThreadpool(NULL);
+            pool_ = CreateThreadpool(nullptr);
             InitializeThreadpoolEnvironment(&cbe_);
             cleanupGroup_ = CreateThreadpoolCleanupGroup();
             SetThreadpoolCallbackPool(&cbe_, pool_);
-            SetThreadpoolCallbackCleanupGroup(&cbe_, cleanupGroup_, NULL);
+            SetThreadpoolCallbackCleanupGroup(&cbe_, cleanupGroup_, nullptr);
             // Rem: cannot do what follows, since
             // maximum_concurrent_threads is not initialized yet...
             // SetThreadpoolThreadMaximum(
@@ -202,7 +202,7 @@ namespace {
 
     protected:
         /** \brief WindowsThreadPoolManager destructor */
-        virtual ~WindowsThreadPoolManager() {
+	~WindowsThreadPoolManager() override {
 // It makes it crash on exit when calling these functions
 // with dynamic libs, I do not know why...            
 // TODO: investigate...
@@ -213,9 +213,9 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-        virtual void run_concurrent_threads(
+	void run_concurrent_threads(
             ThreadGroup& threads, index_t max_threads
-        ) {
+        ) override {
             // TODO: take max_threads into account
             geo_argused(max_threads);
 
@@ -270,15 +270,16 @@ namespace {
 
 #endif
 
+#ifdef GEO_COMPILER_MSVC    
     /**
      * \brief Abnormal termination handler
      * \details Exits the program. If \p message is
-     * non null, the following message is printed before the stacktrace:
+     * non nullptr, the following message is printed before the stacktrace:
      * <em>Abnormal program termination: message</em>
      * \param[in] message optional message to print
      */
-    void abnormal_program_termination(const char* message = nil) {
-        if(message != nil) {
+    void abnormal_program_termination(const char* message = nullptr) {
+        if(message != nullptr) {
             // Do not use Logger here!
             std::cout
                 << "Abnormal program termination: "
@@ -363,18 +364,11 @@ namespace {
      * program.
      */
     void sigint_handler(int) {
-        if(Progress::current_task() != nil) {
+        if(Progress::current_task() != nullptr) {
             Progress::cancel();
         } else {
             exit(1);
         }
-    }
-
-    /**
-     * Catches unexpected C++ exceptions
-     */
-    void unexpected_exception_handler() {
-        abnormal_program_termination("function unexpected() was called");
     }
 
     /**
@@ -418,7 +412,7 @@ namespace {
      *
      * Example: the following code throws a runtime assertion error
      * \code
-     * printf(NULL);
+     * printf(nullptr);
      * \endcode
      */
     void invalid_parameter_handler(
@@ -501,6 +495,9 @@ namespace {
         // Tell _CrtDbgReport that no further reporting is required.
         return TRUE;
     }
+    
+#endif
+    
 }
 
 /****************************************************************************/
@@ -510,8 +507,8 @@ namespace GEO {
     namespace Process {
 
         bool os_init_threads() {
-
-#ifdef GEO_OS_WINDOWS_HAS_THREADPOOL
+#ifdef GEO_COMPILER_MSVC
+#  ifdef GEO_OS_WINDOWS_HAS_THREADPOOL
             // Env. variable to deactivate thread pool, e.g.
             // used under Wine (that does not implement thread pools yet).
             if(::getenv("GEO_NO_THREAD_POOL")) {
@@ -527,13 +524,18 @@ namespace GEO {
                 set_thread_manager(new WindowsThreadPoolManager);
             }
             return true;
-#else
+#  else
             Logger::out("Process")
                 << "Windows thread pool not supported, using Windows threads"
                 << std::endl;
             set_thread_manager(new WindowsThreadManager);
             return true;
-#endif
+#  endif
+#else
+	   // If compiling for Windows with a compiler different from MSVC, 
+	   // return false, and use OpenMP fallback from process.cpp
+	   return false;
+#endif	   
         }
 
         void os_brute_force_kill() {
@@ -550,7 +552,7 @@ namespace GEO {
             TOKEN_PRIVILEGES tp;
             LUID luid;
             LookupPrivilegeValue(
-                NULL,            // lookup privilege on local system
+                nullptr,            // lookup privilege on local system
                 SE_DEBUG_NAME,   // privilege to lookup
                 &luid);
 
@@ -564,11 +566,11 @@ namespace GEO {
                 FALSE,
                 &tp,
                 sizeof(TOKEN_PRIVILEGES),
-                (PTOKEN_PRIVILEGES) NULL,
-                (PDWORD) NULL
+                (PTOKEN_PRIVILEGES) nullptr,
+                (PDWORD) nullptr
             );
 
-            if(hHandle == NULL) {
+            if(hHandle == nullptr) {
                 DWORD err = GetLastError();
                 geo_argused(err);
             }
@@ -590,6 +592,7 @@ namespace GEO {
         }
 
         size_t os_used_memory() {
+#ifdef GEO_COMPILER_MSVC
             PROCESS_MEMORY_COUNTERS info;
 #if (PSAPI_VERSION >= 2)
             K32GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));            
@@ -597,9 +600,13 @@ namespace GEO {
             GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));
 #endif            
             return size_t(info.WorkingSetSize);
+#else
+	   return size_t(0);
+#endif	   
         }
 
         size_t os_max_used_memory() {
+#ifdef GEO_COMPILER_MSVC	   
             PROCESS_MEMORY_COUNTERS info;
 #if (PSAPI_VERSION >= 2)
             K32GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));            
@@ -607,9 +614,13 @@ namespace GEO {
             GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));
 #endif            
             return size_t(info.PeakWorkingSetSize);
+#else
+	   return size_t(0);
+#endif	   
         }
 
         bool os_enable_FPE(bool flag) {
+#ifdef GEO_COMPILER_MSVC	    
             if(flag) {
                 unsigned int excepts = 0
                     // | _EM_INEXACT // inexact result
@@ -624,15 +635,24 @@ namespace GEO {
                 _controlfp(_MCW_EM, _MCW_EM);
             }
             return true;
+#else
+	    geo_argused(flag);
+	    return false;
+#endif	    
         }
 
         bool os_enable_cancel(bool flag) {
+#ifdef GEO_COMPILER_MSVC	    
             if(flag) {
                 signal(SIGINT, sigint_handler);
             } else {
                 signal(SIGINT, SIG_DFL);
             }
             return true;
+#else
+	    geo_argused(flag);
+	    return false;
+#endif	    
         }
 
         /**
@@ -642,6 +662,7 @@ namespace GEO {
          * exception handling routines that prevent the application from being
          * blocked by a bad assertion, a runtime check or runtime error dialog.
          */
+#ifdef GEO_COMPILER_MSVC	
         void os_install_signal_handlers() {
 
             // Install signal handlers
@@ -655,8 +676,7 @@ namespace GEO {
             typedef void (__cdecl * sighandler_t)(int);
             signal(SIGFPE, (sighandler_t) fpe_signal_handler);
 
-            // Install unexpected and uncaught c++ exception handlers
-            std::set_unexpected(unexpected_exception_handler);
+            // Install uncaught c++ exception handlers	    
             std::set_terminate(uncaught_exception_handler);
 
             // Install memory allocation handler
@@ -707,13 +727,17 @@ namespace GEO {
             _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
             _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
         }
-
+#else
+        void os_install_signal_handlers() {
+	}
+#endif	
+	
         /**
          * \brief Gets the full path to the current executable.
          */
         std::string os_executable_filename() {
             TCHAR result[MAX_PATH];
-            GetModuleFileName( NULL, result, MAX_PATH);
+            GetModuleFileName( nullptr, result, MAX_PATH);
             return std::string(result);
         }
     }

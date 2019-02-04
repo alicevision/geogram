@@ -742,7 +742,7 @@ namespace {
             const vec2& p1 = clip[i] ;
             const vec2& p2 = clip[j] ;
             clip_polygon_by_half_plane(*src, p1, p2, *dst);
-            geo_swap(src, dst) ;
+	    std::swap(src, dst) ;
         }
         result = *src ;
     }
@@ -772,7 +772,7 @@ int main(int argc, char** argv) {
     );
 
     glup_viewer_set_window_title(
-        (char*) "Geogram Delaunay2d test"
+        "Geogram Delaunay2d test"
     );
 
     glup_viewer_set_screen_size(1024,800);

@@ -45,6 +45,10 @@ endif()
 add_flags(CMAKE_CXX_FLAGS -frounding-math -ffp-contract=off)
 add_flags(CMAKE_C_FLAGS -frounding-math -ffp-contract=off)
 
+# Activate AVX2 instruction set
+#add_flags(CMAKE_CXX_FLAGS -mavx2)
+#add_flags(CMAKE_C_FLAGS -mavx2)
+
 # Activate c++ 2011
 add_flags(CMAKE_CXX_FLAGS -std=c++11)
 
@@ -74,7 +78,6 @@ add_flags(CMAKE_C_FLAGS -fPIC)
 # Hide symbols that are not explicitly exported
 add_flags(CMAKE_CXX_FLAGS -fvisibility=hidden)
 add_flags(CMAKE_C_FLAGS -fvisibility=hidden)
-
 
 # Profiler compilation flags
 if(VORPALINE_WITH_GPROF)

@@ -244,7 +244,7 @@ namespace {
 	    double m, mgx, mgy;
 	    compute_m_and_mg(P, m, mgx, mgy);
 
-	    if(spinlocks_ != nil) {
+	    if(spinlocks_ != nullptr) {
 		spinlocks_->acquire_spinlock(v);
 	    }
 
@@ -257,12 +257,12 @@ namespace {
 		OTM_->add_i_right_hand_side(v,-m);
 	    }
 	    
-	    if(mg_ != nil) {
+	    if(mg_ != nullptr) {
 		mg_[2*v] += mgx;  
 		mg_[2*v+1] += mgy;
 	    }
 
-	    if(spinlocks_ != nil) {
+	    if(spinlocks_ != nullptr) {
 		spinlocks_->release_spinlock(v);
 	    }
 	    
@@ -274,7 +274,7 @@ namespace {
 
 	    if(eval_F_) {
 		Thread* thread = Thread::current();
-		index_t current_thread_id = (thread == nil) ? 0 : thread->id();
+		index_t current_thread_id = (thread == nullptr) ? 0 : thread->id();
 		double F = weighted_ ? eval_F_weighted(P, v) : eval_F(P, v);
 		const_cast<OTMPolygonCallback*>(this)->
 		    funcval_[current_thread_id] += F;
@@ -290,7 +290,7 @@ namespace {
 	 * \param[in] P a const reference to the current intersection polygon.
 	 * \param[out] m , mgx , mgy the mass and the mass times the
 	 *  centroid of the ConvexCell. mgx and mgy are not computed
-	 *  if mg_ is nil.
+	 *  if mg_ is nullptr.
 	 */
 	void compute_m_and_mg(
 	    const GEOGen::Polygon& P, 
@@ -308,7 +308,7 @@ namespace {
 		const double* p2 = V2.point();
 		double cur_m = triangle_mass(V0,V1,V2);
 		m += cur_m;
-		if(mg_ != nil) {
+		if(mg_ != nullptr) {
 		    if(weighted_) {
 			double w0 = V0.weight();
 			double w1 = V1.weight();
@@ -365,7 +365,7 @@ namespace {
 
 		    // -hij because we maximize F <=> minimize -F
 		    if(hij != 0.0) {
-			if(spinlocks_ != nil) {
+			if(spinlocks_ != nullptr) {
 			    spinlocks_->acquire_spinlock(i);
 			}
 			// Diagonal is positive, extra-diagonal
@@ -375,7 +375,7 @@ namespace {
 			    OTM_->add_ij_coefficient(i, j, -hij);
 			}
 			OTM_->add_ij_coefficient(i, i,  hij);
-			if(spinlocks_ != nil) {
+			if(spinlocks_ != nullptr) {
 			    spinlocks_->release_spinlock(i);
 			}
 		    }
@@ -391,13 +391,11 @@ namespace {
 	 * \param[in] i the current seed
 	 */
 	double eval_F(const GEOGen::Polygon& P, index_t i) const {
-	    double F = 0.0;	    
 	    geo_debug_assert(!weighted_);
 	    geo_argused(P);
 	    geo_argused(i);
 	    // Not implemented yet.
 	    geo_assert_not_reached;
-	    return F;
 	}	
 
 	/**
@@ -407,12 +405,10 @@ namespace {
 	 * \param[in] i the current seed
 	 */
 	double eval_F_weighted(const GEOGen::Polygon& P, index_t i) const {
-	    double F = 0.0;
 	    geo_argused(P);
 	    geo_argused(i);
 	    // Not implemented yet.
 	    geo_assert_not_reached;
-	    return F;
 	}	
 	
 	/**
@@ -470,15 +466,15 @@ namespace {
 	    chart_.bind(target_->facets.attributes(), "chart");
 	}
 
-	~ComputeRVDPolygonCallback() {
+	~ComputeRVDPolygonCallback() override {
 	    chart_.unbind();
 	}
 
-	virtual void operator() (
+	void operator() (
 	    index_t v,
 	    index_t t,
 	    const GEOGen::Polygon& P
-	) const {
+	) const override {
 	    geo_argused(t);
 	    if(OTM_->air_fraction() != 0.0 && OTM_->nb_air_particles() == 0) {
 		if(v < OTM_->nb_points()) {
@@ -583,7 +579,7 @@ namespace GEO {
 	callback_->set_Laguerre_centroids(centroids);
 	callback_->set_g(g.data());
 	{
-	    Stopwatch* W = nil;
+	    Stopwatch* W = nullptr;
 	    if(newton_ && verbose_) {
 		W = new Stopwatch("RVD");
 		Logger::out("OTM") << "In RVD (centroids)..." << std::endl;
@@ -596,7 +592,7 @@ namespace GEO {
 	    }
 	}
 	
-	callback_->set_Laguerre_centroids(nil);	    
+	callback_->set_Laguerre_centroids(nullptr);	    
 	
         for(index_t v=0; v<nb_points(); ++v) {
             centroids[2*v  ] /= g[v];
@@ -657,17 +653,16 @@ namespace GEO {
         index_t nb_points,
         const double* points,
         double* centroids,
-	bool parallel_pow,
 	Mesh* RVD,
 	bool verbose,
 	index_t nb_air_particles,
 	const double* air_particles,
 	index_t air_particles_stride,
 	double air_fraction,
-	const double* weights
+	const double* weights_in,
+	double* weights_out,
+	index_t nb_iter
     ) {
-	geo_argused(parallel_pow); // Not implemented yet.
-
 	// Omega can be either 2d or 3d with third coordinate set to
 	// zero.
 	index_t omega_dim_backup = omega->vertices.dimension();
@@ -698,22 +693,27 @@ namespace GEO {
 	    nb_air_particles, air_particles, air_particles_stride, air_fraction
 	);
         OTM.set_points(nb_points, points);
-	if(weights != nil) {
-	    std::cerr << "Setting weights" << std::endl;
+	if(weights_in != nullptr) {
 	    FOR(i, nb_points) {
-		OTM.set_initial_weight(i, weights[i]);
+		OTM.set_initial_weight(i, weights_in[i]);
 	    }
 	}
         OTM.set_epsilon(0.01);
 	OTM.set_Laguerre_centroids(centroids);
 	OTM.set_verbose(verbose);
-        OTM.optimize(1000);
+        OTM.optimize(nb_iter);
 
-	if(RVD != nil) {
+	if(RVD != nullptr) {
 	    OTM.get_RVD(*RVD);
 	}
 	
         omega->vertices.set_dimension(omega_dim_backup);
+
+	if(weights_out != nullptr) {
+	    FOR(v, OTM.nb_points()) {
+		weights_out[v] = OTM.weight(v);
+	    }
+	}
     }
 }
 

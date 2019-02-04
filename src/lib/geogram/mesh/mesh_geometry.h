@@ -76,14 +76,26 @@ namespace GEO {
          * \brief Gets a mesh vertex by its index.
          * \param[in] M the mesh
          * \param[in] v the index of the vertex
+         * \return a const reference to the \p v%th vertex of a mesh
+         * \pre M.vertices.dimension() >= 3
+         */
+        inline const vec3& mesh_vertex_ref(const Mesh& M, index_t v) {
+            geo_debug_assert(M.vertices.dimension() >= 3);
+            return *(vec3 const *) (M.vertices.point_ptr(v));
+        }
+
+        /**
+         * \brief Gets a mesh vertex by its index.
+         * \param[in] M the mesh
+         * \param[in] v the index of the vertex
          * \return a reference to the \p v%th vertex of a mesh
          * \pre M.vertices.dimension() >= 3
          */
-        inline vec3& mesh_vertex_ref(const Mesh& M, index_t v) {
+        inline vec3& mesh_vertex_ref(Mesh& M, index_t v) {
             geo_debug_assert(M.vertices.dimension() >= 3);
             return *(vec3*) (M.vertices.point_ptr(v));
         }
-
+	
         /**
          * \brief Gets a mesh vertex by an incident corner index.
          * \param[in] M the mesh
@@ -125,11 +137,22 @@ namespace GEO {
          * \return a reference to the stored normal of vertex \p v
          * \pre M.vertices.dimension() >= 6
          */
-        inline vec3& mesh_vertex_normal_ref(const Mesh& M, index_t v) {
+        inline vec3& mesh_vertex_normal_ref(Mesh& M, index_t v) {
             geo_debug_assert(M.vertices.dimension() >= 6);
             return *(vec3*) (M.vertices.point_ptr(v) + 3);
         }
 
+        /**
+         * \brief Gets a mesh vertex normal by vertex index.
+         * \param[in] M the mesh
+         * \param[in] v the index of the vertex
+         * \return a const reference to the stored normal of vertex \p v
+         * \pre M.vertices.dimension() >= 6
+         */
+        inline const vec3& mesh_vertex_normal_ref(const Mesh& M, index_t v) {
+            geo_debug_assert(M.vertices.dimension() >= 6);
+            return *(vec3 const *) (M.vertices.point_ptr(v) + 3);
+        }
 
         /**
          * \brief Computes the area of a facet.

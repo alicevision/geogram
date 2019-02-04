@@ -265,7 +265,7 @@ namespace GEO {
             bool lock = true
         ) {
             if(array.size() == 0) {
-                set_array(array_index, 0, nil, lock);
+                set_array(array_index, 0, nullptr, lock);
             } else {
                 set_array(
                     array_index, index_t(array.size()), &array[0], lock
@@ -338,7 +338,7 @@ namespace GEO {
          * \retval false otherwise
          */
         bool static_mode() const {
-            return ZV_ == nil;
+            return ZV_ == nullptr;
         }
 
     private:

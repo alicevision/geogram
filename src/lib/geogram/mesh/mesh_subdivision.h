@@ -121,7 +121,7 @@ namespace GEO {
      */
     void GEOGRAM_API mesh_split_triangles(
 	Mesh& M, index_t facets_begin = 0, index_t facets_end = index_t(-1),
-	MeshSplitCallbacks* cb = nil
+	MeshSplitCallbacks* cb = nullptr
     );
 
     /**
@@ -135,7 +135,7 @@ namespace GEO {
      */
     void GEOGRAM_API mesh_split_quads(
 	Mesh& M, index_t facets_begin = 0, index_t facets_end = index_t(-1),
-	MeshSplitCallbacks* cb = nil	
+	MeshSplitCallbacks* cb = nullptr	
     );
 
     /**
@@ -147,7 +147,7 @@ namespace GEO {
      *   how vertices attributes should be interpolated.
      */
     void GEOGRAM_API mesh_split_catmull_clark(
-	Mesh& M, MeshSplitCallbacks* cb = nil
+	Mesh& M, MeshSplitCallbacks* cb = nullptr
     );
 }
 

@@ -213,8 +213,18 @@ namespace GEO {
          */
         void file_selected(bool force=false);
 
+	/**
+	 * \brief Handles the "are you sure ?" dialog
+	 *  when a file is about to be overwritten.
+	 */
         void draw_are_you_sure();
-        
+
+	/**
+	 * \brief Under Windows, add buttons to change
+	 *  disk drive.
+	 */
+	void draw_disk_drives();
+	
     private:
         Application* application_;
         bool visible_;

@@ -51,6 +51,10 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifndef NDEBUG
+#define NL_DEBUG
+#endif
+
 /**
  * \file geogram/NL/nl_private.h
  * \brief Some macros and functions used internally by OpenNL.
@@ -157,12 +161,12 @@ NL_NORETURN_DECL void nl_should_not_have_reached(
  * \param[in] min_val the minimum admissible value for the variable
  * \param[in] max_val the maximum admissible value for the variable
  */
-#define nl_range_assert(x,min_val,max_val) {                    \
-    if(((x) < (min_val)) || ((x) > (max_val))) {                \
-        nl_range_assertion_failed(x, min_val, max_val,          \
-            __FILE__, __LINE__                                  \
-        ) ;                                                     \
-    }                                                           \
+#define nl_range_assert(x,min_val,max_val) {                         \
+    if(((int)(x) < (int)(min_val)) || ((int)(x) > (int)(max_val))) { \
+        nl_range_assertion_failed(x, min_val, max_val,               \
+            __FILE__, __LINE__                                       \
+        ) ;                                                          \
+    }                                                                \
 }
 
 /**

@@ -116,7 +116,7 @@ namespace GEO {
          *  - "HCG" - non-linear conjugate gradient
          *  - "HLBFGS_HESS" - BFGS with Hessian (full Newton)
          *  - "default" - equivalent to "HLBFGS"
-         * \retval nil if \p name is not a valid Optimizer algorithm name
+         * \retval nullptr if \p name is not a valid Optimizer algorithm name
          * \retval otherwise, a pointer to an Optimizer object. The returned
          * pointer must be stored in a Optimizer_var that does automatic
          * destruction:

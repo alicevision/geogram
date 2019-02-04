@@ -83,26 +83,43 @@ namespace GEO {
 
 
     void LinearLeastSquares::add_point(const double* p, double v) {
+	switch(degree_) {
+	    case 1:
+		add_point_degree_1(p,v);
+		break;
+	    case 2:
+		add_point_degree_2(p,v);
+		break;
+	    default:
+		geo_assert_not_reached;
+	}
+    }
+
+    
+    void LinearLeastSquares::add_point_degree_1(const double* p, double v) {
+	geo_debug_assert(degree_ == 1);
         double b[MAX_DIM];
         eval_basis(p, b);
-        
         for(index_t i = 0; i < dim(); ++i) {
             for(index_t j = 0; j < dim(); ++j) {
-                switch(degree_) {
-                case 1: {
-                    AtA_4_(i, j) += b[i] * b[j];
-		} break;
-                case 2: {
-                    AtA_10_(i, j) += b[i] * b[j];
-		} break;
-                default:
-                    geo_assert_not_reached;
-                }
-            }
+		AtA_4_(i, j) += b[i] * b[j];
+	    }
             Atb_[i] += b[i] * v;
         }
     }
 
+    void LinearLeastSquares::add_point_degree_2(const double* p, double v) {
+	geo_debug_assert(degree_ == 2);	
+        double b[MAX_DIM];
+        eval_basis(p, b);
+        for(index_t i = 0; i < dim(); ++i) {
+            for(index_t j = 0; j < dim(); ++j) {
+		AtA_10_(i, j) += b[i] * b[j];
+            }
+            Atb_[i] += b[i] * v;
+        }
+    }
+    
     double LinearLeastSquares::eval(const double* p) const {
         double b[MAX_DIM];
         for(index_t i = 0; i < MAX_DIM; ++i) {

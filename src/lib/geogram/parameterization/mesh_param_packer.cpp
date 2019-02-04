@@ -123,7 +123,7 @@ namespace GEO {
             Chart* chart, const vec2& min, const vec2& max
         ) : 
             min_(min), max_(max), chart_(chart),
-	    min_func_(nil), max_func_(nil),
+	    min_func_(nullptr), max_func_(nullptr),
             nb_steps_(0) {
         }
 
@@ -132,7 +132,7 @@ namespace GEO {
 	 */
         ~ChartBBox(){
             free();
-            chart_ = nil;
+            chart_ = nullptr;
         }
 
 	/**
@@ -171,10 +171,10 @@ namespace GEO {
 	    Attribute<double>& tex_coord, Attribute<index_t>& chart_attr
         ) {
 
-            if(min_func_ != nil) {
+            if(min_func_ != nullptr) {
                 delete[] min_func_;
             }
-            if(max_func_ != nil) {
+            if(max_func_ != nullptr) {
                 delete[] max_func_;
             }
 
@@ -207,7 +207,7 @@ namespace GEO {
 		    }
 		    
 		    if(p2.x < p1.x) {
-			geo_swap(p1,p2);
+			std::swap(p1,p2);
 		    }
 
 		    p1.x -= margin_width_in_pixels * step;
@@ -218,8 +218,8 @@ namespace GEO {
 			double y = p1.y + a * (x - p1.x);
 			int cX = int((x - min_.x) / step);
                         if (cX>=0 && cX<nb_steps_) {
-                            min_func(cX) = geo_min(min_func(cX), y - margin);
-                            max_func(cX) = geo_max(max_func(cX), y + margin);
+                            min_func(cX) = std::min(min_func(cX), y - margin);
+                            max_func(cX) = std::max(max_func(cX), y + margin);
 			}
 		    }
 		}
@@ -326,7 +326,7 @@ namespace GEO {
             chart_ = rhs.chart_;
             nb_steps_ = rhs.nb_steps_;
 
-            if(rhs.min_func_ != nil) {
+            if(rhs.min_func_ != nullptr) {
                 min_func_ = new double[nb_steps_];
                 max_func_ = new double[nb_steps_];
                 for(int i=0; i<nb_steps_; i++) {
@@ -334,9 +334,9 @@ namespace GEO {
                     max_func_[i] = rhs.max_func_[i];
                 }
             } else {
-                geo_assert(rhs.max_func_ == nil);
-                min_func_ = nil;
-                max_func_ = nil;
+                geo_assert(rhs.max_func_ == nullptr);
+                min_func_ = nullptr;
+                max_func_ = nullptr;
             }
             min_ = rhs.min_;
             max_ = rhs.max_;
@@ -349,8 +349,8 @@ namespace GEO {
         void free() {
             delete[] min_func_;
             delete[] max_func_;
-            min_func_ = nil;
-            max_func_ = nil;
+            min_func_ = nullptr;
+            max_func_ = nullptr;
             nb_steps_ = 0;
         }
 
@@ -400,7 +400,7 @@ namespace GEO {
 	 */
         ~TetrisPacker() {
             delete[] height_;
-            height_ = nil;
+            height_ = nullptr;
         }
 
         void set_image_size_in_pixels(index_t size) {
@@ -454,7 +454,7 @@ namespace GEO {
         double max_height() {
             double result = 0;
             for (unsigned int i=0;i<data_.size();i++) {
-                result = geo_max(result, data_[i].max().y);
+                result = std::max(result, data_[i].max().y);
             }
             return result;
         }
@@ -508,7 +508,7 @@ namespace GEO {
             { //find the best width
                 double max_bbox_width = 0;
                 for (unsigned int i=0; i<data_.size(); i++) {
-                    max_bbox_width= geo_max(
+                    max_bbox_width= std::max(
                         max_bbox_width, data_[i].size().x
                     );
                 }
@@ -533,7 +533,7 @@ namespace GEO {
                 }
 
                 // be sure all surface can fit in the width
-                width_ = geo_max(
+                width_ = std::max(
                     max_bbox_width * (double(nb_xpos_ + 2) / double(nb_xpos_)),
                     width_
                 );	
@@ -618,7 +618,7 @@ namespace GEO {
         double max_height(int xpos, int width, ChartBBox& rect){
             double result = 0;
             for (int i=xpos; i<xpos+width; i++) {
-                result = geo_max( result, height(i)-rect.min_func(i-xpos) );
+                result = std::max( result, height(i)-rect.min_func(i-xpos) );
             }
             return result;
         }
@@ -695,7 +695,7 @@ namespace GEO {
 	vector<Chart> charts;
 	index_t nb_charts=0;
 	for(index_t f=0; f<mesh.facets.nb(); ++f) {
-	    nb_charts = geo_max(nb_charts, chart_attr_[f]);
+	    nb_charts = std::max(nb_charts, chart_attr_[f]);
 	}
 	++nb_charts;
 
@@ -733,7 +733,7 @@ namespace GEO {
 	    Geom::get_mesh_bbox_2d(
 		mesh, tex_coord_, u_min, v_min, u_max, v_max
 	    );
-	    double l = geo_max(u_max - u_min, v_max - v_min);
+	    double l = std::max(u_max - u_min, v_max - v_min);
 	    if(l > 1e-6) {
 		for(index_t c=0; c<mesh.facet_corners.nb(); ++c) {
 		    tex_coord_[2*c]   = (tex_coord_[2*c] - u_min) / l;

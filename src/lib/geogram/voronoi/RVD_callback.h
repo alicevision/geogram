@@ -50,6 +50,7 @@
 #include <geogram/voronoi/generic_RVD_vertex.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/basic/numeric.h>
+#include <geogram/basic/attributes.h>
 
 namespace GEOGen {
     class SymbolicVertex;
@@ -59,6 +60,7 @@ namespace GEOGen {
 
 namespace GEO {
     class RVDVertexMap;
+    class Mesh;
 
     namespace Process {
         class SpinLockArray;
@@ -133,7 +135,7 @@ namespace GEO {
 	 * \details In multithreading mode, a spinlocks array can
 	 *  be used to manage concurrent accesses.
 	 * \param[in] spinlocks a pointer to the Process::SpinLockArray
-	 *  or nil if no spinlocks are used.
+	 *  or nullptr if no spinlocks are used.
 	 */
 	void set_spinlocks(Process::SpinLockArray* spinlocks) {
 	    spinlocks_ = spinlocks;
@@ -497,7 +499,7 @@ namespace GEO {
 	Attribute<index_t> mesh_facet_seed_;
 	Attribute<index_t> mesh_facet_tet_;
 	RVDVertexMap* vertex_map_;
-	vector<index_t> current_facet_;
+	vector<index_t> base_current_facet_;
     };
 
     /***************************************************************/    
@@ -589,7 +591,7 @@ namespace GEO {
 	virtual void process_polyhedron_mesh();
 	
     private:
-	vector<index_t> current_facet_;
+	vector<index_t> current_facet_; 
 	Mesh& output_mesh_;
 	RVDVertexMap* global_vertex_map_;
 	RVDVertexMap* cell_vertex_map_;

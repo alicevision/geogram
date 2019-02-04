@@ -111,7 +111,7 @@ namespace GEO {
         owns_input_ = true;
         if(!input_) {
             delete input_;
-            input_ = nil;
+            input_ = nullptr;
         }
     }
 
@@ -126,7 +126,7 @@ namespace GEO {
     }
 
     bool BinaryInputStream::OK() const {
-        return record_OK_ && input_ != nil && input_->good();
+        return record_OK_ && input_ != nullptr && input_->good();
     }
 
     bool BinaryInputStream::more() const {
@@ -164,10 +164,10 @@ namespace GEO {
     }
 
     BinaryInputStream::~BinaryInputStream() {
-        if(input_ != nil && owns_input_) {
+        if(input_ != nullptr && owns_input_) {
             delete input_;
         }
-        input_ = nil;
+        input_ = nullptr;
     }
 
     BinaryInputStream& BinaryInputStream::read(
@@ -244,7 +244,7 @@ namespace GEO {
         );
         if(!output_) {
             delete output_;
-            output_ = nil;
+            output_ = nullptr;
         }
         owns_output_ = true;
     }
@@ -258,7 +258,7 @@ namespace GEO {
     }
 
     bool BinaryOutputStream::OK() const {
-        return output_ != nil && output_->good();
+        return output_ != nullptr && output_->good();
     }
 
     void BinaryOutputStream::begin_record() {
@@ -280,14 +280,14 @@ namespace GEO {
     }
 
     BinaryOutputStream::~BinaryOutputStream() {
-        if(output_ != nil && owns_output_) {
+        if(output_ != nullptr && owns_output_) {
             delete output_;
         }
-        output_ = nil;
+        output_ = nullptr;
     }
 
     void BinaryOutputStream::write_marker(Numeric::uint32 x) {
-        geo_assert(output_ != nil);
+        geo_assert(output_ != nullptr);
         BinaryOutputStream::operator<< (x);
 
         // Warning: operator<<() increments count_!

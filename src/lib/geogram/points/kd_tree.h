@@ -79,7 +79,7 @@ namespace GEO {
             index_t nb_points, const double* points, index_t stride
         );
 
-	/** \copydoc NearestNeighborSearch::get_nearest_beighbors() */
+	/** \copydoc NearestNeighborSearch::get_nearest_neighbors() */
         virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             const double* query_point,
@@ -87,7 +87,7 @@ namespace GEO {
             double* neighbors_sq_dist
         ) const;
 
-	/** \copydoc NearestNeighborSearch::get_nearest_beighbors() */
+	/** \copydoc NearestNeighborSearch::get_nearest_neighbors() */
         virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             const double* query_point,
@@ -96,7 +96,7 @@ namespace GEO {
 	    KeepInitialValues
         ) const;
 
-	/** \copydoc NearestNeighborSearch::get_nearest_beighbors() */	
+	/** \copydoc NearestNeighborSearch::get_nearest_neighbors() */	
         virtual void get_nearest_neighbors(
             index_t nb_neighbors,
             index_t query_point,
@@ -409,8 +409,8 @@ namespace GEO {
 	    maxval = Numeric::min_float64();
 	    for(index_t i = b; i < e; ++i) {
 		double val = point_ptr(point_index_[i])[coord];
-		minval = geo_min(minval, val);
-		maxval = geo_max(maxval, val);
+		minval = std::min(minval, val);
+		maxval = std::max(maxval, val);
 	    }
 	}
 
@@ -458,13 +458,6 @@ namespace GEO {
          */
         BalancedKdTree(coord_index_t dim);
 
-    public:
-        /**
-         * \brief Used by multithread tree construction
-         * in the implementation of set_points()
-         */
-        void operator() (index_t i);
-
     protected:
         /**
          * \brief BalancedKdTree destructor
@@ -485,7 +478,7 @@ namespace GEO {
                 return node_id;
             }
             index_t m = b + (e - b) / 2;
-            return geo_max(
+            return std::max(
                 max_node_index(2 * node_id, b, m),
                 max_node_index(2 * node_id + 1, m, e)
             );

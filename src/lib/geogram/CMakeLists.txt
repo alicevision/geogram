@@ -14,6 +14,7 @@ aux_source_directories(SOURCES "Source Files\\voronoi"  voronoi)
 aux_source_directories(SOURCES "Source Files\\points"   points)
 aux_source_directories(SOURCES "Source Files\\api"      api)
 aux_source_directories(SOURCES "Source Files\\NL"       NL)
+aux_source_directories(SOURCES "Source Files\\image"    image)
 aux_source_directories(SOURCES "Source Files\\parameterization" parameterization)
 aux_source_directories(SOURCES "Source Files\\bibliography" bibliography)
 
@@ -32,6 +33,7 @@ set_source_files_properties(version.h PROPERTIES GENERATED true)
 include_directories(${PROJECT_BINARY_DIR}/src/lib)
 
 add_library(geogram ${SOURCES} $<TARGET_OBJECTS:geogram_third_party>)
+
 
 # Jeremie/Maxence: avoids the need to redeclare geogram include
 # path for targets that depend on geogram.
@@ -77,4 +79,5 @@ install(
         FILES "${PROJECT_BINARY_DIR}/geogram${VORPALINE_VERSION_MAJOR}.pc"
         DESTINATION lib${LIB_SUFFIX}/pkgconfig
 )
-      
+
+

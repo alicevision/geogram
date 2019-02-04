@@ -555,18 +555,18 @@ namespace {
         if(VBO_mode) {
             glBindBuffer(GL_ARRAY_BUFFER, vertex_VBO);
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
             if(glupIsEnabled(GLUP_VERTEX_COLORS)) {
                 glBindBuffer(GL_ARRAY_BUFFER, color_VBO);
                 glEnableVertexAttribArray(1);
-                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
             }
 
             if(glupIsEnabled(GLUP_TEXTURING)) {
                 glBindBuffer(GL_ARRAY_BUFFER, tex_coord_VBO);
                 glEnableVertexAttribArray(2);
-                glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
             }
             
             glupDrawArrays(GLUP_POINTS, 0, VBO_nb_vertices);
@@ -636,22 +636,22 @@ namespace {
         glBindBuffer(GL_ARRAY_BUFFER, vertex_VBO);
         
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
         
         if(glupIsEnabled(GLUP_VERTEX_COLORS)) {
             glBindBuffer(GL_ARRAY_BUFFER, color_VBO);
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
         }
 
         if(glupIsEnabled(GLUP_TEXTURING)) {
             glBindBuffer(GL_ARRAY_BUFFER, tex_coord_VBO);
             glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
         }
         
         glupDrawElements(
-            prim_in, VBO_nb_vertices, GL_UNSIGNED_INT, 0
+            prim_in, VBO_nb_vertices, GL_UNSIGNED_INT, nullptr
         );
             
         glDisableVertexAttribArray(0);
@@ -878,7 +878,7 @@ int main(int argc, char** argv) {
     );
 
     glup_viewer_set_window_title(
-        (char*) "GLUP eyecandy test"
+        "GLUP eyecandy test"
     );
     glup_viewer_set_init_func(init);
     glup_viewer_set_display_func(display);

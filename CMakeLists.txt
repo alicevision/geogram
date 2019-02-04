@@ -1,228 +1,72 @@
-# geogram
+################################################################################
+# Build Geogram as part of the current CMake project
+################################################################################
 
-list(APPEND sources
-  "src/lib/geogram/basic/algorithm.cpp"
-  "src/lib/geogram/basic/algorithm.h"
-  "src/lib/geogram/basic/argused.h"
-  "src/lib/geogram/basic/assert.cpp"
-  "src/lib/geogram/basic/assert.h"
-  "src/lib/geogram/basic/atomics.h"
-  "src/lib/geogram/basic/attributes.cpp"
-  "src/lib/geogram/basic/attributes.h"
-  "src/lib/geogram/basic/b_stream.cpp"
-  "src/lib/geogram/basic/b_stream.h"
-  #"src/lib/geogram/basic/command_line.cpp"
-  #"src/lib/geogram/basic/command_line.h"
-  #"src/lib/geogram/basic/command_line_args.cpp"
-  #"src/lib/geogram/basic/command_line_args.h"
-  "src/lib/geogram/basic/common.cpp"
-  "src/lib/geogram/basic/common.h"
-  "src/lib/geogram/basic/counted.cpp"
-  "src/lib/geogram/basic/counted.h"
-  "src/lib/geogram/basic/environment.cpp"
-  "src/lib/geogram/basic/environment.h"
-  "src/lib/geogram/basic/factory.cpp"
-  "src/lib/geogram/basic/factory.h"
-  "src/lib/geogram/basic/file_system.cpp"
-  "src/lib/geogram/basic/file_system.h"
-  "src/lib/geogram/basic/geofile.cpp"
-  "src/lib/geogram/basic/geofile.h"
-  "src/lib/geogram/basic/geometry.cpp"
-  "src/lib/geogram/basic/geometry.h"
-  "src/lib/geogram/basic/geometry_nd.h"
-  "src/lib/geogram/basic/line_stream.cpp"
-  "src/lib/geogram/basic/line_stream.h"
-  #"src/lib/geogram/basic/logger.cpp"
-  "src/lib/geogram/basic/logger.h"
-  "src/lib/geogram/basic/matrix.h"
-  "src/lib/geogram/basic/memory.h"
-  "src/lib/geogram/basic/numeric.cpp"
-  "src/lib/geogram/basic/numeric.h"
-  "src/lib/geogram/basic/packed_arrays.cpp"
-  "src/lib/geogram/basic/packed_arrays.h"
-  "src/lib/geogram/basic/permutation.h"
-  #"src/lib/geogram/basic/process.cpp"
-  "src/lib/geogram/basic/process.h"
-  #"src/lib/geogram/basic/process_private.h"
-  #"src/lib/geogram/basic/process_unix.cpp"
-  #"src/lib/geogram/basic/process_win.cpp"
-  "src/lib/geogram/basic/progress.cpp"
-  "src/lib/geogram/basic/progress.h"
-  "src/lib/geogram/basic/psm.h"
-  "src/lib/geogram/basic/quaternion.cpp"
-  "src/lib/geogram/basic/quaternion.h"
-  "src/lib/geogram/basic/ntopimpl.cpp"
-  "src/lib/geogram/basic/smart_pointer.h"
-  "src/lib/geogram/basic/stopwatch.cpp"
-  "src/lib/geogram/basic/stopwatch.h"
-  "src/lib/geogram/basic/string.cpp"
-  "src/lib/geogram/basic/string.h"
-  "src/lib/geogram/basic/thread_sync.h"
-  "src/lib/geogram/basic/vecg.h"
-  "src/lib/geogram/delaunay/delaunay_nn.h"
-  "src/lib/geogram/delaunay/delaunay_tetgen.cpp"
-  "src/lib/geogram/delaunay/delaunay_tetgen.h"
-  "src/lib/geogram/delaunay/delaunay_triangle.cpp"
-  "src/lib/geogram/delaunay/delaunay_triangle.h"
-  "src/lib/geogram/delaunay/LFS.cpp"
-  "src/lib/geogram/delaunay/LFS.h"
-  "src/lib/geogram/delaunay/parallel_delaunay_3d.cpp"
-  "src/lib/geogram/delaunay/parallel_delaunay_3d.h"
-  "src/lib/geogram/delaunay/delaunay.cpp"
-  "src/lib/geogram/delaunay/delaunay.h"
-  "src/lib/geogram/delaunay/Delaunay.psm"
-  "src/lib/geogram/delaunay/delaunay_2d.cpp"
-  "src/lib/geogram/delaunay/delaunay_2d.h"
-  "src/lib/geogram/delaunay/delaunay_3d.cpp"
-  "src/lib/geogram/delaunay/delaunay_3d.h"
-  "src/lib/geogram/delaunay/delaunay_nn.cpp"
-  "src/lib/geogram/mesh/mesh_decimate.cpp"
-  "src/lib/geogram/mesh/mesh_decimate.h"
-  "src/lib/geogram/mesh/mesh_degree3_vertices.cpp"
-  "src/lib/geogram/mesh/mesh_degree3_vertices.h"
-  #"src/lib/geogram/mesh/mesh_distance.cpp"
-  #"src/lib/geogram/mesh/mesh_distance.h"
-  "src/lib/geogram/mesh/mesh_fill_holes.cpp"
-  "src/lib/geogram/mesh/mesh_fill_holes.h"
-  "src/lib/geogram/mesh/mesh_frame_field.cpp"
-  "src/lib/geogram/mesh/mesh_frame_field.h"
-  "src/lib/geogram/mesh/mesh_geometry.cpp"
-  "src/lib/geogram/mesh/mesh_geometry.h"
-  "src/lib/geogram/mesh/mesh_halfedges.cpp"
-  "src/lib/geogram/mesh/mesh_halfedges.h"
-  "src/lib/geogram/mesh/mesh_intersection.cpp"
-  "src/lib/geogram/mesh/mesh_intersection.h"
-  "src/lib/geogram/mesh/mesh_io.cpp"
-  "src/lib/geogram/mesh/mesh_io.h"
-  "src/lib/geogram/mesh/mesh_manifold_harmonics.cpp"
-  "src/lib/geogram/mesh/mesh_manifold_harmonics.h"
-  "src/lib/geogram/mesh/mesh_partition.cpp"
-  "src/lib/geogram/mesh/mesh_partition.h"
-  "src/lib/geogram/mesh/mesh_preprocessing.cpp"
-  "src/lib/geogram/mesh/mesh_preprocessing.h"
-  "src/lib/geogram/mesh/mesh_remesh.cpp"
-  "src/lib/geogram/mesh/mesh_remesh.h"
-  "src/lib/geogram/mesh/mesh_reorder.cpp"
-  "src/lib/geogram/mesh/mesh_reorder.h"
-  "src/lib/geogram/mesh/mesh_repair.cpp"
-  "src/lib/geogram/mesh/mesh_repair.h"
-  "src/lib/geogram/mesh/mesh_sampling.h"
-  "src/lib/geogram/mesh/mesh_smoothing.cpp"
-  "src/lib/geogram/mesh/mesh_smoothing.h"
-  "src/lib/geogram/mesh/mesh_subdivision.cpp"
-  "src/lib/geogram/mesh/mesh_subdivision.h"
-  "src/lib/geogram/mesh/mesh_tetrahedralize.cpp"
-  "src/lib/geogram/mesh/mesh_tetrahedralize.h"
-  "src/lib/geogram/mesh/mesh_topology.cpp"
-  "src/lib/geogram/mesh/mesh_topology.h"
-  "src/lib/geogram/mesh/triangle_intersection.cpp"
-  "src/lib/geogram/mesh/triangle_intersection.h"
-  "src/lib/geogram/mesh/index.h"
-  "src/lib/geogram/mesh/mesh.cpp"
-  "src/lib/geogram/mesh/mesh.h"
-  "src/lib/geogram/mesh/mesh_AABB.cpp"
-  "src/lib/geogram/mesh/mesh_AABB.h"
-  "src/lib/geogram/mesh/mesh_compare.cpp"
-  "src/lib/geogram/mesh/mesh_compare.h"
-  "src/lib/geogram/numerics/lbfgs_optimizers.h"
-  "src/lib/geogram/numerics/matrix_util.cpp"
-  "src/lib/geogram/numerics/matrix_util.h"
-  "src/lib/geogram/numerics/multi_precision.cpp"
-  #"src/lib/geogram/numerics/multi_precision.h"
-  #"src/lib/geogram/numerics/MultiPrecision.psm"
-  "src/lib/geogram/numerics/optimizer.cpp"
-  "src/lib/geogram/numerics/optimizer.h"
-  "src/lib/geogram/numerics/predicates.cpp"
-  "src/lib/geogram/numerics/predicates.h"
-  "src/lib/geogram/numerics/Predicates.psm"
-  "src/lib/geogram/numerics/expansion_nt.cpp"
-  "src/lib/geogram/numerics/expansion_nt.h"
-  "src/lib/geogram/numerics/lbfgs_optimizers.cpp"
-  #"src/lib/geogram/parameterization/mesh_param_validator.h"
-  #"src/lib/geogram/parameterization/mesh_PGP_2d.cpp"
-  #"src/lib/geogram/parameterization/mesh_PGP_2d.h"
-  #"src/lib/geogram/parameterization/mesh_segmentation.cpp"
-  #"src/lib/geogram/parameterization/mesh_segmentation.h"
-  #"src/lib/geogram/parameterization/mesh_ABF.cpp"
-  #"src/lib/geogram/parameterization/mesh_ABF.h"
-  #"src/lib/geogram/parameterization/mesh_atlas_maker.cpp"
-  #"src/lib/geogram/parameterization/mesh_atlas_maker.h"
-  #"src/lib/geogram/parameterization/mesh_global_param.cpp"
-  #"src/lib/geogram/parameterization/mesh_global_param.h"
-  #"src/lib/geogram/parameterization/mesh_LSCM.cpp"
-  #"src/lib/geogram/parameterization/mesh_LSCM.h"
-  #"src/lib/geogram/parameterization/mesh_param_packer.cpp"
-  #"src/lib/geogram/parameterization/mesh_param_packer.h"
-  #"src/lib/geogram/parameterization/mesh_param_validator.cpp"
-  "src/lib/geogram/points/nn_search.cpp"
-  "src/lib/geogram/points/nn_search.h"
-  #"src/lib/geogram/points/co3ne.cpp"
-  #"src/lib/geogram/points/co3ne.h"
-  "src/lib/geogram/points/colocate.cpp"
-  "src/lib/geogram/points/colocate.h"
-  "src/lib/geogram/points/kd_tree.cpp"
-  "src/lib/geogram/points/kd_tree.h"
-  "src/lib/geogram/voronoi/generic_RVD_utils.h"
-  "src/lib/geogram/voronoi/generic_RVD_vertex.h"
-  "src/lib/geogram/voronoi/integration_simplex.cpp"
-  "src/lib/geogram/voronoi/integration_simplex.h"
-  "src/lib/geogram/voronoi/RVD.cpp"
-  "src/lib/geogram/voronoi/RVD.h"
-  "src/lib/geogram/voronoi/RVD_callback.cpp"
-  "src/lib/geogram/voronoi/RVD_callback.h"
-  "src/lib/geogram/voronoi/RVD_mesh_builder.cpp"
-  "src/lib/geogram/voronoi/RVD_mesh_builder.h"
-  "src/lib/geogram/voronoi/CVT.cpp"
-  "src/lib/geogram/voronoi/CVT.h"
-  "src/lib/geogram/voronoi/generic_RVD.h"
-  "src/lib/geogram/voronoi/generic_RVD_cell.cpp"
-  "src/lib/geogram/voronoi/generic_RVD_cell.h"
-  "src/lib/geogram/voronoi/generic_RVD_polygon.cpp"
-  "src/lib/geogram/voronoi/generic_RVD_polygon.h"
-	"src/lib/geogram/third_party/rply/rply.c"
-	"src/lib/geogram/third_party/rply/rply.h"
-	"src/lib/geogram/third_party/LM7/libmeshb7.c"
-  "src/lib/geogram/third_party/HLBFGS/HLBFGS_BLAS.cpp"
-  "src/lib/geogram/third_party/HLBFGS/HLBFGS_BLAS.h"
-  "src/lib/geogram/third_party/HLBFGS/HLBFGS.cpp"
-  "src/lib/geogram/third_party/HLBFGS/HLBFGS.h"
-  "src/lib/geogram/third_party/HLBFGS/ICFS.cpp"
-  "src/lib/geogram/third_party/HLBFGS/ICFS.h"
-  "src/lib/geogram/third_party/HLBFGS/LineSearch.cpp"
-  "src/lib/geogram/third_party/HLBFGS/LineSearch.h"
-  "src/lib/geogram/third_party/HLBFGS/Lite_Sparse_Matrix.cpp"
-  "src/lib/geogram/third_party/HLBFGS/Lite_Sparse_Matrix.h"
-  "src/lib/geogram/third_party/HLBFGS/Sparse_Entry.h"
-  #"src/lib/geogram/bibliography/embedded_references.cpp"
-  #"src/lib/geogram/bibliography/bibliography.cpp"
-  #"src/lib/geogram/bibliography/bibliography.h"
+if(TARGET geogram::geogram)
+	return()
+endif()
+
+set(GEOGRAM_ROOT ${CMAKE_CURRENT_LIST_DIR})
+
+find_path(GEOGRAM_SOURCE_INCLUDE_DIR
+		geogram/basic/common.h
+		PATHS ${GEOGRAM_ROOT}
+		PATH_SUFFIXES src/lib
+		NO_DEFAULT_PATH
 )
 
-set(VORPALINE_VERSION_MAJOR "1")
-set(VORPALINE_VERSION_MINOR "6")
-set(VORPALINE_VERSION_PATCH "3")
-set(VORPALINE_VERSION "1.6.3")
+################################################################################
 
-set(VORPALINE_BUILD_NUMBER "1")
-set(VORPALINE_BUILD_DATE "1")
-set(VORPALINE_SVN_REVISION "1")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(VORPALINE_ARCH_64 TRUE CACHE BOOL "" FORCE)
+	set(VORPALINE_PLATFORM Win-vs-generic CACHE STRING "" FORCE)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	set(VORPALINE_PLATFORM Linux64-gcc-dynamic CACHE STRING "" FORCE)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set(VORPALINE_PLATFORM Darwin-clang-dynamic CACHE STRING "" FORCE)
+endif()
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/geogram/basic/version.h.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/geogram/version.h
-    @ONLY)
+option(GEOGRAM_WITH_GRAPHICS        "Viewers and geogram_gfx library"                                        OFF)
+option(GEOGRAM_WITH_LEGACY_NUMERICS "Legacy numerical libraries"                                             OFF)
+option(GEOGRAM_WITH_HLBFGS          "Non-linear solver (Yang Liu's HLBFGS)"                                   ON)
+option(GEOGRAM_WITH_TETGEN          "Tetrahedral mesher (Hang Si's TetGen)"                                  OFF)
+option(GEOGRAM_WITH_TRIANGLE        "Triangle mesher (Jonathan Shewchuk's triangle)"                         OFF)
+option(GEOGRAM_WITH_EXPLORAGRAM     "Experimental code (hexahedral meshing vpipeline and optimal transport)" OFF)
+option(GEOGRAM_WITH_LUA             "Built-in LUA interpreter"                                               OFF)
+option(GEOGRAM_LIB_ONLY             "Libraries only (no example programs/no viewer)"                          ON)
+option(GEOGRAM_WITH_FPG             "Predicate generator (Sylvain Pion's FPG)"                               OFF)
+option(GEOGRAM_USE_SYSTEM_GLFW3     "Use the version of GLFW3 installed in the system if found"              OFF)
 
-source_group("" FILES ${sources})
+################################################################################
 
-add_library(geogram STATIC ${sources})
+include(GeogramMain.cmake)
+add_library(geogram::geogram ALIAS geogram)
+target_include_directories(geogram SYSTEM PUBLIC ${GEOGRAM_SOURCE_INCLUDE_DIR})
 
-target_include_directories(geogram PUBLIC
-    src/lib)
+################################################################################
 
-target_link_libraries(geogram PUBLIC zlibstatic)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	# remove warning for multiply defined symbols (caused by multiple
+	# instanciations of STL templates)
+	# target_compile_options(geogram INTERFACE /wd4251)
 
-target_compile_features(geogram PUBLIC cxx_std_17)
+	# remove all unused stuff from windows.h
+	# target_compile_definitions(geogram INTERFACE -DWIN32_LEAN_AND_MEAN)
+	# target_compile_definitions(geogram INTERFACE -DVC_EXTRALEAN)
 
-target_compile_definitions(geogram PUBLIC -DGEOGRAM_WITH_HLBFGS)
+	# do not define a min() and a max() macro, breaks
+	# std::min() and std::max() !!
+	target_compile_definitions(geogram INTERFACE -DNOMINMAX)
 
-#target_compile_definitions(geogram PUBLIC)
+	# we want M_PI etc...
+	target_compile_definitions(geogram INTERFACE -D_USE_MATH_DEFINES)
+
+	if(NOT VORPALINE_BUILD_DYNAMIC)
+		# If we use static library, we link with the static C++ runtime.
+		foreach(config ${CMAKE_CONFIGURATION_TYPES})
+			string(TOUPPER ${config} config)
+			string(REPLACE /MD /MT CMAKE_C_FLAGS_${config} "${CMAKE_C_FLAGS_${config}}")
+			string(REPLACE /MD /MT CMAKE_CXX_FLAGS_${config} "${CMAKE_CXX_FLAGS_${config}}")
+		endforeach()
+	endif()
+endif()

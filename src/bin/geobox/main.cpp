@@ -883,7 +883,7 @@ namespace {
     protected:
         
         void hide_mesh() {
-            mesh_gfx()->set_mesh(nil);            
+            mesh_gfx()->set_mesh(nullptr);            
         }
         
         void begin() {

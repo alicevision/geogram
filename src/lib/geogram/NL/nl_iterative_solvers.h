@@ -54,6 +54,10 @@
  * \brief Internal OpenNL functions that implement iterative solvers.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * \brief Solves a linear system using an iterative solver
  * \details The implementation of the solvers is inspired by 
@@ -84,5 +88,9 @@ NLAPI NLuint NLAPIENTRY nlSolveSystemIterative(
     double eps, NLuint max_iter, NLuint inner_iter
 );
 
+#ifdef __cplusplus
+}
+#endif
+    
 #endif
 

@@ -10,11 +10,11 @@
 using namespace AST;
 
 Make_unique_funcalls::Make_unique_funcalls()
-    : should_be_filtered( NULL ),
+    : should_be_filtered( nullptr ),
       compute_call_count( new Compute_call_count(1)             ),
       // false == intraproc. we are only interested in _direct_ function calls
       collect_funcalls  ( new Collect_function_calls( false )   ),
-      tu                ( NULL )
+      tu                ( nullptr )
 {}
 
 void
@@ -131,7 +131,7 @@ Check_unique_funcalls::visit( FunctionCall *funcall ) {
 
 Statement_addition_visitor::Statement_addition_visitor()
   : Generic_visitor( false ),
-    toplevel_position( NULL ),
+    toplevel_position( nullptr ),
     fundef_toplevel( false )
 {}
 
@@ -139,7 +139,7 @@ void
 Statement_addition_visitor::visit( AST::StatementList * l ) {
     AST::StatementContainer::iterator it;
     positions.push_back( Position( l ) );
-    if( fundef_toplevel && toplevel_position == NULL )
+    if( fundef_toplevel && toplevel_position == nullptr )
         toplevel_position = &(positions.back());
     for( it = l->statements->begin(); it != l->statements->end(); ++it ) {
         AST::Statement *stmt = *it;
@@ -152,10 +152,10 @@ Statement_addition_visitor::visit( AST::StatementList * l ) {
 void
 Statement_addition_visitor::visit( AST::FunctionDefinition *fundef ) {
     fundef_toplevel = true;
-    assert( toplevel_position == NULL );
+    assert( toplevel_position == nullptr );
     Generic_visitor::visit( fundef );
     fundef_toplevel = false;
-    toplevel_position = NULL;
+    toplevel_position = nullptr;
 }
 
 
@@ -177,7 +177,7 @@ Statement_addition_visitor::add_stmt( AST::Statement* stmt, bool before ) {
 void
 Statement_addition_visitor::add_stmt_toplevel( AST::Statement* stmt, bool before ) {
     assert( positions.size() > 0 );
-    assert( toplevel_position != NULL );
+    assert( toplevel_position != nullptr );
     if( before )
         toplevel_position->stmt_list->add( stmt, toplevel_position->current_stmt );
     else {
@@ -287,7 +287,7 @@ void
 Transformation_visitor::visit( AST::ConditionalExpression* c ) {
     transform<AST::Expression>( c->cond );
     transform<AST::Expression>( c->e1 );
-    if( c->e2 != NULL )
+    if( c->e2 != nullptr )
         transform<AST::Expression>( c->e2 );
     push( c );
 }
@@ -351,7 +351,7 @@ Transformation_visitor::visit( AST::StatementList* l ) {
     // NOTE: keep in sync with Base::visit!!
     AST::StatementContainer::iterator it;
     positions.push_back( Position( l ) );
-    if( fundef_toplevel && toplevel_position == NULL )
+    if( fundef_toplevel && toplevel_position == nullptr )
         toplevel_position = &(positions.back());
     for( it = l->statements->begin(); it != l->statements->end(); ++it ) {
         positions.back().current_stmt = it;
@@ -411,13 +411,13 @@ Transformation_visitor::pop() {
     assert( node_stack.size() > 0 );
     T *t = dynamic_cast<T*>(node_stack.top());
     node_stack.pop();
-    assert( t != NULL );
+    assert( t != nullptr );
     return t;
 }
 
 void
 Transformation_visitor::push( AST::Node *n ) {
-    assert( n != NULL );
+    assert( n != nullptr );
     node_stack.push( n );
 }
 
@@ -439,7 +439,7 @@ Add_bound_variables_base::add_bound( std::string id ) {
 
 Variable*
 Add_bound_variables_base::add_bound( Variable *var ) {
-    assert( var != NULL );
+    assert( var != nullptr );
     Variable *new_var = add_bound( var->id );
     assert( ! has_bound_variable( var ) );
     bound_map[ var ] = new_var;
@@ -448,7 +448,7 @@ Add_bound_variables_base::add_bound( Variable *var ) {
 
 Variable*
 Add_bound_variables_base::add_bound( AST::FunctionCall *funcall ) {
-    assert( funcall != NULL );
+    assert( funcall != nullptr );
     Variable *new_var = add_bound( funcall->called_function->type->id + "_result" );
     result_bound_storage_map[ funcall ] = new_var;
     return new_var;
@@ -456,21 +456,21 @@ Add_bound_variables_base::add_bound( AST::FunctionCall *funcall ) {
 
 Variable *
 Add_bound_variables_base::bound_variable( Variable *float_var ) {
-    assert( float_var != NULL );
+    assert( float_var != nullptr );
     assert( has_bound_variable( float_var ) );
     return bound_map[ float_var ];
 }
 
 Variable *
 Add_bound_variables_base::bound_variable( AST::FunctionDefinition *fundef ) {
-    assert( fundef != NULL );
+    assert( fundef != nullptr );
     assert( has_bound_variable( fundef ) );
     return result_bound_map[ fundef ];
 }
 
 Variable*
 Add_bound_variables_base::bound_variable( AST::FunctionCall *funcall ) {
-    assert( funcall != NULL );
+    assert( funcall != nullptr );
     assert( has_bound_variable( funcall ) );
     return result_bound_storage_map[ funcall ];
 }
@@ -502,11 +502,11 @@ Common_subexpression_elimination::visit( AST::BinaryExpression* bexp ) {
             reuse_exp_it = std::find_if( subexpressions.begin(),
                                          subexpressions.end(),
                                          AST::Is_equal_to_expression(bexp) );
-        Variable *var = NULL;
+        Variable *var = nullptr;
         if( reuse_exp_it == subexpressions.end() ) {
             AST::IdentifierExpression *idexp1 = dynamic_cast<AST::IdentifierExpression*>(bexp->e1),
                                       *idexp2 = dynamic_cast<AST::IdentifierExpression*>(bexp->e2);
-            if( idexp1 != NULL && idexp2 != NULL ) {
+            if( idexp1 != nullptr && idexp2 != nullptr ) {
                 std::string id1 = idexp1->var->id;
                 std::string id2 = idexp2->var->id;
                 var = add_tmp_result( bexp, id1 + "_" + id2 );
@@ -518,9 +518,9 @@ Common_subexpression_elimination::visit( AST::BinaryExpression* bexp ) {
         } else {
             assert( has_tmp_result_variable( *reuse_exp_it ) );
             var = tmp_result_variable( *reuse_exp_it );
-            assert( var != NULL );
+            assert( var != nullptr );
         }
-        assert( var != NULL );
+        assert( var != nullptr );
         result_value = new AST::IdentifierExpression( var );
     }
     Transformation_visitor::push( result_value );
@@ -619,14 +619,14 @@ Substitute_funcalls::visit( AST::FunctionCall *funcall ) {
             AST::Expression *exp = *arg_iter;
             Variable        *var = *param_iter;
             MSG( var->id );
-            if( var->type != NULL ) {
+            if( var->type != nullptr ) {
                 MSG( var->type->id );
             } else {
                 MSG( " null type!");
             }
             assert( clone_context->var_map.find( var ) == clone_context->var_map.end() );
             AST::IdentifierExpression *idexp = dynamic_cast<AST::IdentifierExpression*>( exp );
-            if( idexp == NULL ) {
+            if( idexp == nullptr ) {
                 replace_var_with_exp.var_to_exp[ var ] = exp;
                 clone_context->var_map[ var ] = var;
             } else

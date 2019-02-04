@@ -43,6 +43,7 @@
 #include <exploragram/basic/common.h>
 #include <exploragram/hexdom/basic.h>
 #include <geogram/mesh/mesh.h>
+#include <geogram/basic/attributes.h>
 
 namespace GEO {
     
@@ -51,16 +52,6 @@ namespace GEO {
 	
         SphericalHarmonicL4() {
 	    FOR(i, 9)  coeff[i] = 0.;
-	}
-	
-        SphericalHarmonicL4(const SphericalHarmonicL4& rhs) : coeff(rhs.coeff) {
-	}
-
-	SphericalHarmonicL4& operator=(const SphericalHarmonicL4& rhs) {
-	    if(&rhs != this) {
-		coeff = rhs.coeff;
-	    }
-	    return *this;
 	}
 	
         SphericalHarmonicL4(const vecng<9, Numeric::float64>& rhs) : coeff(rhs){
@@ -135,7 +126,7 @@ namespace GEO {
             return SphericalHarmonicL4(0, 0, 0, 0, std::sqrt(7. / 12.), 0, 0, 0, std::sqrt(5. / 12.));
         }
 	    
-        mat3 project_mat3(double grad_threshold = 1e-3, double dot_threshold = 1e-5, vec3* euler_prev = NULL);
+        mat3 project_mat3(double grad_threshold = 1e-3, double dot_threshold = 1e-5, vec3* euler_prev = nullptr);
 
     };
 
@@ -146,6 +137,12 @@ namespace GEO {
     inline std::ostream& operator<< (std::ostream& output, const SphericalHarmonicL4 &gna) {
 	return output << gna.coeff;
     }
+
+    /*
+    template <> struct can_be_used_as_attribute<SphericalHarmonicL4> {
+	static constexpr auto value = std::integral_constant<bool,true>();
+    };
+    */
 }
 
 

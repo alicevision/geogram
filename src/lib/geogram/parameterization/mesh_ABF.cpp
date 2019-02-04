@@ -221,8 +221,8 @@ namespace {
 		    index_t c = v_to_c_[v];
 		    do {
 			beta_[c] = corner_angle(c) * ratio ;
-			beta_[c] = geo_max(beta_[c], 3.0 * M_PI / 180.0);
-			beta_[c] = geo_min(beta_[c], 175.0 * M_PI / 180.0);
+			beta_[c] = std::max(beta_[c], 3.0 * M_PI / 180.0);
+			beta_[c] = std::min(beta_[c], 175.0 * M_PI / 180.0);
 			c = next_c_around_v_[c];
 		    } while(c != NO_CORNER) ; 
 		}
@@ -242,7 +242,7 @@ namespace {
 		Geom::mesh_vertex(mesh_, mesh_.facet_corners.vertex(c_prev));
 	    
 	    double result = Geom::angle(p2-p1,p3-p1);
-	    result = geo_max(result, 2.0 * M_PI / 360.0) ;
+	    result = std::max(result, 2.0 * M_PI / 360.0) ;
 	    return result ;
 	}
 
@@ -631,7 +631,7 @@ namespace {
 	    for(index_t i=0; i<nalpha_; i++) {
 		if(alpha_[i] + dalpha_[i] < 10.0 * epsilon_) {
 		    double r1 = -.5 * (alpha_[i] - 10.0 * epsilon_)/dalpha_[i];
-		    ratio = geo_min(ratio, r1) ;
+		    ratio = std::min(ratio, r1) ;
 		    w_[i] *= positive_angle_ro_ ;
 		} else if(alpha_[i] + dalpha_[i] > M_PI - 10.0 * epsilon_) {
 		    // double r1 =

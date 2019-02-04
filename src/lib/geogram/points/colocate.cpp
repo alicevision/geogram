@@ -108,7 +108,7 @@ namespace {
                     old2new_[i] = smallest;
                     return true;
                 }
-                smallest = geo_min(smallest, neighbors[jj]);
+                smallest = std::min(smallest, neighbors[jj]);
             }
             old2new_[i] = smallest;
             return false;
@@ -120,14 +120,14 @@ namespace {
          * \details Called in parallel using parallel_for().
          * \param[in] i index of the query point
          */
-        void operator() (index_t i) {
-            index_t nb = geo_min(index_t(6),nb_points());
+        void do_it(index_t i) {
+            index_t nb = std::min(index_t(6),nb_points());
             while(!find_nearest_neighbors(i, nb) && nb < nb_points()) {
                 if(nb == nb_points()) {
                     break;
                 }
                 nb += nb / 2;
-                nb = geo_min(nb, nb_points());
+                nb = std::min(nb, nb_points());
             }
         }
 
@@ -241,11 +241,15 @@ namespace GEO {
             old2new.resize(nb_points, index_t(-1));
             Colocate colocate_obj(NN, old2new, tolerance);
 	    
-            if(true /*CmdLine::get_arg_bool("sys:multithread")*/) {
-                parallel_for(colocate_obj, 0, nb_points, 1, true);
+            if(CmdLine::get_arg_bool("sys:multithread")) {
+                parallel_for(
+		    0, nb_points,
+		    [&colocate_obj](index_t i){ colocate_obj.do_it(i); },
+		    1, true
+		);
             } else {
                 for(index_t i = 0; i < nb_points; i++) {
-                    colocate_obj(i);
+                    colocate_obj.do_it(i);
                 }
             }
             index_t result = 0;
