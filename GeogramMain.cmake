@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 # Note: geogram.cmake defines GEOGRAM_WITH_VORPALINE
 # that we could have used instead,
-# but geogram.cmake needs to be included after the project() 
+# but geogram.cmake needs to be included after the project()
 # command, since project() resets CFLAGS and CXXFLAGS.
 
 if("$ENV{GEOGRAM_WITH_VORPALINE}" STREQUAL "")
@@ -57,8 +57,9 @@ set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
 string(REGEX REPLACE "-[^-]+$" "" VORPALINE_OS ${VORPALINE_PLATFORM})
 
 # Determine the current build date
-string(TIMESTAMP VORPALINE_BUILD_DATE "%Y-%m-%d %H:%M:%S")
+# string(TIMESTAMP VORPALINE_BUILD_DATE "%Y-%m-%d %H:%M:%S")
 string(TIMESTAMP YEAR "%Y")
+set(VORPALINE_BUILD_DATE "")
 
 # Determine the current build number
 # This is set by Jenkins in environment variable BUILD_NUMBER
@@ -71,13 +72,13 @@ set(VORPALINE_BUILD_NUMBER $ENV{BUILD_NUMBER})
 if(GEOGRAM_WITH_VORPALINE)
    find_package(Subversion QUIET)
    if(NOT SUBVERSION_FOUND)
-       message(WARNING "Subversion executable not found - cannot determine current revision") 
+       message(WARNING "Subversion executable not found - cannot determine current revision")
    else()
        Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Vorpaline)
        message(STATUS "Vorpaline revision is ${Vorpaline_WC_REVISION}")
        set(VORPALINE_SVN_REVISION ${Vorpaline_WC_REVISION})
    endif()
-endif()   
+endif()
 
 ##############################################################################
 # RPATH (where executables find the .so / DLLs)
@@ -176,7 +177,7 @@ if(CPACK_GENERATOR STREQUAL "DEB")
 #   or GET_PROPERTY(result GLOBAL ENABLED_FEATURES)  (successful FIND_PACKAGE())
 endif()
 
-if(NOT DEFINED CPACK_GENERATOR) 
+if(NOT DEFINED CPACK_GENERATOR)
   if(WIN32)
     set(CPACK_GENERATOR ZIP)
   else()
