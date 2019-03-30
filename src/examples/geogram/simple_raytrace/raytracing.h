@@ -189,9 +189,8 @@ namespace GEO {
 	    Y_ = cross(Z_,X_);
 	    
 	    // Coordinate of the viewing plane along viewing vector
-	    double zp = (
-		double(image_height_) / 2.0) / tan(zoom * M_PI / 180.0
-	    );
+	    double zp =
+ 	        (double(image_height_) / 2.0) / tan(zoom * M_PI / 180.0);
 	    
 	    // Center of the viewing plane
 	    center_ = position_+zp*Z_;
@@ -323,7 +322,7 @@ namespace GEO {
 	Intersection() :
 	    t(Numeric::max_float64()),
 	    object(nullptr),
-	    K(0.0, 0.0, 0.3) {
+	    K(0.1, 0.1, 0.1) {
 	}
 	vec3 position; /**< position of the intersection. */
 	vec3 normal; /**< normal to the object. */

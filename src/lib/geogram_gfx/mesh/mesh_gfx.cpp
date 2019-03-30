@@ -108,7 +108,6 @@ namespace GEO {
         attribute_repeat_ = 1;
 	attribute_dim_ = 1;
 	
-        auto_GL_interop_ = false;
         ES_profile_ = false;
     }
 
@@ -1061,11 +1060,6 @@ namespace GEO {
         
         if(glupCurrentContext() == nullptr) {
             glupMakeCurrent(glupCreateContext());
-            auto_GL_interop_ = true;
-        }
-        
-        if(auto_GL_interop_) {
-            glupCopyFromGLState(GLUP_ALL_ATTRIBUTES);            
         }
         
         if(show_mesh_) {

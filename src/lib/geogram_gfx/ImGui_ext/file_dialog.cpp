@@ -44,6 +44,7 @@
  */
 
 #include <geogram_gfx/ImGui_ext/file_dialog.h>
+#include <geogram_gfx/ImGui_ext/icon_font.h>
 #include <geogram_gfx/glup_viewer/glup_viewer_gui.h>
 #include <geogram/basic/file_system.h>
 #include <geogram/basic/string.h>
@@ -90,6 +91,25 @@ namespace {
         }
         return result;
     }
+
+
+    /**
+     * \brief Converts an icon symbolic name and a label to a string.
+     * \param[in] icon_sym the symbolic name of the icon.
+     * \param[in] label the label to be displayed.
+     * \return a UTF8 string with the icon and label, or just the label
+     *  if the icon font is not initialized.
+     */
+    std::string icon_label(const char* icon_sym, const char* label) {
+	wchar_t str[2];
+	str[0] = icon_wchar(icon_sym);
+	if(str[0] == '\0') {
+	    return std::string(label);
+	}
+	str[1] = '\0';
+	return GEO::String::wchar_to_UTF8(str) + " " + label;
+    }
+    
 }
 
 namespace GEO {
@@ -335,16 +355,16 @@ namespace GEO {
             ImGuiWindowFlags_NoCollapse 
         );
 
-        if(ImGui::Button("parent")) {
+        if(ImGui::Button(icon_label("arrow-circle-up","parent").c_str())) {
             set_directory("../");
         }
         ImGui::SameLine();
-        if(ImGui::Button("home")) {
+        if(ImGui::Button(icon_label("home","home").c_str())) {
             set_directory(FileSystem::documents_directory());
             update_files();
         }
         ImGui::SameLine();            
-        if(ImGui::Button("refresh")) {
+        if(ImGui::Button(icon_label("recycle","refresh").c_str())) {
             update_files();
         }
 
@@ -367,6 +387,12 @@ namespace GEO {
             for(index_t i=0; i<path.size(); ++i) {
                 if(i != 0) {
                     ImGui::SameLine();
+		    if(
+			ImGui::GetContentRegionAvailWidth() <
+			ImGui::CalcTextSize(path[i].c_str()).x + 10.0f*ImGui::scaling()
+		    ) {
+			ImGui::NewLine();
+		    }
                 }
                 // We need to generate a unique id, else there is an id
                 // clash with the "home" button right before !!
@@ -386,6 +412,8 @@ namespace GEO {
                     }
                     set_directory(new_dir);
                 }
+		ImGui::SameLine();
+		ImGui::Text("/");
             }
         }
 
@@ -393,7 +421,10 @@ namespace GEO {
         {
             ImGui::BeginChild(
                 "##directories",
-                ImVec2(ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(), -footer_size),
+                ImVec2(
+		    ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(),
+		    -footer_size
+		),
                 true
             );
             for(index_t i=0; i<directories_.size(); ++i) {
@@ -412,7 +443,10 @@ namespace GEO {
         {
             ImGui::BeginChild(
                 "##files",
-                ImVec2(ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(), -footer_size),
+                ImVec2(
+		    ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(),
+		    -footer_size
+		),
                 true
             );
             for(index_t i=0; i<files_.size(); ++i) {
@@ -438,12 +472,17 @@ namespace GEO {
             ImGui::EndChild();
 
             {
-                if(ImGui::Button(save_mode_ ? "Save as" : "Load")) {
+                if(ImGui::Button(
+		       save_mode_ ?
+		       icon_label("save","Save as").c_str() :
+		       icon_label("folder-open","Load").c_str()
+		)) {
                     file_selected();
                 }
                 ImGui::SameLine();
                 ImGui::PushItemWidth(
-                    save_mode_ ? -80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
+                    save_mode_ ?
+		    -80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
                 );
                 if(ImGui::InputText(
                        "##filename",
@@ -534,7 +573,7 @@ namespace GEO {
                  ).c_str()
             );
             ImGui::Separator();
-            float w = 120.0f*ImGui::scaling();
+            float w = 0.5f * ImGui::GetWindowWidth() - 15.0f*ImGui::scaling();
             if (ImGui::Button("Overwrite", ImVec2(w,0))) {
                 are_you_sure_ = false;
                 ImGui::CloseCurrentPopup();
@@ -583,6 +622,12 @@ namespace GEO {
 		    set_directory(drive);
 		}
 		ImGui::SameLine();
+		if(
+		    ImGui::GetContentRegionAvailWidth() <
+		    ImGui::CalcTextSize("X:").x + 10.0f*ImGui::scaling()
+		) {
+		    ImGui::NewLine();
+		}
 	    }
 	}
 #endif	

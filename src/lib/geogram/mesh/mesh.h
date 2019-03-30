@@ -1295,7 +1295,7 @@ namespace GEO {
          *   with the borders of the surfacic part.
          */
         void compute_borders();
-        
+
         /**
          * \brief Copies a triangle mesh into this Mesh.
          * \details Facet adjacence are not computed.
@@ -2265,6 +2265,15 @@ namespace GEO {
          */
         void compute_borders();
 
+        /**
+         * \brief Replaces the surfacic part of this mesh
+         *   with the borders of the volumetric part.
+	 * \param[out] facet_cell on exit, stores the
+	 *   index of the cell adjacent to the facet
+	 *   on the border.
+         */
+	void compute_borders(Attribute<index_t>& facet_cell);
+	
         /**
          * \brief Copies a tetrahedron mesh into this Mesh.
          * \details Tetrahedron adjacences are not computed.

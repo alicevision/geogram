@@ -142,6 +142,8 @@ enum cudaMemcpyKind {
 
 typedef int cudaError_t;
 
+typedef cudaError_t (*FUNPTR_cudaDriverGetVersion)(int* version);
+typedef cudaError_t (*FUNPTR_cudaRuntimeGetVersion)(int* version);
 typedef cudaError_t (*FUNPTR_cudaGetDeviceCount)(int* device_count);
 typedef cudaError_t (*FUNPTR_cudaGetDeviceProperties)(
     struct cudaDeviceProp *props, int device
@@ -279,7 +281,7 @@ typedef cublasStatus_t (*FUNPTR_cublasDtpsv)(
  * \details Function pointers are stored into the 
  *  CUDAContext returned by the function CUDA().
  *  If a symbol is not found, returns NL_FALSE from the
- *  calling function. Here we use the functions prefixed
+ *  calling function. Here we use the functions suffixed
  *  by "_v2".
  */
 #define find_cublas_func(name)	    		              \
@@ -301,8 +303,7 @@ typedef cublasStatus_t (*FUNPTR_cublasDtpsv)(
  * \details Function pointers are stored into the 
  *  CUDAContext returned by the function CUDA().
  *  If a symbol is not found, returns NL_FALSE from the
- *  calling function. Here we use the functions prefixed
- *  by "_v2".
+ *  calling function.
  */
 #define find_cublas_func_v1(name)                             \
     if(                                                       \
@@ -441,6 +442,9 @@ typedef cusparseStatus_t (*FUNPTR_cusparseDhybmv)(
  */
 typedef struct {
     NLdll DLL_cudart;
+
+    FUNPTR_cudaDriverGetVersion cudaDriverGetVersion;
+    FUNPTR_cudaRuntimeGetVersion cudaRuntimeGetVersion;    
     FUNPTR_cudaGetDeviceCount cudaGetDeviceCount;
     FUNPTR_cudaGetDeviceProperties cudaGetDeviceProperties;
     FUNPTR_cudaDeviceReset cudaDeviceReset;
@@ -497,6 +501,8 @@ static CUDAContext* CUDA() {
 NLboolean nlExtensionIsInitialized_CUDA() {
     if(
 	CUDA()->DLL_cudart == NULL ||
+	CUDA()->cudaDriverGetVersion == NULL ||
+	CUDA()->cudaRuntimeGetVersion == NULL ||	
 	CUDA()->cudaGetDeviceCount == NULL ||
 	CUDA()->cudaGetDeviceProperties == NULL ||
 	CUDA()->cudaDeviceReset == NULL ||
@@ -614,9 +620,23 @@ static int getBestDeviceID() {
     int max_compute_perf   = 0, max_perf_device   = 0;
     int device_count       = 0, best_SM_arch      = 0;
     int compute_perf       = 0;
+    int driver_ver         = 0;
+    int runtime_ver        = 0;
     struct cudaDeviceProp deviceProp;
-    CUDA()->cudaGetDeviceCount(&device_count);
+    int retval = CUDA()->cudaGetDeviceCount(&device_count);
+    if(retval == 35) {
+	nl_printf("Error: Driver/CUDA versions mismatch\n");
+	retval = CUDA()->cudaDriverGetVersion(&driver_ver);
+	nl_printf("cudaDriverGetVersion()   retval=%d\n",retval);	
+	retval = CUDA()->cudaRuntimeGetVersion(&runtime_ver);
+	nl_printf("cudaRuntimeGetVersion()  retval=%d\n",retval);
+	
+	nl_printf("  Driver  version=%d\n",driver_ver);
+	nl_printf("  Runtime version=%d\n",driver_ver);	
+    }
+    
     /* Find the best major SM Architecture GPU device */
+
     while (current_device < device_count) {
         CUDA()->cudaGetDeviceProperties(&deviceProp, current_device);
         /* If this GPU is not running on Compute Mode prohibited, 
@@ -667,7 +687,7 @@ static int getBestDeviceID() {
      nl_printf(
 	"OpenNL CUDA: maximum device single-precision Gflops=%f\n",
 	(double)(2*max_compute_perf)/(double)(1e6)
-    );
+     );
     */
  
     return max_perf_device;
@@ -706,6 +726,8 @@ NLboolean nlInitExtension_CUDA(void) {
 	LIBPREFIX "cudart" LIBEXTENSION, flags
     );
 
+    find_cuda_func(cudaDriverGetVersion);
+    find_cuda_func(cudaRuntimeGetVersion);
     find_cuda_func(cudaGetDeviceCount);
     find_cuda_func(cudaGetDeviceProperties);
     find_cuda_func(cudaDeviceReset);        
@@ -713,7 +735,7 @@ NLboolean nlInitExtension_CUDA(void) {
     find_cuda_func(cudaFree);
     find_cuda_func(cudaMemcpy);
     
-    CUDA()->devID = getBestDeviceID();
+    CUDA()->devID = getBestDeviceID(); 
 
     if(CUDA()->cudaGetDeviceProperties(&deviceProp, CUDA()->devID)) {
 	nl_fprintf(stderr,"OpenNL CUDA: could not find a CUDA device\n");

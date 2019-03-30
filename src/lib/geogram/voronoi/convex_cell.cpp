@@ -153,6 +153,57 @@ namespace VBW {
 	geometry_dirty_ = true;
     }
     
+
+    void ConvexCell::init_with_tet(
+	vec4 P0, vec4 P1, vec4 P2, vec4 P3
+    ) {
+	clear();
+
+	// The vertex at infinity.
+ 	plane_eqn_[0] = make_vec4(0,0,0,0);
+
+	// Offset for the 4 plane equations.
+	// Plane 0 is vertex at infinity.
+	index_t boff = 1;
+
+	plane_eqn_[boff  ] = P0;
+	plane_eqn_[boff+1] = P1;
+	plane_eqn_[boff+2] = P2;
+	plane_eqn_[boff+3] = P3;
+
+	new_triangle(boff+3, boff+2, boff+1);
+	new_triangle(boff+3, boff+0, boff+2);
+	new_triangle(boff+3, boff+1, boff+0);
+	new_triangle(boff+2, boff+0, boff+1);
+	
+	// We already created 6 vertices (for the 6 bounding box
+	// plane equations) plus the vertex at infinity.
+	nb_v_ = 5;
+
+	geometry_dirty_ = true;
+    }
+
+
+    void ConvexCell::init_with_tet(
+	vec4 P0, vec4 P1, vec4 P2, vec4 P3,
+	index_t P0_global_index,
+	index_t P1_global_index,
+	index_t P2_global_index,
+	index_t P3_global_index	    
+    ) {
+	geo_debug_assert(has_vglobal_);
+	init_with_tet(P0, P1, P2, P3);
+
+	// Offset for the 4 plane equations.
+	// Plane 0 is vertex at infinity.
+	index_t boff = 1;
+
+	vglobal_[boff  ] = P0_global_index;
+	vglobal_[boff+1] = P1_global_index;
+	vglobal_[boff+2] = P2_global_index;
+	vglobal_[boff+3] = P3_global_index;	
+    }
+    
     
     /***********************************************************************/
 
@@ -181,11 +232,20 @@ namespace VBW {
 	    index_t t = first_valid_;
 	    while(t != END_OF_LIST) { 
 		TriangleWithFlags T = get_triangle_and_flags(t);
-		vec4 p = compute_triangle_point(T);
-		p.x /= p.w;
-		p.y /= p.w;
-		p.z /= p.w;
-		p.w = 1.0;
+		vec4 p;
+		if(geometry_dirty_) {
+		    p = compute_triangle_point(T);
+		    p.x /= p.w;
+		    p.y /= p.w;
+		    p.z /= p.w;
+		    p.w = 1.0;
+		} else {
+		    p.x = triangle_point_[t].x;
+		    p.y = triangle_point_[t].y;
+		    p.z = triangle_point_[t].z;
+		    p.w = 1.0;
+		}
+
 		if(shrink != 0.0) {
 		    p.x = shrink * g.x + (1.0 - shrink) * p.x;
 		    p.y = shrink * g.y + (1.0 - shrink) * p.y;
@@ -719,6 +779,7 @@ namespace VBW {
 	
 	if(v2t_[v] != END_OF_LIST) {
 	    index_t t = v2t_[v];
+	    index_t count = 0;
 	    do {
 		if(cur < 2) {
 		    t1t2[cur] = ushort(t);
@@ -733,6 +794,8 @@ namespace VBW {
 		++cur;
 		index_t lv = triangle_find_vertex(t,v);		   
 		t = triangle_adjacent(t, (lv + 1)%3);
+		++count;
+		geo_assert(count < 100000);
 	    } while(t != v2t_[v]);
 	}
 	
@@ -777,6 +840,8 @@ namespace VBW {
 	    ushort t1t2[2];
 	    index_t cur=0;
 	    index_t t = v2t_[v];
+
+	    index_t count = 0;
 	    do {
 		if(cur < 2) {
 		    t1t2[cur] = ushort(t);
@@ -792,15 +857,29 @@ namespace VBW {
 		++cur;
 		index_t lv = triangle_find_vertex(t,v);		   
 		t = triangle_adjacent(t, (lv + 1)%3);
+		++count;
+		geo_assert(count < 100000);
 	    } while(t != v2t_[v]);
 	}
 	return result;
     }
 
     vec3 ConvexCell::barycenter() const {
+	vec3 result;
+	double m;
+	compute_mg(m, result);
+	if(m != 0.0) {
+	    result.x /= m;
+	    result.y /= m;
+	    result.z /= m;
+	}
+	return result;
+    }
+    
+    void ConvexCell::compute_mg(double& m, vec3& result) const {
 	vbw_assert(!geometry_dirty_);
-	vec3 result = make_vec3(0.0, 0.0, 0.0);
-	double m = 0.0;
+	result = make_vec3(0.0, 0.0, 0.0);
+	m = 0.0;
 
 	ushort t_origin = END_OF_LIST;
 	for(index_t v=0; v<nb_v_; ++v) {
@@ -814,6 +893,7 @@ namespace VBW {
 	    ushort t1t2[2];
 	    index_t cur=0;
 	    index_t t = v2t_[v];
+	    index_t count = 0;
 	    do {
 		if(cur < 2) {
 		    t1t2[cur] = ushort(t);
@@ -832,15 +912,10 @@ namespace VBW {
 		++cur;
 		index_t lv = triangle_find_vertex(t,v);		   
 		t = triangle_adjacent(t, (lv + 1)%3);
+		++count;
+		geo_assert(count < 100000);
 	    } while(t != v2t_[v]);
 	}
-	
-	if(m != 0.0) {
-	    result.x /= m;
-	    result.y /= m;
-	    result.z /= m;
-	}
-	return result;
     }
     
     /***********************************************************************/
@@ -869,8 +944,13 @@ namespace VBW {
     double ConvexCell::squared_inner_radius(vec3 center) const {
 	double result = std::numeric_limits<double>::max();
 	for(index_t v=0; v<nb_v(); ++v) {
+	    vec4 P = vertex_plane(v);
+	    // Ignore vertex at infinity.
+	    if(P.x == 0.0 && P.y == 0.0 && P.z == 0.0) {
+		continue;
+	    }
 	    result = std::min(
-		result, squared_point_plane_distance(center, vertex_plane(v))
+		result, squared_point_plane_distance(center, P)
 	    );
 	}
 	return result;

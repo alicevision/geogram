@@ -334,14 +334,6 @@ namespace GEO {
             GLSL_version = find_version_number(shading_language_ver_str);
             Logger::out("GLSL") << "version = " << GLSL_version
                                 << std::endl;
-            
-            if(!CmdLine::get_arg_bool("gfx:GLSL")) {
-                Logger::out("GLSL")
-                    << "OpenGL shaders deactivated (gfx:GLSL=false)"
-                    << std::endl;
-                
-                GLSL_version = 0.0;
-            }
             return GLSL_version;
         }
             

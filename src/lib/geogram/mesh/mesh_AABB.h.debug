@@ -445,7 +445,8 @@ namespace GEO {
      */
     class GEOGRAM_API MeshCellsAABB {
     public:
-
+         bool debug;
+    
         /**
          * \brief Symbolic constant for indicating that there
          *  is no containing tetrahedron.
@@ -474,15 +475,16 @@ namespace GEO {
         /**
          * \brief Finds the index of a tetrahedron that contains a query point
          * \param[in] p a const reference to the query point
+         * \param[in] exact specifies whether exact predicates should be used
          * \return the index of one of the tetrahedra that contains \p p or
          *  NO_TET if \p p is outside the mesh.
          * \note The input mesh needs to be tetrahedralized. If the mesh has
          *   arbitrary cells, then one may use instead containing_boxes().
          */
-        index_t containing_tet(const vec3& p) const {
+        index_t containing_tet(const vec3& p, bool exact =true) const {
             geo_debug_assert(mesh_.cells.are_simplices());
             return containing_tet_recursive(
-                p, 1, 0, mesh_.cells.nb()
+                p, exact, 1, 0, mesh_.cells.nb()
             );
         }
 
@@ -508,21 +510,7 @@ namespace GEO {
             );
         }
 
-        /**
-         * \brief Computes all the intersections between a given
-         *  box and the bounding boxes of all the cells.
-         * \param[in] action a function that takes as argument
-	 *  an index_t (cell index) invoked for all cells that 
-	 *  have a bounding box that intersects \p box_in.
-         */
-        void compute_bbox_cell_bbox_intersections(
-            const Box& box_in,
-            std::function<void(index_t)> action
-        ) const {
-            bbox_intersect_recursive(
-                action, box_in, 1, 0, mesh_.cells.nb()
-            );
-        }
+
 
         /**
          * \brief Finds all the cells such that their bounding
@@ -593,56 +581,12 @@ namespace GEO {
             bbox_intersect_recursive(action, box, node_r, m, e);
         }
 
-        /**
-         * \brief Computes all the cells that have a bbox that
-         *  intersects a given bbox in a sub-tree of the AABB tree.
-         *
-         * Note that the tree structure is completely implicit,
-         *  therefore the bounds of the (continuous) facet indices
-         *  sequences that correspond to the facets contained
-         *  in the two nodes are sent as well as the node indices.
-         *
-         * \param[in] action a function that takes as argument
-	 *  an index_t (cell index) invoked for all cells that 
-	 *  has a bounding box that overlaps \p box.
-         * \param[in] box the query box
-         * \param[in] node index of the first node of the AABB tree
-         * \param[in] b index of the first facet in \p node
-         * \param[in] e one position past the index of the last
-         *  facet in \p node
-         */
-        void bbox_intersect_recursive(
-            std::function<void(index_t)> action,
-            const Box& box,
-            index_t node, index_t b, index_t e
-        ) const {
-            geo_debug_assert(e != b);
-
-            // Prune sub-tree that does not have intersection
-            if(!bboxes_overlap(box, bboxes_[node])) {
-                return;
-            }
-
-            // Leaf case
-            if(e == b+1) {
-                action(b);
-                return;
-            }
-
-            // Recursion
-            index_t m = b + (e - b) / 2;
-            index_t node_l = 2 * node;
-            index_t node_r = 2 * node + 1;
-
-            bbox_intersect_recursive(action, box, node_l, b, m);
-            bbox_intersect_recursive(action, box, node_r, m, e);
-        }
-    
         
         /**
          * \brief The recursive function used by the implementation
          *  of containing_tet().
          * \param[in] p a const reference to the query point
+         * \param[in] exact specifies whether exact predicates should be used
          * \param[in] n index of the current node in the AABB tree
          * \param[in] b index of the first tet in the subtree under node \p n
          * \param[in] e one position past the index of the last tet in the
@@ -651,7 +595,7 @@ namespace GEO {
          *  NO_TET if \p p is outside the mesh.
          */
         index_t containing_tet_recursive(
-            const vec3& p, 
+            const vec3& p, bool exact, 
             index_t n, index_t b, index_t e
         ) const;
 

@@ -45,7 +45,6 @@
 
 #include <geogram_gfx/GLUP/GLUP.h>
 #include <geogram_gfx/GLUP/GLUP_context_GLSL.h>
-#include <geogram_gfx/GLUP/GLUP_context_VanillaGL.h>
 #include <geogram_gfx/GLUP/GLUP_context_ES.h>
 #include <geogram_gfx/basic/GLSL.h>
 #include <geogram/basic/logger.h>
@@ -77,15 +76,7 @@ namespace {
 				<< CmdLine::get_config_file_name() << "\' in " << std::endl;
 	    Logger::out("GLUP") << "     your home directory (" << FileSystem::home_directory() << ")" << std::endl;
 	    Logger::out("GLUP") << "     with: " << std::endl;
-	    Logger::out("GLUP") << "       gfx:GL_profile=core" << std::endl;
-	    Logger::out("GLUP") << " (3) create a file named \'"
-				<< CmdLine::get_config_file_name() << "\' in " << std::endl;
-	    Logger::out("GLUP") << "     your home directory (" << FileSystem::home_directory() << ")" << std::endl;
-	    Logger::out("GLUP") << "     with: " << std::endl;
-	    Logger::out("GLUP") << "       gfx:GL_profile=compatibility" << std::endl;
-	    Logger::out("GLUP") << "       gfx:GLUP_profile=VanillaGL" << std::endl;
-	    Logger::out("GLUP") << " Note: solution (3) will result in degraded performance."
-				<< std::endl;
+	    Logger::out("GLUP") << "       gfx:GLUP_profile=GLUPES2" << std::endl;
 	}
     }
 }
@@ -399,41 +390,18 @@ GLUPcontext glupCreateContext() {
 	    result->setup();	    	    
         } catch(...) {
 	    GEO::Logger::warn("GLUP")
-	        << "Caught an exception in GLUPES2, downgrading to VanillaGL"
+	        << "Caught an exception in GLUPES2"
 	        << std::endl;
 	    downgrade_message();	    
-	    GLUP_profile = "VanillaGL";
 	    delete result;
 	    result = nullptr;
 	}
     }
 #endif
 
-#ifdef GEO_GL_LEGACY    
-    if(GLUP_profile == "VanillaGL") {
-        if(GEO::CmdLine::get_arg("gfx:GL_profile") != "compatibility") {    
-	    GEO::Logger::warn("GLUP")
-	      << "Cannot switch to VanillaGL" << std::endl;
-	    GEO::Logger::warn("GLUP")
-	      << "Needs gfx:GL_profile=compatibility" << std::endl;
-	} else {
-	    try {            
-	        result = new GLUP::Context_VanillaGL;
-		result->setup();	    	    
-	    } catch(...) {
-	        GEO::Logger::warn("GLUP")
-		  << "Caught an exception in VanillaGL"
-		  << std::endl;
-		delete result;
-		result = nullptr;
-	    }
-	}
-    }
-#endif
-
     if(result == nullptr) {
-        GEO::Logger::err("GLUP") << "Could not create context"
-			    << std::endl;
+         GEO::Logger::err("GLUP") << "Could not create context"
+	                          << std::endl;
     } else {
         GLUP::all_contexts_.insert(result);
     }
@@ -471,18 +439,6 @@ const char* glupCurrentProfileName() {
 void glupMakeCurrent(GLUPcontext context) {
     GEO_CHECK_GL();
     GLUP::current_context_ = reinterpret_cast<GLUP::Context*>(context);
-}
-
-void glupCopyFromGLState(GLUPbitfield which_attributes) {
-    GEO_CHECK_GL();    
-    GLUP::current_context_->copy_from_GL_state(which_attributes);
-    GEO_CHECK_GL();        
-}
-
-void glupCopyToGLState(GLUPbitfield which_attributes) {
-    GEO_CHECK_GL();            
-    GLUP::current_context_->copy_to_GL_state(which_attributes);
-    GEO_CHECK_GL();            
 }
 
 GLUPboolean glupPrimitiveSupportsArrayMode(GLUPprimitive prim) {

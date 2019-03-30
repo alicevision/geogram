@@ -74,13 +74,9 @@
 #  define GEO_GL_ES2
 #  define GEO_GL_150
 #  define GEO_GL_NO_DOUBLES
-//#  define GL_POINT_SPRITE 0x8861
-//#  define GL_PROGRAM_POINT_SIZE 0x8642
-//#  define GL_CLIP_DISTANCE0 0x3000
 #else
 #  include <geogram_gfx/third_party/glad/glad.h>
 #  define GEO_GL_TEXTURE_3D
-#  define GEO_GL_LEGACY
 #  define GEO_GL_150
 #  define GEO_GL_440
 #  define GEO_GL_ES2
@@ -311,7 +307,7 @@ namespace GEO {
      * \brief Draws a textured quad.
      * \details The textured quad spans the [-1,1]x[-1,1] square with
      *  texture coordinates in [0,1]x[0,1]. If no program is currently
-     *  bound, then a default one is used, and it uses the texture bind
+     *  bound, then a default one is used, and it uses the texture bound
      *  to unit 0 of GL_TEXTURE_2D. If a program is bound, then it is used.
      *  Vertices coordinates are sent to vertex attribute 0 and texture 
      *  coordinates to vertex attribute 1.
@@ -330,87 +326,6 @@ namespace GEO {
 #endif    
 
     /***********************************************************/
-
-#ifdef GEO_USE_DEPRECATED_GL
-    
-    /**
-     * \brief Sends a vertex to OpenGL.
-     * \param[in] v a const reference to the vertex to be sent.
-     * \note This uses the old pipeline (glBegin() / glEnd() calls).
-     * \deprecated use glupVertex(), glupBegin(), glupEnd() instead
-     */
-    inline void glVertex(const vec3& v) {
-        glVertex3dv(v.data());
-    }
-
-    /**
-     * \brief Sends a vertex to OpenGL.
-     * \param[in] v a const reference to the vertex to be sent, in
-     *  homogeneous coordinates (4d).
-     * \note This uses the old pipeline (glBegin() / glEnd() calls).
-     * \deprecated use glupVertex(), glupBegin(), glupEnd() instead
-     */
-    inline void glVertex(const vec4& v) {
-        glVertex4dv(v.data());
-    }
-
-    /**
-     * \brief Sends a RGB color to OpenGL.
-     * \param[in] v a const reference to the color to be sent.
-     * \note This uses the old pipeline (glBegin() / glEnd() calls).
-     * \deprecated use glupColor(), glupBegin(), glupEnd() instead
-     */
-    inline void glColor(const vec3& v) {
-        glColor3dv(v.data());
-    }
-
-    /**
-     * \brief Sends a RGBA color to OpenGL.
-     * \param[in] v a const reference to the color to be sent.
-     * \note This uses the old pipeline (glBegin() / glEnd() calls).
-     * \deprecated use glupColor(), glupBegin(), glupEnd() instead
-     */
-    inline void glColor(const vec4& v) {
-        glColor4dv(v.data());
-    }
-
-    /**
-     * \brief Sends a normal to OpenGL.
-     * \param[in] v a const reference to the normal to be sent.
-     * \note This uses the old pipeline (glBegin() / glEnd() calls).
-     * \deprecated 
-     */
-    inline void glNormal(const vec3& v) {
-        glNormal3dv(v.data());
-    }
-
-    /**
-     * \brief Multiplies the current OpenGL matrix
-     *   with another one.
-     * \param[in] m a const reference to the matrix.
-     * \note m is transposed before being sent to OpenGL
-     *  because Geogram uses the convention with column
-     *  vectors and OpenGL the convention with row vectors
-     *  to represent the transformed points.
-     * \deprecated use glupMultMatrix() instead.
-     */
-    void GEOGRAM_GFX_API glMultMatrix(const mat4& m);
-
-    /**
-     * \brief Replaces the current OpenGL matrix
-     *   with a user defined one.
-     * \param[in] m a const reference to the matrix.
-     * \note m is transposed before being sent to OpenGL
-     *  because Geogram uses the convention with column
-     *  vectors and OpenGL the convention with row vectors
-     *  to represent the transformed points.
-     * \deprecated use glupLoadMatrix() instead.
-     */
-    void GEOGRAM_GFX_API glLoadMatrix(const mat4& m);
-
-    /*******************************************************/
-
-#endif
 }
 
 #endif

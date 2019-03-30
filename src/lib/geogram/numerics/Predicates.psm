@@ -24,6 +24,7 @@ predicates/side4h.h \
 predicates/orient2d.h \
 predicates/orient3d.h \
 predicates/dot3d.h \
+predicates/dot_compare_3d.h \
 predicates/det3d.h \
 predicates/det4d.h \
 predicates/aligned3d.h \

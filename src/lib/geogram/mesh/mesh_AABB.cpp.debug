@@ -62,6 +62,7 @@ namespace {
 
     using namespace GEO;
 
+
     /**
      * \brief Computes the axis-aligned bounding box of a mesh facet.
      * \param[in] M the mesh
@@ -154,6 +155,20 @@ namespace {
         );
     }
 
+
+    void make_empty_box(Box& B) {
+        for(coord_index_t coord = 0; coord < 3; ++coord) {
+            B.xyz_min[coord] = 1.0;
+            B.xyz_max[coord] = 0.0;
+        }
+    }
+
+    bool box_is_empty(Box& B) {
+	return (B.xyz_max[0] < B.xyz_min[0]);
+    }
+
+    Mesh* the_mesh = nullptr;
+    
     /**
      * \brief Computes the hierarchy of bounding boxes recursively.
      * \details This function is generic and can be used to compute
@@ -177,10 +192,52 @@ namespace {
         index_t b, index_t e,
         const GET_BBOX& get_bbox
     ) {
+	// DEBUGGING
+	if(node_index == 1) {
+	    for(index_t i=0; i<bboxes.size(); ++i) {
+		make_empty_box(bboxes[i]);
+	    }
+	}
+
+	if(node_index == 49104) {
+	    std::cerr << "Node index == 49104 " << "b = " << b << " e = " << e << std::endl;
+	    Box B;
+	    if(the_mesh) {
+		get_tet_bbox(*the_mesh, B, b);
+		std::cerr
+		    << "get bbox " 
+		    << B.xyz_min[0] << ' ' 
+		    << B.xyz_min[1] << ' ' 
+		    << B.xyz_min[2] << " - "
+		    << B.xyz_max[0] << ' ' 
+		    << B.xyz_max[1] << ' ' 
+		    << B.xyz_max[2]
+		    << std::endl;
+	    }
+	}
+
+	// std::cerr << node_index << " " << b << " " << e << std::endl;
+	
         geo_debug_assert(node_index < bboxes.size());
         geo_debug_assert(b != e);
         if(b + 1 == e) {
+	    if(!box_is_empty(bboxes[node_index])) {
+		std::cerr << "Leaf  Box not empty: " << node_index << ":" << b << std::endl;
+	    }
             get_bbox(M, bboxes[node_index], b);
+
+	    if(node_index == 49104) {
+		Box B = bboxes[node_index];
+		std::cerr
+		    << "bboxes[] " 
+		    << B.xyz_min[0] << ' ' 
+		    << B.xyz_min[1] << ' ' 
+		    << B.xyz_min[2] << " - "
+		    << B.xyz_max[0] << ' ' 
+		    << B.xyz_max[1] << ' ' 
+		    << B.xyz_max[2]
+		    << std::endl;
+	    }
             return;
         }
         index_t m = b + (e - b) / 2;
@@ -192,6 +249,9 @@ namespace {
         init_bboxes_recursive(M, bboxes, childr, m, e, get_bbox);
         geo_debug_assert(childl < bboxes.size());
         geo_debug_assert(childr < bboxes.size());
+	if(!box_is_empty(bboxes[node_index])) {
+	    std::cerr << "Inner Box not empty: " << node_index << std::endl;
+	}
         bbox_union(bboxes[node_index], bboxes[childl], bboxes[childr]);
     }
 
@@ -297,13 +357,17 @@ namespace {
      * \param[in] M a const reference to the mesh
      * \param[in] t the index of the tetrahedron in \p M
      * \param[in] p a const reference to the point
+     * \param[in] exact specifies whether exact predicates should be used
      * \retval true if the tetrahedron \p t or its boundary contains 
      *  the point \p p
      * \retval false otherwise
      */
     bool mesh_tet_contains_point(
-	const Mesh& M, index_t t, const vec3& p
+        const Mesh& M, index_t t, const vec3& p, bool exact = true
     ) {
+        // Inexact mode is not implemented yet.
+        geo_argused(exact);
+
         const vec3& p0 = Geom::mesh_vertex(M, M.cells.vertex(t,0));
         const vec3& p1 = Geom::mesh_vertex(M, M.cells.vertex(t,1));
         const vec3& p2 = Geom::mesh_vertex(M, M.cells.vertex(t,2));
@@ -733,6 +797,7 @@ namespace GEO {
 /****************************************************************************/
 
     MeshCellsAABB::MeshCellsAABB(Mesh& M, bool reorder) : mesh_(M) {
+	debug = false;
         if(reorder) {
             mesh_reorder(mesh_, MESH_ORDER_MORTON);
         }
@@ -742,9 +807,11 @@ namespace GEO {
             ) + 1 // <-- this is because size == max_index + 1 !!!
         );
         if(mesh_.cells.are_simplices()) {
+	    the_mesh = &mesh_;
             init_bboxes_recursive(
                 mesh_, bboxes_, 1, 0, mesh_.cells.nb(), get_tet_bbox
             );
+	    the_mesh = nullptr;
         } else {
             init_bboxes_recursive(
                 mesh_, bboxes_, 1, 0, mesh_.cells.nb(), get_cell_bbox
@@ -753,31 +820,71 @@ namespace GEO {
     }
 
     index_t MeshCellsAABB::containing_tet_recursive(
-        const vec3& p, 
+        const vec3& p, bool exact,
         index_t n, index_t b, index_t e        
     ) const {
+	if(debug) {
+	    std::cerr << "Containing tet: " << b << " " << e << std::endl;
+	}
 
         if(!bboxes_[n].contains(p)) {
+	    if(e==b+1) {
+		if(debug && mesh_tet_contains_point(mesh_, b, p, exact)) {
+		    std::cerr << " INCOHERENCY !!" << std::endl;
+		    std::cerr << "n=" << n << " b=" << b << std::endl;
+		    
+		    Box B;
+		    get_tet_bbox(mesh_, B, b);
+		    std::cerr
+			<< "get bbox " 
+			<< B.xyz_min[0] << ' ' 
+			<< B.xyz_min[1] << ' ' 
+			<< B.xyz_min[2] << " - "
+			<< B.xyz_max[0] << ' ' 
+			<< B.xyz_max[1] << ' ' 
+			<< B.xyz_max[2]
+			<< std::endl;
+		    B = bboxes_[n];
+		    std::cerr
+			<< "bboxes[] " 
+			<< B.xyz_min[0] << ' ' 
+			<< B.xyz_min[1] << ' ' 
+			<< B.xyz_min[2] << " - "
+			<< B.xyz_max[0] << ' ' 
+			<< B.xyz_max[1] << ' ' 
+			<< B.xyz_max[2]
+			<< std::endl;
+		}
+	    }
             return NO_TET;
         }
         
         if(e==b+1) {
-            if(mesh_tet_contains_point(mesh_, b, p)) {
+	    if(debug) {
+		std::cerr << "Test " << b;
+	    }
+            if(mesh_tet_contains_point(mesh_, b, p, exact)) {
+		if(debug) {
+		    std::cerr << "  contains" << std::endl;
+		}
                 return b;
             } else {
+		if(debug) {
+		    std::cerr << "  does not contain" << std::endl;
+		}
                 return NO_TET;
             }
         }
-        
+
         index_t m = b + (e - b) / 2;
         index_t childl = 2 * n;
         index_t childr = 2 * n + 1;
 
         index_t result = containing_tet_recursive(
-            p, childl, b, m
+            p, exact, childl, b, m
         );
         if(result == NO_TET) {
-            result = containing_tet_recursive(p, childr, m, e);
+            result = containing_tet_recursive(p, exact, childr, m, e);
         }
         return result;
     }

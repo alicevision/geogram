@@ -29,7 +29,6 @@
 #include <geogram_gfx/full_screen_effects/unsharp_masking.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_glfw.h>
-#include <geogram_gfx/third_party/ImGui/imgui_impl_opengl2.h>
 #include <geogram_gfx/third_party/ImGui/imgui_impl_opengl3.h>
 #include <geogram_gfx/third_party/quicktext/glQuickText.h>
 #include <geogram_gfx/third_party/imgui_fonts/roboto_medium.h>
@@ -60,9 +59,6 @@
 #include <string.h>
 #include <iostream>
 
-#ifdef GEO_GL_LEGACY
-static bool vanillaGL = false;
-#endif
 
 /***************************************************************************/
 
@@ -101,14 +97,6 @@ void glup_viewer_gui_init(GLFWwindow* w) {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); 
     ImGui_ImplGlfw_InitForOpenGL(w,false);
-#ifdef GEO_GL_LEGACY        
-    vanillaGL = (strcmp(glupCurrentProfileName(), "VanillaGL") == 0);
-    if(vanillaGL) {
-        GEO::Logger::out("ImGUI") << "Viewer GUI init (Vanilla)"
-                                  << std::endl;        
-        ImGui_ImplOpenGL2_Init();        
-    } else
-#endif
     {
         GEO::Logger::out("ImGUI") << "Viewer GUI init (GL3)"
                                   << std::endl;
@@ -147,14 +135,7 @@ void glup_viewer_gui_init(GLFWwindow* w) {
 }
 
 void glup_viewer_gui_cleanup() {
-#ifdef GEO_GL_LEGACY        
-    if(vanillaGL) {    
-        ImGui_ImplOpenGL2_Shutdown();
-    } else
-#endif
-    {
-        ImGui_ImplOpenGL3_Shutdown();        
-    }
+    ImGui_ImplOpenGL3_Shutdown();        
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
@@ -162,14 +143,7 @@ void glup_viewer_gui_cleanup() {
 
 void glup_viewer_gui_begin_frame() {
     glup_viewer_gui_locked = true;
-#ifdef GEO_GL_LEGACY            
-    if(vanillaGL) {
-        ImGui_ImplOpenGL2_NewFrame();        
-    } else
-#endif        
-    {
-        ImGui_ImplOpenGL3_NewFrame();
-    }
+    ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
@@ -179,14 +153,7 @@ void glup_viewer_gui_end_frame() {
     if(overlay_func != nullptr) {
         overlay_func();
         ImGui::Render();
-#ifdef GEO_GL_LEGACY            	
-	if(vanillaGL) {
-	    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-	} else
-#endif	    
-	{
-	    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	}
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
     glup_viewer_gui_locked = false;
     // We flush the queued command here, once ImGui::Render() was

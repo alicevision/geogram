@@ -173,27 +173,6 @@ extern "C" {
     } GLUPattributes;
     
     /**
-     * \brief Copies some variable from the current fixed 
-     *  functionality pipeline of OpenGL to the current
-     *  GLUP context.
-     * \param[in] which_attributes an '|'-combination of 
-     *  GLUP_MATRICES_ATTRIBUTES_BIT, GLUP_COLORS_ATTRIBUTES_BIT,
-     *  GLUP_LIGHTING_ATTRIBUTES_BIT, GLUP_CLIPPING_ATTRIBUTES_BIT or
-     *  GLUP_ALL_ATTRIBUTES.
-     */
-    void GLUP_API glupCopyFromGLState(GLUPbitfield which_attributes);
-
-    /**
-     * \brief Copies some variables from the current GLUP context
-     *  to the fixed functionality pipeline of OpenGL.
-     * \param[in] which_attributes an '|'-combination of 
-     *  GLUP_MATRICES_ATTRIBUTES_BIT, GLUP_COLORS_ATTRIBUTES_BIT,
-     *  GLUP_LIGHTING_ATTRIBUTES_BIT, GLUP_CLIPPING_ATTRIBUTES_BIT or
-     *  GLUP_ALL_ATTRIBUTES.
-     */
-    void GLUP_API glupCopyToGLState(GLUPbitfield which_attributes);
-    
-    /**
      * \brief Binds the GLUP uniform state to a program.
      * \param[in] program the handle to the GLSL program.
      * \details It is necessary to call this function for

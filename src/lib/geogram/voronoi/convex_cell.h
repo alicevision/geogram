@@ -474,7 +474,7 @@ namespace VBW {
 	 * \brief Initializes this ConvexCell to an axis-aligned
 	 *  box.
 	 * \details Previous contents of this ConvexCell are 
-	 *  discarded.
+	 *  discarded. Vertex 0 is vertex at infinity.
 	 * \param[in] xmin , ymin , zmin , xmax , ymax , zmax
 	 *  the coordinates of the box.
 	 */
@@ -482,7 +482,37 @@ namespace VBW {
 	    double xmin, double ymin, double zmin,
 	    double xmax, double ymax, double zmax
 	);
-	
+
+        /**
+         * \brief Initializes this ConvexCell to a tetrahedron.
+	 * \details Previous contents of this ConvexCell are 
+	 *  discarded. Vertex 0 is vertex at infinity.
+	 * \param[in] P0 , P1 , P2 , P3 the plane equations of 
+	 *  the four faces of the tetrahedron.
+	 */
+        void init_with_tet(
+	    vec4 P0, vec4 P1, vec4 P2, vec4 P3
+	);
+
+        /**
+         * \brief Initializes this ConvexCell to a tetrahedron.
+	 * \details Previous contents of this ConvexCell are 
+	 *  discarded. Vertex 0 is vertex at infinity.
+	 * \param[in] P0 , P1 , P2 , P3 the plane equations of 
+	 *  the four faces of the tetrahedron.
+	 * \param[in] P0_global_index , P1_global_index ,
+	 *            P1_global_index , P2_global_index the global
+	 *  indices associated with the plane equations. 
+	 * \pre has_vglobal()
+	 */
+        void init_with_tet(
+	    vec4 P0, vec4 P1, vec4 P2, vec4 P3,
+	    index_t P0_global_index,
+	    index_t P1_global_index,
+	    index_t P2_global_index,
+	    index_t P3_global_index	    
+	);
+      
 	/**
 	 * \brief Saves the computed cell in alias wavefront
 	 *  file format.
@@ -526,6 +556,7 @@ namespace VBW {
 	    double shrink=0.0, bool borders_only=false,
 	    GEO::Attribute<GEO::index_t>* facet_attr=nullptr
 	) const;
+
 #endif      
       
 	/**
@@ -683,6 +714,15 @@ namespace VBW {
 	 */
 	vec3 barycenter() const;
 
+	/**
+	 * \brief Computes volume and barycenter.
+	 * \param[out] m the computed volume
+	 * \param[out] mg the computed volume times the barycenter
+	 * \details compute_geometry() needs to be called before.
+	 */
+        void compute_mg(double& m, vec3& mg) const ;
+
+      
 	/**
 	 * \brief Computes the squared radius of the smallest sphere
 	 *  containing the cell and centered on a point.
@@ -1145,6 +1185,42 @@ namespace VBW {
 	void grow_v();
 
 
+        /**
+	 * \brief Swaps two ConvexCells.
+	 * \param[in] other the ConvexCell to be 
+	 *  exchanged with this ConvexCell.
+	 */
+        void swap(ConvexCell& other) {
+	    std::swap(max_t_,other.max_t_);
+	    std::swap(max_v_,other.max_v_);
+	    std::swap(t_,other.t_);
+	    std::swap(vv2t_,other.vv2t_);
+	    std::swap(plane_eqn_,other.plane_eqn_);
+	    std::swap(nb_t_,other.nb_t_);
+	    std::swap(nb_v_,other.nb_v_);
+	    std::swap(first_free_,other.first_free_);
+	    std::swap(first_valid_,other.first_valid_);
+	    std::swap(geometry_dirty_,other.geometry_dirty_);
+	    std::swap(triangle_point_,other.triangle_point_);
+	    std::swap(v2t_,other.v2t_);
+	    std::swap(vglobal_,other.vglobal_);
+	    std::swap(has_vglobal_,other.has_vglobal_);
+	    std::swap(tflags_,other.tflags_);
+	    std::swap(has_tflags_,other.has_tflags_);
+#ifndef STANDALONE_CONVEX_CELL	
+	    std::swap(use_exact_predicates_,other.use_exact_predicates_);
+#endif	
+        }
+
+        /**
+         * \brief Gets a modifiable reference to a triangle point.
+	 * \param[in] t the index
+	 * \return a modifiable reference to the stored point
+	 */
+        vec3& stored_triangle_point(ushort t) {
+	    return triangle_point_[t];	    
+        }
+      
       protected:
 
 	/**
@@ -1159,7 +1235,8 @@ namespace VBW {
 	    plane_eqn_[v] = P;
 	    geometry_dirty_ = true;
 	}
-	
+
+      
       private:
 
 	/** \brief number of allocated triangles */
@@ -1243,6 +1320,12 @@ namespace VBW {
 
 namespace GEO {
     using VBW::ConvexCell;
+}
+
+namespace std {
+    template<> inline void swap(VBW::ConvexCell& c1, VBW::ConvexCell& c2) {
+	c1.swap(c2);
+    }
 }
 
 #endif

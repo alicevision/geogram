@@ -1277,6 +1277,37 @@ namespace GEO {
             }
         }
 
+	/**
+	 * \brief Copies all the values from another attribute.
+	 * \param[in] rhs the attribute to be copied.
+	 * \details rhs needs to have the same size and dimension
+	 *  as this Attribute.
+	 */
+	void copy(const Attribute<T>& rhs) {
+	    geo_assert(rhs.size() == superclass::size());
+	    geo_assert(rhs.dimension() == superclass::dimension());	    
+	    for(index_t i=0; i<superclass::nb_elements(); ++i) {
+		(*this)[i] = rhs[i];
+	    }
+	}
+	
+	/**
+	 * \brief Gets the pointer to the data.
+	 * \return a pointer to the stored array.
+	 */
+	T* data() {
+	    return (T*)AttributeStoreObserver::base_addr_;
+	}
+
+	/**
+	 * \brief Gets the pointer to the data.
+	 * \return a const pointer to the stored array.
+	 */
+	const T* data() const {
+	    return (const T*)AttributeStoreObserver::base_addr_;
+	}
+
+	
     private:
         /**
          * \brief Forbids copy.

@@ -256,18 +256,6 @@ namespace GEO {
         }
     }
 
-#ifdef GEO_USE_DEPRECATED_GL
-    
-    void glLoadMatrix(const mat4& m) {
-        glLoadMatrixd(convert_matrix(m));
-    }
-
-    void glMultMatrix(const mat4& m) {
-        glMultMatrixd(convert_matrix(m));
-    }
-
-#endif
-    
     void glupMapTexCoords1d(double minval, double maxval, index_t mult) {
         glupMatrixMode(GLUP_TEXTURE_MATRIX);
         GLUPdouble M[16];
@@ -469,9 +457,6 @@ namespace GEO {
 	    error_code = glGetError() ;
 	}
         geo_argused(has_opengl_errors);
-//	if(has_opengl_errors) {
-//	    abort();
-//	}
     }
 
     void clear_gl_error_flags(const char* file, int line) {
@@ -485,42 +470,6 @@ namespace GEO {
     }
     
     void draw_unit_textured_quad() {
-#ifdef GEO_GL_LEGACY
-	static bool initialized = false;
-	static bool vanillaGL = false;
-	if(!initialized) {
-	    vanillaGL = (
-		CmdLine::get_arg("gfx:GLUP_profile") == "VanillaGL"
-	    );
-	    initialized = true;
-	}
-	if(vanillaGL) {
-	    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	    glDisable(GL_LIGHTING);
-	    glMatrixMode(GL_MODELVIEW);
-	    glPushMatrix();
-	    glLoadIdentity();
-	    glMatrixMode(GL_PROJECTION);
-	    glPushMatrix();
-	    glLoadIdentity();
-	    glEnable(GL_TEXTURE_2D);
-	    glBegin(GL_QUADS);
-	    glTexCoord2f(0.0f, 0.0f);
-	    glVertex2f(-1.0f, -1.0f);
-	    glTexCoord2f(1.0f, 0.0f);
-	    glVertex2f(1.0f, -1.0f);
-	    glTexCoord2f(1.0f, 1.0f);
-	    glVertex2f(1.0f, 1.0f);
-	    glTexCoord2f(0.0f, 1.0f);
-	    glVertex2f(-1.0f, 1.0f);
-	    glEnd();
-	    glPopMatrix();
-	    glMatrixMode(GL_MODELVIEW);
-	    glPopMatrix();
-	    glDisable(GL_TEXTURE_2D);	    
-	    return;
-	}
-#endif	
         if(quad_VAO == 0) {
             create_quad_VAO_and_program();
         }

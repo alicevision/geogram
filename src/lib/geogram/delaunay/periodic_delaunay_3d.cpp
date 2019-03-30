@@ -2887,6 +2887,8 @@ namespace GEO {
     void PeriodicDelaunay3d::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
+	has_empty_cells_ = false;
+	
 	#ifndef GARGANTUA
 	{
 	    Numeric::uint64 expected_max_index =
@@ -2935,6 +2937,7 @@ namespace GEO {
     }
 
     void PeriodicDelaunay3d::set_weights(const double* weights) {
+	has_empty_cells_ = false;
 	weights_ = weights;	
     }
     
@@ -3818,12 +3821,12 @@ namespace GEO {
 		// boundary facets on which the vertex resides.
 		if(vertex_on_boundary) {
 		    cell_is_on_boundary = true;
-		    for(int U=0; U<2; ++U) {
-			for(int V=0; V<2; ++V) {
-			    for(int W=0; W<2; ++W) {
-				int Tx = U*VXLAT[0][0] + V*VXLAT[1][0] + W*VXLAT[2][0];
-				int Ty = U*VXLAT[0][1] + V*VXLAT[1][1] + W*VXLAT[2][1];
-				int Tz = U*VXLAT[0][2] + V*VXLAT[1][2] + W*VXLAT[2][2];
+		    for(int dU=0; dU<2; ++dU) {
+			for(int dV=0; dV<2; ++dV) {
+			    for(int dW=0; dW<2; ++dW) {
+				int Tx = dU*VXLAT[0][0] + dV*VXLAT[1][0] + dW*VXLAT[2][0];
+				int Ty = dU*VXLAT[0][1] + dV*VXLAT[1][1] + dW*VXLAT[2][1];
+				int Tz = dU*VXLAT[0][2] + dV*VXLAT[1][2] + dW*VXLAT[2][2];
 				use_instance[T_to_instance(Tx,Ty,Tz)] = true;
 			    }
 			}

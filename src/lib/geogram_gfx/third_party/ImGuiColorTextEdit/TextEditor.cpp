@@ -598,23 +598,23 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			callback_(TEXT_EDITOR_COMPLETION, callback_client_data_);
 		    }
 		}
-		
-		if (!IsReadOnly())
-		{
-			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
-			{
-				auto c = (unsigned char)io.InputCharacters[i];
-				if (c != 0)
-				{
-					if (isprint(c) || isspace(c))
-					{
-						if (c == '\r')
-							c = '\n';
-						EnterCharacter((char)c);
-					}
+
+		// [Bruno Levy] ported to ImGui 1.69
+		if(!IsReadOnly()) {
+		    for(int i=0; i<io.InputQueueCharacters.size(); ++i) {
+			char c = io.InputQueueCharacters[i];
+			if(c != '\0') {
+			    if (isprint(c) || isspace(c)) {
+				if(c == '\r') {
+				    c = '\n';
 				}
+				EnterCharacter(c);
+			    }
 			}
+		    }
 		}
+
+		
 	}
 
 	if (ImGui::IsWindowHovered())

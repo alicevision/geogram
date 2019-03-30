@@ -68,7 +68,7 @@ namespace GEO {
 	/**
 	 * \brief Mode for symbolic perturbations.
 	 */
-	enum SOSMode {SOS_ADDRESS, SOS_LEXICO };
+	enum SOSMode { SOS_ADDRESS, SOS_LEXICO };
 
 	/**
 	 * \brief Sets the current mode for handling symbolic perturbations 
@@ -588,6 +588,15 @@ namespace GEO {
 	    const double* p0, const double* p1, const double* p2
 	);
 
+	/**
+	 * \brief Compares two dot products.
+	 * \param[in] v0 , v1 , v2 three vectors.
+	 * \return the sign of v0.v1 - v0.v2
+	 */
+	Sign GEOGRAM_API dot_compare_3d(
+	    const double* v0, const double* v1, const double* v2
+	);
+	
 	/**
 	 * \brief Tests whether two 2d points are identical.
 	 * \param[in] p1 first point

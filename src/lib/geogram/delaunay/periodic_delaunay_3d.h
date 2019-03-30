@@ -215,7 +215,7 @@ namespace GEO {
 	 * \brief computes the set of tetrahedra that are incident to
 	 *  a vertex.
 	 * \param[in] v the index of the vertex.
-	 * \param[in,out] Workspace a reference to a PeriodicDelaunay3d::Workspace.
+	 * \param[in,out] W a reference to a PeriodicDelaunay3d::IncidentTetrahedra.
 	 *  On exit it contains the list of incident tets.
 	 */
 	void get_incident_tets(index_t v, IncidentTetrahedra& W) const;
@@ -286,7 +286,7 @@ namespace GEO {
 	 * \param[in] t a tetrahedron of the Delaunay triangulation, 
 	 *  incident to vertex i
 	 * \param[out] C the Laguerre cell.
-	 * \param[in,out] Workspace a reference to a PeriodicDelaunay3d::IncidentTetrahedra
+	 * \param[in,out] W a reference to a PeriodicDelaunay3d::IncidentTetrahedra
 	 * \return the local index of vertex \p i within tetrahedron \p t
 	 */
 	GEO::index_t copy_Laguerre_cell_facet_from_Delaunay(

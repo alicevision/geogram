@@ -20,6 +20,7 @@
 #define NULL nullptr
 #endif
 
+// [Bruno]
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "glup_compat.h"
 
 //---- Define assertion handler. Defaults to calling assert().
@@ -30,6 +31,8 @@
 // [Bruno] export ImGUI symbols.
 #include <geogram_gfx/api/defs.h>
 #define IMGUI_API GEOGRAM_GFX_API
+//#define IMGUI_API __declspec( dllexport )
+//#define IMGUI_API __declspec( dllimport )
 
 //---- Don't define obsolete functions/enums names. Consider enabling from time to time after updating to avoid using soon-to-be obsolete function/names.
 //#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
@@ -41,6 +44,7 @@
 //---- Don't implement some functions to reduce linkage requirements.
 //#define IMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS   // [Win32] Don't implement default clipboard handler. Won't use and link with OpenClipboard/GetClipboardData/CloseClipboard etc.
 //#define IMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS         // [Win32] Don't implement default IME handler. Won't use and link with ImmGetContext/ImmSetCompositionWindow.
+//#define IMGUI_DISABLE_WIN32_FUNCTIONS                     // [Win32] Won't use and link with any Win32 function.
 //#define IMGUI_DISABLE_FORMAT_STRING_FUNCTIONS             // Don't implement ImFormatString/ImFormatStringV so you can implement them yourself if you don't want to link with vsnprintf.
 //#define IMGUI_DISABLE_MATH_FUNCTIONS                      // Don't implement ImFabs/ImSqrt/ImPow/ImFmod/ImCos/ImSin/ImAcos/ImAtan2 wrapper so you can implement them yourself. Declare your prototypes in imconfig.h.
 //#define IMGUI_DISABLE_DEFAULT_ALLOCATORS                  // Don't implement default allocators calling malloc()/free() to avoid linking with them. You will need to call ImGui::SetAllocatorFunctions().

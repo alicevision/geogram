@@ -1056,28 +1056,6 @@ namespace GLUP {
          *  functionalities are not implemented in the OpenGL driver.
          */
         virtual void setup();
-
-        
-        /**
-         * \brief Copies the relevant variables from OpenGL 
-         *  fixed functionality pipeline to this GLUP context.
-         * \param[in] which_attributes an '|'-combination of 
-         *  GLUP_MATRICES_ATTRIBUTES_BIT, GLUP_COLORS_ATTRIBUTES_BIT,
-         *  GLUP_LIGHTING_ATTRIBUTES_BIT, GLUP_CLIPPING_ATTRIBUTES_BIT or
-         *  GLUP_ALL_ATTRIBUTES.
-         */
-        virtual void copy_from_GL_state(GLUPbitfield which_attributes);
-
-
-        /**
-         * \brief Copies the relevant variables from this GLUP
-         *  context to OpenGL fixed functionality pipeline.
-         * \param[in] which_attributes an '|'-combination of 
-         *  GLUP_MATRICES_ATTRIBUTES_BIT, GLUP_COLORS_ATTRIBUTES_BIT,
-         *  GLUP_LIGHTING_ATTRIBUTES_BIT, GLUP_CLIPPING_ATTRIBUTES_BIT or
-         *  GLUP_ALL_ATTRIBUTES.
-         */
-        virtual void copy_to_GL_state(GLUPbitfield which_attributes);
         
         /**
          * \brief Binds GLUP uniform state to a program.

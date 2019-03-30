@@ -1,10 +1,10 @@
-// ImGui Platform Binding for: GLFW
+// dear imgui: Platform Binding for GLFW
 // This needs to be used along with a Renderer (e.g. OpenGL3, Vulkan..)
 // (Info: GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan graphics context creation, etc.)
 
 // Implemented features:
 //  [X] Platform: Clipboard support.
-//  [X] Platform: Gamepad navigation mapping. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
+//  [X] Platform: Gamepad support. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
 //  [x] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange'. FIXME: 3 cursors types are missing from GLFW.
 //  [X] Platform: Keyboard arrays indexed using GLFW_KEY_* codes, e.g. ImGui::IsKeyPressed(GLFW_KEY_SPACE).
 
@@ -14,6 +14,7 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
+//  2018-11-07: Inputs: When installing our GLFW callbacks, we save user's previously installed ones - if any - and chain call them.
 //  2018-08-01: Inputs: Workaround for Emscripten which doesn't seem to handle focus related calls.
 //  2018-06-29: Inputs: Added support for the ImGuiMouseCursor_Hand cursor.
 //  2018-06-08: Misc: Extracted imgui_impl_glfw.cpp/.h away from the old combined GLFW+OpenGL/Vulkan examples.
@@ -58,6 +59,7 @@
 #endif
 #endif
 
+
 #define GLFW_HAS_WINDOW_TOPMOST     (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ GLFW_FLOATING
 #define GLFW_HAS_WINDOW_HOVERED     (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ GLFW_HOVERED
 #define GLFW_HAS_WINDOW_ALPHA       (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwSetWindowOpacity
@@ -71,11 +73,17 @@ enum GlfwClientApi
     GlfwClientApi_OpenGL,
     GlfwClientApi_Vulkan
 };
-static GLFWwindow*      g_Window = NULL;
-static GlfwClientApi    g_ClientApi = GlfwClientApi_Unknown;
-static double           g_Time = 0.0;
-static bool             g_MouseJustPressed[5] = { false, false, false, false, false };
-static GLFWcursor*      g_MouseCursors[ImGuiMouseCursor_COUNT] = { 0 };
+static GLFWwindow*          g_Window = NULL;
+static GlfwClientApi        g_ClientApi = GlfwClientApi_Unknown;
+static double               g_Time = 0.0;
+static bool                 g_MouseJustPressed[5] = { false, false, false, false, false };
+static GLFWcursor*          g_MouseCursors[ImGuiMouseCursor_COUNT] = { 0 };
+
+// Chain GLFW callbacks: our callbacks will call the user's previously installed callbacks, if any.
+static GLFWmousebuttonfun   g_PrevUserCallbackMousebutton = NULL;
+static GLFWscrollfun        g_PrevUserCallbackScroll = NULL;
+static GLFWkeyfun           g_PrevUserCallbackKey = NULL;
+static GLFWcharfun          g_PrevUserCallbackChar = NULL;
 
 // [Bruno Levy] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
 // ImGUI clipboard instead.
@@ -93,13 +101,16 @@ static void ImGui_ImplGlfw_SetClipboardText(void* user_data, const char* text)
 
 #endif
 
-void ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow*, int button, int action, int /*mods*/)
+void ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
+    if (g_PrevUserCallbackMousebutton != NULL)
+        g_PrevUserCallbackMousebutton(window, button, action, mods);
+
     if (action == GLFW_PRESS && button >= 0 && button < IM_ARRAYSIZE(g_MouseJustPressed))
         g_MouseJustPressed[button] = true;
 }
 
-void ImGui_ImplGlfw_ScrollCallback(GLFWwindow*, double xoffset, double yoffset)
+void ImGui_ImplGlfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     // [Bruno Levy] 01/06/2017 
     // Under emscripten and apple, mouse wheel is inversed 
@@ -107,39 +118,41 @@ void ImGui_ImplGlfw_ScrollCallback(GLFWwindow*, double xoffset, double yoffset)
 #if defined(__EMSCRIPTEN__) || defined(__APPLE__)
     yoffset *= -1.0;
 #endif    
+    
+    if (g_PrevUserCallbackScroll != NULL)
+        g_PrevUserCallbackScroll(window, xoffset, yoffset);
+
     ImGuiIO& io = ImGui::GetIO();
     io.MouseWheelH += (float)xoffset;
     io.MouseWheel += (float)yoffset;
 }
 
-void ImGui_ImplGlfw_KeyCallback(GLFWwindow*, int key, int, int action, int mods)
+void ImGui_ImplGlfw_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    if (g_PrevUserCallbackKey != NULL) 
+        g_PrevUserCallbackKey(window, key, scancode, action, mods);
+
     ImGuiIO& io = ImGui::GetIO();
     if (action == GLFW_PRESS)
         io.KeysDown[key] = true;
     if (action == GLFW_RELEASE)
         io.KeysDown[key] = false;
 
-    (void)mods; // Modifiers are not reliable across systems
+    // Modifiers are not reliable across systems
     io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
     io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
     io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
     io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
 }
 
-void ImGui_ImplGlfw_CharCallback(GLFWwindow*, unsigned int c)
+void ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c)
 {
+    if (g_PrevUserCallbackChar != NULL)
+        g_PrevUserCallbackChar(window, c);
+
     ImGuiIO& io = ImGui::GetIO();
     if (c > 0 && c < 0x10000)
         io.AddInputCharacter((unsigned short)c);
-}
-
-void ImGui_ImplGlfw_InstallCallbacks(GLFWwindow* window)
-{
-    glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
-    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-    glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
-    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 }
 
 static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, GlfwClientApi client_api)
@@ -196,8 +209,18 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);  // FIXME: GLFW doesn't have this.
     g_MouseCursors[ImGuiMouseCursor_Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
     
+    // Chain GLFW callbacks: our callbacks will call the user's previously installed callbacks, if any.
+    g_PrevUserCallbackMousebutton = NULL;
+    g_PrevUserCallbackScroll = NULL;
+    g_PrevUserCallbackKey = NULL;
+    g_PrevUserCallbackChar = NULL;
     if (install_callbacks)
-        ImGui_ImplGlfw_InstallCallbacks(window);
+    {
+        g_PrevUserCallbackMousebutton = glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
+        g_PrevUserCallbackScroll = glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+        g_PrevUserCallbackKey = glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
+        g_PrevUserCallbackChar = glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+    }
 
     g_ClientApi = client_api;
     return true;
@@ -237,10 +260,12 @@ static void ImGui_ImplGlfw_UpdateMousePosAndButtons()
     // Update mouse position
     const ImVec2 mouse_pos_backup = io.MousePos;
     io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-    //[Bruno Levy] 05/16/2016 Under emscripten, it seems that the window is never focused (so I bypass the test).
-#ifndef __EMSCRIPTEN__    
-    if (glfwGetWindowAttrib(g_Window, GLFW_FOCUSED))
-#endif	
+#ifdef __EMSCRIPTEN__
+    const bool focused = true; // Emscripten
+#else
+    const bool focused = glfwGetWindowAttrib(g_Window, GLFW_FOCUSED) != 0;
+#endif
+    if (focused)
     {
         if (io.WantSetMousePos)
         {
