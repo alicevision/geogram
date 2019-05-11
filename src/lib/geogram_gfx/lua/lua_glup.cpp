@@ -564,11 +564,8 @@ namespace {
 // this creates some specializations of the
 // templates that communicate with the LUA
 // stack.
-//  Note: once we'll switch to C++2011, this
-// code will be unnecessary, and the right
-// functions will be selected using std::is_enum<>
+//  TODO: select the right functions using std::is_enum<>
 namespace GEO {
-    LUA_DECLAREENUMTYPE(GLUPattributes);    
     LUA_DECLAREENUMTYPE(GLUPtoggle);
     LUA_DECLAREENUMTYPE(GLUPtextureType);
     LUA_DECLAREENUMTYPE(GLUPtextureMode);

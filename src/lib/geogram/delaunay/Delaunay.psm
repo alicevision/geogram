@@ -73,6 +73,8 @@ SOURCES="../basic/memory.h \
 ../numerics/predicates/det3d.h \
 ../numerics/predicates/det4d.h \
 ../numerics/predicates/aligned3d.h \
+../numerics/predicates/dot_compare_3d.h \
+../numerics/predicates/det_compare_4d.h \
 ../numerics/predicates.cpp \
 delaunay_2d.h \
 cavity.h \

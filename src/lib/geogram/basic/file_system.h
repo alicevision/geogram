@@ -330,6 +330,18 @@ namespace GEO {
          * \return The path to the current user's home directory as a string.
          */
         std::string GEOGRAM_API documents_directory();
+
+#ifdef GEO_OS_EMSCRIPTEN
+	/**
+	 * \brief Declares a function to be called whenever the file system
+	 *  changes.
+	 * \details The function will be called when the user loads a file
+	 *  using the button in the webpage.
+	 * \param[in] callback the function to be called.
+	 */
+	void set_file_system_changed_callback(void(*callback)());
+#endif	
+	
     }
 }
 

@@ -581,6 +581,28 @@ namespace GEO {
         return y;
     }
 
+    /**
+     * \brief Computes a matrix vector product.
+     * \param[in] M the matrix
+     * \param[in] x the vector
+     * \return \p M times \p x
+     * \note This function copies the resulting vector, thus it is not
+     *  very efficient and should be only used when prototyping.
+     */
+    template <index_t DIM, class FT> inline
+    vecng<DIM,FT> mult(
+        const Matrix<DIM, FT>& M, const vecng<DIM,FT>& x
+    ) {
+        vecng<DIM,FT> y;
+        for(index_t i = 0; i < DIM; i++) {
+            y[i] = 0;
+            for(index_t j = 0; j < DIM; j++) {
+                y[i] += M(i, j) * x[j];
+            }
+        }
+        return y;
+    }
+
     /************************************************************************/
     
 }

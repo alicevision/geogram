@@ -78,6 +78,8 @@ extern "C" {
     void glup_viewer_one_frame(void);
 }
 
+
+
 void glup_viewer_gui_update() {
     // It's a pity, but under Emscripten, only the browser can have the
     // control of the rendering loop, therefore it is not possible (or I
@@ -92,8 +94,39 @@ void glup_viewer_gui_update() {
 
 /***************************************************************************/
 
+#ifdef GEO_OS_EMSCRIPTEN
+extern "C" {
+    void drag_drop(GLFWwindow* w, int nb, const char** p);
+}
+
+void load_latest_file();
+
+/**
+ * \brief This function is called by the HTML shell each
+ *  time a file is loaded.
+ * \details For now, it uses the fact that the latest loaded
+ *  file appears first in the list (to be improved).
+ */
+void load_latest_file() {
+    std::vector<std::string> all_files;
+    GEO::FileSystem::get_directory_entries("/",all_files);
+    if(
+	all_files.size() > 0 && 
+	GEO::FileSystem::is_file(all_files[0])
+    ) {
+	const char* pname = all_files[0].c_str();
+	drag_drop(nullptr, 1, &pname);
+    }
+}
+#endif
+
+
 void glup_viewer_gui_init(GLFWwindow* w) {
 
+#ifdef GEO_OS_EMSCRIPTEN    
+    GEO::FileSystem::set_file_system_changed_callback(load_latest_file);
+#endif
+    
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); 
     ImGui_ImplGlfw_InitForOpenGL(w,false);
@@ -254,29 +287,3 @@ void glup_viewer_effect_end_frame() {
     }
 }
 
-#ifdef GEO_OS_EMSCRIPTEN
-
-extern "C" {
-    
-    void drag_drop(GLFWwindow* w, int nb, const char** p);
-    void file_system_changed_callback();
-
-    /**
-     * \brief This function is called by the HTML shell each
-     *  time a file is loaded.
-     * \details For now, it uses the fact that the latest loaded
-     *  file appears first in the list (to be improved).
-     */
-    EMSCRIPTEN_KEEPALIVE void file_system_changed_callback() {
-        std::vector<std::string> all_files;
-        GEO::FileSystem::get_directory_entries("/",all_files);
-        if(
-            all_files.size() > 0 && 
-            GEO::FileSystem::is_file(all_files[0])
-        ) {
-            const char* pname = all_files[0].c_str();
-            drag_drop(nullptr, 1, &pname);
-        }
-    }
-}
-#endif

@@ -115,6 +115,7 @@ namespace GEO {
          */
         static Thread* current();
 
+
     protected:
         /** Thread destructor */
         virtual ~Thread();
@@ -372,6 +373,14 @@ namespace GEO {
          */
         void GEOGRAM_API terminate();
 
+
+	/**
+	 * \brief Sleeps for a period of time.
+	 * \param[in] microseconds the time to sleep,
+	 *  in microseconds.
+	 */
+	void GEOGRAM_API sleep(index_t microseconds);
+	
         /**
          * \brief Displays statistics about the current process
          * \details Displays the maximum used amount of memory.

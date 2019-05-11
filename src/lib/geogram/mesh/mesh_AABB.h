@@ -65,6 +65,26 @@ namespace GEO {
      */
     class GEOGRAM_API MeshFacetsAABB {
     public:
+    
+        /**
+         * \brief MeshFacetsAABB constructor.
+         * \details Creates an uninitialized MeshFacetsAABB.
+         */
+        MeshFacetsAABB();
+
+        /**
+         * \brief Initializes the Axis Aligned Bounding Boxes tree.
+         * \param[in] M the input mesh. It can be modified,
+         *  and will be triangulated (if
+         *  not already a triangular mesh). The facets are
+         *  re-ordered (using Morton's order, see mesh_reorder()).
+         * \param[in] reorder if not set, Morton re-ordering is
+         *  skipped (but it means that mesh_reorder() was previously
+         *  called else the algorithm will be pretty unefficient).
+         */
+        void initialize(Mesh& M, bool reorder = true);
+
+    
         /**
          * \brief Creates the Axis Aligned Bounding Boxes tree.
          * \param[in] M the input mesh. It can be modified,
@@ -74,7 +94,6 @@ namespace GEO {
          * \param[in] reorder if not set, Morton re-ordering is
          *  skipped (but it means that mesh_reorder() was previously
          *  called else the algorithm will be pretty unefficient).
-         * \pre M.facets.are_simplices()
          */
         MeshFacetsAABB(Mesh& M, bool reorder = true);
 
@@ -83,7 +102,7 @@ namespace GEO {
 	 * \brief Gets the mesh.
 	 * \return a const reference to the mesh.
 	 */
-	const Mesh& mesh() const {
+         const Mesh* mesh() const {
 	    return mesh_;
 	}
 	
@@ -104,8 +123,8 @@ namespace GEO {
         ) const {
             intersect_recursive(
                 action,
-                1, 0, mesh_.facets.nb(),
-                1, 0, mesh_.facets.nb()
+                1, 0, mesh_->facets.nb(),
+                1, 0, mesh_->facets.nb()
             );
         }
 
@@ -127,7 +146,7 @@ namespace GEO {
             ACTION& action
         ) const {
             bbox_intersect_recursive(
-                action, box_in, 1, 0, mesh_.facets.nb()
+                action, box_in, 1, 0, mesh_->facets.nb()
             );
         }
         
@@ -146,7 +165,7 @@ namespace GEO {
             nearest_facet_recursive(
                 p,
                 nearest_facet, nearest_point, sq_dist,
-                1, 0, mesh_.facets.nb()
+                1, 0, mesh_->facets.nb()
             );
             return nearest_facet;
         }
@@ -193,7 +212,7 @@ namespace GEO {
             nearest_facet_recursive(
                 p,
                 nearest_facet, nearest_point, sq_dist,
-                1, 0, mesh_.facets.nb()
+                1, 0, mesh_->facets.nb()
             );
         }
 
@@ -433,7 +452,7 @@ namespace GEO {
 	
     protected:
         vector<Box> bboxes_;
-        Mesh& mesh_;
+        Mesh* mesh_;
     };
 
     /***********************************************************************/
@@ -452,7 +471,13 @@ namespace GEO {
          * \see containing_tet()
          */
         static const index_t NO_TET = index_t(-1);
-        
+
+        /**
+         * \brief MeshCellsAABB constructor.
+         * \details Creates an uninitialized MeshCellsAABB.
+         */
+        MeshCellsAABB();
+    
         /**
          * \brief Creates the Axis Aligned Bounding Boxes tree.
          * \param[in] M the input mesh. It can be modified,
@@ -463,11 +488,21 @@ namespace GEO {
          */
         MeshCellsAABB(Mesh& M, bool reorder = true);
 
+        /**
+         * \brief Initializes the Axis Aligned Bounding Boxes tree.
+         * \param[in] M the input mesh. It can be modified,
+         *  The cells are re-ordered (using Morton's order, see mesh_reorder()).
+         * \param[in] reorder if not set, Morton re-ordering is
+         *  skipped (but it means that mesh_reorder() was previously
+         *  called else the algorithm will be pretty unefficient).
+         */
+        void initialize(Mesh& M, bool reorder = true);
+    
 	/**
 	 * \brief Gets the mesh.
 	 * \return a const reference to the mesh.
 	 */
-	const Mesh& mesh() const {
+	const Mesh* mesh() const {
 	    return mesh_;
 	}
 	
@@ -480,9 +515,9 @@ namespace GEO {
          *   arbitrary cells, then one may use instead containing_boxes().
          */
         index_t containing_tet(const vec3& p) const {
-            geo_debug_assert(mesh_.cells.are_simplices());
+            geo_debug_assert(mesh_->cells.are_simplices());
             return containing_tet_recursive(
-                p, 1, 0, mesh_.cells.nb()
+                p, 1, 0, mesh_->cells.nb()
             );
         }
 
@@ -504,7 +539,7 @@ namespace GEO {
             ACTION& action
         ) const {
             bbox_intersect_recursive(
-                action, box_in, 1, 0, mesh_.cells.nb()
+                action, box_in, 1, 0, mesh_->cells.nb()
             );
         }
 
@@ -520,7 +555,7 @@ namespace GEO {
             std::function<void(index_t)> action
         ) const {
             bbox_intersect_recursive(
-                action, box_in, 1, 0, mesh_.cells.nb()
+                action, box_in, 1, 0, mesh_->cells.nb()
             );
         }
 
@@ -541,7 +576,7 @@ namespace GEO {
             ACTION& action
         ) const {
             containing_boxes_recursive(
-                action, p, 1, 0, mesh_.cells.nb()
+                action, p, 1, 0, mesh_->cells.nb()
             );
         }
         
@@ -703,7 +738,7 @@ namespace GEO {
         }
         
         vector<Box> bboxes_;
-        Mesh& mesh_;
+        Mesh* mesh_;
     };
     
 }

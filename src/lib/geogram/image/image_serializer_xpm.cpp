@@ -68,7 +68,7 @@ namespace {
 
     /**
      * \brief Decodes an XPM colormap entry.
-     * \param[in] the string with the colormap entry.
+     * \param[in] colormap_entry the string with the colormap entry.
      * \param[out] colorcell the corresponding color.
      */
     bool decode_colormap_entry(

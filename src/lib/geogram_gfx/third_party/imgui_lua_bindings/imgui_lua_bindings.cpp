@@ -444,7 +444,11 @@ void LoadImguiBindings() {
 /* [Bruno Levy] Sun Dec 31 20:05:17 CET 2017 Not defined in ImGUI 1.53
   lua_pushnumber(lState, ImGuiWindowFlags_ComboBox);
   lua_setglobal(lState, "ImGuiWindowFlags_ComboBox");
- */ 
+ */
+/* [Bruno Levy] Wed 08 May 2019 08:14:40 AM CEST ImGui docking branch */
+  lua_pushnumber(lState, ImGuiWindowFlags_NoDocking);
+  lua_setglobal(lState, "ImGuiWindowFlags_NoDocking");
+
   lua_pushnumber(lState, ImGuiWindowFlags_Tooltip);
   lua_setglobal(lState, "ImGuiWindowFlags_Tooltip");
   lua_pushnumber(lState, ImGuiWindowFlags_Popup);

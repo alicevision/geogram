@@ -217,7 +217,6 @@ namespace GEO {
                 "%s", Progress::current_task()->task_name().c_str()
             );
             ImGui::SameLine();
-            
             std::string overlay =
                 String::to_string(step_) + "/" +
                 String::to_string(

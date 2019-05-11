@@ -602,7 +602,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		// [Bruno Levy] ported to ImGui 1.69
 		if(!IsReadOnly()) {
 		    for(int i=0; i<io.InputQueueCharacters.size(); ++i) {
-			char c = io.InputQueueCharacters[i];
+			char c = char(io.InputQueueCharacters[i]);
 			if(c != '\0') {
 			    if (isprint(c) || isspace(c)) {
 				if(c == '\r') {

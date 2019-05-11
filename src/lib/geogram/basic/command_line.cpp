@@ -86,6 +86,8 @@ namespace {
     using namespace CmdLine;
 
     std::string config_file_name = "geogram.ini";
+    bool auto_create_args = false;
+    bool loaded_config_file = false;
     
     int geo_argc = 0;
     char** geo_argv = nullptr;
@@ -253,6 +255,48 @@ namespace {
         return false;
     }
 
+
+    /**
+     * \brief Parses the configuration file in the home directory.
+     * \details The configuration file "geogram.ini" in the home directory
+     *  has name=value pairs for pre-initializing command line arguments.
+     *  In addition it has sections indicated by square-breacketed names.
+     *  Only the arguments in the section with the same name as the program
+     *  are taken into account. Section [*] refers to all possible programs.
+     * \param[in] config_filename the name of the configuration file
+     * \param[in] program_name the name of the program
+     */
+    void parse_config_file(
+	const std::string& config_filename, const std::string& program_name
+    ) {
+	std::string section = "*";
+	if(FileSystem::is_file(config_filename)) {
+	    std::ifstream in(config_filename.c_str());
+	    std::string line;
+	    while(std::getline(in,line)) {
+		if(line.length() >= 3 && line[0] == '[' && line[line.length()-1] == ']') {
+		    section = String::to_uppercase(line.substr(1,line.length()-2));
+		} else if(section == program_name || section == "*") {
+		    size_t pos = line.find("=");
+		    if(pos != std::string::npos) {
+			std::string argname = line.substr(0,pos);
+			std::string argval  = line.substr(pos+1,line.length()-pos-1);
+			if(CmdLine::arg_is_declared(argname)) {
+			    CmdLine::set_arg(argname, argval);
+			} else {
+			    if(auto_create_args) {
+				CmdLine::declare_arg(argname, argval, "...");
+			    } else {
+				Logger::warn("config") << argname << "=" << argval << " ignored" << std::endl;
+			    }
+			}
+		    }
+		}
+	    }
+	    loaded_config_file= true;
+	}
+    }
+    
     /**
      * \brief Parses the configuration file in the home directory.
      * \details The configuration file "geogram.ini" in the home directory
@@ -276,30 +320,7 @@ namespace {
 	Logger::out("config") << "Home directory:" << FileSystem::home_directory()
 			      << std::endl;
 	std::string config_filename = FileSystem::home_directory() + "/" + config_file_name;
-	std::string section = "*";
-	if(FileSystem::is_file(config_filename)) {
-	    Logger::out("config") << "Using configuration file:"
-				       << config_filename
-				       << std::endl;
-	    std::ifstream in(config_filename.c_str());
-	    std::string line;
-	    while(std::getline(in,line)) {
-		if(line.length() >= 3 && line[0] == '[' && line[line.length()-1] == ']') {
-		    section = String::to_uppercase(line.substr(1,line.length()-2));
-		} else if(section == program_name || section == "*") {
-		    size_t pos = line.find("=");
-		    if(pos != std::string::npos) {
-			std::string argname = line.substr(0,pos);
-			std::string argval  = line.substr(pos+1,line.length()-pos-1);
-			if(CmdLine::arg_is_declared(argname)) {
-			    CmdLine::set_arg(argname, argval);
-			} else {
-			    Logger::warn("config") << argname << "=" << argval << " ignored" << std::endl;
-			}
-		    }
-		}
-	    }
-	}
+	parse_config_file(config_filename, program_name);
     }
     
     /**
@@ -534,12 +555,24 @@ namespace GEO {
 	    return geo_argv;
 	}
 
-	void set_config_file_name(const std::string& filename) {
+	void set_config_file_name(const std::string& filename, bool auto_create) {
 	    config_file_name = filename;
+	    auto_create_args = auto_create;
 	}
 
 	std::string get_config_file_name() {
 	    return config_file_name;
+	}
+
+	void load_config(
+	    const std::string& filename, const std::string& program_name
+	) {
+	    parse_config_file(filename, program_name);
+	}
+	
+
+	bool config_file_loaded() {
+	    return loaded_config_file;
 	}
 	
         bool parse(

@@ -352,7 +352,7 @@ namespace GEO {
                 save_mode_ ? "Save as...##" : "Load...##"
 	     )+String::to_string(this)).c_str(),
             &visible_,
-            ImGuiWindowFlags_NoCollapse 
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking
         );
 
         if(ImGui::Button(icon_label("arrow-circle-up","parent").c_str())) {

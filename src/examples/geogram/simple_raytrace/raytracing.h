@@ -736,7 +736,7 @@ namespace GEO {
 		    I.material = material_;
 		    I.position = R.origin + t * R.direction;
 		    I.normal = normalize(
-			Geom::mesh_facet_normal(AABB_.mesh(),f)
+			Geom::mesh_facet_normal(*AABB_.mesh(),f)
 		    );
 		}
 	    }

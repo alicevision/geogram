@@ -655,8 +655,8 @@ namespace VBW {
 	/**
 	 * \brief Tests whether a vertex has a corresponding
 	 *  facet in the cell.
-	 * \details One needs to call compute_geometry() before
-	 *  calling this function.
+	 * \details Calling compute_geometry() before makes
+	 *  this function faster.
 	 */
 	bool vertex_is_contributing(index_t v) const {
 	    if(!geometry_dirty_) {
@@ -948,6 +948,20 @@ namespace VBW {
 	     return vv2t(v2,v1);
 	 }
 
+	/**
+	 * \brief Gets a triangle vertex.
+	 * \param[in] t a triangle.
+	 * \param[in] lv local index of a vertex of \p t (in 0..2).
+	 * \return the vertex
+	 */
+         index_t triangle_vertex(index_t t, index_t lv) const {
+	     vbw_assert(t < max_t());
+	     vbw_assert(lv < 3);
+	     Triangle T = get_triangle(t);
+	     return index_t((lv==0)*T.i+(lv==1)*T.j+(lv==2)*T.k);
+	 }
+
+      
 	/**
 	 * \brief Gets the local index of a vertex in a triangle.
 	 * \param[in] t a triangle.
@@ -1320,12 +1334,6 @@ namespace VBW {
 
 namespace GEO {
     using VBW::ConvexCell;
-}
-
-namespace std {
-    template<> inline void swap(VBW::ConvexCell& c1, VBW::ConvexCell& c2) {
-	c1.swap(c2);
-    }
 }
 
 #endif

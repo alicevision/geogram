@@ -171,7 +171,7 @@ namespace {
 	    ImGui::Text("Palette");
 	    for (int n = 0; n < 40; n++) {
 		ImGui::PushID(n);
-		if ( (n % 6) != 0 ) {
+		if ( (n % 8) != 0 ) {
 		    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.y);
 		}
 		if (ImGui::ColorButton(
@@ -193,7 +193,7 @@ namespace {
 	    }
 	    ImGui::Separator();
 	    if(ImGui::Button(
-		   "OK", ImVec2(-1, -1)
+		   "OK", ImVec2(-1,-1)
 	       )
 	    ) {
 		ImGui::CloseCurrentPopup();
@@ -283,6 +283,8 @@ namespace ImGui {
     }
 
     /****************************************************************/
-    
 }
+
+    
+
 

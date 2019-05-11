@@ -49,6 +49,8 @@
 #include <geogram/basic/string.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/stopwatch.h>
+#include <thread>
+#include <chrono>
 
 #ifdef GEO_OPENMP
 #include <omp.h>
@@ -849,6 +851,12 @@ namespace GEO {
 	    threads.push_back(new ParallelThread(f8));	    
             Process::run_threads(threads);
         }
+    }
+
+    namespace Process {
+	void sleep(index_t microseconds) {
+	    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));	    
+	}
     }
 }
 

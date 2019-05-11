@@ -625,7 +625,7 @@ namespace VBW {
         // Find the intersection of the three planes using Kramer's formula.
 	// (see Edelsbrunner - Simulation of Simplicity for other examples).
 	// 
-	// Kramer's formula: each component of the solution is obtained as
+	// Cramer's formula: each component of the solution is obtained as
 	//  the ratio of two determinants:
 	//   - the determinant of the system where the ith column is replaced 
 	//     with the rhs

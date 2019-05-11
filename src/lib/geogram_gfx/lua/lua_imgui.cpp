@@ -667,7 +667,7 @@ void init_lua_imgui(lua_State* L) {
     lua_pushliteral(L,"BeginTabItem");
     lua_pushcfunction(L,wrapper_BeginTabItem);
     lua_settable(L,-3);
-    
+
     lua_pop(L,1);
 }
 

@@ -65,6 +65,10 @@
 #include <stdio.h>
 #endif
 
+#ifdef GEO_OS_EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 namespace GEO {
 
     namespace FileSystem {
@@ -622,9 +626,30 @@ namespace GEO {
 #endif
             return home;
         }
-        
-    }
 
-    
+#ifdef GEO_OS_EMSCRIPTEN
+	static void (*file_system_changed_callback_)() = nullptr;
+	
+	void set_file_system_changed_callback(void(*callback)()) {
+	    file_system_changed_callback_ = callback;
+	}
+
+#endif    
+	
+    } // end namespace FileSystem
+} // end namespace GEO
+
+
+#ifdef GEO_OS_EMSCRIPTEN
+
+extern "C" {
+    void file_system_changed_callback();
 }
 
+EMSCRIPTEN_KEEPALIVE void file_system_changed_callback() {
+    if(GEO::FileSystem::file_system_changed_callback_ != nullptr) {
+	(*GEO::FileSystem::file_system_changed_callback_)();
+    }
+}
+
+#endif

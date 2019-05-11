@@ -294,17 +294,16 @@ namespace {
          */
         double center(index_t f) const {
             double result = 0.0;
+	    double s = 1.0 / double(mesh_.facets.nb_vertices(f));
             for(
                 index_t c = mesh_.facets.corners_begin(f);
                 c < mesh_.facets.corners_end(f); ++c
             ) {
-                result += mesh_.vertices.point_ptr(
+                result += s*mesh_.vertices.point_ptr(
                     mesh_.facet_corners.vertex(c)
-                )[COORD];
+		)[COORD]; 
             }
             return result;
-            // TODO: should be  / double(mesh_.facets.nb_vertices(f));
-            // but this breaks one of the tests, to be investigated...
         }
 
     private:

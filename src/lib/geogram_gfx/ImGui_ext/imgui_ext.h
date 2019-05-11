@@ -142,7 +142,6 @@ namespace ImGui {
 	const char* label,
 	char* filename, size_t filename_buff_len
     );
-    
 }
 
 #endif

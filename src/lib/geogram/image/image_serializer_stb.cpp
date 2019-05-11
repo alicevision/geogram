@@ -47,7 +47,9 @@
 // [Bruno] I got too many complaints in STB so I "close my eyes" :-)
 #ifdef __GNUC__
 #ifndef __ICC
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #pragma GCC diagnostic ignored "-Wdouble-promotion"

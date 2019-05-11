@@ -603,6 +603,15 @@ void glupLightVector3fv(GLUPfloat* xyz) {
     GLUP::current_context_->flag_lighting_as_dirty();
 }
 
+void glupGetLightVector3fv(GLUPfloat* xyz) {
+    GEO_CHECK_GL();                
+    GLUPfloat* ptr =
+        GLUP::current_context_->uniform_state().light_vector.get_pointer();
+    xyz[0] = ptr[0];
+    xyz[1] = ptr[1];
+    xyz[2] = ptr[2];
+}
+
 void glupSetPointSize(GLUPfloat size) {
     GEO_CHECK_GL();                
     GLUP::current_context_->uniform_state().point_size.set(size);

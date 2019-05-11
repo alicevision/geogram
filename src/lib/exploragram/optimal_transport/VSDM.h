@@ -109,7 +109,7 @@ namespace GEO {
 	 *  subdivision surface. 
 	 * \param[in] nb_subdiv the number of Catmull-Clark subdivisions.
 	 */
-	void set_subdivision_surface(Mesh* mesh, index_t nb_subdiv);
+        void set_subdivision_surface(Mesh* mesh, index_t nb_subdiv);
 
 	/**
 	 * \brief The callback to evaluate the objective function, used by
