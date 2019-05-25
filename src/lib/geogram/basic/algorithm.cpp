@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -49,15 +49,16 @@
 namespace GEO {
 
     bool uses_parallel_algorithm() {
-        static bool initialized = false;
-        static bool result = false;
-        if(!initialized) {
-            result =
-                CmdLine::get_arg_bool("sys:multithread") &&
-                CmdLine::get_arg_bool("algo:parallel");
-            initialized = true;
-        }
-        return result;
+        // static bool initialized = false;
+        // static bool result = false;
+        // if(!initialized) {
+        //     result =
+        //         CmdLine::get_arg_bool("sys:multithread") &&
+        //         CmdLine::get_arg_bool("algo:parallel");
+        //     initialized = true;
+        // }
+        // return result;
+        return true;
     }
 }
 

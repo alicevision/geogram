@@ -34,12 +34,14 @@ include_directories(${PROJECT_BINARY_DIR}/src/lib)
 
 add_library(geogram ${SOURCES} $<TARGET_OBJECTS:geogram_third_party>)
 
+ntop_import(tbb)
+target_link_libraries(geogram tbb::tbb)
 
 # Jeremie/Maxence: avoids the need to redeclare geogram include
 # path for targets that depend on geogram.
 # See: https://cmake.org/cmake/help/v3.3/command/target_include_directories.html
 # https://stackoverflow.com/questions/26243169/cmake-target-include-directories-meaning-of-scope
-target_include_directories(geogram PUBLIC ${GEOGRAM_PATH}/src/lib) 
+target_include_directories(geogram PUBLIC ${GEOGRAM_PATH}/src/lib)
 
 set_target_properties(geogram PROPERTIES
                       VERSION ${VORPALINE_VERSION}

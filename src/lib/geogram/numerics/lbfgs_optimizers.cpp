@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -68,10 +68,10 @@ namespace GEO {
      */
     namespace OptimizerConfig {
 
-        static Optimizer::newiteration_callback newiteration_callback_ = nullptr;
-        static Optimizer::funcgrad_callback funcgrad_callback_ = nullptr;
-        static Optimizer::evalhessian_callback evalhessian_callback_ = nullptr;
-        static index_t N_ = 0;
+        static thread_local Optimizer::newiteration_callback newiteration_callback_ = nullptr;
+        static thread_local Optimizer::funcgrad_callback funcgrad_callback_ = nullptr;
+        static thread_local Optimizer::evalhessian_callback evalhessian_callback_ = nullptr;
+        static thread_local index_t N_ = 0;
 
         /**
          * \brief Initializes Optimizer configuration
@@ -250,7 +250,7 @@ namespace GEO {
         hlbfgs_info[4] = (int) max_iter_;  // max iterations
         hlbfgs_info[6] = (int) T_;  // update interval of hessian
         hlbfgs_info[7] = 1;   // 0: without hessian, 1: with accurate hessian
-        
+
         HLBFGS(
             (int) n_,
             (int) m_,

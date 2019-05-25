@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -52,6 +52,7 @@
 #include <map>
 #include <vector>
 #include <typeinfo>
+#include <mutex>
 
 /**
  * \file geogram/basic/factory.h
@@ -90,6 +91,7 @@ namespace GEO {
          */
         template <class InstanceType>
         static InstanceType& instance() {
+            std::lock_guard<std::mutex> lock(instance_mutex_);
             const std::string name = typeid(InstanceType).name();
             Instance* instance = get(name);
             if(instance == nullptr) {
@@ -114,6 +116,8 @@ namespace GEO {
          * \retval a null pointer otherwise
          */
         static Instance* get(const std::string& name);
+
+        static std::mutex instance_mutex_;
     };
 
     /**************************************************************************/
@@ -169,7 +173,7 @@ namespace GEO {
 
         /**
          * \brief Finds a creator by name.
-         * \param[in] name a user-defined name identifying 
+         * \param[in] name a user-defined name identifying
          *  a creator in the Factory
          * \retval the creator associated to \p name if \p name exists
          * \retval null pointer otherwise
