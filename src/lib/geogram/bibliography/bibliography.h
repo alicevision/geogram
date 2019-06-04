@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -50,25 +50,25 @@
 #include <geogram/basic/memory.h>
 
 namespace GEO {
-    
+
     namespace Biblio {
 
 	/**
 	 * \brief Initializes the bibliography system.
 	 */
-	void GEOGRAM_API initialize();
+	inline void GEOGRAM_API initialize() { }
 
 	/**
 	 * \brief Terminates the bibliography system.
 	 */
-	void GEOGRAM_API terminate();
-	
+	inline void GEOGRAM_API terminate() { }
+
 	/**
 	 * \brief Registers a set of bibliographic references.
 	 * \param[in] bib_refs a string with the bibliographic references,
 	 *  in Bibtex format.
 	 */
-	void GEOGRAM_API register_references(const char* bib_refs);
+	inline void GEOGRAM_API register_references(const char* bib_refs) { geo_argused(bib_refs); }
 
 	/**
 	 * \brief Cites a bibliographic reference.
@@ -82,30 +82,26 @@ namespace GEO {
 	 *  key is cited.
 	 * \param[in] info more information about the context of the citation.
 	 */
-	void GEOGRAM_API cite(
-	    const char* ref,
-	    const char* file, int line,
-	    const char* function,
-	    const char* info = nullptr
-	);
+	// void GEOGRAM_API cite(
+	//     const char* ref,
+	//     const char* file, int line,
+	//     const char* function,
+	//     const char* info = nullptr
+	// );
 
 	/**
 	 * \brief Resets all citations.
 	 */
-	void GEOGRAM_API reset_citations();
-    }
+	inline void GEOGRAM_API reset_citations() { }
+	}
 
 /**
  * \brief Cites a reference.
  * \param [in] ref a string with the bibtex key of the reference.
  */
-#ifdef GEO_COMPILER_GCC    
-#define geo_cite(ref) ::GEO::Biblio::cite(           \
-	ref, __FILE__, __LINE__, __PRETTY_FUNCTION__ \
-)
-#else
-#define geo_cite(ref) ::GEO::Biblio::cite(ref, __FILE__, __LINE__, __FUNCTION__)    
-#endif    
+#ifndef geo_cite
+#define geo_cite(x)
+#endif
 
 /**
  * \brief Cites a reference with information on the context of
@@ -113,18 +109,10 @@ namespace GEO {
  * \param [in] ref a string with the bibtex key of the reference.
  * \param [in] info more information on the context of the citation.
  */
-#ifdef GEO_COMPILER_GCC    
-#define geo_cite_with_info(ref, info) ::GEO::Biblio::cite( \
-	ref, __FILE__, __LINE__, __PRETTY_FUNCTION__, info \
-)
-#else
-#define geo_cite_with_info(ref, info) ::GEO::Biblio::cite( \
-	ref, __FILE__, __LINE__, __FUNCTION__, info        \
-)    
-#endif    
+#ifndef geo_cite_with_info
+#define geo_cite_with_info(x,y)
+#endif
 
-
-    
 }
 
 #endif

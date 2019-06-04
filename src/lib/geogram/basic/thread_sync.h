@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -51,6 +51,7 @@
 #include <geogram/basic/numeric.h>
 #include <geogram/basic/assert.h>
 #include <geogram/basic/argused.h>
+#include <tbb/spin_mutex.h>
 #include <vector>
 
 #ifdef GEO_OS_APPLE
@@ -64,7 +65,7 @@
 #ifdef geo_debug_assert
 #define geo_thread_sync_assert(x) geo_debug_assert(x)
 #else
-#define geo_thread_sync_assert(x) 
+#define geo_thread_sync_assert(x)
 #endif
 
 /**
@@ -76,6 +77,7 @@ namespace GEO {
 
     namespace Process {
 
+#if 0
 #if defined(GEO_OS_RASPBERRY)
 
         /** A lightweight synchronization structure. */
@@ -98,7 +100,7 @@ namespace GEO {
         inline void release_spinlock(spinlock& x) {
             unlock_mutex_arm32(&x);
         }
-	
+
 #elif defined(GEO_OS_ANDROID)
 
         /** A lightweight synchronization structure. */
@@ -161,7 +163,7 @@ namespace GEO {
 #if defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12
         /** A lightweight synchronization structure. */
         typedef os_unfair_lock spinlock;
-        
+
         /** The initialization value of a spin lock. */
 #       define GEOGRAM_SPINLOCK_INIT OS_UNFAIR_LOCK_INIT
         //inline void init_spinlock(spinlock & s) { s = OS_UNFAIR_LOCK_INIT; }
@@ -296,7 +298,7 @@ namespace GEO {
             std::vector<spinlock> spinlocks_;
         };
 
-#elif defined(GEO_OS_RASPBERRY) 
+#elif defined(GEO_OS_RASPBERRY)
 
         /**
          * \brief An array of light-weight synchronisation
@@ -397,8 +399,8 @@ namespace GEO {
             std::vector<word_t> spinlocks_;
             index_t size_;
         };
-	
-#elif defined(GEO_OS_ANDROID) 
+
+#elif defined(GEO_OS_ANDROID)
 
         /**
          * \brief An array of light-weight synchronisation
@@ -500,7 +502,7 @@ namespace GEO {
             index_t size_;
         };
 
-#elif defined(GEO_OS_LINUX) 
+#elif defined(GEO_OS_LINUX)
 
         /**
          * \brief An array of light-weight synchronisation
@@ -709,9 +711,107 @@ namespace GEO {
 #error Found no implementation of SpinLockArray
 
 #endif
+#endif
 
+        /** A lightweight synchronization structure. */
+        typedef tbb::spin_mutex spinlock;
 
-    }
+        /** The initialization value of a spin lock. */
+#       define GEOGRAM_SPINLOCK_INIT
+        /**
+         * \brief Loops until \p x is available then reserve it.
+         * \param[in] x a spinlock that should be available.
+         */
+        inline void acquire_spinlock(spinlock& x) {
+            x.lock();
+        }
+
+        /**
+         * \brief Makes \p x available to other threads.
+         * \param[in] x a spinlock that should be reserved.
+         */
+        inline void release_spinlock(spinlock& x) {
+            x.unlock();
+        }
+
+        /**
+         * \brief An array of light-weight synchronisation
+         *  primitives (spinlocks).
+         *
+         * \details This is the reference implementation, that uses
+         * a std::vector of spinlock. There are more efficient
+         * implementations for Linux and Windows.
+         *
+         * \see acquire_spinlock(), release_spinlock()
+         */
+        class SpinLockArray {
+        public:
+            /**
+             * \brief Constructs a new SpinLockArray of size 0.
+             */
+            SpinLockArray() {
+            }
+
+            /**
+             * \brief Constructs a new SpinLockArray of size \p size_in.
+             * \param[in] size_in number of spinlocks in the array.
+             */
+            SpinLockArray(index_t size_in) {
+                resize(size_in);
+            }
+
+            /**
+             * \brief Resizes a SpinLockArray.
+             * \details All the spinlocks are reset to 0.
+             * \param[in] size_in The desired new size.
+             */
+            void resize(index_t size_in) {
+                if (spinlocks_.size() != size_in) {
+                    std::vector<spinlock> tmp(size_in);
+                    spinlocks_.swap(tmp);
+                }
+            }
+
+            /**
+             * \brief Resets size to 0 and clears all the memory.
+             */
+            void clear() {
+                spinlocks_.clear();
+            }
+
+            /**
+             * \brief Gets the number of spinlocks in this array.
+             */
+            index_t size() const {
+                return index_t(spinlocks_.size());
+            }
+
+            /**
+             * \brief Acquires a spinlock at a given index
+             * \details Loops until spinlock at index \p i is available then
+             * reserve it.
+             * \param[in] i index of the spinlock
+             */
+            void acquire_spinlock(index_t i) {
+                geo_thread_sync_assert(i < size());
+                spinlocks_[i].lock();
+            }
+
+            /**
+             * \brief Releases a spinlock at a given index
+             * \details Makes spinlock at index \p i available to other threads.
+             * \param[in] i index of the spinlock
+             */
+            void release_spinlock(index_t i) {
+                geo_thread_sync_assert(i < size());
+                spinlocks_[i].unlock();
+            }
+
+        private:
+            std::vector<spinlock> spinlocks_;
+        };
+
+    } // namespace Process
 
 #ifdef GEO_OS_WINDOWS
 
@@ -719,7 +819,7 @@ namespace GEO {
 
     typedef CRITICAL_SECTION pthread_mutex_t;
     typedef unsigned int pthread_mutexattr_t;
-    
+
     inline int pthread_mutex_lock(pthread_mutex_t *m) {
         EnterCriticalSection(m);
         return 0;
@@ -729,9 +829,9 @@ namespace GEO {
         LeaveCriticalSection(m);
         return 0;
     }
-        
+
     inline int pthread_mutex_trylock(pthread_mutex_t *m) {
-        return TryEnterCriticalSection(m) ? 0 : EBUSY; 
+        return TryEnterCriticalSection(m) ? 0 : EBUSY;
     }
 
     inline int pthread_mutex_init(pthread_mutex_t *m, pthread_mutexattr_t *a) {
@@ -770,10 +870,10 @@ namespace GEO {
         SleepConditionVariableCS(c, m, INFINITE);
         return 0;
     }
-    
-#endif    
-    
-}
+
+#endif
+
+} // namespace GEO
 
 #endif
 
