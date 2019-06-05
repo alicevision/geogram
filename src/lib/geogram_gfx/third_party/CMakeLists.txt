@@ -27,6 +27,9 @@ endif()
 
 add_library(geogram_gfx_third_party OBJECT ${SOURCES})
 
+ntop_import(tbb)
+target_link_libraries(geogram_gfx_third_party tbb::tbb)
+
 set_target_properties(
     geogram_gfx_third_party PROPERTIES
     FOLDER "GEOGRAM"

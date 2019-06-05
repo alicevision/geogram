@@ -25,7 +25,7 @@ if(BUILD_SHARED_LIBS)
 # For Windows, nothing to do, because
 # LUA_DL_DLL is by-default activated in luaconf.h
    else()
-      add_definitions(-DLUA_USE_DLOPEN)   
+      add_definitions(-DLUA_USE_DLOPEN)
    endif()
 endif()
 
@@ -54,6 +54,9 @@ if(GEOGRAM_WITH_TRIANGLE)
 endif()
 
 add_library(geogram_third_party OBJECT ${SOURCES})
+
+ntop_import(tbb)
+target_link_libraries(geogram_third_party tbb::tbb)
 
 set_target_properties(
     geogram_third_party PROPERTIES
