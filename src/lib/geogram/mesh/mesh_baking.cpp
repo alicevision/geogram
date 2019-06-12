@@ -282,37 +282,37 @@ namespace GEO {
 	}
 	ImageRasterizer rasterizer(target);
 
-#ifdef _OPENMP
-	#pragma omp parallel for
-#endif	
-	for(index_t y=0; y<target->height(); ++y) {
-	    index_t nearest_facet = NO_FACET;
-	    vec3 nearest_point;
-	    double sq_dist;
-	    for(index_t x=0; x<target->width(); ++x) {
-		vec3 p((double*)(void*)geometry->pixel_base(x,y));
-		if(
-		   p[0] == Numeric::max_float64() &&
-		   p[1] == Numeric::max_float64() &&
-		   p[2] == Numeric::max_float64()
-		) {
-		    continue;
-		}
-		if(nearest_facet == NO_FACET) {
-		    nearest_facet =
-			AABB.nearest_facet(p, nearest_point, sq_dist
+	parallel_for(
+	    0, target->height(),
+	    [geometry, target, &AABB, &rasterizer, &normal](index_t y) {
+		index_t nearest_facet = NO_FACET;
+		vec3 nearest_point;
+		double sq_dist;
+		for(index_t x=0; x<target->width(); ++x) {
+		    vec3 p((double*)(void*)geometry->pixel_base(x,y));
+		    if(
+			p[0] == Numeric::max_float64() &&
+			p[1] == Numeric::max_float64() &&
+			p[2] == Numeric::max_float64()
+		    ) {
+			continue;
+		    }
+		    if(nearest_facet == NO_FACET) {
+			nearest_facet =
+			    AABB.nearest_facet(p, nearest_point, sq_dist
+			);
+		    } else {
+			sq_dist = length2(p - nearest_point);
+			AABB.nearest_facet_with_hint(
+			    p,nearest_facet,nearest_point,sq_dist
+			);
+		    }
+		    rasterizer.set_pixel(
+			int(x),int(y),normal[nearest_facet]
 		    );
-		} else {
-		    sq_dist = length2(p - nearest_point);
-		    AABB.nearest_facet_with_hint(
-			p,nearest_facet,nearest_point,sq_dist
-		    );
 		}
-		rasterizer.set_pixel(
-		    int(x),int(y),normal[nearest_facet]
-		);
 	    }
-	}
+	);
     }
 
    /**************************************************************************/
@@ -340,38 +340,37 @@ namespace GEO {
 
 	ImageRasterizer rasterizer(target);
 
-#ifdef _OPENMP
-	#pragma omp parallel for
-#endif	
-	for(index_t y=0; y<target->height(); ++y) {
-	    index_t nearest_vertex = NO_VERTEX;
-	    double sq_dist;
-	    Color C;
-	    for(index_t x=0; x<target->width(); ++x) {
-		vec3 p((double*)(void*)geometry->pixel_base(x,y));
-		if(
-		   p[0] == Numeric::max_float64() &&
-		   p[1] == Numeric::max_float64() &&
-		   p[2] == Numeric::max_float64()
-		) {
-		    continue;
+	parallel_for(
+	    0, target->height(),
+	    [geometry, target, kd_tree,
+	     &rasterizer, &attribute, bias, scale
+	    ](index_t y) {
+	    
+		index_t nearest_vertex = NO_VERTEX;
+		double sq_dist;
+		Color C;
+		for(index_t x=0; x<target->width(); ++x) {
+		    vec3 p((double*)(void*)geometry->pixel_base(x,y));
+		    if(
+			p[0] == Numeric::max_float64() &&
+			p[1] == Numeric::max_float64() &&
+			p[2] == Numeric::max_float64()
+		    ) {
+			continue;
+		    }
+		    kd_tree->get_nearest_neighbors(
+			1, p.data(), &nearest_vertex, &sq_dist
+		    );
+		    get_attribute_as_color(
+			C, attribute, MESH_VERTICES,
+			index_t(-1), index_t(-1), nearest_vertex,
+			bias, scale
+		    );
+		    rasterizer.set_pixel(int(x),int(y),C);
 		}
-		kd_tree->get_nearest_neighbors(
-		    1, p.data(), &nearest_vertex, &sq_dist
-		);
-		get_attribute_as_color(
-		    C, attribute, MESH_VERTICES,
-		    index_t(-1), index_t(-1), nearest_vertex,
-		    bias, scale
-		);
-		
-		rasterizer.set_pixel(int(x),int(y),C);
 	    }
-	}
-	
+	);
     }
-    
-
     
    /**************************************************************************/
     

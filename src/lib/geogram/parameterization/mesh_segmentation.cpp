@@ -44,6 +44,7 @@
  */
 
 #include <geogram/parameterization/mesh_segmentation.h>
+#include <geogram/points/principal_axes.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/mesh/mesh_io.h>
@@ -56,124 +57,6 @@
 namespace {
     using namespace GEO;
 
-    /**
-     * PrincipalAxes3d enables the center and inertia axes of
-     * a cloud of 3d points to be computed.
-     */
-    class PrincipalAxes3d {
-    public:
-        PrincipalAxes3d() {
-	}
-
-	void begin_points() {
-	    nb_points_ = 0 ;
-	    sum_weights_ = 0 ;
-	    center_[0] = center_[1] = center_[2] = 0 ;
-	    M_[0] = M_[1] = M_[2] = M_[3] = M_[4] = M_[5] = 0 ;
-	}
-
-	void end_points() {
-	    center_[0] /= sum_weights_ ;
-	    center_[1] /= sum_weights_ ;
-	    center_[2] /= sum_weights_ ;
-	    
-	    // If the system is under-determined, 
-	    //   return the trivial basis.
-	    if(nb_points_ < 4) {
-		axis_[0] = vec3(1,0,0) ;
-		axis_[1] = vec3(0,1,0) ;
-		axis_[2] = vec3(0,0,1) ;
-		eigen_value_[0] = 1.0 ;
-		eigen_value_[1] = 1.0 ;
-		eigen_value_[2] = 1.0 ;
-	    } else {
-		double x = center_[0] ;
-		double y = center_[1] ;
-		double z = center_[2] ;
-		
-		M_[0] = M_[0]/sum_weights_ - x*x ;
-		M_[1] = M_[1]/sum_weights_ - x*y ;
-		M_[2] = M_[2]/sum_weights_ - y*y ;
-		M_[3] = M_[3]/sum_weights_ - x*z ;
-		M_[4] = M_[4]/sum_weights_ - y*z ;
-		M_[5] = M_[5]/sum_weights_ - z*z ;
-		
-		if( M_[0] <= 0 ) {
-		    M_[0] = 1.e-30 ; 
-		}
-		if( M_[2] <= 0 ) {
-		    M_[2] = 1.e-30 ; 
-		}
-		if( M_[5] <= 0 ) {
-		    M_[5] = 1.e-30 ; 
-		}
-		
-		double eigen_vectors[9] ;
-		MatrixUtil::semi_definite_symmetric_eigen(M_, 3, eigen_vectors, eigen_value_) ;
-		
-		axis_[0] = vec3(
-		    eigen_vectors[0], eigen_vectors[1], eigen_vectors[2]
-		);
-		
-		axis_[1] = vec3(
-		    eigen_vectors[3], eigen_vectors[4], eigen_vectors[5]
-		);
-        
-		axis_[2] = vec3(
-		    eigen_vectors[6], eigen_vectors[7], eigen_vectors[8]
-		);
-        
-		// Normalize the eigen vectors
-		
-		for(int i=0; i<3; i++) {
-		    axis_[i] = normalize(axis_[i]) ;
-		}
-	    }
-	}
-
-	void point(const vec3& p, double weight = 1.0) {
-	    center_[0] += p.x * weight ;
-	    center_[1] += p.y * weight ;
-	    center_[2] += p.z * weight ;
-	    
-	    double x = p.x ;
-	    double y = p.y ; 
-	    double z = p.z ;
-	    
-	    M_[0] += weight * x*x ;
-	    M_[1] += weight * x*y ;
-	    M_[2] += weight * y*y ;
-	    M_[3] += weight * x*z ;
-	    M_[4] += weight * y*z ;
-	    M_[5] += weight * z*z ;
-	    
-	    nb_points_++ ;
-	    sum_weights_ += weight ;
-	}
-        
-        vec3 center() const {
-	    return vec3(center_[0], center_[1], center_[2]);
-	}
-
-	const vec3& axis(index_t i) const {
-	    return axis_[i];
-	}
-
-	/* // Unused
-	double eigen_value(index_t i) const {
-	    return eigen_value_[i];
-	}
-        */
-        
-    private:
-        double center_[3] ;
-        vec3 axis_[3] ;
-        double eigen_value_[3] ;
-        
-        double M_[6] ;
-        int nb_points_ ;
-        double sum_weights_ ;
-    };
 
     /**
      * \brief Finds the facet of a mesh that is the furthest away
@@ -210,15 +93,15 @@ namespace {
         double max_z = Numeric::min_float64() ;
 
         PrincipalAxes3d axes ;
-        axes.begin_points() ;
+        axes.begin() ;
 	for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 	    index_t f = chart.facets[ff];
 	    for(index_t lv=0; lv<chart.mesh.facets.nb_vertices(f); ++lv) {
 		index_t v = chart.mesh.facets.vertex(f,lv);
-		axes.point(vec3(chart.mesh.vertices.point_ptr(v)));
+		axes.add_point(vec3(chart.mesh.vertices.point_ptr(v)));
 	    }
 	}
-        axes.end_points() ;
+        axes.end() ;
         vec3 center = axes.center() ;
 
         // If these facets do not exist (for instance, in the case

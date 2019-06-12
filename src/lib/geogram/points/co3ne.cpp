@@ -45,13 +45,13 @@
 
 #include <geogram/points/co3ne.h>
 #include <geogram/points/nn_search.h>
+#include <geogram/points/principal_axes.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_io.h>
 #include <geogram/mesh/index.h>
 #include <geogram/mesh/mesh_repair.h>
 #include <geogram/mesh/mesh_topology.h>
 #include <geogram/mesh/mesh_reorder.h>
-#include <geogram/numerics/matrix_util.h>
 #include <geogram/basic/geometry.h>
 #include <geogram/basic/process.h>
 #include <geogram/basic/assert.h>
@@ -1930,114 +1930,6 @@ namespace {
 
     /************************************************************************/
 
-    /**
-     * \brief Computes the normal to the best approximating point
-     *  of a set of points.
-     * \code
-     * LeastSquaresNormal LSN ;
-     * LSN.begin() ;
-     *    LSN.add_point(P1) ;
-     *    ...
-     *    LSN.add_point(Pn) ;
-     * LSN.end() ;
-     * vec3 N = LSN.get_normal() ;
-     * \endcode
-     */
-    class LeastSquaresNormal {
-    public:
-        /**
-         * \brief Creates a new LeastSquaresNormal
-         */
-        LeastSquaresNormal() {
-        }
-
-        /**
-         * \brief Begins a least squares normal estimation.
-         */
-        void begin() {
-            points_.resize(0);
-            center_ = vec3(0.0, 0.0, 0.0);
-        }
-
-        /**
-         * \brief Terminates a least squares normal estimation.
-         */
-        void end() {
-            if(nb_points() != 0) {
-                center_ = (1.0 / double(nb_points())) * center_;
-            }
-        }
-
-        /**
-         * \brief Adds a point to the current least squares normal
-         *  estimation.
-         * \param[in] p the current point
-         */
-        void add_point(const vec3& p) {
-            points_.push_back(p);
-            center_ += p;
-        }
-
-        /**
-         * \brief Gets the estimated normal.
-         * \return the estimated normal
-         */
-        const vec3& get_normal() {
-            for(index_t i = 0; i < 6; i++) {
-                sym_mat_[i] = 0.0;
-            }
-            for(index_t i = 0; i < points_.size(); i++) {
-                vec3 p = points_[i] - center_;
-                sym_mat_[0] += p.x * p.x;
-                sym_mat_[1] += p.x * p.y;
-                sym_mat_[2] += p.y * p.y;
-                sym_mat_[3] += p.x * p.z;
-                sym_mat_[4] += p.y * p.z;
-                sym_mat_[5] += p.z * p.z;
-            }
-
-            MatrixUtil::semi_definite_symmetric_eigen(
-                sym_mat_, 3, eig_vec_, eig_val_
-            );
-
-            N_ = vec3(eig_vec_[6], eig_vec_[7], eig_vec_[8]);
-            if(
-                Numeric::is_nan(N_.x) ||
-                Numeric::is_nan(N_.y) ||
-                Numeric::is_nan(N_.z)
-            ) {
-                Logger::warn("Co3Ne") << "NAN detected!" << std::endl;
-            }
-            return N_;
-        }
-
-        /**
-         * \brief Gets the number of points
-         * \return the number of points used to estimate the normal
-         */
-        index_t nb_points() const {
-            return points_.size();
-        }
-
-        /**
-         * \brief Gets the center of the points.
-         * \return the center of the points
-         */
-        const vec3& center() const {
-            return center_;
-        }
-
-    private:
-        vector<vec3> points_;
-        vec3 center_;
-        vec3 N_;
-        double sym_mat_[6];
-        double eig_vec_[9];
-        double eig_val_[3];
-    };
-
-    /************************************************************************/
-
     class Co3Ne;
 
     /**
@@ -2150,7 +2042,7 @@ namespace {
         index_t from_;
         index_t to_;
         Co3NeMode mode_;
-        LeastSquaresNormal least_squares_normal_;
+        PrincipalAxes3d least_squares_normal_;
         vector<index_t> triangles_;
     };
 
@@ -2578,7 +2470,7 @@ namespace {
                 least_squares_normal_.add_point(RVD.point(neigh[jj]));
             }
             least_squares_normal_.end();
-            master_->set_normal(i, least_squares_normal_.get_normal());
+            master_->set_normal(i, least_squares_normal_.normal());
         }
     }
 
@@ -2597,7 +2489,7 @@ namespace {
                 least_squares_normal_.add_point(RVD.point(neigh[jj]));
             }
             least_squares_normal_.end();
-            vec3 N = normalize(least_squares_normal_.get_normal());
+            vec3 N = normalize(least_squares_normal_.normal());
             vec3 g = least_squares_normal_.center();
             vec3 d = RVD.point(i) - g;
             d -= dot(d, N) * N;
@@ -2686,7 +2578,7 @@ namespace {
                     least_squares_normal_.add_point(RVD.point(neigh[jj]));
                 }
                 least_squares_normal_.end();
-                N = least_squares_normal_.get_normal();
+                N = least_squares_normal_.normal();
             }
             
             RVD.get_RVC(i, N, P, Q, neigh, sq_dist);

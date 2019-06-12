@@ -392,10 +392,12 @@ namespace GEO {
                 }
             }
             unbind_attributes();
+	    /*
             if(ioflags.has_element(MESH_FACETS) && M.facets.nb() == 0) {
                 Logger::err("I/O") << "Mesh contains no facet" << std::endl;
                 return false;
             }
+	    */
             return true;
         }
 

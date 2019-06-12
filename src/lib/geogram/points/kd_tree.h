@@ -103,8 +103,8 @@ namespace GEO {
             index_t* neighbors,
             double* neighbors_sq_dist
         ) const;
-
-	/************************************************************************/
+	
+	/**********************************************************************/
 	
         /**
          * \brief The context for traversing a KdTree.

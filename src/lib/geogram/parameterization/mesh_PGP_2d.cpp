@@ -448,24 +448,18 @@ namespace GEO {
 			    nlBegin(NL_ROW);
 			    for(index_t j=0; j<4; ++j) {
 				double a1 = Rot[Rc1][i][j];
-				//std::cerr << a1 << " ";
 				if(a1 != 0.0) {
 				    nlCoefficient(v1*4+j, a1);
 				}
 			    }
-			    //std::cerr << " --- ";
 			    for(index_t j=0; j<4; ++j) {
 				double a2 = Rotc2[i][j];
-				//std::cerr << a2 << " ";
 				if(a2 != 0.0) {
 				    nlCoefficient(v2*4+j, -a2);
 				}
 			    }
 			    nlEnd(NL_ROW);
-			    //std::cerr << std::endl;
 			}
-
-			//std::cerr << std::endl << std::endl;
 		    }
 		}
 		

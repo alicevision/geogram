@@ -37,19 +37,7 @@ void main() {
 
     vec3 N = vec3(V.x, -V.y, sqrt(one_minus_r2));
 
-// Workaround: in picking mode, I get garbage with Intel graphics if
-// updating depth coord, so I deactivate depth coord update on Intel
-// graphics. Picking will be less accurate, but more accurate than what
-// we got when it does garbage.    
-#ifdef GLUP_INTEL    
-    if(!glupIsEnabled(GLUP_PICKING)) {
-#endif
-	
     glup_FragDepth = gl_FragCoord.z - FragmentIn.depth_radius * N.z;
-    
-#ifdef GLUP_INTEL    
-    }
-#endif	
     
     if(glupIsEnabled(GLUP_PICKING)) {
         glup_FragColor = glup_picking(gl_PrimitiveID);

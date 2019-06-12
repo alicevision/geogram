@@ -389,7 +389,8 @@ namespace GEO {
                     ImGui::SameLine();
 		    if(
 			ImGui::GetContentRegionAvailWidth() <
-			ImGui::CalcTextSize(path[i].c_str()).x + 10.0f*ImGui::scaling()
+			ImGui::CalcTextSize(path[i].c_str()).x +
+			   10.0f*ImGui::scaling()
 		    ) {
 			ImGui::NewLine();
 		    }
@@ -573,14 +574,16 @@ namespace GEO {
                  ).c_str()
             );
             ImGui::Separator();
-            float w = 0.5f * ImGui::GetWindowWidth() - 15.0f*ImGui::scaling();
-            if (ImGui::Button("Overwrite", ImVec2(w,0))) {
+            if (ImGui::Button(
+		    "Overwrite",
+		    ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f))
+	    ) {
                 are_you_sure_ = false;
                 ImGui::CloseCurrentPopup();
                 file_selected(true);
             }
             ImGui::SameLine();
-            if (ImGui::Button("Cancel",ImVec2(w,0))) {
+            if (ImGui::Button("Cancel", ImVec2(-1.0f, 0.0f))) { 
                 are_you_sure_ = false;                
                 ImGui::CloseCurrentPopup();
             }

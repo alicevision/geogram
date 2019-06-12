@@ -49,6 +49,7 @@
 #include <geogram/parameterization/mesh_segmentation.h>
 #include <geogram/parameterization/mesh_param_validator.h>
 #include <geogram/parameterization/mesh_param_packer.h>
+#include <geogram/points/principal_axes.h>
 #include <geogram/mesh/mesh.h>
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/mesh/mesh_io.h>
@@ -62,6 +63,62 @@
 namespace {
     using namespace GEO;
 
+    /**
+     * \brief Computes a mesh parameterization by projection onto the
+     *  least squares average plane.
+     * \param[in] chart the chart to be parameterized.
+     * \param[in] corner_tex_coord a reference to the corner tex coord
+     *  attribute where to store the computed texture coordinates.
+     */
+    void GEOGRAM_API chart_parameterize_by_projection(
+	Chart& chart, Attribute<double>& corner_tex_coord
+    ) {
+	Mesh& M = chart.mesh;
+	vec3 N;
+	vec3 center;
+
+	if(chart.facets.size() == 1) {
+	    index_t f = chart.facets[0];
+	    center = Geom::mesh_facet_center(M, f);
+	    N = Geom::mesh_facet_normal(M,f);
+	} else {
+	    PrincipalAxes3d LSN;
+	    LSN.begin();
+	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+		index_t f=chart.facets[ff];
+		for(
+		    index_t c=M.facets.corners_begin(f);
+		    c < M.facets.corners_end(f); ++c
+		) {
+		    index_t v = M.facet_corners.vertex(c);
+		    LSN.add_point(vec3(M.vertices.point_ptr(v)));		
+		}
+	    }
+	    LSN.end();
+	    center = LSN.center();
+	    N = LSN.normal();
+	}
+	
+	vec3 U = normalize(Geom::perpendicular(N));
+	vec3 V = normalize(cross(N,U));
+
+	for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+	    index_t f=chart.facets[ff];
+	    for(
+		index_t c=M.facets.corners_begin(f);
+		c < M.facets.corners_end(f); ++c
+	    ) {
+		index_t v = M.facet_corners.vertex(c);
+		vec3 p(M.vertices.point_ptr(v));
+		p -= center;
+		double pu = dot(p,U);
+		double pv = dot(p,V);
+		corner_tex_coord[2*c]   = pu;
+		corner_tex_coord[2*c+1] = pv;
+	    }
+	}
+    }
+    
     /**
      * \brief Computes a texture atlas.
      */
@@ -94,9 +151,18 @@ namespace {
 	}
 
 	~AtlasMaker() {
-	    // TODO: delete vertex_id_ and chart_
-	    // attributes (no longer needed).
-	    // Keeping them for now (for visual debugging).
+	   // Destroy attributes
+	    if(vertex_id_.is_bound()) {
+		vertex_id_.destroy();
+	    }
+	    if(chart_.is_bound()) {
+		chart_.destroy();
+	    }
+	    Attribute<double> facet_distance;
+	    facet_distance.bind_if_is_defined(mesh_.facets.attributes(), "distance");
+	    if(facet_distance.is_bound()) {
+		facet_distance.destroy();
+	    }
 	}
 
 	void set_verbose(bool x) {
@@ -174,27 +240,15 @@ namespace {
 
 	bool postcheck_chart(Chart& chart) {
 	    bool OK = validator_.chart_is_valid(chart);
-	    
-	    // Ignore problems for small charts.
-	    // TODO: check if we can remove that
-	    // (unfortunately, does not seems so...
-//	    if(false)
+	    // If a small chart has a problem, then try
+	    // simply to project it.
 	    if(!OK && chart.facets.size() <= 10) {
-		if(verbose_) {
-		    Logger::out("ParamValidator")
-			<< "----> PASS: ignoring small chart, #facets="
-			<< chart.facets.size()
-			<< std::endl;
-		}
-		for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		    index_t f=chart.facets[ff];
-		    for(index_t c=chart.mesh.facets.corners_begin(f);
-			c < chart.mesh.facets.corners_end(f); ++c) {
-			tex_coord_[2*c] = 0.0;
-			tex_coord_[2*c+1] = 0.0;
-		    }
-		}
-		OK = true;
+		chart_parameterize_by_projection(chart, tex_coord_);
+		// Some single-facet charts may fail to be validated if
+		// they are too skinny (filling ratio will be too bad),
+		// so we force accept if there is a single facet.
+		OK = (chart.facets.size() == 1)  ||
+		      validator_.chart_is_valid(chart);
 	    }
 	    return OK;
 	}
@@ -209,7 +263,7 @@ namespace {
 	}
 	
 	bool parameterize_chart(Chart& chart) {
-	    
+
 	    chart_as_mesh_.clear();
 	    chart_as_mesh_.vertices.set_dimension(3);
 	    
@@ -352,7 +406,9 @@ namespace {
 namespace GEO {
 
     void mesh_make_atlas(
-	Mesh& mesh, double hard_angles_threshold, ChartParameterizer param,
+	Mesh& mesh, double hard_angles_threshold,
+	ChartParameterizer param,
+	ChartPacker pack,
 	bool verbose 
     ) {
 	AtlasMaker atlas(mesh);
@@ -361,7 +417,10 @@ namespace GEO {
 	atlas.set_verbose(verbose);
 	atlas.make_atlas();
 	Packer packer;
-	packer.pack_surface(mesh);
+	packer.pack_surface(mesh, false);
+	if(pack == PACK_XATLAS) {
+	    pack_atlas_using_xatlas(mesh);
+	}
     }
     
 }

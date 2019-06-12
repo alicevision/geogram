@@ -59,11 +59,16 @@ namespace GEO {
     enum ChartParameterizer {
 	PARAM_LSCM, PARAM_SPECTRAL_LSCM, PARAM_ABF
     };
+
+    enum ChartPacker {
+	PACK_TETRIS, PACK_XATLAS
+    };
     
     void GEOGRAM_API mesh_make_atlas(
 	Mesh& mesh,
 	double hard_angles_threshold = 45.0,
-	ChartParameterizer=PARAM_ABF,
+	ChartParameterizer param=PARAM_ABF,
+	ChartPacker pack=PACK_TETRIS,
 	bool verbose = false
     );
 }

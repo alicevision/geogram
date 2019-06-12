@@ -17,12 +17,10 @@ set(FULL_WARNINGS
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 
 if (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3)
-    message(STATUS "GCC version >= 4.3, activating sign conversion warnings")
     set(FULL_WARNINGS ${FULL_WARNINGS} -Wsign-conversion)
 endif()
 
 if (GCC_VERSION VERSION_GREATER 4.6 OR GCC_VERSION VERSION_EQUAL 4.6)
-    message(STATUS "GCC version >= 4.6, activating double promotion warnings")
     set(FULL_WARNINGS ${FULL_WARNINGS} -Wdouble-promotion)
 endif()
 

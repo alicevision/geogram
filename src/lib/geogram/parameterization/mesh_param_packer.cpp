@@ -48,8 +48,322 @@
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/basic/logger.h>
 #include <geogram/numerics/matrix_util.h>
+#include <geogram/third_party/xatlas/xatlas.h>
 #include <algorithm>
+#include <stack>
 #include <math.h>
+
+/**************************************************************/
+
+namespace {
+    using namespace GEO;
+
+    /**
+     * \brief Tests whether texture coordinates are continuous across
+     *  an edge.
+     * \param[in] M a const reference to the mesh
+     * \param[in] tex_coord the facet corner attribute with the texture coordinates
+     * \param[in] f1 the facet
+     * \param[in] le1 the local index of the edge in the facet
+     * \retval true if texture coordinates are continous across the edge
+     * \retval false otherwise
+     */
+    bool edge_is_continuous(const Mesh& M, Attribute<double>& tex_coord, index_t f1, index_t le1) {
+	index_t c11 = M.facets.corners_begin(f1) + le1;
+	index_t c12 = M.facets.next_corner_around_facet(f1,c11);
+
+	index_t v11 = M.facet_corners.vertex(c11);
+	index_t v12 = M.facet_corners.vertex(c12);	    
+
+	index_t f2 = M.facets.adjacent(f1,le1);
+	    
+	geo_assert(f2 != index_t(-1));
+	    
+	index_t le2 = index_t(-1);
+	index_t c21 = index_t(-1);
+	index_t c22 = index_t(-1);
+	index_t n2 = M.facets.nb_vertices(f2);
+	    
+	for(index_t le=0; le<n2; ++le) {
+	    c21 = M.facets.corners_begin(f2) + le;
+	    c22 = M.facets.next_corner_around_facet(f2, c21);
+	    if(M.facet_corners.vertex(c21) == v12 &&
+	       M.facet_corners.vertex(c22) == v11) {
+		le2 = le;
+		break;
+	    }
+	}
+
+	geo_assert(le2 != index_t(-1));
+	    
+	double U11 = tex_coord[2*c11];
+	double V11 = tex_coord[2*c11+1];	    
+
+	double U12 = tex_coord[2*c12];
+	double V12 = tex_coord[2*c12+1];	    
+
+	double U21 = tex_coord[2*c21];
+	double V21 = tex_coord[2*c21+1];	    
+
+	double U22 = tex_coord[2*c22];
+	double V22 = tex_coord[2*c22+1];	    
+
+	return (U11 == U22 && V11 == V22 && U12 == U21 && V12 == V21);
+    }
+
+
+    /**
+     * \brief Interface between geogram and xatlas to represent
+     *  charts.
+     */
+    class XAtlasChart {
+    public:
+	// TODO: create all charts simultaneously (because here
+	// we are O(m*n), not good, there can be many charts...)
+	// ... (seems to be OK though, even on large meshes)
+	void initialize(const Mesh& M, index_t chart_id) {
+	    Attribute<index_t> chart;
+	    chart.bind_if_is_defined(M.facets.attributes(), "chart");
+	    geo_assert(chart.is_bound());
+	    Attribute<double> tex_coord;
+	    tex_coord.bind_if_is_defined(
+		M.facet_corners.attributes(), "tex_coord"
+	    );
+	    geo_assert(tex_coord.is_bound());
+	    Attribute<index_t> xatlas_vertex_index(
+		M.vertices.attributes(), "xatlas_index"
+	    );
+	    Attribute<index_t> facet_corner_xatlas_vertex_index(
+		M.facet_corners.attributes(), "xatlas_index"		
+	    );
+
+	    
+	    FOR(v, M.vertices.nb()) {
+		xatlas_vertex_index[v] = index_t(-1);
+	    }
+	    index_t cur_xatlas_vertex = 0;
+	    FOR(f, M.facets.nb()) {
+		if(chart[f] == chart_id) {
+		    for(index_t c = M.facets.corners_begin(f);
+			c < M.facets.corners_end(f); ++c) {
+			index_t v = M.facet_corners.vertex(c);
+			if(xatlas_vertex_index[v] == index_t(-1)) {
+			    xatlas_vertex_index[v] = cur_xatlas_vertex;
+			    const double* xyz = M.vertices.point_ptr(v);
+			    xyz_.push_back(float(xyz[0]));
+			    xyz_.push_back(float(xyz[1]));
+			    xyz_.push_back(float(xyz[2]));
+			    const double* uv = &tex_coord[2*c];
+			    uv_.push_back(float(uv[0]));
+			    uv_.push_back(float(uv[1]));
+			    ++cur_xatlas_vertex;
+			}
+		    }
+		}
+	    }
+	    FOR(f, M.facets.nb()) {
+		if(chart[f] != chart_id) {
+		    continue;
+		}
+		
+		index_t c1 = M.facets.corners_begin(f);
+		for(index_t c2 = c1+1;
+		    c2+1 < M.facets.corners_end(f); ++c2
+		) {
+		    index_t v1 = M.facet_corners.vertex(c1);
+		    index_t v2 = M.facet_corners.vertex(c2);
+		    index_t v3 = M.facet_corners.vertex(c2+1);
+		    
+		    triangles_.push_back(xatlas_vertex_index[v1]);
+		    triangles_.push_back(xatlas_vertex_index[v2]);
+		    triangles_.push_back(xatlas_vertex_index[v3]);
+		}
+	    }
+
+	    FOR(f, M.facets.nb()) {
+		if(chart[f] != chart_id) {
+		    continue;
+		}
+		for(index_t c = M.facets.corners_begin(f);
+		    c < M.facets.corners_end(f); ++c
+		) {
+		    index_t v = M.facet_corners.vertex(c);
+		    facet_corner_xatlas_vertex_index[c] = xatlas_vertex_index[v];
+		}
+	    }
+	    
+	    mesh_decl_.vertexCount = cur_xatlas_vertex;
+	    mesh_decl_.vertexPositionData = xyz_.data();
+	    mesh_decl_.vertexPositionStride = sizeof(float)*3;
+	    mesh_decl_.vertexUvData = uv_.data();
+	    mesh_decl_.vertexUvStride = sizeof(float)*2;
+	    mesh_decl_.indexCount = triangles_.size();
+	    mesh_decl_.indexData = triangles_.data();
+	    mesh_decl_.indexOffset = 0;
+	    mesh_decl_.indexFormat = xatlas::IndexFormat::UInt32;
+	}
+
+	xatlas::MeshDecl mesh_decl_;
+	vector<float> xyz_;
+	vector<float> uv_;
+	vector<index_t> triangles_;
+    };
+
+
+    /**
+     * \brief Allocator function for geogram
+     * \details If we call realloc() with size == 0 to free memory (as xatlas does), then
+     *  valgrind thinks that there is a memory leak, so I re-interpret the initial
+     *  intent of the caller here, to make the memory debugger happy.
+     */
+    void* my_realloc(void* ptr, size_t size) {
+	if(size == 0) {
+	    if(ptr != nullptr) {
+		free(ptr);
+	    }
+	    return nullptr;
+	}
+	if(ptr == nullptr) {
+	    return malloc(size);
+	}
+	return realloc(ptr, size);
+    }
+
+    /**
+     * \brief Computes the chart facet attribute.
+     * \details Uses facet corner texture coordinates.
+     * \return the number of charts.
+     */
+    index_t find_charts(Mesh& mesh) {
+	Attribute<index_t> chart(mesh.facets.attributes(), "chart");
+	Attribute<double> tex_coord;
+	tex_coord.bind_if_is_defined(
+	    mesh.facet_corners.attributes(), "tex_coord"
+	);
+	geo_assert(tex_coord.is_bound());
+	
+	index_t cur_chart=0;
+	{
+	    FOR(f, mesh.facets.nb()) {
+		chart[f] = index_t(-1);
+	    }
+	    std::stack<index_t> S;
+	    
+	    FOR(f, mesh.facets.nb()) {
+		if(chart[f] != index_t(-1)) {
+		    continue;
+		}
+	    chart[f] = cur_chart;	    
+	    S.push(f);
+	    while(!S.empty()) {
+		index_t ftop = S.top();
+		S.pop();
+		for(index_t le=0;
+		    le<mesh.facets.nb_vertices(ftop); ++le
+		) {
+		    index_t f_adj = mesh.facets.adjacent(ftop,le);
+		    if(
+			f_adj != index_t(-1) &&
+			chart[f_adj] == index_t(-1) &&
+			edge_is_continuous(mesh, tex_coord, ftop, le)
+		    ) {
+			chart[f_adj] = cur_chart;
+			S.push(f_adj);
+		    }
+		}
+	    }
+	    ++cur_chart;
+	    }
+	}
+	
+	return cur_chart;
+    }
+}
+
+namespace GEO {
+
+    void pack_atlas_using_xatlas(Mesh& mesh) {
+	
+	Attribute<double> tex_coord;
+	
+	tex_coord.bind_if_is_defined(
+	    mesh.facet_corners.attributes(), "tex_coord"
+	);
+	
+	if(!tex_coord.is_bound()) {
+	    Logger::err("Atlas") << "Mesh has no texture coordinates"
+				 << std::endl;
+	    return;
+	}
+
+
+	// Step 1: compute chart indices
+	Attribute<index_t> chart(mesh.facets.attributes(), "chart");
+	index_t nb_charts = find_charts(mesh);
+
+	xatlas::Atlas* atlas = nullptr;
+	
+	// Step 2: copy to xatlas and pack
+	{
+	    std::vector<XAtlasChart> charts;
+	    charts.resize(nb_charts);
+	    for(index_t c=0; c<nb_charts; ++c) {
+		charts[c].initialize(mesh, c);
+	    }
+	    
+	    atlas = xatlas::Create();
+	    for(index_t c=0; c<nb_charts; ++c) {
+		xatlas::AddMeshError::Enum error = xatlas::AddMesh(
+		    atlas, charts[c].mesh_decl_
+		);
+		if (error != xatlas::AddMeshError::Success) {
+		    Logger::err("Packer")
+			<< "XAtlas error: "
+			<< xatlas::StringForEnum(error)
+			<< std::endl;
+		}
+	    }
+	    Attribute<index_t> xatlas_vertex_index(
+		mesh.vertices.attributes(), "xatlas_index"
+	    );
+	    xatlas_vertex_index.destroy();
+	}
+
+	// Step 3: pack
+	{
+	    xatlas::SetRealloc(my_realloc);
+	    xatlas::PackOptions packerOptions;
+	    packerOptions.conservative = false; // true;
+	    packerOptions.padding = 1;
+	    xatlas::PackCharts(atlas, packerOptions);
+
+	    // Scale texture coordinates to [0,1]
+	    {
+		Attribute<index_t> facet_corner_xatlas_vertex_index(
+		    mesh.facet_corners.attributes(), "xatlas_index"		
+		);
+		FOR(f, mesh.facets.nb()) {
+		    index_t chart_id = chart[f];
+		    for(index_t c = mesh.facets.corners_begin(f);
+			c < mesh.facets.corners_end(f); ++c
+		    ) {
+			index_t v = facet_corner_xatlas_vertex_index[c];
+			const xatlas::Vertex& vertex =
+			    atlas->meshes[chart_id].vertexArray[v];
+			tex_coord[2*c]   = (vertex.uv[0] / atlas->width);
+			tex_coord[2*c+1] = (vertex.uv[1] / atlas->width);
+		    }
+		}
+		facet_corner_xatlas_vertex_index.destroy();
+		chart.destroy();
+	    }
+	    xatlas::Destroy(atlas);
+	}
+    }
+
+}
+
+/**************************************************************/
 
 namespace {
     using namespace GEO;
@@ -392,7 +706,13 @@ namespace GEO {
 	    chart_attr_.bind_if_is_defined(
 		mesh.facets.attributes(), "chart"
 	    );
-	    geo_assert(chart_attr_.is_bound());
+	    if(!chart_attr_.is_bound()) {
+		find_charts(mesh);
+		chart_attr_.bind_if_is_defined(
+		    mesh.facets.attributes(), "chart"		    
+		);
+		geo_assert(chart_attr_.is_bound());
+	    }
         }
 
 	/**
@@ -681,7 +1001,7 @@ namespace GEO {
     }
 
 
-    void Packer::pack_surface(Mesh& mesh) {
+    void Packer::pack_surface(Mesh& mesh, bool normalize_only) {
 	tex_coord_.bind_if_is_defined(
 	    mesh.facet_corners.attributes(), "tex_coord"
 	);
@@ -689,7 +1009,13 @@ namespace GEO {
 	chart_attr_.bind_if_is_defined(
 	    mesh.facets.attributes(), "chart"
 	);
-	geo_assert(chart_attr_.is_bound());
+	if(!chart_attr_.is_bound()) {
+	    find_charts(mesh);
+	    chart_attr_.bind_if_is_defined(
+		mesh.facets.attributes(), "chart"		    
+	    );
+	    geo_assert(chart_attr_.is_bound());
+	}
 
 	// Get the charts
 	vector<Chart> charts;
@@ -725,7 +1051,7 @@ namespace GEO {
             }
         }
 
-	pack_charts(charts);
+	pack_charts(charts, normalize_only);
 
 	// Normalize tex coords in [0,1] x [0,1]
 	{
@@ -747,7 +1073,7 @@ namespace GEO {
     }
 
 
-    void Packer::pack_charts(vector<Chart>& charts) {
+    void Packer::pack_charts(vector<Chart>& charts, bool normalize_only) {
         
         Logger::out("Packer") 
             << "nb components:" << charts.size() << std::endl;  
@@ -765,6 +1091,10 @@ namespace GEO {
             geo_assert(chart_is_ok(charts[i], tex_coord_));
         }
 
+	if(normalize_only) {
+	    return;
+	}
+	
         // use the tetris packer (more efficient for large dataset)
         // set some application dependent const
         TetrisPacker pack(mesh);  
@@ -869,4 +1199,5 @@ namespace GEO {
 	}
     }
 }
+
 

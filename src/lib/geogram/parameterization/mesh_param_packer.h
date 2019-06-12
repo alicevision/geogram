@@ -58,6 +58,14 @@
 namespace GEO {
 
 
+    /**
+     * \brief Packs an atlas using the xatlas library.
+     * \details The mesh needs to have a parameterization
+     *  stored in the tex_coord facet_corner attribute.
+     * \param[in,out] mesh a reference to the mesh
+     */
+    void GEOGRAM_API pack_atlas_using_xatlas(Mesh& mesh);
+
     /****************************************************************/
 
     /**
@@ -84,7 +92,7 @@ namespace GEO {
 	 *  stored in a 2d vector attribute attached to the facet
 	 *  corners and named "tex_coord".
 	 */
-        void pack_surface(Mesh& mesh);
+        void pack_surface(Mesh& mesh, bool normalize_only);
 
 	/**
 	 * \brief Gets the size of the target texture image in
@@ -128,11 +136,13 @@ namespace GEO {
 	/**
 	 * \brief Packs a set of charts.
 	 * \param[in,out] charts a const reference to a vector with the charts to be packed.
+	 * \param[in] normalize_only if set, just normalize texture coordinates and do not
+	 *  pack the charts.
 	 * \details All the charts are supposed to be attached to the same mesh.
 	 *  Texture coordinates are stored in a 2d vector attribute attached to
 	 *  the facet corners of the mesh and called "tex_coord".
 	 */
-        void pack_charts(vector<Chart>& charts);
+        void pack_charts(vector<Chart>& charts, bool normalize_only = false);
 
 	/**
 	 * \brief Normalizes the parameterization of a chart.
