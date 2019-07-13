@@ -44,29 +44,19 @@
  */
 
 #include <geogram_gfx/ImGui_ext/imgui_ext.h>
-#include <geogram_gfx/ImGui_ext/file_dialog.h>
+#include <geogram_gfx/ImGui_ext/icon_font.h>
 #include <geogram_gfx/third_party/ImGui/imgui.h>
 #include <geogram_gfx/third_party/ImGui/imgui_internal.h>
+#include <geogram/basic/string.h>
 #include <geogram/basic/logger.h>
+#include <geogram/basic/file_system.h>
 #include <map>
 
 namespace {
+    using namespace GEO;
+    
     bool initialized = false;
-
-    std::map<std::string, GEO::FileDialog*> file_dialogs;
-    
-    void terminate() {
-	for(auto& it : file_dialogs) {
-	    delete it.second;
-	}
-    }
-    
-    void initialize() {
-	if(!initialized) {
-	    initialized = true;
-	    atexit(terminate);
-	}
-    }
+    bool tooltips_enabled = true;
 
     /**
      * \brief Manages the GUI of a color editor.
@@ -169,9 +159,17 @@ namespace {
 	    }
 	    ImGui::Separator();
 	    ImGui::Text("Palette");
+
+#ifdef GEO_OS_ANDROID
+	    int nb_btn_per_row = 4;
+	    float btn_size = 35.0;
+#else
+	    int nb_btn_per_row = 8;
+	    float btn_size = 20.0;
+#endif
 	    for (int n = 0; n < 40; n++) {
 		ImGui::PushID(n);
-		if ( (n % 8) != 0 ) {
+		if ( (n % nb_btn_per_row) != 0 ) {
 		    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.y);
 		}
 		if (ImGui::ColorButton(
@@ -179,8 +177,8 @@ namespace {
 			saved_palette[n],
 			ImGuiColorEditFlags_NoPicker |
 			ImGuiColorEditFlags_NoTooltip,
-			ImVec2(20,20))
-		    ) {
+			ImVec2(btn_size,btn_size))
+		) {
 		    color = ImVec4(
 			saved_palette[n].x,
 			saved_palette[n].y,
@@ -203,6 +201,681 @@ namespace {
 	}
 	ImGui::PopID();
 	return result;
+    }
+
+    /**************************************************************************/
+    
+    /**
+     * \brief Safer version of strncpy()
+     * \param[in] dest a pointer to the destination string
+     * \param[in] source a pointer to the source string
+     * \param[in] max_dest_size number of characters available in
+     *  destination string
+     * \return the length of the destination string after copy. If
+     *  the source string + null terminator was greater than max_dest_size,
+     *  then it is cropped. On exit, dest is always null-terminated (in 
+     *  contrast with strncpy()).
+     */ 
+    size_t safe_strncpy(
+        char* dest, const char* source, size_t max_dest_size
+    ) {
+        strncpy(dest, source, max_dest_size-1);
+        dest[max_dest_size-1] = '\0';
+        return strlen(dest);
+    }
+
+   /**
+    * \brief Converts a complete path to a file to a label
+    *  displayed in the file browser.
+    * \details Strips viewer_path from the input path.
+    * \param[in] path the complete path, can be either a directory or
+    *  a file
+    * \return the label to be displayed in the menu
+    */
+    std::string path_to_label(
+        const std::string& viewer_path, const std::string& path
+    ) {
+        std::string result = path;
+        if(GEO::String::string_starts_with(result, viewer_path)) {
+            result = result.substr(
+                viewer_path.length(), result.length()-viewer_path.length()
+            );
+        }
+        return result;
+    }
+
+
+    /**
+     * \brief Converts an icon symbolic name and a label to a string.
+     * \param[in] icon_sym the symbolic name of the icon.
+     * \param[in] label the label to be displayed.
+     * \return a UTF8 string with the icon and label, or just the label
+     *  if the icon font is not initialized.
+     */
+    std::string icon_label(const char* icon_sym, const char* label) {
+	wchar_t str[2];
+	str[0] = icon_wchar(icon_sym);
+	if(str[0] == '\0') {
+	    return std::string(label);
+	}
+	str[1] = '\0';
+	return GEO::String::wchar_to_UTF8(str) + " " + label;
+    }
+
+    /**************************************************************************/
+
+    /**
+     * \brief The state for OpenFileDialog() and FileDialog()
+     */
+    class FileDialog {
+    public:
+
+        /**
+         * \brief FileDialog constructor.
+         * \param[in] save_mode if true, FileDialog is used to create files
+         * \param[in] default_filename the default file name used if save_mode
+         *  is set
+         */
+        FileDialog(
+            bool save_mode=false,
+            const std::string& default_filename=""
+        ) : visible_(false),
+	    current_write_extension_index_(0),        
+	    pinned_(false),
+	    show_hidden_(false),
+	    scroll_to_file_(false),
+	    save_mode_(save_mode),
+	    are_you_sure_(false)
+	{
+#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
+	    directory_ = FileSystem::documents_directory() + "/";
+#else	
+	    directory_ = FileSystem::get_current_working_directory() + "/";
+#endif	
+	    set_default_filename(default_filename);
+	    current_file_index_ = 0;
+	    current_directory_index_ = 0;
+	    current_write_extension_index_ = 0;
+	}
+
+	/** 
+	 * \brief Sets the default file.
+	 * \details Only valid if save_mode is set.
+         * \param[in] default_filename the default file name.
+	 */	
+	void set_default_filename(const std::string& default_filename) {
+	    safe_strncpy(
+		current_file_, default_filename.c_str(), sizeof(current_file_)
+	    );
+	}
+	
+        /**
+         * \brief Makes this FileDialog visible.
+         */
+        void show() {
+            update_files();
+            visible_ = true;
+        }
+
+        /**
+         * \brief Makes this FileDialog invisibile.
+         */
+        void hide() {
+            visible_ = false;
+        }
+
+        /**
+         * \brief Draws the console and handles the gui.
+         */
+        void draw() {
+	    if(!visible_) {
+		return;
+	    }
+
+	    ImGui::SetNextWindowSize(
+		ImVec2(ImGui::scaling()*400.0f, ImGui::scaling()*415.0f),
+		ImGuiCond_Once
+	    );
+
+	    ImGui::Begin(
+		(std::string(
+		    save_mode_ ? "Save as...##" : "Load...##"
+		)+String::to_string(this)).c_str(),
+		&visible_,
+		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking
+	    );
+
+	    if(ImGui::Button(icon_label("arrow-circle-up","parent").c_str())) {
+		set_directory("../");
+	    }
+	    ImGui::SameLine();
+	    if(ImGui::Button(icon_label("home","home").c_str())) {
+		set_directory(FileSystem::documents_directory());
+		update_files();
+	    }
+	    ImGui::SameLine();            
+	    if(ImGui::Button(icon_label("recycle","refresh").c_str())) {
+		update_files();
+	    }
+
+	    if(!save_mode_) {
+		ImGui::SameLine();        
+		ImGui::Text("pin");
+		ImGui::SameLine();
+		ImGui::Checkbox("##pin", &pinned_);
+		if(ImGui::IsItemHovered()) {
+		    ImGui::SetTooltip("Keeps this dialog open.");
+		}
+	    }
+
+	    draw_disk_drives();
+	    ImGui::Separator();
+	
+	    {
+		std::vector<std::string> path;
+		String::split_string(directory_, '/', path);
+		for(index_t i=0; i<path.size(); ++i) {
+		    if(i != 0) {
+			ImGui::SameLine();
+			if(
+			    ImGui::GetContentRegionAvailWidth() <
+			    ImGui::CalcTextSize(path[i].c_str()).x +
+			    10.0f*ImGui::scaling()
+			    ) {
+			    ImGui::NewLine();
+			}
+		    }
+		    // We need to generate a unique id, else there is an id
+		    // clash with the "home" button right before !!
+		    if(ImGui::SmallButton(
+			   (path[i] + "##path" + String::to_string(i)).c_str())
+			) {
+			std::string new_dir;
+			if(path[0].length() >= 2 && path[0][1] == ':') {
+			    new_dir = path[0];
+			} else {
+			    new_dir += "/";
+			    new_dir += path[0];
+			}
+			for(index_t j=1; j<=i; ++j) {
+			    new_dir += "/";
+			    new_dir += path[j];
+			}
+			set_directory(new_dir);
+		    }
+		    ImGui::SameLine();
+		    ImGui::Text("/");
+		}
+	    }
+
+	    const float footer_size = 35.0f*ImGui::scaling();
+	    {
+		ImGui::BeginChild(
+		    "##directories",
+		    ImVec2(
+			ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(),
+			-footer_size
+		    ),
+		    true
+		);
+		for(index_t i=0; i<directories_.size(); ++i) {
+		    if(ImGui::Selectable(
+			   directories_[i].c_str(),
+			   (i == current_directory_index_)
+			   )
+		    ) {
+			current_directory_index_ = i;
+			set_directory(directories_[current_directory_index_]);
+		    }
+		}
+		ImGui::EndChild();
+	    }
+	    ImGui::SameLine();
+	    {
+		ImGui::BeginChild(
+		    "##files",
+		    ImVec2(
+			ImGui::GetWindowWidth()*0.5f-10.0f*ImGui::scaling(),
+			-footer_size
+		    ),
+		    true
+		);
+		for(index_t i=0; i<files_.size(); ++i) {
+		    if(ImGui::Selectable(
+			   files_[i].c_str(),
+			   (i == current_file_index_)
+			   )
+		    ) {
+			safe_strncpy(
+			    current_file_,files_[i].c_str(),
+			    sizeof(current_file_)
+			);
+			if(current_file_index_ == i) {
+			    file_selected();
+			} else {
+			    current_file_index_ = i;
+			}
+		    }
+		    if(scroll_to_file_ && i == current_file_index_) {
+			ImGui::SetScrollHere();
+			scroll_to_file_ = false;
+		    }
+		}
+		ImGui::EndChild();
+
+		{
+		    if(ImGui::Button(
+			   save_mode_ ?
+			   icon_label("save","Save as").c_str() :
+			   icon_label("folder-open","Load").c_str()
+			   )
+		    ) {
+			file_selected();
+		    }
+		    ImGui::SameLine();
+		    ImGui::PushItemWidth(
+			save_mode_ ?
+			-80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
+		    );
+		    if(ImGui::InputText(
+			   "##filename",
+			   current_file_, geo_imgui_string_length,
+			   ImGuiInputTextFlags_EnterReturnsTrue    |
+			   ImGuiInputTextFlags_CallbackHistory     |
+			   ImGuiInputTextFlags_CallbackCompletion ,
+			   text_input_callback,
+			   this 
+		       )
+		    ) {
+			scroll_to_file_ = true;
+			std::string file = current_file_;
+			for(index_t i=0; i<files_.size(); ++i) {
+			    if(files_[i] == file) {
+				current_file_index_ = i;
+			    }
+			}
+			file_selected();
+		    }
+		    ImGui::PopItemWidth();
+		    // Keep auto focus on the input box
+		    if (ImGui::IsItemHovered()) {
+			// Auto focus previous widget                
+			ImGui::SetKeyboardFocusHere(-1); 
+		    }
+
+		    if(save_mode_) {
+			ImGui::SameLine();
+			ImGui::PushItemWidth(-5.0f*ImGui::scaling());
+
+			std::vector<const char*> write_extensions;
+			for(index_t i=0; i<extensions_.size(); ++i) {
+			    write_extensions.push_back(&extensions_[i][0]);
+			}
+			if(ImGui::Combo(
+			       "##extension",
+			       (int*)(&current_write_extension_index_),
+			       &write_extensions[0],
+			       int(write_extensions.size())
+			       )
+			 ) {
+			    std::string file = current_file_;
+			    file = FileSystem::base_name(file) + "." +
+				extensions_[current_write_extension_index_];
+			    safe_strncpy(
+				current_file_, file.c_str(),
+				sizeof(current_file_)
+			    );
+			}
+			ImGui::PopItemWidth();
+		    }
+		}
+	    }
+	    ImGui::End();
+	    draw_are_you_sure();
+	}
+
+	/**
+	 * \brief Sets whether this file dialog is for 
+	 *  saving file.
+	 * \details If this file dialog is for saving file,
+	 *  then the user can enter the name of a non-existing
+	 *  file, else he can only select existing files.
+	 * \param[in] x true if this file dialog is for
+	 *  saving file.
+	 */
+	void set_save_mode(bool x) {
+	    save_mode_ = x;
+	}
+
+	/**
+	 * \brief Gets the selected file if any and resets it
+	 *  to the empty string.
+	 * \return the selected file if there is any or the 
+	 *  empty string otherwise.
+	 */
+	std::string get_and_reset_selected_file() {
+	    std::string result;
+	    std::swap(result,selected_file_);
+	    return result;
+	}
+
+	/**
+	 * \brief Defines the file extensions managed by this 
+	 *  FileDialog.
+	 * \param[in] extensions a ';'-separated list of extensions
+	 */
+	void set_extensions(const std::string& extensions) {
+	    extensions_.clear();
+	    GEO::String::split_string(extensions, ';', extensions_);
+	}
+	
+    protected:
+
+	/**
+	 * \brief Tests whether a file can be read.
+	 * \param[in] filename the file name to be tested.
+	 * \retval true if this file can be read.
+	 * \retval false otherwise.
+	 */
+	bool can_load(const std::string& filename) {
+	    if(!FileSystem::is_file(filename)) {
+		return false;
+	    }
+	    std::string ext = FileSystem::extension(filename);
+	    for(size_t i=0; i<extensions_.size(); ++i) {
+		if(extensions_[i] == ext || extensions_[i] == "*") {
+		    return true;
+		}
+	    }
+	    return false;
+	}
+	
+        /**
+         * \brief Updates the list of files and directories
+         *  displayed by this FileDialog.
+         */
+        void update_files() {
+	    directories_.clear();
+	    files_.clear();
+
+	    directories_.push_back("../");
+        
+	    std::vector<std::string> entries;
+	    FileSystem::get_directory_entries(directory_, entries);
+	    std::sort(entries.begin(), entries.end());
+	    for(index_t i=0; i<entries.size(); ++i) {
+		if(can_load(entries[i])) {
+		    files_.push_back(path_to_label(directory_,entries[i]));
+		} else if(FileSystem::is_directory(entries[i])) {
+		    std::string subdir =
+			path_to_label(directory_,entries[i]) + "/";
+		    if(show_hidden_ || subdir[0] != '.') {
+			directories_.push_back(subdir);
+		    }
+		}
+	    }
+	    if(current_directory_index_ >= directories_.size()) {
+		current_directory_index_ = 0;
+	    }
+	    if(current_file_index_ >= files_.size()) {
+		current_file_index_ = 0;
+	    }
+	    if(!save_mode_) {
+		if(current_file_index_ >= files_.size()) {
+		    current_file_[0] = '\0';
+		} else {
+		    safe_strncpy(
+			current_file_,
+			files_[current_file_index_].c_str(),
+			sizeof(current_file_)
+		    );
+		}
+	    }
+	}
+
+        /**
+         * \brief Changes the current directory.
+         * \param[in] directory either the path relative to the
+         *  current directory or an absolute path
+         */
+        void set_directory(const std::string& directory) {
+	    current_directory_index_ = 0;
+	    current_file_index_ = 0;
+	    if(directory[0] == '/' || directory[1] == ':') {
+		directory_ = directory;
+	    } else {
+		directory_ = FileSystem::normalized_path(
+		    directory_ + "/" +
+		    directory 
+		);
+	    }
+	    if(directory_[directory_.length()-1] != '/') {
+		directory_ += "/";
+	    }
+	    update_files();
+	}
+
+        /**
+         * \brief The callback for handling the text input.
+         * \param[in,out] data a pointer to the callback data
+         */
+        static int text_input_callback(ImGuiTextEditCallbackData* data) {
+	    FileDialog* dlg = static_cast<FileDialog*>(data->UserData);
+	    if(
+		(data->EventFlag &
+		 ImGuiInputTextFlags_CallbackCompletion) != 0
+	    ) {
+		dlg->tab_callback(data);
+	    } else if(
+		(data->EventFlag & ImGuiInputTextFlags_CallbackHistory) != 0
+	      ) {
+		if(data->EventKey == ImGuiKey_UpArrow) {
+		    dlg->updown_callback(data,-1);
+		} else if(data->EventKey == ImGuiKey_DownArrow) {
+		    dlg->updown_callback(data,1);                
+		}
+	    } 
+	    return 0;
+	}
+
+        /**
+         * \brief Called whenever the up or down arrows are pressed.
+         * \param[in,out] data a pointer to the callback data
+         * \param[in] direction -1 if the up arrow was pressed, 1 if the
+         *  down arrow was pressed
+         */
+        void updown_callback(ImGuiTextEditCallbackData* data, int direction) {
+	    int next = int(current_file_index_) + direction;
+	    if(next < 0) {
+		if(files_.size() == 0) {
+		    current_file_index_ = 0;
+		} else {
+		    current_file_index_ = index_t(files_.size()-1);
+		}
+	    } else if(next >= int(files_.size())) {
+		current_file_index_ = 0;
+	    } else {
+		current_file_index_ = index_t(next);
+	    }
+
+	    if(files_.size() == 0) {
+		current_file_[0] = '\0';
+	    } else {
+		safe_strncpy(
+		    current_file_,
+		    files_[current_file_index_].c_str(),
+		    sizeof(current_file_)
+		);
+	    }
+	    update_text_edit_callback_data(data);
+	    scroll_to_file_ = true;        
+	}
+
+        /**
+         * \brief Called whenever the tab key is pressed.
+         * \param[in,out] data a pointer to the callback data
+         */
+        void tab_callback(ImGuiTextEditCallbackData* data) {
+	    std::string file(current_file_);
+	    bool found = false;
+	    for(index_t i=0; i<files_.size(); ++i) {
+		if(String::string_starts_with(files_[i],file)) {
+		    current_file_index_ = i;
+		    found = true;
+		    break;
+		}
+	    }
+	    if(found) {
+		safe_strncpy(
+		    current_file_,
+		    files_[current_file_index_].c_str(),
+		    sizeof(current_file_)
+		);
+		update_text_edit_callback_data(data);
+		scroll_to_file_ = true;
+	    }
+	}
+
+        /**
+         * \brief Copies the currently selected file into the 
+         *  string currently manipulated by InputText.
+         * \param[out] data a pointer to the callback data
+         */
+        void update_text_edit_callback_data(
+            ImGuiTextEditCallbackData* data
+	) {
+	    data->BufTextLen = int(
+		safe_strncpy(
+		    data->Buf, current_file_, (size_t)data->BufSize
+		)
+	    );
+	    data->CursorPos = data->BufTextLen;
+	    data->SelectionStart = data->BufTextLen;
+	    data->SelectionEnd = data->BufTextLen;
+	    data->BufDirty = true;
+	}
+        
+        /**
+         * \brief Called whenever a file is selected.
+         * \param[in] force in save_mode, if set, 
+         *  overwrites the file even if it already 
+         *  exists.
+         */
+        void file_selected(bool force=false) {
+	    std::string file =
+		FileSystem::normalized_path(directory_+"/"+current_file_);
+        
+	    if(save_mode_) {
+		if(!force && FileSystem::is_file(file)) {
+		    are_you_sure_ = true;
+		    return;
+		} else {
+		    selected_file_ = file;
+		}
+	    } else {
+		selected_file_ = file;
+	    }
+        
+	    if(!pinned_) {
+		hide();
+	    }
+	}
+
+	/**
+	 * \brief Handles the "are you sure ?" dialog
+	 *  when a file is about to be overwritten.
+	 */
+        void draw_are_you_sure() {
+	    if(are_you_sure_) {
+		ImGui::OpenPopup("File exists");
+	    }
+	    if(
+		ImGui::BeginPopupModal(
+		    "File exists", nullptr, ImGuiWindowFlags_AlwaysAutoResize
+		)
+	    ) {
+		ImGui::Text(
+		    "%s",
+		    (std::string("File ") + current_file_ +
+		     " already exists\nDo you want to overwrite it ?"
+		    ).c_str()
+		);
+		ImGui::Separator();
+		if (ImGui::Button(
+			"Overwrite",
+			ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f))
+		) {
+		    are_you_sure_ = false;
+		    ImGui::CloseCurrentPopup();
+		    file_selected(true);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(-1.0f, 0.0f))) { 
+		    are_you_sure_ = false;                
+		    ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	    }
+	}
+
+	/**
+	 * \brief Under Windows, add buttons to change
+	 *  disk drive.
+	 */
+	void draw_disk_drives() {
+#ifdef GEO_OS_WINDOWS	
+	    DWORD drives = GetLogicalDrives();
+	    for(DWORD b=0; b<16; ++b) {
+		if((drives & (1u << b)) != 0) {
+		    std::string drive;
+		    drive += char('A' + char(b));
+		    drive += ":";
+		    if(ImGui::Button(drive.c_str())) {
+			set_directory(drive);
+		    }
+		    ImGui::SameLine();
+		    if(
+			ImGui::GetContentRegionAvailWidth() <
+			ImGui::CalcTextSize("X:").x + 10.0f*ImGui::scaling()
+			) {
+			ImGui::NewLine();
+		    }
+		}
+	    }
+#endif	
+	}
+	
+    private:
+        bool visible_;
+        std::string directory_;
+        index_t current_directory_index_;
+        index_t current_file_index_;
+        std::vector<std::string> directories_;
+        std::vector<std::string> files_;
+        std::vector<std::string> extensions_;
+        index_t current_write_extension_index_;
+        char current_file_[geo_imgui_string_length];
+        bool pinned_;
+        bool show_hidden_;
+        bool scroll_to_file_;
+        bool save_mode_;
+        bool are_you_sure_;
+	std::string selected_file_;
+    };
+
+    std::map<std::string, FileDialog*> file_dialogs;
+    
+    void terminate_imgui_ext() {
+	for(auto& it : file_dialogs) {
+	    delete it.second;
+	}
+    }
+    
+    void initialize_imgui_ext() {
+	if(!initialized) {
+	    initialized = true;
+	    atexit(terminate_imgui_ext);
+	}
     }
 }
 
@@ -241,10 +914,10 @@ namespace ImGui {
 	const char* filename,
 	ImGuiExtFileDialogFlags flags
     ) {
-	initialize();	
-	GEO::FileDialog* dlg = nullptr;
+	initialize_imgui_ext();	
+	::FileDialog* dlg = nullptr;
 	if(file_dialogs.find(label) == file_dialogs.end()) {
-	    file_dialogs[label] = new GEO::FileDialog();
+	    file_dialogs[label] = new ::FileDialog();
 	}
 	dlg = file_dialogs[label];
 	dlg->set_extensions(extensions); 
@@ -264,7 +937,7 @@ namespace ImGui {
 	    filename[0] = '\0';
 	    return false;
 	}
-	GEO::FileDialog* dlg = file_dialogs[label];
+	::FileDialog* dlg = file_dialogs[label];
 	dlg->draw();
 	
 	std::string result = dlg->get_and_reset_selected_file();
@@ -283,8 +956,24 @@ namespace ImGui {
     }
 
     /****************************************************************/
-}
 
+    void Tooltip(const char* str) {
+	if(
+	    tooltips_enabled && (str != nullptr) && (*str != '\0') &&
+	    IsItemHovered()
+	) {
+	    SetTooltip("%s",str);
+	}
+    }
     
+    void EnableTooltips() {
+	tooltips_enabled = true;
+    }
+    
+    void DisableTooltips() {
+	tooltips_enabled = false;	
+    }
+    
+}
 
 

@@ -1,5 +1,7 @@
-aux_source_directories(SOURCES "" .)
-vor_add_executable(compute_delaunay ${SOURCES})
-target_link_libraries(compute_delaunay geogram)
+set(APP_NAME compute_delaunay)
 
-set_target_properties(compute_delaunay PROPERTIES FOLDER "GEOGRAM")
+aux_source_directories(SOURCES "" .)
+vor_add_executable(${APP_NAME} ${SOURCES})
+target_link_libraries(${APP_NAME} geogram)
+
+set_target_properties(${APP_NAME} PROPERTIES FOLDER "GEOGRAM")

@@ -111,16 +111,17 @@ int main(int argc, char** argv) {
     // 5) Let's trace some rays !!
     {
 	Stopwatch Watch("Raytrace");
-#ifdef GEO_OPENMP	
-#pragma omp parallel for
-#endif
-	for(index_t Y=0; Y<camera.image_height(); ++Y) {
-	    for(index_t X=0; X<camera.image_width(); ++X) {
-		Ray R = camera.launch_ray(X,Y);
-		vec3 K = scene.raytrace(R);
-		camera.set_pixel(X,Y,K);
+
+	parallel_for(
+	    0, camera.image_height(),
+	    [&camera, &scene](index_t Y) {
+		for(index_t X=0; X<camera.image_width(); ++X) {
+		    Ray R = camera.launch_ray(X,Y);
+		    vec3 K = scene.raytrace(R);
+		    camera.set_pixel(X,Y,K);
+		}
 	    }
-	}
+	);
 	Logger::out("Raytrace")
 	    << double(camera.image_width()*camera.image_height()) /
 	       Watch.elapsed_time() << " rays per second"

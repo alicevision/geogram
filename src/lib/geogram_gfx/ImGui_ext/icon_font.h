@@ -49,6 +49,10 @@
 #include <geogram_gfx/api/defs.h>
 
 #ifdef __cplusplus
+#include <string>
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -76,6 +80,20 @@ void GEOGRAM_GFX_API init_icon_table();
 #ifdef __cplusplus
 }
 #endif
-    
+
+
+#ifdef __cplusplus
+
+namespace GEO {
+     /**
+      * \brief Gets an icon by name.
+      * \param[in] name the symbolic name of the icon.
+      * \return an UTF8 encoded string with the icon or
+      *   the empty string if there is no such icon.
+      */
+    std::string GEOGRAM_GFX_API icon_UTF8(const char* name);
+}    
+#endif
+
 #endif
 

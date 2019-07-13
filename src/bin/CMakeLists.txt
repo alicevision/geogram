@@ -9,6 +9,7 @@ if(GEOGRAM_WITH_GRAPHICS)
   if(GEOGRAM_WITH_LUA)  
      add_subdirectory(geocod)
   endif()   
+  add_subdirectory(geoshade)
 endif()
 
 if(GEOGRAM_WITH_VORPALINE) 

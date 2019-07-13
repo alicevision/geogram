@@ -1776,8 +1776,8 @@ namespace GEO {
         /**
          * \brief Gets a const pointer to a cell adjacent to a facet
          * \param[in] f the facet, in 0..nb()-1
-         * \return a const pointer to the cell adjacent to facet \p f, or NO_FACET if \p f
-         *  is on the border
+         * \return a const pointer to the cell adjacent to facet \p f, 
+	 *  or NO_FACET if \p f is on the border
          */
         const index_t* adjacent_cell_ptr(index_t f) const {
             geo_assert(f < nb());
@@ -1787,8 +1787,8 @@ namespace GEO {
         /**
          * \brief Gets a pointer to a cell adjacent to a facet
          * \param[in] f the facet, in 0..nb()-1
-         * \return a pointer to the cell adjacent to facet \p f, or NO_FACET if \p f
-         *  is on the border
+         * \return a pointer to the cell adjacent to facet \p f, 
+	 *  or NO_FACET if \p f is on the border
          */
         index_t* adjacent_cell_ptr(index_t f) {
             geo_assert(f < nb());

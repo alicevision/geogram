@@ -43,7 +43,7 @@
  *
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_application.h>
 #include <geogram_gfx/lua/lua_glup.h>
 #include <geogram/lua/lua_io.h>
 #include <geogram/basic/command_line.h>
@@ -67,39 +67,36 @@ namespace {
      *  GLUP primitives and glup_viewer application
      *  framework.
      */
-    class GeoCodApplication : public Application {
+    class GeoCodApplication : public SimpleApplication {
     public:
 
         /**
          * \brief GeoCodApplication constructor.
          */
-        GeoCodApplication(
-            int argc, char** argv,
-            const std::string& usage
-        ) : Application(argc, argv, usage) {
-	    save_dialog_.set_default_filename("hello.lua");	    
+        GeoCodApplication() : SimpleApplication("geocod") {
+	    set_default_filename("hello.lua");
 	    init_graphics_called_ = false;
+	    use_text_editor_ = true;
 	    text_editor_was_visible_ = false;
             // Define the 3d region that we want to display
             // (xmin, ymin, zmin, xmax, ymax, zmax)
-            glup_viewer_set_region_of_interest(
-                0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
-            );
+            set_region_of_interest(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
 	    register_embedded_lua_files();
 	    exec_command("require(\"preamble\")");
+	    console_->show_command_prompt();
         }
 
         /**
          * \brief GeoCodApplication destructor.
          */
-        virtual ~GeoCodApplication() {
+	~GeoCodApplication() override {
         }
         
         /**
          * \brief Displays and handles the GUI for object properties.
          * \details Overloads Application::draw_object_properties().
          */
-        virtual void draw_object_properties() {
+	void draw_object_properties() override {
 	    if(!lua_error_occured_) {
 		exec_command("imgui.draw_object_properties()");
 	    }
@@ -109,7 +106,7 @@ namespace {
          * \brief Draws the scene according to currently set primitive and
          *  drawing modes.
          */
-        virtual void draw_scene() {
+	void draw_scene() override {
 	    if(text_editor_was_visible_ && !text_editor_visible_) {
 		run_program();
 	    }
@@ -125,8 +122,8 @@ namespace {
          *  is called as soon as the OpenGL context is ready for rendering. It
          *  is meant to initialize the graphic objects used by the application.
          */
-        virtual void init_graphics() {
-            Application::init_graphics();
+	void GL_initialize() override {
+            SimpleApplication::GL_initialize();
 	    if(!lua_error_occured_) {
 		exec_command("GLUP.init_graphics()");
 	    }
@@ -152,7 +149,7 @@ namespace {
 	}
 
 	
-	virtual void draw_fileops_menu() {
+	virtual void draw_fileops_menu() override {
 	    if(ImGui::BeginMenu("New...")) {
 		if(ImGui::MenuItem("empty file")) {
 		    text_editor_.clear();
@@ -179,10 +176,13 @@ namespace {
 	    if(ImGui::BeginMenu("Load internal lib...")) {
 		ImGui::MenuItem("These files are those", nullptr, false, false);
 		ImGui::MenuItem(
-		    "that are read by require(\"...\")", nullptr, false, false
+		    "that are read by require(\"...\")",
+		    nullptr, false, false
 	        );
-		ImGui::MenuItem("You cannot modify them",    nullptr, false, false);
-		ImGui::MenuItem("(but you can take a look)", nullptr, false, false);
+		ImGui::MenuItem("You cannot modify them",
+				nullptr, false, false);
+		ImGui::MenuItem("(but you can take a look)",
+				nullptr, false, false);
 		ImGui::Separator();
 		embedded_files_menu("lib/");		
 		ImGui::EndMenu();
@@ -202,7 +202,7 @@ namespace {
 	    if(!lua_error_occured_ && init_graphics_called_) {
 		exec_command("GLUP.init_graphics()");
 	    }
-	    glup_viewer_enable(GLUP_VIEWER_IDLE_REDRAW);
+	    start_animation();
 	}
 	
         /**
@@ -211,7 +211,7 @@ namespace {
          *  Application::draw_application_menus(). It can be used to create
          *  additional menus in the main menu bar.
          */
-        virtual void draw_application_menus() {
+	void draw_application_menus() override {
 	    if(!lua_error_occured_) {
 		exec_command("imgui.draw_application_menus()");
 	    }
@@ -220,7 +220,7 @@ namespace {
 	/**
 	 * \copydoc Application::load()
 	 */
-	virtual bool load(const std::string& filename) {
+	bool load(const std::string& filename) override {
 	    text_editor_.load(filename);
 	    run_program();
 	    current_file_ = filename;
@@ -230,7 +230,7 @@ namespace {
 	/**
 	 * \copydoc Application::save()
 	 */
-        virtual bool save(const std::string& filename) {
+	bool save(const std::string& filename) override {
 	    text_editor_.save(filename);
 	    current_file_ = filename;
 	    return true;
@@ -239,21 +239,42 @@ namespace {
 	/**
 	 * \copydoc Application::supported_read_file_extensions()
 	 */
-	virtual std::string supported_read_file_extensions() {
+	std::string supported_read_file_extensions() override {
 	    return "lua";
 	}
 
 	/**
 	 * \copydoc Application::supported_write_file_extensions()
 	 */
-	virtual std::string supported_write_file_extensions() {
+	std::string supported_write_file_extensions() override {
 	    return "lua";
 	}
 
 	/**
-	 * \copydoc Application::on_key_pressed()
+	 * \copydoc SimpleApplication::key_callback
 	 */
-	virtual bool on_key_pressed(const char* c) {
+	void key_callback(
+	    int key, int scancode, int action, int mods
+	) override {
+	    SimpleApplication::key_callback(key, scancode, action, mods);
+	    const char* k_str = key_to_string(key);
+	    // Get string from printable character
+	    // (note: with GLFW, this does not interpret the key mapping,
+	    //  so Q and A are swapped on a French keyboard...)
+	    if(*k_str == '\0') {
+		static char buff[2];
+		k_str = buff;
+		buff[0] = char(key);
+		buff[1] = '\0';
+	    }
+	    if(action == 1) {
+		on_key_pressed(k_str);
+	    } else if(action == 0) {
+		on_key_released(k_str);
+	    }
+	}
+	
+	bool on_key_pressed(const char* c) {
 	    if(!strcmp(c,"F5")) {
 		run_program();
 	    } else if(!strcmp(c,"F2") && current_file_ != "") {
@@ -271,10 +292,7 @@ namespace {
 	    return true;
 	}
 
-	/**
-	 * \copydoc Application::on_key_released()
-	 */
-	virtual bool on_key_released(const char* c) {
+	bool on_key_released(const char* c) {
 	    exec_command(
 		(
 		    std::string("imgui.on_key_released(\"") + c + "\")"
@@ -284,13 +302,21 @@ namespace {
 	}
 	
     protected:
-	virtual void draw_viewer_properties() {
-	    if(ImGui::Button("run program [F5]", ImVec2(-1,0))) {
+	void draw_viewer_properties() override {
+	    if(ImGui::Button(
+		   "run",
+		   ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f))
+	    ) {
 		run_program();
 	    }
-	    Application::draw_viewer_properties();
+	    ImGui::SameLine();
+	    if(ImGui::Button("edit", ImVec2(-1.0f, 0.0f))) {
+                text_editor_visible_ = !text_editor_visible_;
+	    }
+            ImGui::Separator();
+	    SimpleApplication::draw_viewer_properties();
 	}
-        
+
     private:
 	bool init_graphics_called_;
 	bool text_editor_was_visible_;
@@ -299,7 +325,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-    GeoCodApplication app(argc, argv, "<filename>");
-    app.start();
+    GeoCodApplication app;
+    app.start(argc, argv);
     return 0;
 }

@@ -8,11 +8,11 @@ templates/pixel_program.lua
 templates/turtle_program.lua
 examples/arbre.lua
 examples/flake.lua
-examples/sierpinski.lua
 examples/sponge.lua
 examples/creeper.lua
 examples/plotter.lua
 examples/maison.lua
+examples/radis.lua
 games/hackman.lua
 games/labyrinthe.lua
 games/asteroids.lua

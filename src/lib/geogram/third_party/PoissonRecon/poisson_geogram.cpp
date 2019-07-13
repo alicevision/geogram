@@ -72,6 +72,8 @@
 #include <omp.h>
 #endif
 
+#include <geogram/basic/logger.h>
+
 // TODO: redirect to geogram Logger.
 void DumpOutput( const char* format , ... ) {
 }
@@ -258,7 +260,6 @@ namespace GEO {
 
         const int Degree = 2;
         typedef PlyVertex<double> Vertex;
-            
         {
             std::vector< int > indexMap;
             if( NORMAL_DEGREE>Degree )
@@ -300,7 +301,7 @@ namespace GEO {
             }
             DeletePointer(values);
         }
-        
+
         tree.GetMCIsoSurface< Degree , WEIGHT_DEGREE , DATA_DEGREE >(
             densityWeights , colorData , solution , isoValue ,
             mesh , !linear_fit_, !non_manifold_, polygon_mesh_
@@ -313,7 +314,6 @@ namespace GEO {
         }
         
         // Copy mesh to result
-        
         surface->clear();
         surface->vertices.set_dimension(3);
 

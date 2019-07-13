@@ -34,6 +34,6 @@ function GLUP.draw_scene()
     tr(90)
     GLUP.Enable(GLUP.VERTEX_COLORS)
     GLUP.Disable(GLUP.LIGHTING)
-    pcol("white")
+    pcol("gray")
     Flake(5)
 end

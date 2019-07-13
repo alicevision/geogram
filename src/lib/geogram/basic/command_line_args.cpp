@@ -697,6 +697,7 @@ namespace {
             "gfx:GLSL_tesselation", true, "use tesselation shaders if available"
         );
 	declare_arg("gfx:geometry", "1024x1024", "resolution");
+	declare_arg("gfx:keypress", "", "initial key sequence sent to viewer");
     }
     
     /**
@@ -709,6 +710,21 @@ namespace {
 	    "biblio:command_line", false,
 	    "dump all command line arguments in biblio. report"
 	);
+    }
+
+    /**
+     * \brief Imports the gui option group.
+     */
+    void import_arg_group_gui() {
+        declare_arg_group("gui", "gui options", ARG_ADVANCED);
+	declare_arg("gui:state", "", "gui layout state");
+	declare_arg("gui:style", "Dark", "gui style, one of Dark,Light");
+#ifdef GEO_OS_ANDROID
+	declare_arg("gui:font_size", 56, "font size");	
+#else	
+	declare_arg("gui:font_size", 18, "font size");
+#endif	
+	declare_arg("gui:expert", false, "expert mode for developpers");
     }
     
     /************************************************************************/
@@ -856,7 +872,9 @@ namespace GEO {
                 import_arg_group_poly();
             } else if(name == "gfx") {
                 import_arg_group_gfx();
-            } else {
+            } else if(name == "gui") {
+		import_arg_group_gui();
+	    } else {
                 Logger::instance()->set_quiet(false);
                 Logger::err("CmdLine")
                     << "No such option group: " << name

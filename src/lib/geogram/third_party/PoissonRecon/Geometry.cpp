@@ -32,6 +32,7 @@ DAMAGE.
 #include <io.h>
 #endif // _WIN32
 
+
 ///////////////////
 // CoredMeshData //
 ///////////////////
@@ -50,15 +51,17 @@ BufferedReadWriteFile::BufferedReadWriteFile( char* fileName , int bufferSize )
 	else
 	{
 		strcpy( _fileName , "PR_XXXXXX" );
-#ifdef _WIN32
+#if defined(_WIN32)
 		_mktemp( _fileName );
 		_fp = fopen( _fileName , "w+b" );
-#else // !_WIN32
+#else 
 		_fp = fdopen( mkstemp( _fileName ) , "w+b" );
 #endif // _WIN32
 		tempFile = true;
 	}
-	if( !_fp ) fprintf( stderr , "[ERROR] Failed to open file: %s\n" , _fileName ) , exit( 0 );
+	if( !_fp ) {
+	    fprintf( stderr , "[ERROR] Failed to open file: %s\n" , _fileName ) , exit( 0 );
+	}
 	_buffer = (char*) malloc( _bufferSize );
 }
 BufferedReadWriteFile::~BufferedReadWriteFile( void )

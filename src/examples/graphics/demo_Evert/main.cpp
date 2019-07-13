@@ -43,7 +43,7 @@
  *
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_application.h>
 #include <geogram/basic/stopwatch.h>
 #include "generateGeometry.h"
 #include "uv.xpm"
@@ -407,23 +407,18 @@ namespace {
      * \brief Porting Michael Mc Guffin's implementation
      *  of sphere eversion to GLUP.
      */
-    class DemoEvertApplication : public Application {
+    class DemoEvertApplication : public SimpleApplication {
     public:
 
         
         /**
          * \brief DemoGlupApplication constructor.
          */
-        DemoEvertApplication(
-            int argc, char** argv,
-            const std::string& usage
-        ) : Application(argc, argv, usage) {
+        DemoEvertApplication() : SimpleApplication("Evert") {
             
             // Define the 3d region that we want to display
             // (xmin, ymin, zmin, xmax, ymax, zmax)
-            glup_viewer_set_region_of_interest(
-                -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f
-            );
+            set_region_of_interest(-1.0, -1.0, -1.0, 1.0, 1.0, 1.0);
 
             style_ = EvertableSphere::STYLE_POLYGONS;
             transparent_ = false;
@@ -446,9 +441,9 @@ namespace {
         }
 
         /**
-         * \brief DemoEvertApplication destructor.
+         * \copydoc SimpleApplication::GL_terminate()
          */
-        virtual ~DemoEvertApplication() {
+        void GL_terminate() override {
             if(texture_ != 0) {
                 glDeleteTextures(1,&texture_);
             }
@@ -458,16 +453,11 @@ namespace {
          * \brief Displays and handles the GUI for object properties.
          * \details Overloads Application::draw_object_properties().
          */
-        virtual void draw_object_properties() {
-            ImGui::Checkbox(
-                "Animate [a]",
-                (bool*)glup_viewer_is_enabled_ptr(GLUP_VIEWER_IDLE_REDRAW)
-            );
-            
+        void draw_object_properties() override {
+	    SimpleApplication::draw_object_properties();
+	    
             ImGui::SliderFloat("spd.", &anim_speed_, 0.02f, 2.0f, "%.2f");
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("animation speed");
-            }
+	    ImGui::Tooltip("animation speed");
             
             ImGui::SliderFloat("time", &time_, 0.0f, 1.0f, "%.2f");
             
@@ -476,53 +466,36 @@ namespace {
             );
             if(style_ == EvertableSphere::STYLE_POINTS) {
                 ImGui::SliderFloat("ptsz", &point_size_, 1.0f, 20.0f, "%.1f");
-                if(ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("point size");
-                }
+		ImGui::Tooltip("point size");
             } else {
                 ImGui::Checkbox("mesh", &mesh_);
                 ImGui::SliderFloat("shrk", &shrink_, 0.0f, 1.0f, "%.2f");
-                if(ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("polygons shrink");
-                }
+		ImGui::Tooltip("polygons shrink");
             }
 
             ImGui::Checkbox("half sphere", &half_sphere_);
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("hide one half of the sphere");
-            }
+	    ImGui::Tooltip("hide one half of the sphere");
             
             ImGui::Checkbox("half strips", &half_strips_);
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("hide one half of each corrugation");
-            }
+	    ImGui::Tooltip("hide one half of each corrugation");
             
             ImGui::SliderFloat(
                 "prop", &proportion_strips_to_display_,
                 0.0f, 1.0f, "%.2f"
             );
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip(
-                    "cheese-proportion of the corrugations to draw"
-                );
-            }
+	    ImGui::Tooltip("cheese-proportion of the corrugations to draw");
             
             ImGui::SliderInt("strp", &nb_strips_, 1, 50);
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip(
+	    ImGui::Tooltip(
                     "number of corrugations \n"
                     "(if <8, smoothness is not guaranteed)"
-                );
-            }
+            );
             
             ImGui::SliderInt("lon.", &res_longitude_, 12, 200);
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("number of longitudinal subdivisions");
-            }
+	    ImGui::Tooltip("number of longitudinal subdivisions");
+	    
             ImGui::SliderInt("lat.", &res_latitude_, 12, 200);
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("number of latitudinal subdivisions");
-            }
+	    ImGui::Tooltip("number of latitudinal subdivisions");
 
             if(ImGui::Checkbox("textured", &textured_)) {
                 sphere_.set_textured(textured_);
@@ -535,13 +508,11 @@ namespace {
             }
             */
             ImGui::Checkbox("cylinder", &bend_cylinder_);
-            if(ImGui::IsItemHovered()) {
-                ImGui::SetTooltip(
-                    "display sphere<->cylinder morph\n"
-                    "instead of sphere eversion\n"
-                    "(not as cool, but cool enough)\n"
-                );
-            }
+	    ImGui::Tooltip(
+		"display sphere<->cylinder morph\n"
+		"instead of sphere eversion\n"
+		"(not as cool, but cool enough)\n"
+            );
             ImGui::Checkbox("smooth", &smooth_);
         }
 
@@ -551,8 +522,8 @@ namespace {
          *  is called as soon as the OpenGL context is ready for rendering. It
          *  is meant to initialize the graphic objects used by the application.
          */
-        virtual void init_graphics() {
-            Application::init_graphics();
+        void GL_initialize() override {
+            SimpleApplication::GL_initialize();
 
             // Create the texture and initialize its texturing modes
             glGenTextures(1, &texture_);
@@ -560,23 +531,22 @@ namespace {
             glBindTexture(GL_TEXTURE_2D, texture_);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2DXPM(uv);
-
-            glup_viewer_enable(GLUP_VIEWER_IDLE_REDRAW);
+            glTexImage2Dxpm(uv);
+	    start_animation();
         }
         
         /**
          * \brief Draws the everting sphere.
          */
-        virtual void draw_scene() {
-            
-            if(glup_viewer_is_enabled(GLUP_VIEWER_IDLE_REDRAW)) {
+        void draw_scene() override {
+
+            if(animate()) {
                 time_ = float(
                     sin(double(anim_speed_) * GEO::SystemStopwatch::now())
                 );
                 time_ = 0.5f * (time_ + 1.0f);
             }
-            
+	    
             if(transparent_) {
                 glEnable(GL_BLEND);
                 sphere_.set_alpha(alpha_);
@@ -622,7 +592,7 @@ namespace {
             sphere_.draw();
         }
 
-        virtual void draw_about() {
+        void draw_about() override {
             ImGui::Separator();            
             if(ImGui::BeginMenu("About...")) {
                 ImGui::Text(
@@ -640,9 +610,10 @@ namespace {
                 );
                 ImGui::Separator();
                 ImGui::Text("\n");
+		float sz = float(280.0 * std::min(scaling(), 2.0));		
                 ImGui::Image(
                     convert_to_ImTextureID(geogram_logo_texture_),
-                    ImVec2(256.0f * scaling(), 256.0f * scaling())
+                    ImVec2(sz, sz)
                 );
                 ImGui::Text("\n");
                 ImGui::Text(
@@ -682,7 +653,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-    DemoEvertApplication app(argc, argv, "");
-    app.start();
+    DemoEvertApplication app;
+    app.start(argc, argv);
     return 0;
 }

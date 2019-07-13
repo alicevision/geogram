@@ -43,11 +43,11 @@
  *
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_mesh_application.h>
 
 int main(int argc, char** argv) {
     // A SimpleMeshApplication is already a mesh viewer (nothing to do !)
-    GEO::SimpleMeshApplication app(argc, argv, "<filename>");
-    app.start();
+    GEO::SimpleMeshApplication app("Vorpaview");
+    app.start(argc, argv);
     return 0;
 }

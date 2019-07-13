@@ -1305,3 +1305,21 @@ namespace GEO {
     }
 }
 
+#ifdef GEO_OS_ANDROID
+namespace {
+    android_app* android_app_ = nullptr;
+}
+
+namespace GEO {
+    namespace CmdLine {
+	void set_android_app(android_app* app) {
+	    android_app_ = app;
+	}
+	
+	android_app* get_android_app() {
+	    return android_app_;
+	}
+    }
+}
+#endif
+

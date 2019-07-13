@@ -174,6 +174,14 @@ namespace GEO {
     }
 
     /**
+     * \brief Applies a translation.
+     * \param[in] v the translation vector.
+     */
+    inline void glupTranslate(const vec3& v) {
+	glupTranslated(v.x, v.y, v.z);
+    }
+
+    /**
      * \brief Maps texture coordinates from a specified interval to
      *   the unit interval.
      * \details This changes the GLUP texture matrix. GLUP matrix mode
@@ -326,6 +334,9 @@ namespace GEO {
 #endif    
 
     /***********************************************************/
+
+    void GEOGRAM_GFX_API glTexImage2Dxpm(char const* const* xpm_data);
+    
 }
 
 #endif

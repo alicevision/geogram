@@ -37,6 +37,6 @@ function GLUP.draw_scene()
     pwidth(0.2)
     GLUP.Enable(GLUP.VERTEX_COLORS)
     GLUP.Disable(GLUP.LIGHTING)
-    pcol("white")
+    pcol("gray")
     Sierpinski(100,5)
 end

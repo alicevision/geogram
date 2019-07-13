@@ -137,6 +137,7 @@ namespace {
 	    return 0;
 	}
 	std::string stage_str(p1, size_t(p2-p1));
+	
 	GLenum stage = 0;
 	if(stage_str == "GL_VERTEX_SHADER") {
 	    stage = GL_VERTEX_SHADER;
@@ -147,7 +148,7 @@ namespace {
 #ifndef GEO_OS_EMSCRIPTEN
 	else if(stage_str == "GL_GEOMETRY_SHADER") {
 	    stage = GL_GEOMETRY_SHADER;
-                } else if(stage_str == "GL_TESS_CONTROL_SHADER") {
+	} else if(stage_str == "GL_TESS_CONTROL_SHADER") {
 	    stage = GL_TESS_CONTROL_SHADER;
 	} else if(stage_str == "GL_TESS_EVALUATION_SHADER") {
 	    stage = GL_TESS_EVALUATION_SHADER;

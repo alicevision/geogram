@@ -12,11 +12,7 @@ aux_source_directories(SOURCES "Source Files\\mesh"          mesh)
 aux_source_directories(SOURCES "Source Files\\GLUP"          GLUP)
 aux_source_directories(SOURCES "Source Files\\GLUP\\shaders" GLUP/shaders)
 aux_source_directories(SOURCES "Source Files\\full_screen_effects" full_screen_effects)
-
-
-if(NOT ANDROID)
-  aux_source_directories(SOURCES "Source Files\\glup_viewer"   glup_viewer)
-endif()
+aux_source_directories(SOURCES "Source Files\\gui"           gui)
 
 if(GEOGRAM_WITH_LUA)
    aux_source_directories(SOURCES "Source Files\\lua"           lua)
@@ -27,6 +23,13 @@ if(GEOGRAM_USE_SYSTEM_GLFW3)
 endif()
 
 add_library(geogram_gfx ${SOURCES} $<TARGET_OBJECTS:geogram_gfx_third_party>)
+
+if(ANDROID)
+  target_include_directories(geogram_gfx PRIVATE
+    ${ANDROID_NDK}/sources/android/native_app_glue
+  )
+  message(STATUS "building for Android")
+endif()  
 
 set_target_properties(geogram_gfx PROPERTIES
                       VERSION ${VORPALINE_VERSION}

@@ -43,7 +43,7 @@
  *
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_mesh_application.h>
 
 #include <geogram/mesh/mesh_repair.h>
 #include <geogram/mesh/mesh_fill_holes.h>
@@ -76,23 +76,22 @@ namespace {
 
         /**
          * \brief GeoBoxApplication constructor.
-         * \param[in] argc , argv command line arguments copied from main()
-         * \param[in] usage the usage string
-         * \see CmdLine::parse()
          */
-        GeoBoxApplication(
-            int argc, char** argv, const std::string& usage
-        ) : SimpleMeshApplication(argc, argv, usage) {
-            GEO::CmdLine::import_arg_group("co3ne");
+        GeoBoxApplication() : SimpleMeshApplication("GeoBox") {
+        }
+
+	void geogram_initialize(int argc, char** argv) override {
+	    GEO::initialize();
+	    GEO::CmdLine::import_arg_group("co3ne");
             GEO::CmdLine::import_arg_group("pre");
             GEO::CmdLine::import_arg_group("post");
             GEO::CmdLine::import_arg_group("remesh");
             GEO::CmdLine::import_arg_group("opt");
             GEO::CmdLine::import_arg_group("tet");
-        }
+	    SimpleMeshApplication::geogram_initialize(argc, argv);
+	}
 
-
-        virtual void draw_about() {
+        void draw_about() override {
             ImGui::Separator();            
             if(ImGui::BeginMenu("About...")) {
                 ImGui::Text(
@@ -100,9 +99,10 @@ namespace {
                     "  The geometry processing toolbox\n"
                     "\n"
                     );
+		float sz = float(280.0 * std::min(scaling(), 2.0));		
                 ImGui::Image(
                     convert_to_ImTextureID(geogram_logo_texture_),
-                    ImVec2(256.0f * scaling(), 256.0f * scaling())
+                    ImVec2(sz, sz)
                 );
                 ImGui::Text(
                     "\n"
@@ -146,7 +146,7 @@ namespace {
          * \brief Draws and manages the menus and the commands.
          * \details Overloads Application::draw_application_menus()
          */
-        virtual void draw_application_menus() {
+        void draw_application_menus() override {
             if(ImGui::BeginMenu("Points")) {
                 if(ImGui::MenuItem("smooth point set")) {
                     GEO::Command::set_current(
@@ -903,7 +903,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-    GeoBoxApplication app(argc, argv, "<filename>");
-    app.start();
+    GeoBoxApplication app;
+    app.start(argc, argv);
     return 0;
 }

@@ -56,6 +56,14 @@ endif()
 
 add_library(geogram_third_party OBJECT ${SOURCES})
 
+if(ANDROID)
+  target_include_directories(geogram_third_party PRIVATE
+    ${ANDROID_NDK}/sources/android/native_app_glue
+  )
+  message(STATUS "building for Android")
+endif()  
+
+
 set_target_properties(
     geogram_third_party PROPERTIES
     FOLDER "GEOGRAM"

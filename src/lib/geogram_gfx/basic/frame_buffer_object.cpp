@@ -124,7 +124,8 @@ namespace GEO {
 	if(with_depth_buffer) {
 	    EM_ASM(
 		if(!Module.WEBGL_depth_texture_ext) {
-		    Module.WEBGL_depth_texture_ext = Module.ctx.getExtension("WEBGL_depth_texture");
+		    Module.WEBGL_depth_texture_ext =
+			Module.ctx.getExtension("WEBGL_depth_texture");
 		    if(!Module.WEBGL_depth_texture_ext) {
 			alert("No WEBGL_depth_texture support");
 		    }
@@ -185,7 +186,7 @@ namespace GEO {
         glTexImage2D(
             GL_TEXTURE_2D, 0, internal_storage,
             GLsizei(width), GLsizei(height), 0,
-            GL_RGBA,	    
+            GL_RGBA,
 	    GL_FLOAT,
 	    nullptr
         );

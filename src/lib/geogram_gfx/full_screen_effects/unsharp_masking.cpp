@@ -49,6 +49,13 @@
 #include <geogram/basic/logger.h>
 #include <geogram/bibliography/bibliography.h>
 
+// Requirements for Android compile are the same
+// as for Emscripten.
+// TODO: something cleaner.
+#ifdef GEO_OS_ANDROID
+#define GEO_OS_EMSCRIPTEN
+#endif
+
 namespace GEO {
 
     UnsharpMaskingImpl::UnsharpMaskingImpl() {

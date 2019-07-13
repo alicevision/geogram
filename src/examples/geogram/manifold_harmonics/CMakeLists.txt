@@ -1,5 +1,7 @@
-aux_source_directories(SOURCES "" .)
-vor_add_executable(manifold_harmonics ${SOURCES})
-target_link_libraries(manifold_harmonics geogram)
+set(APP_NAME manifold_harmonics)
 
-set_target_properties(manifold_harmonics PROPERTIES FOLDER "GEOGRAM")
+aux_source_directories(SOURCES "" .)
+vor_add_executable(${APP_NAME} ${SOURCES})
+target_link_libraries(${APP_NAME} geogram)
+
+set_target_properties(${APP_NAME} PROPERTIES FOLDER "GEOGRAM")

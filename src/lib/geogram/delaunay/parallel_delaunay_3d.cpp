@@ -598,7 +598,9 @@ namespace GEO {
 		signed_index_t v3 = cavity_.facet_vertex(f,2);
 		new_tet = new_tetrahedron(signed_index_t(v), v1, v2, v3);
 		set_tet_adjacent(new_tet, 0, t_neigh);
-		set_tet_adjacent(t_neigh, find_tet_adjacent(t_neigh,old_tet), new_tet);
+		set_tet_adjacent(
+		    t_neigh, find_tet_adjacent(t_neigh,old_tet), new_tet
+		);
 		cavity_.set_facet_tet(f, new_tet);
 	    }
 	
@@ -1505,7 +1507,9 @@ namespace GEO {
                      // convention as in CGAL).
                      const double* pv_bkp = pv[f];
                      pv[f] = p;
-                     Sign ori = PCK::orient_3d_inexact(pv[0], pv[1], pv[2], pv[3]);
+                     Sign ori = PCK::orient_3d_inexact(
+			 pv[0], pv[1], pv[2], pv[3]
+		     );
                      
                      //   If the orientation is not negative, then we cannot
                      // walk towards t_next, and examine the next candidate

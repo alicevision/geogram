@@ -31,6 +31,9 @@ DAMAGE.
 #include "MemoryUsage.h"
 #include "MAT.h"
 
+#include <geogram/basic/logger.h>
+#include <geogram/basic/string.h>
+
 template< class Real >
 template< class Vertex >
 Octree< Real >::SliceValues< Vertex >::SliceValues( void )
@@ -179,6 +182,7 @@ void Octree< Real >::GetMCIsoSurface( const SparseNodeData< Real , WeightDegree 
                 SetSliceIsoVertices< WeightDegree , ColorDegree, Vertex >( colorBSData , densityWeights , colorData , isoValue , d , 0 , vertexOffset , mesh , slabValues , threads );
                 SetSliceIsoEdges( d , 0 , slabValues , threads );
         }
+
         // Iterate over the slices at the finest level
         for( int slice=0 ; slice<( 1<<(maxDepth-1) ) ; slice++ )
         {
@@ -206,6 +210,7 @@ void Octree< Real >::GetMCIsoSurface( const SparseNodeData< Real , WeightDegree 
 
                         if( o&1 ) break;
                 }
+
                 for( int d=maxDepth , o=slice+1 ; d>=_minDepth ; d-- , o>>=1 )
                 {
                         // Initialize for the next pass

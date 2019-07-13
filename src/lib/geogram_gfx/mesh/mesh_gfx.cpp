@@ -182,6 +182,11 @@ namespace GEO {
         ) {
             return false;
         }
+#ifdef GEO_GL_NO_DOUBLES
+        if(attribute_subelements_ != MESH_NONE) {
+	    return false;
+	}
+#endif	
 	if(long_vector_attribute_) {
 	    return false;
 	}
@@ -1132,6 +1137,8 @@ namespace GEO {
             );
         } else {
 #ifdef GEO_GL_NO_DOUBLES
+	    // TODO: switch to immediate mode API in this case, as when
+	    // mesh is displayed with ES2 profile.
             // Logger::warn("MeshGfx")
             //     << "Double precision GL attributes not supported by this arch."
             //     << std::endl;
@@ -1351,7 +1358,11 @@ namespace GEO {
 		scalar_attribute_.attribute_store()->element_size();
             GLint dimension =
 		GLint(scalar_attribute_.attribute_store()->dimension());
+	    // nb_items should be scalar_attribute_.size(), using capacity()
+	    // instead seemingly fixes a display bug (zero attribute on last
+	    // vertex). To be further investigated...
             index_t nb_items = scalar_attribute_.size();
+	        // ... or ... scalar_attribute_.attribute_store()->capacity();
             const void* data = scalar_attribute_.attribute_store()->data();
 
             update_or_check_buffer_object(
@@ -1437,9 +1448,11 @@ namespace GEO {
         case ReadOnlyScalarAttributeAdapter::ET_VEC2:
         case ReadOnlyScalarAttributeAdapter::ET_VEC3:                        
 #ifdef GEO_GL_NO_DOUBLES
-            Logger::warn("MeshGfx")
-                << "Double precision GL attributes not supported by this arch."
-                << std::endl;
+	    // TODO: switch to immediate mode API in this case, as when
+	    // mesh is displayed with ES2 profile.
+            // Logger::warn("MeshGfx")
+            //   << "Double precision GL attributes not supported by this arch."
+            //   << std::endl;
 #else            
             glVertexAttribPointer(
                 2, dimension, GL_DOUBLE, GL_FALSE, stride, offset

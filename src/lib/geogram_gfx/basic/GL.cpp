@@ -149,7 +149,7 @@ namespace {
         glupBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-#ifdef GEO_OS_EMSCRIPTEN
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_ANDROID)
         static const char* vshader_source =
             "#version 100                               \n"            
             "attribute vec2 vertex_in;                  \n"
@@ -308,7 +308,7 @@ namespace GEO {
 #ifdef GEO_GL_440
         
         static bool init = false;
-        static bool use_glGetBufferParameteri64v = true;
+        static bool use_glGetBufferParameteri64v = false;
 
         // Note: there is a version of glGetBufferParameteriv that uses
         // 64 bit parameters. Since array data larger than 4Gb will be
@@ -486,5 +486,129 @@ namespace GEO {
         }
     }
 
+    /****************************************************************/
+
+
+    static int htoi(char digit) {
+	if(digit >= '0' && digit <= '9') {
+	    return digit - '0';
+	}
+	if(digit >= 'a' && digit <= 'f') {
+	    return digit - 'a' + 10;
+	}
+	if(digit >= 'A' && digit <= 'F') {
+	    return digit - 'A' + 10;
+	}
+	fprintf(stderr, "xpm: unknown digit\n");
+	return 0;
+    }
+
+    /* The colormap. */
+    static unsigned char i2r[1024];
+    static unsigned char i2g[1024];
+    static unsigned char i2b[1024];
+    static unsigned char i2a[1024];
+    
+    /*
+     * Converts a two-digit XPM color code into
+     *  a color index.
+     */
+    static int char_to_index[256][256];
+    
+    void glTexImage2Dxpm(char const* const* xpm_data) {
+	int width, height, nb_colors, chars_per_pixel;
+	int line = 0;
+	int color = 0;
+	int key1 = 0, key2 = 0;
+	const char* colorcode;
+	int x, y;
+	unsigned char* rgba;
+	unsigned char* pixel;
+
+	sscanf(
+	    xpm_data[line], "%6d%6d%6d%6d",
+	    &width, &height, &nb_colors, &chars_per_pixel
+	);
+	line++;
+	if(nb_colors > 1024) {
+	    fprintf(stderr, "xpm with more than 1024 colors\n");
+	    return;
+	}
+	if(chars_per_pixel != 1 && chars_per_pixel != 2) {
+	    fprintf(stderr, "xpm with more than 2 chars per pixel\n");
+	    return;
+	}
+	for(color = 0; color < nb_colors; color++) {
+	    int r, g, b;
+	    int none ;
+        
+	    key1 = xpm_data[line][0];
+	    key2 = (chars_per_pixel == 2) ? xpm_data[line][1] : 0;
+	    colorcode = strstr(xpm_data[line], "c #");
+	    none = 0;
+	    if(colorcode == NULL) {
+		colorcode = "c #000000";
+		if(strstr(xpm_data[line], "None") != NULL) {
+		    none = 1;
+		} else {
+		    fprintf(
+			stderr, "unknown xpm color entry (replaced with black)\n"
+		    );
+		}
+	    }
+	    colorcode += 3;
+
+	    if(strlen(colorcode) == 12) {
+		r = 16 * htoi(colorcode[0]) + htoi(colorcode[1]);
+		g = 16 * htoi(colorcode[4]) + htoi(colorcode[5]);
+		b = 16 * htoi(colorcode[8]) + htoi(colorcode[9]);
+	    } else {
+		r = 16 * htoi(colorcode[0]) + htoi(colorcode[1]);
+		g = 16 * htoi(colorcode[2]) + htoi(colorcode[3]);
+		b = 16 * htoi(colorcode[4]) + htoi(colorcode[5]);
+	    }
+	    
+	    i2r[color] = (unsigned char) r;
+	    i2g[color] = (unsigned char) g;
+	    i2b[color] = (unsigned char) b;
+	    if(none) {
+		i2a[color] = 0;
+	    } else {
+		i2a[color] = 255;
+	    }
+	    char_to_index[key1][key2] = color;
+	    line++;
+	}
+	rgba = (unsigned char*) malloc((size_t) (width * height * 4));
+	pixel = rgba;
+	for(y = 0; y < height; y++) {
+	    for(x = 0; x < width; x++) {
+		if(chars_per_pixel == 2) {
+		    key1 = xpm_data[line][2 * x];
+		    key2 = xpm_data[line][2 * x + 1];
+		} else {
+		    key1 = xpm_data[line][x];
+		    key2 = 0;
+		}
+		color = char_to_index[key1][key2];
+		pixel[0] = i2r[color];
+		pixel[1] = i2g[color];
+		pixel[2] = i2b[color];
+		pixel[3] = i2a[color];
+		pixel += 4;
+	    }
+	    line++;
+	}
+    
+	glTexImage2D(
+	    GL_TEXTURE_2D, 0,
+	    GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba
+	);
+#ifndef __EMSCRIPTEN__    
+	glGenerateMipmap(GL_TEXTURE_2D);
+#endif    
+	free(rgba);
+    }
+    
     
 }

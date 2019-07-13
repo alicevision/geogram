@@ -1,5 +1,7 @@
-aux_source_directories(SOURCES "" .)
-vor_add_executable(simple_raytrace ${SOURCES})
-target_link_libraries(simple_raytrace geogram)
+set(APP_NAME simple_raytrace)
 
-set_target_properties(simple_raytrace PROPERTIES FOLDER "GEOGRAM")
+aux_source_directories(SOURCES "" .)
+vor_add_executable(${APP_NAME} ${SOURCES})
+target_link_libraries(${APP_NAME} geogram)
+
+set_target_properties(${APP_NAME} PROPERTIES FOLDER "GEOGRAM")

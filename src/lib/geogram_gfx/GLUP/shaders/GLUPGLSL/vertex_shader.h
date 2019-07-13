@@ -13,7 +13,7 @@ in vec4 normal_in;
 #endif
 
 out VertexData {
-#  ifdef GL_ES
+#ifdef GL_ES
       vec4 vertex_clip_space;
 #endif    
     vec4 color;                             

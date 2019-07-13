@@ -24,9 +24,6 @@ xfail corrupted.obj invalid floating point value
 xfail corrupted.obj invalid facet vertex index
     Run Fail Test    ${DATADIR}${/}corrupted_invalid_facet_vertex.obj
 
-xfail truncated.obj
-    Run Fail Test    ${DATADIR}${/}truncated.obj
-
 xfail corrupted.off invalid integer value
     Run Fail Test    ${DATADIR}${/}corrupted_invalid_int.off
 

@@ -112,8 +112,8 @@ macro(vor_add_executable)
     if(NOT VORPALINE_BUILD_DYNAMIC)
         # Create a statically linked executable
         # Link with static libraries
-        add_flags(CMAKE_CXX_FLAGS -static)
-        add_flags(CMAKE_C_FLAGS -static)
+        # add_flags(CMAKE_CXX_FLAGS -static)
+        # add_flags(CMAKE_C_FLAGS -static)
     endif()
 
     add_executable(${ARGN})

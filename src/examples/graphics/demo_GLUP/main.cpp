@@ -43,7 +43,7 @@
  *
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_application.h>
 #include "uv.xpm"
 
 namespace {
@@ -55,16 +55,13 @@ namespace {
      *  GLUP primitives and glup_viewer application
      *  framework.
      */
-    class DemoGlupApplication : public Application {
+    class DemoGlupApplication : public SimpleApplication {
     public:
 
         /**
          * \brief DemoGlupApplication constructor.
          */
-        DemoGlupApplication(
-            int argc, char** argv,
-            const std::string& usage
-        ) : Application(argc, argv, usage) {
+        DemoGlupApplication(): SimpleApplication("Demo GLUP") {
             mesh_ = true;
             colors_ = true;
             texturing_ = false;
@@ -74,21 +71,18 @@ namespace {
             shrink_ = 0.0f;
 
             // Key shortcuts.
-            glup_viewer_add_toggle('c', &colors_,    "colors");
-            glup_viewer_add_toggle('m', &mesh_,      "mesh");            
-            glup_viewer_add_toggle('t', &texturing_, "texturing");
-            glup_viewer_add_toggle('o', &picking_,   "picking");
-            glup_viewer_add_key_func(
-                ' ', &DemoGlupApplication::cycle_primitives_callback,
-                "cycle primitives"
+	    add_key_toggle("c", &colors_);
+            add_key_toggle("m", &mesh_);            
+            add_key_toggle("t", &texturing_);
+            add_key_toggle("o", &picking_);
+            add_key_func(
+                " ", [this](void) { cycle_primitives(); }  
             );
 
             // Define the 3d region that we want to display
             // (xmin, ymin, zmin, xmax, ymax, zmax)
-            glup_viewer_set_region_of_interest(
-                0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
-            );
-
+	    set_region_of_interest(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+	    
             texture_ = 0;
             primitive_ = GLUP_POINTS;
 
@@ -96,9 +90,9 @@ namespace {
         }
 
         /**
-         * \brief DemoGlupApplication destructor.
+         * \copydoc SimpleApplication::GL_terminate()
          */
-        virtual ~DemoGlupApplication() {
+        void GL_terminate() override {
             if(texture_ != 0) {
                 glDeleteTextures(1,&texture_);
             }
@@ -108,7 +102,8 @@ namespace {
          * \brief Displays and handles the GUI for object properties.
          * \details Overloads Application::draw_object_properties().
          */
-        virtual void draw_object_properties() {
+        void draw_object_properties() override {
+	    SimpleApplication::draw_object_properties();	    
             ImGui::Combo("prim.", &primitive_,
          "points\0lines\0triangles\0quads\0tets\0hexes\0prisms\0pyramids\0\0"
             );
@@ -164,25 +159,14 @@ namespace {
         }
         
         /**
-         * \brief Gets the instance.
-         * \return a pointer to the current DemoGlupApplication.
-         */
-        static DemoGlupApplication* instance() {
-            DemoGlupApplication* result =
-                dynamic_cast<DemoGlupApplication*>(Application::instance());
-            geo_assert(result != nullptr);
-            return result;
-        }
-        
-        /**
          * \brief Cycles the drawn primitives.
          * \details Triggered when the user pushes the space bar, routes to
          *  DemoGlupApplication::cycles_primitives().
          */
-        static void cycle_primitives_callback() {
-            ++(instance()->primitive_);
-            if(instance()->primitive_ > GLUP_PYRAMIDS) {
-                instance()->primitive_ = 0;
+	void cycle_primitives() {
+            ++primitive_;
+            if(primitive_ > GLUP_PYRAMIDS) {
+                primitive_ = 0;
             }
         }
 
@@ -190,7 +174,7 @@ namespace {
          * \brief Draws the scene according to currently set primitive and
          *  drawing modes.
          */
-        virtual void draw_scene() {
+        void draw_scene() override {
 	    
             // GLUP can have different colors for frontfacing and
             // backfacing polygons.
@@ -398,8 +382,8 @@ namespace {
          *  is called as soon as the OpenGL context is ready for rendering. It
          *  is meant to initialize the graphic objects used by the application.
          */
-        virtual void init_graphics() {
-            Application::init_graphics();
+	void GL_initialize() override {
+            SimpleApplication::GL_initialize();
 	    
             // Create the texture and initialize its texturing modes
             glGenTextures(1, &texture_);
@@ -407,88 +391,9 @@ namespace {
             glBindTexture(GL_TEXTURE_2D, texture_);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2DXPM(uv);
+            glTexImage2Dxpm(uv);
             glupTextureType(GLUP_TEXTURE_2D);
             glupTextureMode(GLUP_TEXTURE_REPLACE);
-        }
-
-        /**
-         * \brief Draws the application menus.
-         * \details This function overloads 
-         *  Application::draw_application_menus(). It can be used to create
-         *  additional menus in the main menu bar.
-         */
-        virtual void draw_application_menus() {
-            if(ImGui::BeginMenu("Commands")) {
-                if(ImGui::MenuItem("say hello")) {
-                    // Command::set_current() creates the dialog box and
-                    // invokes a function when the "apply" button of the
-                    // dialog box is pushed.
-                    //   It needs the prototype of the function as a string,
-                    // to have argument names and default values.
-                    //   If prototype is not specified, then default values are
-                    // set to zero and argument names are arg0,arg1...argn.
-                    //   The two other arguments are a pointer to an object and
-                    // the pointer to the member function to be invoked (it is
-                    // also possible to give a pointer to a global static
-                    // function).
-                    Command::set_current(
-                        "say_hello(index_t nb_times=1)", 
-                        this,
-                        &DemoGlupApplication::say_hello
-                    );
-                }
-
-                if(ImGui::MenuItem("compute")) {
-                    // Another example of Command::set_current() with more
-                    // information in the function prototype string: each
-                    // argument and the function can have a tooltip text,
-                    // specified between square brackets.
-                    Command::set_current(
-                        "compute("
-                        "   index_t nb_iter=300 [number of iterations]"
-                        ") [pretends to compute something]",
-                        this,
-                        &DemoGlupApplication::compute
-                    );
-                }
-                ImGui::EndMenu();
-            }
-        }
-
-        /**
-         * \brief An example function invoked from a menu.
-         * \see draw_application_menus()
-         */
-        void say_hello(index_t nb_times) {
-            show_console();
-            for(index_t i=1; i<=nb_times; ++i) {
-                Logger::out("MyApp") << i << ": Hello, world" << std::endl;
-            }
-        }
-
-        /**
-         * \brief An example function invoked from a menu.
-         * \see draw_application_menus()
-         */
-        void compute(index_t nb_iter) {
-            
-            // Create a progress bar
-            ProgressTask progress("Computing", nb_iter);
-            try {
-                for(index_t i=0; i<nb_iter; ++i) {
-                    // Insert code here to do the actual computation
-
-                    // Update the progress bar.
-                    progress.next();
-                }
-            } catch(TaskCanceled& ) {
-                // This block is executed if the user pushes the "cancel"
-                // button.
-                show_console();
-                Logger::out("Compute") << "Task was canceled by the user"
-                                       << std::endl;
-            }
         }
         
     protected:
@@ -549,7 +454,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-    DemoGlupApplication app(argc, argv, "");
-    app.start();
+    DemoGlupApplication app;
+    app.start(argc, argv);
     return 0;
 }

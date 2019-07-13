@@ -43,7 +43,7 @@
  *
  */
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_application.h>
 #include <geogram/delaunay/periodic_delaunay_3d.h>
 
 namespace {
@@ -55,34 +55,21 @@ namespace {
      *  GLUP primitives and glup_viewer application
      *  framework.
      */
-    class DemoDelaunay3dApplication : public Application {
+    class DemoDelaunay3dApplication : public SimpleApplication {
     public:
 
         /**
          * \brief DemoDelaunay3dApplication constructor.
          */
-        DemoDelaunay3dApplication(
-            int argc, char** argv,
-            const std::string& usage
-        ) : Application(argc, argv, usage) {
+        DemoDelaunay3dApplication() : SimpleApplication("Delaunay3d") {
 
 	    periodic_ = false;
-	    delaunay_ = new PeriodicDelaunay3d(periodic_, 1.0);
-	    // In non-periodic mode, we need to keep the infinite
-	    // tetrahedra to be able to query the combinatorics of
-	    // all cells (including the infinite ones).
-	    if(!periodic_) {
-		delaunay_->set_keeps_infinite(true);
-	    }
 	    
             // Define the 3d region that we want to display
             // (xmin, ymin, zmin, xmax, ymax, zmax)
-            glup_viewer_set_region_of_interest(
-                0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
-            );
+            set_region_of_interest(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
 
-	    animate_ = true;
-	    draw_points_ = true;
+	    draw_points_ = false;
 	    draw_cells_ = true;
 	    point_size_ = 10.0f;
 	    cells_shrink_ = 0.1f;
@@ -90,37 +77,53 @@ namespace {
 	    draw_box_ = false;
 	    draw_period_ = false;
 
-	    init_random_points(nb_points_);
+	    start_animation();
         }
 
+	void geogram_initialize(int argc, char** argv) override {
+	    SimpleApplication::geogram_initialize(argc, argv);
+	    delaunay_ = new PeriodicDelaunay3d(periodic_, 1.0);
+	    // In non-periodic mode, we need to keep the infinite
+	    // tetrahedra to be able to query the combinatorics of
+	    // all cells (including the infinite ones).
+	    if(!periodic_) {
+		delaunay_->set_keeps_infinite(true);
+	    }
+	    init_random_points(nb_points_);
+	}
+	
         /**
          * \brief DemoDelaunay3dApplication destructor.
          */
-        virtual ~DemoDelaunay3dApplication() {
+	~DemoDelaunay3dApplication() override {
         }
         
         /**
          * \brief Displays and handles the GUI for object properties.
          * \details Overloads Application::draw_object_properties().
          */
-        virtual void draw_object_properties() {
-	    ImGui::Checkbox("Animate", &animate_);
+	void draw_object_properties() override {
+	    SimpleApplication::draw_object_properties();	    
+	    ImGui::Checkbox("Animate", animate_ptr());
 	    
 	    if(ImGui::Button("One iteration", ImVec2(-1.0, 0.0))) {
 		Lloyd_iteration();
 	    }
 
 	    if(
-		ImGui::Button("+", ImVec2(0.4f*ImGui::GetWindowWidth(), 0.0f)) &&
-		nb_points_ < 10000
+		ImGui::Button(
+		    "+",
+		    ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f)
+		) && nb_points_ < 10000
 	    ) {
 		++nb_points_;
 		init_random_points(nb_points_);				
 	    }
 	    ImGui::SameLine();
 	    if(
-		ImGui::Button("-", ImVec2(0.4f*ImGui::GetWindowWidth(), 0.0f)) &&
-		nb_points_ > 4
+		ImGui::Button(
+		    "-", ImVec2(-1.0f, 0.0f)
+		) && nb_points_ > 4
 	    ) {
 		--nb_points_;
 		init_random_points(nb_points_);				
@@ -152,10 +155,12 @@ namespace {
 	    
 	    ImGui::Checkbox("Box", &draw_box_);
 	    ImGui::Checkbox("Period 3x3x3", &draw_period_);	    
-	    ImGui::Checkbox("Points", &draw_points_);	    
-	    ImGui::SliderFloat("PtSz.", &point_size_, 1.0f, 50.0f, "%.1f");
+	    ImGui::Checkbox("Points", &draw_points_);
+	    ImGui::SameLine();
+	    ImGui::SliderFloat("##PtSz.", &point_size_, 1.0f, 50.0f, "%.1f");
 	    ImGui::Checkbox("Cells", &draw_cells_);
-	    ImGui::SliderFloat("Shrk.", &cells_shrink_, 0.0f, 1.0f, "%.2f");	    
+	    ImGui::SameLine();
+	    ImGui::SliderFloat("##Shrk.", &cells_shrink_, 0.0f, 1.0f, "%.2f");	    
         }
 
 	/**
@@ -249,7 +254,7 @@ namespace {
          * \brief Draws the scene according to currently set primitive and
          *  drawing modes.
          */
-        virtual void draw_scene() {
+        void draw_scene() override {
 	    // Avoid re-entry, for instance when a message is sent to
 	    // the logger, this triggers a graphic redisplay.
 	    static bool locked = false;
@@ -257,7 +262,7 @@ namespace {
 		return;
 	    }
 	    locked = true;
-	    if(animate_) {
+	    if(animate()) {
 		Lloyd_iteration();
 	    }
             glupSetColor3f(GLUP_FRONT_AND_BACK_COLOR, 0.5f, 0.5f, 0.5f);
@@ -440,7 +445,6 @@ namespace {
 	
     private:
 	SmartPointer<PeriodicDelaunay3d> delaunay_;
-	bool animate_;	
 	bool periodic_;
 	bool draw_points_;
         float point_size_;
@@ -456,7 +460,7 @@ namespace {
 }
 
 int main(int argc, char** argv) {
-    DemoDelaunay3dApplication app(argc, argv, "");
-    app.start();
+    DemoDelaunay3dApplication app;
+    app.start(argc, argv);
     return 0;
 }

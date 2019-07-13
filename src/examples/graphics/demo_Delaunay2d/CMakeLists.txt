@@ -1,10 +1,9 @@
 include(${PROJECT_SOURCE_DIR}/cmake/opengl.cmake)
+set(APP_NAME geogram_demo_Delaunay2d)
 
 aux_source_directories(SOURCES "" .)
-add_executable(geogram_demo_Delaunay2d ${SOURCES})
-target_link_libraries(
-  geogram_demo_Delaunay2d geogram_gfx geogram ${GLFW_LIBRARIES}
-)
-install_runtime_targets(geogram_demo_Delaunay2d)
+add_executable(${APP_NAME} ${SOURCES})
+target_link_libraries(${APP_NAME} geogram_gfx geogram ${GLFW_LIBRARIES})
+install_runtime_targets(${APP_NAME})
 
-set_target_properties(geogram_demo_Delaunay2d PROPERTIES FOLDER "GEOGRAM")
+set_target_properties(${APP_NAME} PROPERTIES FOLDER "GEOGRAM")

@@ -44,6 +44,7 @@
  */
 
 #include <geogram_gfx/ImGui_ext/icon_font.h>
+#include <geogram/basic/string.h>
 #include <map>
 #include <string>
 
@@ -1231,3 +1232,13 @@ wchar_t icon_wchar(const char* name) {
 void init_icon_table() {
     init_font_awesome_table();
 }
+
+namespace GEO {
+    std::string icon_UTF8(const char* name) {
+	wchar_t result[2];
+	result[0] = icon_wchar(name);
+	result[1] = '\0';	
+	return String::wchar_to_UTF8(result);
+    }
+}
+

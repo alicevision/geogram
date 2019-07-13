@@ -819,5 +819,28 @@ namespace GEO {
     }
 }
 
+
+#ifdef GEO_OS_ANDROID
+struct android_app;
+
+namespace GEO {
+    namespace CmdLine {
+	/**
+	 * \brief Declares the current android app.
+	 * \param[in] app a pointer to the android app.
+	 */
+	void GEOGRAM_API set_android_app(android_app* app);
+
+	/**
+	 * \brief Gets the android app.
+	 * \return a pointer to the android app.
+	 */
+	android_app* GEOGRAM_API get_android_app();
+    }
+}
+
+#endif
+
+
 #endif
 

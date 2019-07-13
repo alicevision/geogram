@@ -53,12 +53,21 @@
  *        geogram_demo_Raytrace meshfile.(obj|ply|mesh|...)
  */ 
 
-#include <geogram_gfx/glup_viewer/glup_viewer.h>
+#include <geogram_gfx/gui/simple_application.h>
 #define RAYTRACE_GUI
 #include "../../geogram/simple_raytrace/raytracing.h"
+#include <geogram/basic/stopwatch.h>
 
 namespace {
     using namespace GEO;
+
+// Some phones (OpenGL ES) only support GL_RGBA as
+// internal format and also *image* format.
+#ifdef GEO_OS_ANDROID
+    const GLenum image_format = GL_RGBA;
+#else
+    const GLenum image_format = GL_RGB;
+#endif
 
     
     /**
@@ -66,43 +75,38 @@ namespace {
      *  GLUP primitives and glup_viewer application
      *  framework.
      */
-    class DemoRaytraceApplication : public Application {
+    class DemoRaytraceApplication : public SimpleApplication {
     public:
 
         /**
          * \brief DemoRaytraceApplication constructor.
          */
-        DemoRaytraceApplication(
-            int argc, char** argv,
-            const std::string& usage
-	) :
-	    Application(argc, argv, usage),
-	    camera_(
-		vec3(2.0, 2.0, 1.5), // Position
-		vec3(0.5, 0.5, 0.5), // Target
-#ifdef GEO_OS_EMSCRIPTEN
-		512, 512, // OpenGL ES needs power of two textures
-#else
-		800, 800,            // Image size		
-#endif		
-		50.0                 // zoom angle (in degrees)
+        DemoRaytraceApplication() :
+	    SimpleApplication("RayTrace"),
+    	    camera_(
+		get_width(), get_height(),
+		(image_format == GL_RGBA) ? 4 : 3
 	    )
 	{
             texture_ = 0;
-	    scene_.add_object(new HorizontalCheckerboardPlane(0.0))  // The tradition !
+	    total_time_ = 0.0;
+	    frames_ = 0;
+	    
+            // The tradition !	    
+	    scene_.add_object(new HorizontalCheckerboardPlane(0.0))  
    	          ->rename("Checkerboard");
 	    
-	    scene_.add_object(                                       // A sphere
+	    scene_.add_object(                         // A sphere
 		new Sphere(vec3(-0.7, -0.7, 1.0),0.7)
 		)->set_reflection_coefficient(vec3(0.8, 0.8, 0.8))
 		 ->set_diffuse_coefficient(vec3(0.2, 0.2, 0.2))
 		 ->rename("Sphere 1");
 
 
-	    scene_.add_object(                                       // Another sphere
+	    scene_.add_object(                         // Another sphere
 		new Sphere(vec3( 0.0, 0.0, 0.0),0.25)
-		)->set_diffuse_coefficient(vec3(0.0, 1.0, 0.5))
-		 ->rename("Sphere 2");		
+	    )->set_diffuse_coefficient(vec3(0.0, 1.0, 0.5))
+	     ->rename("Sphere 2");		
 
 	    
 	    // Let there be (two) lights !
@@ -116,109 +120,76 @@ namespace {
 	    scene_.add_object(new Light(
 				 vec3(1.0, 0.2, 1.0), // Position
 				 0.02,                // Radius
-				 vec3(1.5, 1.5, 0.5)  // Color
+				 vec3(1.0, 1.0, 1.0)  // Color
 			         )
 	    )->rename("Light 2");
 	    
 	    scene_changed_ = true;
-	    zoom_ = 0.0f;
-	    left_pane_visible_ = false;
-	    background_color_1_ = vec4f(0.0f, 0.0f, 0.2f, 1.0f);	
-	    background_color_2_ = vec4f(0.0f, 0.0f, 0.2f, 1.0f);
+	    set_region_of_interest(-1.0, -1.0, -1.0, 1.0, 1.0, 1.0);
 
-	    for(index_t i=0; i<4; ++i) {
-		quaternion_[i] = 0.0f;
-	    }
-
-	    for(index_t i=0; i<3; ++i) {
-		translation_[i] = 0.0f;
-	    }
-	    
+	    viewer_properties_visible_ = false;
         }
 
         /**
          * \brief DemoRaytraceApplication destructor.
          */
         ~DemoRaytraceApplication() override {
+        }
+
+
+	/**
+	 * \copydoc SimpleApplication::GL_terminate()
+	 */
+	void GL_terminate() override {
             if(texture_ != 0) {
                 glDeleteTextures(1,&texture_);
             }
-        }
+	}
 
-	void update() {
-
-	    float* new_quaternion = glup_viewer_get_scene_quaternion();
-	    for(index_t i=0; i<4; ++i) {
-		if(new_quaternion[i] != quaternion_[i]) {
-		    scene_changed_ = true;
-		    quaternion_[i] = new_quaternion[i];		    
-		}
+	/**
+	 * \brief Ray-traces a new frame.
+	 * \details Only if scene or viewing parameters
+	 *  changed.
+	 */
+	void raytrace() {
+	    if(!scene_changed_) {
+		return;
 	    }
-
-	    float* new_translation = glup_viewer_get_scene_translation();
-	    for(index_t i=0; i<3; ++i) {
-		if(new_translation[i] != translation_[i]) {
-		    scene_changed_ = true;
-		    translation_[i] = new_translation[i];		    
-		}
-	    }
-
-	    float new_zoom = glup_viewer_get_float(GLUP_VIEWER_ZOOM);
-	    if(new_zoom != zoom_) {
-		scene_changed_ = true;
-		zoom_ = new_zoom;
-	    }
-	    
-	    if(scene_changed_) {
-		vec3 pos(2.0, 2.0, 1.5);
-		mat4 M;
-		set_mat4_from_translation_and_quaternion(
-		    M,
-		    double(translation_[0]),
-		    double(translation_[1]),
-		    double(translation_[2]),		    
-		    double(quaternion_[2]),
-		    double(quaternion_[0]),
-		    double(quaternion_[1]),
-		    double(quaternion_[3])
-		);
-
-		//M = M.inverse();
-		
-		pos = transform_point(pos,M);
-		
-		vec3 target(
-		    0.5 + double(translation_[0]),
-		    0.5 + double(translation_[1]),
-		    0.5 + double(translation_[2])		    
-		);
-		
-		camera_.update(
-		    pos, target, 50.0 / double(zoom_)
-		);
-#ifdef GEO_OPENMP	
-#pragma omp parallel for
-#endif
-		for(index_t Y=0; Y<camera_.image_height(); ++Y) {
-		    for(index_t X=0; X<camera_.image_width(); ++X) {
-			Ray R = camera_.launch_ray(X,Y);
-			vec3 K = scene_.raytrace(R);
-			camera_.set_pixel(X,Y,K);
+	    {
+		double t0 = SystemStopwatch::now();
+		parallel_for(
+		    0, camera_.image_height(),
+		    [this](index_t Y) {
+			for(index_t X=0; X<camera_.image_width(); ++X) {
+			    Ray R = primary_ray(X,Y);
+			    vec3 K = scene_.raytrace(R);
+			    camera_.set_pixel(X,Y,K);
+			}
 		    }
-		}
+		);
+		total_time_ += (SystemStopwatch::now() - t0);
+		++frames_;
 	    }
-	    if(scene_changed_ && texture_ != 0) {
+	    if(texture_ != 0) {
+		GEO_CHECK_GL();
+		glActiveTexture(GL_TEXTURE0);
+		GEO_CHECK_GL();		
+		glBindTexture(GL_TEXTURE_2D, texture_);
+		GEO_CHECK_GL();				
 		glTexImage2D(
 		    GL_TEXTURE_2D,
 		    0,
-		    GL_RGB,
+		    GL_RGBA, 
 		    GLsizei(camera_.image_width()),
 		    GLsizei(camera_.image_height()),
 		    0,
-		    GL_RGB,
+		    image_format,
 		    GL_UNSIGNED_BYTE,
 		    camera_.image_data()
 		);
+		GEO_CHECK_GL();						
+		glBindTexture(GL_TEXTURE_2D, 0);
+		GEO_CHECK_GL();						
 	    }
 	    scene_changed_ = false;
 	}
@@ -229,47 +200,132 @@ namespace {
          * \details Overloads Application::draw_object_properties().
          */
         void draw_object_properties() override {
-	    if(ImGui::Button("Home",ImVec2(-1.0f, 0.0f))) {
-		glup_viewer_home();
-		zoom_ = 40.0;
-		scene_changed_ = true;
+	    SimpleApplication::draw_object_properties();	    
+	    if(ImGui::Button(
+		   (icon_UTF8("home") + " Home [H]").c_str(), ImVec2(-1.0, 0.0))
+	    ) {
+		home();
 	    }
+	    double fps = double(frames_) / total_time_;
+	    int ifps = int(fps);
+	    int ffps = int((fps - double(ifps))*100.0);
+	    ImGui::Text(
+		"%s", (
+		    String::to_string(ifps) +"." +
+		    String::to_string(ffps) + " FPS"
+		).c_str()
+	    );
 	    if(scene_.draw_gui()) {
 		scene_changed_ = true;
 	    }
-	    update();
         }
 
+
+	/**
+	 * \brief Launches a primary ray.
+	 * \param[in] X , Y the pixel coordinates,
+	 *   in [0..width-1] x [0..height-1]
+	 */
+	Ray primary_ray(index_t X, index_t Y) {
+	    double x = double(X);
+	    double y = double(Y);
+	    vec4 nnear(
+		2.0*((x - viewport_[0]) / viewport_[2]-0.5),
+		2.0*((y - viewport_[1]) / viewport_[3]-0.5),
+		-1.0,
+		1.0
+	    );
+	    vec4 ffar = nnear; // 'far' is reserved under Win32 !
+	    ffar.z = 1.0;
+	    nnear = mult(inv_project_modelview_,nnear);
+	    ffar =  mult(inv_project_modelview_,ffar);
+	    vec3 nearp = (1.0/nnear.w)*vec3(nnear.x, nnear.y, nnear.z);
+	    vec3 farp  = (1.0/ffar.w)*vec3(ffar.x , ffar.y , ffar.z );
+	    return Ray(nearp, farp-nearp);
+	}
+
+	/**
+	 * \brief Gets the viewing parameters from OpenGL and GLUP
+	 *  in a form suitable for software raytracing.
+	 */
+	void get_viewing_parameters() {
+	    GLint viewport[4];
+	    glGetIntegerv(GL_VIEWPORT, viewport);
+	    FOR(i,4) {
+		if(viewport_[i] != double(viewport[i])) {
+		    scene_changed_ = true;
+		}
+		viewport_[i] = double(viewport[i]);
+	    }
+	
+	    mat4 modelview;
+	    glupGetMatrixdv(GLUP_MODELVIEW_MATRIX, modelview.data());
+	    mat3 normalmatrix;
+	    FOR(i,3) {
+		FOR(j,3) {
+		    normalmatrix(i,j) = modelview(i,j);
+		}
+	    }
+	    modelview = modelview.transpose();
+	    mat4 project;
+	    glupGetMatrixdv(GLUP_PROJECTION_MATRIX, project.data());
+	    project = project.transpose();
+	    
+	    mat4 inv_project_modelview = (project*modelview).inverse();
+	    FOR(i,4) {
+		FOR(j, 4) {
+		    if(inv_project_modelview(i,j) !=
+		       inv_project_modelview_(i,j))  {
+			scene_changed_ = true;
+		    }
+		}
+	    }
+		 
+	    inv_project_modelview_ = inv_project_modelview;
+	    
+	    float Lf[3];
+	    glupGetLightVector3fv(Lf);
+	    
+	    vec3 L((double)Lf[0], (double)Lf[1], (double)Lf[2]);
+	    L = normalize(mult(normalmatrix,L));
+	    
+	    if(L_.x != L.x || L_.y != L.y || L_.z != L.z) {
+		scene_changed_ = true;
+	    }
+	    L_ = L;
+	}
+	
         /**
          * \brief Draws the scene according to currently set primitive and
          *  drawing modes.
          */
          void draw_scene() override {
-	    update();
-	    glupMatrixMode(GLUP_PROJECTION_MATRIX);
-	    glupLoadIdentity();	    
-	    glupMatrixMode(GLUP_MODELVIEW_MATRIX);
-	    glupLoadIdentity();
-	    int w,h;
-	    glup_viewer_get_screen_size(&w,&h);
+	    get_viewing_parameters();
 	    
-	    glupScalef(2.0f*float(h)/float(w), 2.0f, 1.0f);	    	    
-	    glupTranslatef(-0.5f, -0.5f, 0.0f);
-	    glupEnable(GLUP_TEXTURING);
-	    glupDisable(GLUP_LIGHTING);
-	    glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+	    // OpenGL does not like textures dimensions that
+	    // are not multiples of 4
+	    index_t w = get_width() & index_t(~3);
+	    index_t h = get_height() & index_t(~3);
+	    
+	    if(camera_.image_width() != w ||
+	       camera_.image_height() != h) {
+		camera_.resize(w,h);
+		scene_changed_ = true;
+	    }
+	    raytrace();
+	    glViewport(
+		0, 0,
+		GLsizei(camera_.image_width()),
+		GLsizei(camera_.image_height())
+	    );
+	    glDisable(GL_DEPTH_TEST);
+	    GEO_CHECK_GL();
+	    glActiveTexture(GL_TEXTURE0); 
 	    glBindTexture(GL_TEXTURE_2D, texture_);
-	    glupBegin(GLUP_QUADS);
-	    glupTexCoord2d(0.0, 0.0);
-	    glupVertex2d(0.0, 1.0);
-	    glupTexCoord2d(1.0, 0.0);
-	    glupVertex2d(1.0, 1.0);	    
-	    glupTexCoord2d(1.0, 1.0);
-	    glupVertex2d(1.0, 0.0);
-	    glupTexCoord2d(0.0, 1.0);
-	    glupVertex2d(0.0, 0.0);	    
-	    glupEnd();
-	    glupDisable(GLUP_TEXTURING);
+	    GEO_CHECK_GL();
+	    draw_unit_textured_quad();
+	    glBindTexture(GL_TEXTURE_2D, 0);
+	    GEO_CHECK_GL();
         }
 
         /**
@@ -278,17 +334,17 @@ namespace {
          *  is called as soon as the OpenGL context is ready for rendering. It
          *  is meant to initialize the graphic objects used by the application.
          */
-        void init_graphics() override {
-            Application::init_graphics();
-	    
-            // Create the texture and initialize its texturing modes
+        void GL_initialize() override {
+	    GEO_CHECK_GL();
+            SimpleApplication::GL_initialize();
             glGenTextures(1, &texture_);
-            glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+	    GEO_CHECK_GL();
+            glActiveTexture(GL_TEXTURE0); 
             glBindTexture(GL_TEXTURE_2D, texture_);
+	    GEO_CHECK_GL();
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glupTextureType(GLUP_TEXTURE_2D);
-            glupTextureMode(GLUP_TEXTURE_REPLACE);
+	    GEO_CHECK_GL();
         }
 
 	bool load(const std::string& filename) override {
@@ -314,7 +370,7 @@ namespace {
 		    scene_changed_ = true;
 		}
 		if(ImGui::MenuItem("Checkerboard")) {
-		    scene_.add_object(new HorizontalCheckerboardPlane(0.0));		    
+		    scene_.add_object(new HorizontalCheckerboardPlane(0.0));
 		    scene_changed_ = true;		    
 		}
 		ImGui::EndMenu();
@@ -327,15 +383,18 @@ namespace {
 	Mesh mesh_;
         GLuint texture_;
 	bool scene_changed_;
-	float translation_[3];
-	float quaternion_[4];
-	float zoom_;
+	double total_time_;
+	index_t frames_;
+
+	double viewport_[4];
+	mat4 inv_project_modelview_;
+	vec3 L_; /**< light vector in object space. */
     };
       
 }
 
 int main(int argc, char** argv) {
-    DemoRaytraceApplication app(argc, argv, "<filename>");
-    app.start();
+    DemoRaytraceApplication app;
+    app.start(argc, argv);
     return 0;
 }
