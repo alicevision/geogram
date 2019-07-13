@@ -46,7 +46,6 @@
 #include <geogram_gfx/gui/simple_application.h>
 #include <geogram/delaunay/delaunay.h>
 #include <geogram/numerics/predicates.h>
-#include "gui_state.h"
 
 namespace {
     using namespace GEO;
@@ -745,7 +744,12 @@ namespace {
 		SimpleApplication::cursor_pos_callback(x,y,source);
 		return;
 	    }
-	    mouse_point_ = unproject_2d(vec2(x,double(get_height()-y)));
+	    mouse_point_ = unproject_2d(
+		vec2(
+		    x,
+		    double(get_height()) * hidpi_scaling() - y
+		)
+	    );
 	    if(animate()) {
 		if(last_button_ == 0) {
 		    points_.push_back(mouse_point_);
@@ -766,11 +770,6 @@ namespace {
 	    }
 	}
 
-	void geogram_initialize(int argc, char** argv) override {
-	    SimpleApplication::geogram_initialize(argc, argv);
-	    set_gui_state(gui_state);
-	}
-	
     private:
 	vector<vec2> points_;
 	vector<vec2> new_points_;

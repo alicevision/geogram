@@ -98,6 +98,10 @@ namespace {
 	GLFWwindow* window = glfwGetCurrentContext();
 	glfwGetFramebufferSize(window, &buf_size[0], &buf_size[1]);
 	glfwGetWindowSize(window, &win_size[0], &win_size[1]);
+	// The window may be iconified.
+	if(win_size[0] == 0) {
+	    return 1.0;
+	}
 	return double(buf_size[0]) / double(win_size[0]);
     }
 #endif

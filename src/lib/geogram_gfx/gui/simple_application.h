@@ -62,12 +62,6 @@
 
 struct lua_State;
 
-// MSVC compiler before VC2013 do not support UTF8 litterals
-#if defined(_MSC_VER) && (_MSC_VER <= 1800)
-#define u8 
-#pragma execution_character_set(“utf-8”) 
-#endif
-
 namespace GEO {
 
     class GEOGRAM_GFX_API SimpleApplication : public Application {

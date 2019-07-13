@@ -113,6 +113,8 @@ namespace {
         }
         return result;
     }
+
+    
 }
 
 /******************************************************************************/
@@ -345,7 +347,11 @@ namespace GEO {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	glViewport(0, 0, int(get_width()), int(get_height()));
+	glViewport(
+	    0, 0,
+	    int(double(get_width())*hidpi_scaling()),
+	    int(double(get_height())*hidpi_scaling())
+	);
 
 	double zScreen = 5.0; // screen projection plane 
 	{
@@ -868,9 +874,19 @@ namespace GEO {
 		    << std::endl;
 		out << "// then Windows->Export gui state to C++"
 		    << std::endl;
-		out << "const char gui_state[] = u8\""
-		    << state
-		    << "\";" << std::endl;
+		out << "const char gui_state[] = {";
+		for(size_t i=0; i<state.length(); ++i) {
+		    if((i%10) == 0) {
+			out << std::endl;
+		    }
+		    int x = int((unsigned char)state[i]);
+		    if(x < 128) {
+			out << x << ",";
+		    } else {
+			out << "char(" << x << "), ";
+		    }
+		}
+	        out << " 0 };" << std::endl;
 	    }
 	}
     }

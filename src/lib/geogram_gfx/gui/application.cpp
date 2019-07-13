@@ -90,13 +90,13 @@ namespace GEO {
      * \brief Computes the pixel ratio for hidpi devices.
      * \details Uses the current GLFW window.
      */
-    double pixel_ratio();
+    double compute_pixel_ratio();
 
     /**
      * \brief Computes the scaling factor for hidpi devices.
      * \details Uses the current GLFW window.
      */
-    double hidpi_scaling();
+    double compute_hidpi_scaling();
     
 
     /**
@@ -632,8 +632,8 @@ namespace GEO {
 	glfwMakeContextCurrent(data_->window_);
 	glfwSwapInterval(1);
 
-	hidpi_scaling_ = hidpi_scaling();
-	pixel_ratio_ = pixel_ratio();
+	hidpi_scaling_ = compute_hidpi_scaling();
+	pixel_ratio_ = compute_pixel_ratio();
 
 	Logger::out("Skin")
 	    << "hidpi_scaling=" << hidpi_scaling_ << std::endl;
@@ -680,10 +680,10 @@ namespace GEO {
 	    // monitor.
 	    if(
 		glfwGetCurrentContext() != nullptr && 
-		hidpi_scaling() != hidpi_scaling_
+		compute_hidpi_scaling() != hidpi_scaling_
 	    ) {
-		hidpi_scaling_ = hidpi_scaling();
-		pixel_ratio_ = pixel_ratio();
+		hidpi_scaling_ = compute_hidpi_scaling();
+		pixel_ratio_ = compute_pixel_ratio();
 		set_font_size(font_size_); // This reloads the font.
 	    }
 	}
@@ -787,7 +787,8 @@ namespace GEO {
 		app->impl_data()->ImGui_callback_cursor_pos(w, xf, yf);
 	    }
 	    if(!ImGui::GetIO().WantCaptureMouse) {
-		app->cursor_pos_callback(xf, yf);
+		double s = app->hidpi_scaling();
+		app->cursor_pos_callback(s*xf, s*yf);
 	    }
 	}
     
@@ -1204,16 +1205,20 @@ namespace GEO {
 
 #if defined(GEO_GLFW) && !defined(GEO_OS_EMSCRIPTEN)
 
-    double pixel_ratio() {
+    double compute_pixel_ratio() {
 	int buf_size[2];
 	int win_size[2];
 	GLFWwindow* window = glfwGetCurrentContext();
 	glfwGetFramebufferSize(window, &buf_size[0], &buf_size[1]);
 	glfwGetWindowSize(window, &win_size[0], &win_size[1]);
+	// The window may be iconified.
+	if(win_size[0] == 0) {
+	    return 1.0;
+	}
 	return double(buf_size[0]) / double(win_size[0]);
     }
 
-    double hidpi_scaling() {
+    double compute_hidpi_scaling() {
 	float xscale, yscale;
 	GLFWwindow* window = glfwGetCurrentContext();
 	glfwGetWindowContentScale(window, &xscale, &yscale);
@@ -1222,11 +1227,11 @@ namespace GEO {
     
 #else
 
-    double pixel_ratio() {
+    double compute_pixel_ratio() {
 	return 1.0;
     }
 
-    double hidpi_scaling() {
+    double compute_hidpi_scaling() {
 	return 1.0;
     }
     

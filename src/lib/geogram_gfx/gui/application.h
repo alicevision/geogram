@@ -384,6 +384,29 @@ namespace GEO {
 	 * \return a pointer to the implementation-specific window.
 	 */
         void* impl_window();
+
+        /**
+	 * \brief MacOS non-sense
+	 * \return a scaling factor between real pixels and logical
+	 *  pixels or something, well I do not understand. Sometimes
+	 *  you need to multiply by it, sometimes to divide, and
+	 *  sometimes you need to use pixel_ratio() instead.
+	 */
+        double hidpi_scaling() const {
+	    return hidpi_scaling_;
+	}
+
+        /**
+	 * \brief More MacOS non-sense
+	 * \return something like hidpi_scaling(), that is a scaling 
+	 *  factor between real pixels and logical
+	 *  pixels or something, well I do not understand.
+	 *  Sometimes you need to multiply by it, sometimes to divide, 
+	 *  and sometimes you need to use hidpi_scaling() instead.
+	 */
+        double pixel_ratio() const {
+	    return pixel_ratio_;
+	}
     
     protected:
 
@@ -526,7 +549,7 @@ namespace GEO {
 	    animate_ = false;
 	}
     
-    private:
+      private:
         static Application* instance_; /**< a pointer to the instance */
         ApplicationData* data_;      /**< implementation dependent */
         index_t width_;              /**< window width */
@@ -547,7 +570,7 @@ namespace GEO {
         bool currently_drawing_gui_; /**< currently drawing ImGui elements */
         std::vector<std::string> filenames_; /**< from the command line */
         bool animate_;               /**< true if drawing always */
-    protected:
+      protected:
         bool menubar_visible_; 
     };
 
