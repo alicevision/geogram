@@ -37,6 +37,11 @@ add_library(geogram ${SOURCES} $<TARGET_OBJECTS:geogram_third_party>)
 ntop_import(tbb)
 target_link_libraries(geogram tbb::tbb)
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    find_package(OpenMP REQUIRED)
+    target_link_libraries(geogram OpenMP::OpenMP_CXX)
+endif()
+
 # Jeremie/Maxence: avoids the need to redeclare geogram include
 # path for targets that depend on geogram.
 # See: https://cmake.org/cmake/help/v3.3/command/target_include_directories.html

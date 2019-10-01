@@ -2,6 +2,8 @@
 # Build Geogram as part of the current CMake project
 ################################################################################
 
+cmake_minimum_required(VERSION 3.11)
+
 if(TARGET geogram::geogram)
 	return()
 endif()
@@ -21,9 +23,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	set(VORPALINE_ARCH_64 TRUE CACHE BOOL "" FORCE)
 	set(VORPALINE_PLATFORM Win-vs-generic CACHE STRING "" FORCE)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	set(VORPALINE_PLATFORM Linux64-gcc-dynamic CACHE STRING "" FORCE)
+	set(VORPALINE_PLATFORM Linux64-gcc CACHE STRING "" FORCE)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-	set(VORPALINE_PLATFORM Darwin-clang-dynamic CACHE STRING "" FORCE)
+	set(VORPALINE_PLATFORM Darwin-clang CACHE STRING "" FORCE)
 endif()
 
 option(GEOGRAM_WITH_GRAPHICS        "Viewers and geogram_gfx library"                                         ON)
