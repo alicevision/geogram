@@ -53,6 +53,12 @@
 #  pragma GCC diagnostic ignored "-Wpointer-bool-conversion"
 #endif
 
+#ifdef GEO_OS_EMSCRIPTEN
+#  define GEO_THROW_GLSL_ERROR
+#else
+#  define GEO_THROW_GLSL_ERROR throw GLSL::GLSLCompileError();
+#endif
+
 namespace {
 
     using namespace GEO;
@@ -385,7 +391,7 @@ namespace GEO {
                         << std::endl;
                     break;
                 }
-                throw GLSL::GLSLCompileError();
+		GEO_THROW_GLSL_ERROR;
             }
             glShaderSource(s_handle, (GLsizei)nb_sources, sources, nullptr);
             glCompileShader(s_handle);
@@ -394,7 +400,8 @@ namespace GEO {
             if(!compile_status) {
                 GLchar compiler_message[4096];
                 glGetShaderInfoLog(
-                    s_handle, sizeof(compiler_message), nullptr, compiler_message
+                    s_handle, sizeof(compiler_message), nullptr,
+		    compiler_message
                 );
 
                 Logger::out("GLSL") << "Error in program:"
@@ -413,7 +420,7 @@ namespace GEO {
 		
                 glDeleteShader(s_handle);
                 s_handle = 0;
-                throw GLSLCompileError();
+		GEO_THROW_GLSL_ERROR;		
             }
             return s_handle;
         }
@@ -526,7 +533,7 @@ namespace GEO {
         void link_program(GLuint program) {
             link_program_and_check_status(program);
             if(program == 0) {
-                throw GLSL::GLSLCompileError();                
+		GEO_THROW_GLSL_ERROR;				
             }
         }
 
@@ -704,6 +711,9 @@ namespace GEO {
                 return 0;
             }
             GLuint result = 0;
+#ifdef GEO_OS_EMSCRIPTEN
+	    result = create_program_from_string_no_link(buffer,false);	    
+#else	    
             try {
                 // last argument to false:
                 //  no need to copy the buffer, we know it
@@ -713,6 +723,7 @@ namespace GEO {
                 delete[] buffer;
                 throw;
             }
+#endif	    
             return result;
         }
 
@@ -733,7 +744,7 @@ namespace GEO {
                     << varname 
                     << ":did not find uniform state variable"
                     << std::endl;
-                throw GLSL::GLSLCompileError();
+		GEO_THROW_GLSL_ERROR;		
             }
             geo_assert(index != GL_INVALID_INDEX);
             GLint offset = -1;
@@ -760,7 +771,7 @@ namespace GEO {
                     << varname 
                     << ":did not find uniform state variable"
                     << std::endl;
-                throw GLSL::GLSLCompileError();
+		GEO_THROW_GLSL_ERROR;		
             }
             geo_assert(index != GL_INVALID_INDEX);
             GLint stride = -1;
@@ -1108,7 +1119,7 @@ namespace GEO {
                     Logger::err("GLSL")
                         << "Missing //stage GL_xxxxx declaration"
                         << std::endl;
-                    throw GLSL::GLSLCompileError();
+		    GEO_THROW_GLSL_ERROR;		    
                 }
                 p1 += 8;
                 const char* p2 = strchr(p1, '\n');
@@ -1116,7 +1127,7 @@ namespace GEO {
                     Logger::err("GLSL")
                         << "Missing CR in //stage GL_xxxxx declaration"
                         << std::endl;
-                    throw GLSL::GLSLCompileError();
+		    GEO_THROW_GLSL_ERROR;		    
                 }
                 std::string stage_str(p1, size_t(p2-p1));
                 GLenum stage = 0;
@@ -1138,7 +1149,7 @@ namespace GEO {
                 else {
                     Logger::err("GLSL") << stage_str << ": unknown stage"
                                         << std::endl;
-                    throw GLSL::GLSLCompileError();                    
+		    GEO_THROW_GLSL_ERROR;		    
                 }
 
                 GLuint shader =

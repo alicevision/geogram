@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/XsBXWt 
+
 // "Fractal Cartoon" - former "DE edge detection" by Kali
 
 // There are no lights and no AO, only color by normals and dark edges.

@@ -399,6 +399,34 @@ namespace GEO {
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
         ) override {
+
+	    std::string mtl_filename;
+	    std::string mtl_filename_fullpath;
+	    
+	    if(ioflags.get_texture_filename().length() != 0) {
+		mtl_filename =
+		    FileSystem::base_name(filename) + ".mtl";
+		mtl_filename_fullpath =
+		    FileSystem::dir_name(filename) + "/" +
+		    mtl_filename;
+		std::ofstream mtl_out(mtl_filename_fullpath.c_str());
+		if(!mtl_out) {
+		    Logger::err("I/O") << "Could not create mtl file "
+				       << mtl_filename_fullpath
+				       << std::endl;
+		} else {
+		    Logger::out("I/O") << "Saving file "
+				       << mtl_filename_fullpath
+				       << std::endl;
+		    mtl_out << "newmtl Material_0" << std::endl;
+		    mtl_out << "map_Kd "
+			    << FileSystem::base_name(ioflags.get_texture_filename())
+			    << "."
+			    << FileSystem::extension(ioflags.get_texture_filename())
+			    << std::endl;
+		}
+	    }
+	    
             geo_assert(M.vertices.dimension() >= dimension_);
             std::ofstream out(filename.c_str());
             if(!out) {
@@ -416,6 +444,10 @@ namespace GEO {
                 out << "# vorpaline " << args[i] << std::endl;
             }
 
+	    if(mtl_filename.length() != 0) {
+		out << "mtllib " << mtl_filename << std::endl;
+	    }
+	    
             vector<double> P(dimension_);
             for(index_t v = 0; v < M.vertices.nb(); ++v) {
                 get_mesh_point(M, v, P.data(), dimension_);
@@ -453,7 +485,8 @@ namespace GEO {
 			<< vertex_tex_coord_[2*v+1] << std::endl;
 		}
 	    }
-	    
+
+	    out << "usemtl Material_0" << std::endl;
             if(ioflags.has_element(MESH_FACETS)) {
                 for(index_t f = 0; f < M.facets.nb(); ++f) {
                     out << "f ";
@@ -1786,7 +1819,9 @@ namespace GEO {
             const MeshIOFlags& ioflags
         ) override {
             p_ply oply = ply_create(
-                filename.c_str(), PLY_LITTLE_ENDIAN, nullptr, 0, nullptr
+                filename.c_str(),
+		(CmdLine::get_arg_bool("sys:ascii") ? PLY_ASCII : PLY_LITTLE_ENDIAN),
+		nullptr, 0, nullptr
             );
 
             if(oply == nullptr) {
@@ -2329,7 +2364,7 @@ namespace GEO {
         }
 
         /**
-         * \brief Saves a mesh into a file in STL binary format.
+         * \brief Saves a mesh into a file in STL format.
          * \param[in] M The mesh to save
          * \param[in] filename name of the file
          * \param[in] ioflags specifies which attributes 
@@ -2340,6 +2375,77 @@ namespace GEO {
             const Mesh& M, const std::string& filename,
             const MeshIOFlags& ioflags
         ) override {
+	    bool result = true;
+	    if(CmdLine::get_arg_bool("sys:ascii")) {
+		result = save_ascii(M, filename, ioflags);
+	    } else {
+		result = save_binary(M, filename, ioflags);
+	    }
+	    return result;
+	}
+
+        /**
+         * \brief Saves a mesh into a file in STL ASCII format.
+         * \param[in] M The mesh to save
+         * \param[in] filename name of the file
+         * \param[in] ioflags specifies which attributes 
+         *   and elements should be saved
+         * \return true on success, false otherwise
+         */
+	bool save_ascii(
+            const Mesh& M, const std::string& filename,
+            const MeshIOFlags& ioflags
+        ) {
+	    geo_argused(ioflags);
+	    std::ofstream out(filename.c_str());
+	    if(!out) {
+		return false;
+	    }
+	    out << "solid geogram" << std::endl;
+            for(index_t f = 0; f < M.facets.nb(); ++f) {
+                index_t c1 = M.facets.corners_begin(f);
+                vec3 p1;
+                get_mesh_point(M, M.facet_corners.vertex(c1), p1.data(), 3);
+                for(index_t c2 = M.facets.corners_begin(f) + 1;
+                    c2 + 1 < M.facets.corners_end(f); ++c2
+                ) {
+                    vec3 p2;
+                    get_mesh_point(
+                        M, M.facet_corners.vertex(c2), p2.data(), 3
+                    );
+                    vec3 p3;
+                    get_mesh_point(
+                        M, M.facet_corners.vertex(c2+1), p3.data(), 3
+                    );
+
+		    // Seriously, this ASCII STL format is soooo verbose !!!
+		    // Crazy...
+		    out << "facet normal " << normalize(cross(p2-p1,p3-p1))
+			<< std::endl;
+		    out << "outer loop" << std::endl;
+		    out << "vertex " << p1 << std::endl;
+		    out << "vertex " << p2 << std::endl;
+		    out << "vertex " << p3 << std::endl;
+		    out << "endloop" << std::endl;
+		    out << "endfacet" << std::endl;
+                }
+            }
+	    out << "endsolid" << std::endl;
+            return true;
+	}
+
+        /**
+         * \brief Saves a mesh into a file in STL binary format.
+         * \param[in] M The mesh to save
+         * \param[in] filename name of the file
+         * \param[in] ioflags specifies which attributes 
+         *   and elements should be saved
+         * \return true on success, false otherwise
+         */
+	bool save_binary(
+            const Mesh& M, const std::string& filename,
+            const MeshIOFlags& ioflags
+        ) {
 
             bind_attributes(M, ioflags, false);
 

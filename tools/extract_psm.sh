@@ -216,7 +216,7 @@ extract_example() {
     cat <<EOF > $PSM_EXAMPLE
 /*
  * To compile under Linux: 
- *   $COMPILER -O3 -fopenmp -frounding-math -ffp-contract=off $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -ldl -lm
+ *   $COMPILER -O3 -fopenmp -frounding-math -ffp-contract=off --std=c++11 $PSM_EXAMPLE $PSM_SOURCE -o $PSM_EXAMPLE_BIN -ldl -lm
  */
 EOF
     echo >> $PSM_EXAMPLE     
@@ -250,7 +250,11 @@ pair that can be used in any program and that does not have
 any dependency. 
 
 It may also contain an example program that can be compiled by using:
-  g++ ${PSM_NAME}_psm.cpp ${PSM_NAME}_example.cpp -o ${PSM_NAME}_example
+  g++ --std=c++11 ${PSM_NAME}_psm.cpp ${PSM_NAME}_example.cpp -o ${PSM_NAME}_example
+(or gcc if it is plain C, as in OpenNL)
+
+Some examples may require additional compilation flags (see comments at the beginning
+of the example source, e.g. Delaunay_example.cpp).
 EOF
 }
 

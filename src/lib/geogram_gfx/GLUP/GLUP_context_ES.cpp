@@ -937,7 +937,7 @@ namespace GLUP {
 
         // Stream the values in all bound buffers (and attach
         // them to the VAO).
-        for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+        for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
             if(immediate_state_.buffer[i].is_enabled()) {
                 glEnableVertexAttribArray(i);
                 if(immediate_state_.buffer[i].VBO() != 0) {

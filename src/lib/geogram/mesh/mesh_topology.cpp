@@ -62,10 +62,10 @@ namespace {
     index_t nb_non_isolated_surface_vertices(const Mesh& M) {
         index_t result = 0;
         std::vector<bool> visited(M.vertices.nb(), false);
-        for(index_t c = 0; c < M.facet_corners.nb(); ++c) {
+        for(index_t c: M.facet_corners) {
             visited[M.facet_corners.vertex(c)] = true;
         }
-        for(index_t v = 0; v < M.vertices.nb(); ++v) {
+        for(index_t v: M.vertices) {
             if(visited[v]) {
                 ++result;
             }
@@ -82,7 +82,7 @@ namespace GEO {
         static const index_t NO_COMPONENT = index_t(-1);
         index_t nb_components = 0;
         component.assign(M.facets.nb(), NO_COMPONENT);
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             if(component[f] == NO_COMPONENT) {
                 std::stack<index_t> S;
                 S.push(f);
@@ -90,10 +90,7 @@ namespace GEO {
                 do {
                     index_t cur_f = S.top();
                     S.pop();
-                    for(
-                        index_t c = M.facets.corners_begin(cur_f);
-                        c != M.facets.corners_end(cur_f); c++
-                    ) {
+                    for(index_t c: M.facets.corners(cur_f)) {
                         index_t adj_f = M.facet_corners.adjacent_facet(c);
                         if(adj_f != NO_FACET &&
                            component[adj_f] == NO_COMPONENT
@@ -131,11 +128,8 @@ namespace GEO {
             }
         }
         signed_index_t result = signed_index_t(nb_v + M.facets.nb());
-        for(index_t f = 0; f < M.facets.nb(); ++f) {
-            for(
-                index_t c = M.facets.corners_begin(f);
-                c < M.facets.corners_end(f); ++c
-            ) {
+        for(index_t f: M.facets) {
+            for(index_t c: M.facets.corners(f)) {
                 index_t f2 = M.facet_corners.adjacent_facet(c);
                 if(f2 == NO_FACET || f > f2) {
                     --result;
@@ -148,11 +142,8 @@ namespace GEO {
     signed_index_t mesh_nb_borders(const Mesh& M) {
         // Step 1: chain vertices around borders
         std::vector<index_t> next_around_border(M.vertices.nb(),NO_VERTEX);
-        for(index_t f = 0; f < M.facets.nb(); ++f) {
-            for(
-                index_t c1 = M.facets.corners_begin(f);
-                c1 < M.facets.corners_end(f); ++c1
-            ) {
+        for(index_t f: M.facets) {
+            for(index_t c1: M.facets.corners(f)) {
                 if(M.facet_corners.adjacent_facet(c1) == NO_FACET) {
                     index_t c2 = M.facets.next_corner_around_facet(f, c1);
                     index_t v1 = M.facet_corners.vertex(c1);
@@ -174,7 +165,7 @@ namespace GEO {
         }
         // Step 2: count connected components of the borders
         index_t result = 0;
-        for(index_t v = 0; v < M.vertices.nb(); ++v) {
+        for(index_t v: M.vertices) {
             if(next_around_border[v] != NO_VERTEX) {
                 result++;
                 index_t cur = v;

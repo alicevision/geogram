@@ -69,14 +69,15 @@
 #include <emscripten.h>
 #endif
 
-namespace GEO {
+namespace {
+    using namespace GEO;
 
-    namespace FileSystem {
-
-        // OS-dependent functions
+/******************* Windows file system implementation **********************/
 #ifdef GEO_OS_WINDOWS
 
-        bool is_file(const std::string& path) {
+    class FileSystemRootNode : public FileSystem::Node {
+    public:
+        bool is_file(const std::string& path) override {
             WIN32_FIND_DATA file;
             HANDLE file_handle = FindFirstFile(path.c_str(), &file);
             if(file_handle == INVALID_HANDLE_VALUE) {
@@ -86,7 +87,7 @@ namespace GEO {
             return (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
         }
 
-        bool is_directory(const std::string& path) {
+        bool is_directory(const std::string& path) override {
             WIN32_FIND_DATA file;
             HANDLE file_handle = FindFirstFile(path.c_str(), &file);
             if(file_handle == INVALID_HANDLE_VALUE) {
@@ -96,7 +97,7 @@ namespace GEO {
             return (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
         }
 
-        bool create_directory(const std::string& path_in) {
+        bool create_directory(const std::string& path_in) override {
             std::vector<std::string> path;
             String::split_string(path_in, '/', path);
             std::string current;
@@ -130,17 +131,17 @@ namespace GEO {
             return true;
         }
 
-        bool delete_directory(const std::string& path) {
+        bool delete_directory(const std::string& path) override {
             return ::RemoveDirectory(path.c_str()) != FALSE;
         }
 
-        bool delete_file(const std::string& path) {
+        bool delete_file(const std::string& path) override {
             return ::DeleteFile(path.c_str()) != FALSE;
         }
 
         bool get_directory_entries(
             const std::string& path, std::vector<std::string>& result
-        ) {
+        ) override {
             std::string dirname = path;
             if(dirname.at(dirname.size() - 1) != '/' &&
                 dirname.at(dirname.size() - 1) != '\\'
@@ -172,7 +173,7 @@ namespace GEO {
             return true;
         }
 
-        std::string get_current_working_directory() {
+        std::string get_current_working_directory() override {
             char buf[2048];
             std::string result = "";
             if(GetCurrentDirectory(sizeof(buf), buf)) {
@@ -182,7 +183,9 @@ namespace GEO {
             return result;
         }
 
-        bool set_current_working_directory(const std::string& path_in) {
+        bool set_current_working_directory(
+	    const std::string& path_in
+	) override {
             std::string path = path_in;
             if(
 		path.at(path.size() - 1) != '/' &&
@@ -194,13 +197,11 @@ namespace GEO {
 
         bool rename_file(
             const std::string& old_name, const std::string& new_name
-        ) {
+        ) override {
             return ::rename(old_name.c_str(), new_name.c_str()) != -1;
         }
 
-        Numeric::uint64 get_time_stamp(
-            const std::string& path
-        ) {
+        Numeric::uint64 get_time_stamp(const std::string& path) override {
             WIN32_FILE_ATTRIBUTE_DATA infos;
             if(!GetFileAttributesEx(
 		   path.c_str(), GetFileExInfoStandard, &infos)
@@ -210,9 +211,85 @@ namespace GEO {
             return infos.ftLastWriteTime.dwLowDateTime;
         }
 
+        bool set_executable_flag(const std::string& filename) override {
+            geo_argused(filename);
+	    return false;
+        }
+
+        bool touch(const std::string& filename) override {
+	    HANDLE hfile = CreateFile(
+		filename.c_str(),
+		GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+            );
+	    if(hfile == INVALID_HANDLE_VALUE) {
+		Logger::err("FileSystem")
+		    << "Could not touch file:"
+		    << filename
+		    << std::endl;
+		return false;
+	    }
+	    SYSTEMTIME now_system;
+	    FILETIME now_file;
+	    GetSystemTime(&now_system);
+	    SystemTimeToFileTime(&now_system, &now_file);
+	    SetFileTime(hfile,nullptr,&now_file,&now_file);
+	    CloseHandle(hfile);
+	    return true;
+        }
+        
+        std::string normalized_path(const std::string& path_in) override {
+            if(path_in == "") {
+                return "";
+            }
+            std::string path = path_in;
+            std::string result;
+            TCHAR buffer[MAX_PATH];
+            GetFullPathName(path.c_str(), MAX_PATH, buffer, nullptr);
+            result = std::string(buffer);
+            flip_slashes(result);
+            return result;
+        }
+
+
+        std::string home_directory() override {
+            std::string home;
+            wchar_t folder[MAX_PATH+1];
+            HRESULT hr = SHGetFolderPathW(0, CSIDL_PROFILE, 0, 0, folder);
+            if (SUCCEEDED(hr)) {
+                char result[MAX_PATH+1];
+                wcstombs(result, folder, MAX_PATH);
+                home=std::string(result);
+                flip_slashes(home);
+            }
+            return home;
+        }
+
+        std::string documents_directory() override {
+            std::string home;
+            wchar_t folder[MAX_PATH+1];
+            HRESULT hr = SHGetFolderPathW(0, CSIDL_MYDOCUMENTS, 0, 0, folder);
+            if (SUCCEEDED(hr)) {
+                char result[MAX_PATH+1];
+                wcstombs(result, folder, MAX_PATH);
+                home=std::string(result);
+                flip_slashes(home);
+            }
+            return home;
+        }
+    };
+
 #else
 
-        bool is_file(const std::string& path) {
+/***** Unix/Mac/Android/Emscripten file system implementation ****************/
+    
+    class FileSystemRootNode : public FileSystem::Node {
+    public:
+        bool is_file(const std::string& path) override {
             //   We use 'stat' and not 'lstat' since
             // we want to be able to follow symbolic
             // links (required for instance when testing
@@ -225,7 +302,7 @@ namespace GEO {
             return S_ISREG(buff.st_mode);
         }
 
-        bool is_directory(const std::string& path) {
+        bool is_directory(const std::string& path) override {
             //   We use 'stat' and not 'lstat' since
             // we want to be able to follow symbolic
             // links (required for instance when testing
@@ -238,7 +315,7 @@ namespace GEO {
             return S_ISDIR(buff.st_mode);
         }
 
-        bool create_directory(const std::string& path_in) {
+        bool create_directory(const std::string& path_in) override {
             std::vector<std::string> path;
             String::split_string(path_in, '/', path);
             std::string current;
@@ -257,17 +334,17 @@ namespace GEO {
             return true;
         }
 
-        bool delete_directory(const std::string& path) {
+        bool delete_directory(const std::string& path) override {
             return rmdir(path.c_str()) == 0;
         }
 
-        bool delete_file(const std::string& path) {
+        bool delete_file(const std::string& path) override {
             return unlink(path.c_str()) == 0;
         }
 
         bool get_directory_entries(
             const std::string& path, std::vector<std::string>& result
-        ) {
+        ) override {
             std::string dirname = path;
             if(dirname[dirname.length() - 1] != '/') {
                 dirname += "/";
@@ -277,6 +354,22 @@ namespace GEO {
                 Logger::err("OS")
                     << "Could not open directory " << dirname
                     << std::endl;
+#ifdef GEO_OS_ANDROID
+		static bool first_time = true;
+		if(first_time) {
+		    Logger::err("OS")
+			<< "You may need to grant the \"Storage\" permission"
+			<< std::endl
+			<< "to this application"
+			<< std::endl;
+		    Logger::err("OS")
+			<< "(see Parameters/Applications"
+			<< std::endl
+			<< "in Android perferences)"
+			<< std::endl;
+		    first_time = false;
+		}
+#endif		
                 return false;
             }
             struct dirent* entry = readdir(dir);
@@ -298,27 +391,25 @@ namespace GEO {
             return true;
         }
 
-        std::string get_current_working_directory() {
+        std::string get_current_working_directory() override {
             char buff[4096];
             return std::string(getcwd(buff, 4096));
         }
 
-        bool set_current_working_directory(const std::string& path) {
+        bool set_current_working_directory(const std::string& path) override {
             return chdir(path.c_str()) == 0;
         }
 
         bool rename_file(
             const std::string& old_name, const std::string& new_name
-        ) {
+        ) override {
             if(is_file(new_name)) {
                 return false;
             }
             return ::rename(old_name.c_str(), new_name.c_str()) == 0;
         }
 
-        Numeric::uint64 get_time_stamp(
-            const std::string& path
-        ) {
+        Numeric::uint64 get_time_stamp(const std::string& path) override {
             struct stat buffer;
             if(!stat(path.c_str(), &buffer)) {
                 return Numeric::uint64(buffer.st_mtime);
@@ -326,11 +417,148 @@ namespace GEO {
             return 0;
         }
 
+        bool set_executable_flag(const std::string& filename) override {
+            geo_argused(filename);
+            if(::chmod(filename.c_str(), 0755) != 0) {
+                Logger::err("FileSyst")
+                    << "Could not change file permissions for:"
+                    << filename << std::endl;
+		return false;
+            }
+	    return true;
+        }
+
+        bool touch(const std::string& filename) override {
+#ifdef GEO_OS_APPLE
+           {
+                struct stat buff;
+                int rc = stat(filename.c_str(), &buff); 
+                if(rc != 0) {  // FABIEN NOT SURE WE GET THE TOUCH
+                    Logger::err("FileSystem")
+                        << "Could not touch file:"
+                        << filename
+                        << std::endl;
+		    return false;
+                }
+		return true;
+            }
+#else
+            {
+                int rc = utimensat(
+                    AT_FDCWD,
+                    filename.c_str(),
+                    nullptr,
+                    0
+                );
+                if(rc != 0) {
+                    Logger::err("FileSystem")
+                        << "Could not touch file:"
+                        << filename
+                        << std::endl;
+		    return false;
+                }
+		return true;
+            }
+#endif	    
+        }
+        
+        std::string normalized_path(const std::string& path_in) override {
+
+            if(path_in == "") {
+                return "";
+            }
+            
+            std::string path = path_in;
+            std::string result;
+
+            // If this is a relative path, prepend "./"
+            if(path[0] != '/') {
+                path = "./" + path;
+            }
+
+            char buffer[PATH_MAX];
+            char* p = realpath(path.c_str(), buffer);
+            if(p != nullptr) {
+                result = std::string(p);
+            } else {
+                // realpath() only works for existing paths and existing file,
+                // therefore we attempt calling it on the input path by adding
+                // one component at a time.
+                size_t pos = 1;
+                while(pos != std::string::npos) {
+                    pos = path.find('/',pos);
+                    if(pos != std::string::npos) {
+                        std::string path_part = path.substr(0,pos);
+                        p = realpath(path_part.c_str(), buffer);
+                        if(p == nullptr) {
+                            break;
+                        } else {
+                            result = std::string(p) +
+                                path.substr(pos, path.length()-pos);
+                        }
+                        ++pos;
+                        if(pos == path.length()) {
+                            break;
+                        }
+                    } 
+                }
+            }
+            flip_slashes(result);
+            return result;
+        }
+
+
+        std::string home_directory() override {
+            std::string home;
+#if defined GEO_OS_EMSCRIPTEN
+            home="/";
+#else            
+            char* result = getenv("HOME");
+            if(result != nullptr) {
+                home=result;
+            }
 #endif
+            return home;
+        }
 
-        // OS-independent functions
+        std::string documents_directory() override {
+            std::string home;
+#if defined GEO_OS_EMSCRIPTEN
+            home="/";
+#elif defined GEO_OS_ANDROID
+            char* result = getenv("EXTERNAL_STORAGE");
+            if(result != nullptr) {
+                home=result;
+            }
+#else            
+            char* result = getenv("HOME");
+            if(result != nullptr) {
+                home=result;
+            }
+#endif
+            return home;
+        }
+	
+    };
+#endif    
 
-        std::string extension(const std::string& path) {
+    FileSystem::Node_var root_;
+}
+
+
+namespace GEO {
+
+    namespace FileSystem {
+
+	Node::Node() {
+	}
+
+	Node::~Node() {
+	}
+
+        /******* OS-independent functions *************************************/
+
+        std::string Node::extension(const std::string& path) {
             size_t len = path.length();
             if(len != 0) {
                 for(size_t i = len - 1; i != 0; i--) {
@@ -345,7 +573,9 @@ namespace GEO {
             return std::string();
         }
 
-        std::string base_name(const std::string& path, bool remove_extension) {
+        std::string Node::base_name(
+	    const std::string& path, bool remove_extension
+	) {
             long int len = (long int)(path.length());
             if(len == 0) {
                 return std::string();
@@ -363,7 +593,7 @@ namespace GEO {
             return path.substr(size_t(i + 1), size_t(dot_pos - i - 1));
         }
 
-        std::string dir_name(const std::string& path) {
+        std::string Node::dir_name(const std::string& path) {
             size_t len = path.length();
             if(len != 0) {
                 for(size_t i = len - 1; i != 0; i--) {
@@ -375,7 +605,7 @@ namespace GEO {
             return ".";
         }
 
-        void get_directory_entries(
+        void Node::get_directory_entries(
             const std::string& path,
             std::vector<std::string>& result, bool recursive
         ) {
@@ -390,7 +620,7 @@ namespace GEO {
             }
         }
 
-        void get_files(
+        void Node::get_files(
             const std::string& path,
             std::vector<std::string>& result, bool recursive
         ) {
@@ -403,7 +633,7 @@ namespace GEO {
             }
         }
 
-        void get_subdirectories(
+        void Node::get_subdirectories(
             const std::string& path,
             std::vector<std::string>& result, bool recursive
         ) {
@@ -416,7 +646,7 @@ namespace GEO {
             }
         }
 
-        void flip_slashes(std::string& s) {
+        void Node::flip_slashes(std::string& s) {
             for(size_t i = 0; i < s.length(); i++) {
                 if(s[i] == '\\') {
                     s[i] = '/';
@@ -424,7 +654,7 @@ namespace GEO {
             }
         }
 
-        bool copy_file(const std::string& from, const std::string& to) {
+        bool Node::copy_file(const std::string& from, const std::string& to) {
             FILE* fromf = fopen(from.c_str(), "rb");
             if(fromf == nullptr) {
                 Logger::err("FileSyst")
@@ -458,189 +688,496 @@ namespace GEO {
             return result;
         }
 
-        void set_executable_flag(const std::string& filename) {
-            geo_argused(filename);
-#ifdef GEO_OS_UNIX
-            if(::chmod(filename.c_str(), 0755) != 0) {
-                Logger::err("FileSyst")
-                    << "Could not change file permissions for:"
-                    << filename << std::endl;
-            }
-#endif            
-        }
+        /*************** OS-dependent functions *******************************/
 
-        void GEOGRAM_API touch(const std::string& filename) {
-#ifdef GEO_OS_APPLE
-           {
-                struct stat buff;
-                int rc = stat(filename.c_str(), &buff); 
-                if(rc != 0) {  // FABIEN NOT SURE WE GET THE TOUCH
-                    Logger::err("FileSystem")
-                        << "Could not touch file:"
-                        << filename
-                        << std::endl;
-                }
-            }
-#elif defined(GEO_OS_UNIX)
-            {
-                int rc = utimensat(
-                    AT_FDCWD,
-                    filename.c_str(),
-                    nullptr,
-                    0
-                );
-                if(rc != 0) {
-                    Logger::err("FileSystem")
-                        << "Could not touch file:"
-                        << filename
-                        << std::endl;
-                }
-            }
-#elif defined GEO_OS_WINDOWS
-            {
-                HANDLE hfile = CreateFile(
-                    filename.c_str(),
-                    GENERIC_READ | GENERIC_WRITE,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE,
-                    nullptr,
-                    OPEN_EXISTING,
-                    FILE_ATTRIBUTE_NORMAL,
-                    nullptr
-                );
-                if(hfile == INVALID_HANDLE_VALUE) {
-                    Logger::err("FileSystem")
-                        << "Could not touch file:"
-                        << filename
-                        << std::endl;
-                }
-                SYSTEMTIME now_system;
-                FILETIME now_file;
-                GetSystemTime(&now_system);
-                SystemTimeToFileTime(&now_system, &now_file);
-                SetFileTime(hfile,nullptr,&now_file,&now_file);
-                CloseHandle(hfile);
-            }
-#endif            
-        }
-        
-        std::string normalized_path(const std::string& path_in) {
-
-            if(path_in == "") {
-                return "";
-            }
-            
-            std::string path = path_in;
-            std::string result;
-
-#ifdef GEO_OS_UNIX
-            // If this is a relative path, prepend "./"
-            if(path[0] != '/') {
-                path = "./" + path;
-            }
-
-            char buffer[PATH_MAX];
-            char* p = realpath(path.c_str(), buffer);
-            if(p != nullptr) {
-                result = std::string(p);
-            } else {
-                // realpath() only works for existing paths and existing file,
-                // therefore we attempt calling it on the input path by adding
-                // one component at a time.
-                size_t pos = 1;
-                while(pos != std::string::npos) {
-                    pos = path.find('/',pos);
-                    if(pos != std::string::npos) {
-                        std::string path_part = path.substr(0,pos);
-                        p = realpath(path_part.c_str(), buffer);
-                        if(p == nullptr) {
-                            break;
-                        } else {
-                            result = std::string(p) +
-                                path.substr(pos, path.length()-pos);
-                        }
-                        ++pos;
-                        if(pos == path.length()) {
-                            break;
-                        }
-                    } 
-                }
-            }
-#endif
-            
-#ifdef GEO_OS_WINDOWS
-            TCHAR buffer[MAX_PATH];
-            GetFullPathName(path.c_str(), MAX_PATH, buffer, nullptr);
-            result = std::string(buffer);
-#endif
-            
-            flip_slashes(result);
-            return result;
-        }
-
-
-        std::string home_directory() {
-            std::string home;
-#if defined GEO_OS_WINDOWS
-            wchar_t folder[MAX_PATH+1];
-            HRESULT hr = SHGetFolderPathW(0, CSIDL_PROFILE, 0, 0, folder);
-            if (SUCCEEDED(hr)) {
-                char result[MAX_PATH+1];
-                wcstombs(result, folder, MAX_PATH);
-                home=std::string(result);
-                flip_slashes(home);
-            }
-#elif defined GEO_OS_EMSCRIPTEN
-            home="/";
-#else            
-            char* result = getenv("HOME");
-            if(result != nullptr) {
-                home=result;
-            }
-#endif
-            return home;
-        }
-
-        std::string documents_directory() {
-            std::string home;
-#if defined GEO_OS_WINDOWS
-            wchar_t folder[MAX_PATH+1];
-            HRESULT hr = SHGetFolderPathW(0, CSIDL_MYDOCUMENTS, 0, 0, folder);
-            if (SUCCEEDED(hr)) {
-                char result[MAX_PATH+1];
-                wcstombs(result, folder, MAX_PATH);
-                home=std::string(result);
-                flip_slashes(home);
-            }
-#elif defined GEO_OS_EMSCRIPTEN
-            home="/";
-#elif defined GEO_OS_ANDROID
-            char* result = getenv("EXTERNAL_STORAGE");
-            if(result != nullptr) {
-                home=result;
-            }
-#else            
-            char* result = getenv("HOME");
-            if(result != nullptr) {
-                home=result;
-            }
-#endif
-            return home;
-        }
-
-#ifdef GEO_OS_EMSCRIPTEN
-	static void (*file_system_changed_callback_)() = nullptr;
-	
-	void set_file_system_changed_callback(void(*callback)()) {
-	    file_system_changed_callback_ = callback;
+	bool Node::is_file(const std::string& path) {
+	    geo_argused(path);
+	    return false;
 	}
 
-#endif    
+	bool Node::is_directory(const std::string& path) {
+	    geo_argused(path);
+	    return false;
+	}
 	
+	bool Node::create_directory(const std::string& path) {
+	    geo_argused(path);
+	    return false;
+	}
+
+	bool Node::delete_directory(const std::string& path) {
+	    geo_argused(path);
+	    return false;
+	}
+
+	bool Node::delete_file(const std::string& path) {
+	    geo_argused(path);
+	    return false;
+	}
+	
+	bool Node::get_directory_entries(
+	    const std::string& path, std::vector<std::string>& result
+	) {
+	    geo_argused(path);
+	    geo_argused(result);
+	    return false;
+	}
+
+	std::string Node::get_current_working_directory() {
+	    return "/";
+	}
+
+	bool Node::set_current_working_directory(const std::string& path) {
+	    geo_argused(path);
+	    return false;
+	}
+
+	bool Node::rename_file(
+	    const std::string& old_name, const std::string& new_name
+	) {
+	    geo_argused(old_name);
+	    geo_argused(new_name);
+	    return false;
+	}
+
+	Numeric::uint64 Node::get_time_stamp(const std::string& path) {
+	    geo_argused(path);
+	    return 0;
+	}
+
+	bool Node::set_executable_flag(const std::string& filename) {
+	    geo_argused(filename);
+	    return false;
+	}
+
+	bool Node::touch(const std::string& filename) {
+	    geo_argused(filename);
+	    return false;
+	}
+
+	std::string Node::normalized_path(const std::string& path) {
+	    std::vector<std::string> components;
+	    String::split_string(path, '/', components);
+	    std::vector<std::string> new_components;
+	    for(auto c: components) {
+		if(c == ".") {
+		} else if(c == "..") {
+		    if(new_components.size() != 0) {
+			new_components.pop_back();
+		    }
+		} else {
+		    new_components.push_back(c);
+		}
+	    }
+	    std::string result;
+	    for(auto c: new_components) {
+		result += "/";
+		result += c;
+	    }
+	    return result;
+	}
+
+	std::string Node::home_directory() {
+	    return "/";
+	}
+
+	std::string Node::documents_directory() {
+	    return "/";
+	}
+
+	std::string Node::load_file_as_string(const std::string& path) {
+	    std::string result;
+	    FILE* f = fopen(path.c_str(),"r");
+	    if(f != nullptr) {
+		// Get file length
+		fseek(f, 0L, SEEK_END);
+		size_t length = size_t(ftell(f));
+		fseek(f, 0L, SEEK_SET);
+		if(length != 0) {
+		    result.resize(length);
+		    size_t read_length = fread(&result[0], 1, length, f);
+		    if(read_length != length) {
+			Logger::warn("FileSystem")
+			    << "Problem occured when reading "
+			    << path
+			    << std::endl;
+			    
+		    }
+		}
+		fclose(f);
+	    }
+	    return result;
+	}
+	
+        /*********************************************************************/
+
+	bool MemoryNode::copy_file(
+	    const std::string& from, const std::string& to
+	) {
+	    const char* contents = get_file_contents(from);
+	    if(contents == nullptr) {
+		return false;
+	    }
+	    return create_file(to, contents);
+	}
+
+	std::string MemoryNode::load_file_as_string(const std::string& path) {
+	    std::string result;
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		auto it = files_.find(rest);
+		if(it != files_.end()) {
+		    result = std::string(it->second);
+		}
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it != subnodes_.end()) {
+		    result = it->second->load_file_as_string(rest);
+		}
+	    }
+	    return result;
+	}
+
+	bool MemoryNode::is_file(const std::string& path) {
+	    std::string result;
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		return(files_.find(rest) != files_.end());
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it == subnodes_.end()) {
+		    return false;
+		}
+		return it->second->is_file(rest);
+	    }
+	}
+
+	bool MemoryNode::is_directory(const std::string& path) {
+	    std::string result;
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		return(subnodes_.find(rest) != subnodes_.end());
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it == subnodes_.end()) {
+		    return false;
+		}
+		return it->second->is_directory(rest);
+	    }
+	}
+
+	bool MemoryNode::create_directory(const std::string& path) {
+	    std::string result;
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		if(subnodes_.find(path) != subnodes_.end()) {
+		    return false;
+		}
+		subnodes_[path] = new MemoryNode(path_ + path + "/");
+		return true;
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it == subnodes_.end()) {
+		    subnodes_[subdir] = new MemoryNode(path_ + subdir + "/");
+		}
+		return it->second->create_directory(rest);
+	    }
+	}
+
+	bool MemoryNode::delete_directory(const std::string& path) {
+	    std::string result;
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		auto it = subnodes_.find(rest);
+		if(it == subnodes_.end()) {
+		    return false;
+		}
+		subnodes_.erase(it);
+		return true;
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it == subnodes_.end()) {
+		    return false;
+		}
+		return it->second->delete_directory(rest);
+	    }
+	}
+
+	bool MemoryNode::delete_file(const std::string& path) {
+	    std::string result;
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		auto it = files_.find(rest);
+		if(it == files_.end()) {
+		    return false;
+		}
+		files_.erase(it);
+		return true;
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it == subnodes_.end()) {
+		    return false;
+		}
+		return it->second->delete_file(rest);
+	    }
+	}
+
+	bool MemoryNode::get_directory_entries(
+	    const std::string& path, std::vector<std::string>& result
+	) {
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "" && rest == "") {
+		result.clear();
+		for(auto it : subnodes_) {
+		    result.push_back(path_ + it.first);
+		}
+		for(auto it : files_) {
+		    result.push_back(path_ + it.first);
+		}
+		return true;
+	    } else {
+		if(subdir == "") {
+		    subdir = rest;
+		    rest = "";
+		}
+		auto it = subnodes_.find(subdir);
+		if(it == subnodes_.end()) {
+		    return false;
+		}
+		return it->second->get_directory_entries(rest, result);
+	    }
+	}
+	
+	bool MemoryNode::rename_file(
+	    const std::string& from, const std::string& to
+	) {
+	    const char* contents = get_file_contents(from);
+	    if(contents == nullptr) {
+		return false;
+	    }
+	    if(!delete_file(from)) {
+		return false;
+	    }
+	    return create_file(to, contents);
+	}
+	
+	const char* MemoryNode::get_file_contents(const std::string& path) {
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    const char* result = nullptr;
+	    if(subdir == "") {
+		auto it = files_.find(rest);
+		if(it != files_.end()) {
+		    result = it->second;
+		}
+	    } else {
+		auto it = subnodes_.find(subdir);
+		if(it != subnodes_.end()) {
+		    result = it->second->get_file_contents(rest);
+		}
+	    }
+	    return result;
+	}
+	
+	bool MemoryNode::create_file(
+	    const std::string& path, const char* content
+	) {
+	    std::string subdir;
+	    std::string rest;
+	    split_path(path, subdir, rest);
+	    if(subdir == "") {
+		if(files_.find(rest) != files_.end()) {
+		    return false;
+		}
+		files_[rest] = content;
+		return true;
+	    } else {
+		SmartPointer<MemoryNode>& n = subnodes_[subdir];
+		if(n.is_null()) {
+		    n = new MemoryNode(path_ + subdir + "/");
+		}
+		return n->create_file(rest, content);
+	    }
+	}
+	
+	void MemoryNode::split_path(
+	    const std::string& path, std::string& leadingsubdir, 
+	    std::string& rest
+	) {
+	    leadingsubdir = "";
+	    rest = "";
+	    std::vector<std::string> components;
+	    String::split_string(path, '/', components);
+	    if(components.size() == 0) {
+		return;
+	    } else if(components.size() == 1) {
+		leadingsubdir = "";
+		rest = components[0];
+	    } else {
+		leadingsubdir = components[0];
+		for(size_t i=1; i<components.size(); ++i) {
+		    if(i != 1) {
+			rest += "/";
+		    }
+		    rest += components[i];
+		}
+	    }
+	}
+	
+        /*********************************************************************/
+	
+	void initialize() {
+	    root_ = new FileSystemRootNode;
+	}
+
+	void terminate() {
+	    root_.reset();
+	}
+	
+        bool is_file(const std::string& path) {
+	    return root_->is_file(path);
+	}
+	
+        bool is_directory(const std::string& path) {
+	    return root_->is_directory(path);
+	}
+
+	bool create_directory(const std::string& path) {
+	    return root_->create_directory(path);
+	}
+
+	bool delete_directory(const std::string& path) {
+	    return root_->delete_directory(path);
+	}
+
+	bool delete_file(const std::string& path) {
+	    return root_->delete_file(path);
+	}
+
+	bool get_directory_entries(
+            const std::string& path, std::vector<std::string>& result
+        ) {
+	    return root_->get_directory_entries(path, result);
+	}
+
+	std::string get_current_working_directory() {
+	    return root_->get_current_working_directory();
+	}
+
+	bool set_current_working_directory(
+            const std::string& path
+        ) {
+	    return root_->set_current_working_directory(path);
+	}
+	
+        bool rename_file(
+            const std::string& old_name, const std::string& new_name
+        ) {
+	    return root_->rename_file(old_name, new_name);
+	}
+	
+        Numeric::uint64 get_time_stamp(const std::string& path) {
+	    return root_->get_time_stamp(path);
+	}
+	
+        std::string extension(const std::string& path) {
+	    return root_->extension(path);
+	}
+
+	std::string base_name(
+            const std::string& path, bool remove_extension
+        ) {
+	    return root_->base_name(path, remove_extension);
+	}
+	
+        std::string dir_name(const std::string& path) {
+	    return root_->dir_name(path);
+	}
+
+	void get_directory_entries(
+            const std::string& path,
+            std::vector<std::string>& result, bool recursive
+        ) {
+	    return root_->get_directory_entries(path, result, recursive);
+	}
+	
+        void get_files(
+            const std::string& path,
+            std::vector<std::string>& result, bool recursive
+        ) {
+	    return root_->get_files(path, result, recursive);
+	}
+	
+        void get_subdirectories(
+            const std::string& path,
+            std::vector<std::string>& result, bool recursive
+        ) {
+	    return root_->get_subdirectories(path, result, recursive);
+	}
+	
+        void flip_slashes(std::string& path) {
+	    return root_->flip_slashes(path);
+	}
+
+	bool copy_file(
+            const std::string& from, const std::string& to
+        ) {
+	    return root_->copy_file(from, to);
+	}
+
+	bool set_executable_flag(const std::string& filename) {
+	    return root_->set_executable_flag(filename);
+	}
+
+	bool touch(const std::string& filename) {
+	    return root_->touch(filename);
+	}
+
+	std::string normalized_path(const std::string& path) {
+	    return root_->normalized_path(path);
+	}
+
+	std::string home_directory() {
+	    return root_->home_directory();
+	}
+
+	std::string documents_directory() {
+	    return root_->documents_directory();
+	}
+
+	void get_root(Node*& root) {
+	    root = root_;
+	}
     } // end namespace FileSystem
 } // end namespace GEO
 
 
+
 #ifdef GEO_OS_EMSCRIPTEN
+
+namespace GEO {
+    namespace FileSystem {
+	static void (*file_system_changed_callback_)() = nullptr;
+	void set_file_system_changed_callback(void(*callback)()) {
+	    file_system_changed_callback_ = callback;
+	}
+    }
+}
 
 extern "C" {
     void file_system_changed_callback();

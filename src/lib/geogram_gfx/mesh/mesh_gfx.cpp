@@ -44,9 +44,12 @@
  */
 
 #include <geogram_gfx/mesh/mesh_gfx.h>
+#include <geogram_gfx/GLUP/GLUP_private.h>
+#include <geogram_gfx/basic/GLSL.h>
+
 #include <geogram/basic/logger.h>
 #include <geogram/basic/command_line.h>
-#include <geogram_gfx/basic/GLSL.h>
+
 
 // TODO: implement attribute display for cell facets.
 // TODO: use vertex arrays for attribute display for
@@ -183,6 +186,8 @@ namespace GEO {
             return false;
         }
 #ifdef GEO_GL_NO_DOUBLES
+	// If there is an attribute bound, then return false,
+	// this will force switching to immediate mode.
         if(attribute_subelements_ != MESH_NONE) {
 	    return false;
 	}
@@ -206,7 +211,7 @@ namespace GEO {
 
     void MeshGfx::draw_vertices_immediate_plain() {
         glupBegin(GLUP_POINTS);
-        for(index_t v=0; v<mesh_->vertices.nb(); ++v) {
+        for(index_t v: mesh_->vertices) {
             draw_vertex(v);
         }
         glupEnd();
@@ -215,7 +220,7 @@ namespace GEO {
     void MeshGfx::draw_vertices_immediate_attrib() {
         begin_attributes();
         glupBegin(GLUP_POINTS);
-        for(index_t v=0; v<mesh_->vertices.nb(); ++v) {
+        for(index_t v: mesh_->vertices) {
             draw_vertex_with_attribute(v);
         }
         glupEnd();
@@ -246,7 +251,7 @@ namespace GEO {
             return;
         }
         glupBegin(GLUP_POINTS);            
-        for(index_t v=0; v<mesh_->vertices.nb(); ++v) {
+        for(index_t v: mesh_->vertices) {
             if(v_selection[v]) {
                 draw_vertex(v);
             }
@@ -263,7 +268,6 @@ namespace GEO {
         set_GLUP_picking(MESH_VERTICES);
         update_buffer_objects_if_needed();
         
-        //glupEnable(GLUP_LIGHTING);
         glupSetColor4fv(GLUP_FRONT_COLOR, points_color_);
         glupSetPointSize(points_size_ * 5.0f);
 
@@ -307,7 +311,7 @@ namespace GEO {
 
     void MeshGfx::draw_edges_immediate_plain() {
         glupBegin(GLUP_LINES);
-        for(index_t e=0; e<mesh_->edges.nb(); ++e) {
+        for(index_t e: mesh_->edges) {
             index_t v1 = mesh_->edges.vertex(e,0);
             index_t v2 = mesh_->edges.vertex(e,1);
             draw_vertex(v1);
@@ -320,7 +324,7 @@ namespace GEO {
         begin_attributes();
         if(attribute_subelements_ == MESH_VERTICES) {
             glupBegin(GLUP_LINES);
-            for(index_t e=0; e<mesh_->edges.nb(); ++e) {
+            for(index_t e: mesh_->edges) {
                 index_t v1 = mesh_->edges.vertex(e,0);
                 index_t v2 = mesh_->edges.vertex(e,1);
                 draw_vertex_with_attribute(v1);
@@ -329,7 +333,7 @@ namespace GEO {
             glupEnd();
         } else if(attribute_subelements_ == MESH_EDGES) {
             glupBegin(GLUP_LINES);
-            for(index_t e=0; e<mesh_->edges.nb(); ++e) {
+            for(index_t e: mesh_->edges) {
                 index_t v1 = mesh_->edges.vertex(e,0);
                 index_t v2 = mesh_->edges.vertex(e,1);
 		draw_attribute_as_tex_coord(e);
@@ -401,21 +405,72 @@ namespace GEO {
 
     void MeshGfx::draw_triangles_immediate_plain() {
         glupBegin(GLUP_TRIANGLES);
-        for(index_t t=0; t<mesh_->facets.nb(); ++t) {
-            draw_vertex(mesh_->facets.vertex(t,0));
-            draw_vertex(mesh_->facets.vertex(t,1));
-            draw_vertex(mesh_->facets.vertex(t,2));                        
-        }
+	// Optimized code for triangle surface with no attribute, single
+	// and double precision. Writes mesh data directly in GLUP buffers.
+	if(!do_animation_ && mesh_->vertices.dimension() >= 3) {
+	    GLUP::Context* context = (GLUP::Context*)(glupCurrentContext());
+	    GLUP::ImmediateState& state = context->immediate_state();
+	    GLUP::ImmediateBuffer& buffer =
+		state.buffer[GLUP::GLUP_VERTEX_ATTRIBUTE];
+	    if(mesh_->vertices.single_precision()) {
+		index_t t1 = 0;
+		while(t1 < mesh_->facets.nb()) {
+		    index_t t2 = t1 + (state.max_current_vertex()/3);
+		    t2 = std::min(t2, mesh_->facets.nb());
+		    GLfloat* current_vertex = buffer.data();
+		    for(index_t t=t1; t<t2; ++t) {
+			for(index_t lv=0; lv<3; ++lv) {
+			    index_t v = mesh_->facets.vertex(t,lv);
+			    const float* p = mesh_->vertices.
+				single_precision_point_ptr(v);
+			    current_vertex[0] = p[0];
+			    current_vertex[1] = p[1];
+			    current_vertex[2] = p[2];
+			    current_vertex[3] = 1.0f;
+			    current_vertex += 4;
+			}
+		    }
+		    state.set_current_vertex(3*(t2-t1));
+		    context->flush_immediate_buffers();
+		    t1 = t2;
+		}
+	    } else {
+		index_t t1 = 0;
+		while(t1 < mesh_->facets.nb()) {
+		    index_t t2 = t1 + (state.max_current_vertex()/3);
+		    t2 = std::min(t2, mesh_->facets.nb());
+		    GLfloat* current_vertex = buffer.data();
+		    for(index_t t=t1; t<t2; ++t) {
+			for(index_t lv=0; lv<3; ++lv) {
+			    index_t v = mesh_->facets.vertex(t,lv);
+			    const double* p = mesh_->vertices.point_ptr(v);
+			    current_vertex[0] = float(p[0]);
+			    current_vertex[1] = float(p[1]);
+			    current_vertex[2] = float(p[2]);
+			    current_vertex[3] = 1.0f;
+			    current_vertex += 4;
+			}
+		    }
+		    state.set_current_vertex(3*(t2-t1));
+		    context->flush_immediate_buffers();
+		    t1 = t2;
+		}
+	    }
+	} else {
+	    for(index_t t: mesh_->facets) {
+		draw_vertex(mesh_->facets.vertex(t,0));
+		draw_vertex(mesh_->facets.vertex(t,1));
+		draw_vertex(mesh_->facets.vertex(t,2));                        
+	    }
+	}
         glupEnd();
     }
 
     void MeshGfx::draw_triangles_immediate_attrib() {
         begin_attributes();
         glupBegin(GLUP_TRIANGLES);
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
-            for(
-                index_t c=mesh_->facets.corners_begin(f);
-                c<mesh_->facets.corners_end(f); ++c) {
+        for(index_t f: mesh_->facets) {
+            for(index_t c: mesh_->facets.corners(f)) {
                 index_t v=mesh_->facet_corners.vertex(c);
                 draw_surface_vertex_with_attribute(v,f,c);
             }
@@ -459,7 +514,7 @@ namespace GEO {
 
     void MeshGfx::draw_quads_immediate_plain() {
         glupBegin(GLUP_QUADS);
-        for(index_t q=0; q<mesh_->facets.nb(); ++q) {
+        for(index_t q: mesh_->facets) {
             draw_vertex(mesh_->facets.vertex(q,0));
             draw_vertex(mesh_->facets.vertex(q,1));
             draw_vertex(mesh_->facets.vertex(q,2));
@@ -471,10 +526,8 @@ namespace GEO {
     void MeshGfx::draw_quads_immediate_attrib() {
         begin_attributes();
         glupBegin(GLUP_QUADS);
-        for(index_t q=0; q<mesh_->facets.nb(); ++q) {
-            for(
-                index_t c=mesh_->facets.corners_begin(q);
-                c<mesh_->facets.corners_end(q); ++c) {
+        for(index_t q: mesh_->facets) {
+            for(index_t c: mesh_->facets.corners(q)) {
                 index_t v=mesh_->facet_corners.vertex(c);
                 draw_surface_vertex_with_attribute(v,q,c);
             }
@@ -575,7 +628,7 @@ namespace GEO {
 
     void MeshGfx::draw_triangles_and_quads_immediate_plain() {
         glupBegin(GLUP_TRIANGLES);
-        for(index_t t=0; t<mesh_->facets.nb(); ++t) {
+        for(index_t t: mesh_->facets) {
             if(mesh_->facets.nb_vertices(t) == 3) {
                 draw_vertex(mesh_->facets.vertex(t,0));
                 draw_vertex(mesh_->facets.vertex(t,1));
@@ -584,7 +637,7 @@ namespace GEO {
         }
         glupEnd();
         glupBegin(GLUP_QUADS);
-        for(index_t q=0; q<mesh_->facets.nb(); ++q) {
+        for(index_t q: mesh_->facets) {
             if(mesh_->facets.nb_vertices(q) == 4) {
                 draw_vertex(mesh_->facets.vertex(q,0));
                 draw_vertex(mesh_->facets.vertex(q,1));
@@ -598,11 +651,9 @@ namespace GEO {
     void MeshGfx::draw_triangles_and_quads_immediate_attrib() {
         begin_attributes();
         glupBegin(GLUP_TRIANGLES);
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
+        for(index_t f: mesh_->facets) {
             if(mesh_->facets.nb_vertices(f) == 3) {            
-                for(
-                    index_t c=mesh_->facets.corners_begin(f);
-                    c<mesh_->facets.corners_end(f); ++c) {
+                for(index_t c: mesh_->facets.corners(f)) {
                     index_t v=mesh_->facet_corners.vertex(c);
                     draw_surface_vertex_with_attribute(v,f,c);
                 }
@@ -610,11 +661,9 @@ namespace GEO {
         }
         glupEnd();
         glupBegin(GLUP_QUADS);
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
+        for(index_t f: mesh_->facets) {
             if(mesh_->facets.nb_vertices(f) == 4) {            
-                for(
-                    index_t c=mesh_->facets.corners_begin(f);
-                    c<mesh_->facets.corners_end(f); ++c) {
+                for(index_t c: mesh_->facets.corners(f)) {
                     index_t v=mesh_->facet_corners.vertex(c);
                     draw_surface_vertex_with_attribute(v,f,c);
                 }
@@ -657,7 +706,7 @@ namespace GEO {
             );
             set_GLUP_vertex_color_from_picking_id(object_picking_id_);
         }
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
+        for(index_t f: mesh_->facets) {
             if(picking_vertex_colors) {
                 set_GLUP_vertex_color_from_picking_id(f);      
             }
@@ -681,7 +730,7 @@ namespace GEO {
         begin_attributes();
         glupDisable(GLUP_DRAW_MESH);
         glupBegin(GLUP_TRIANGLES);
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
+        for(index_t f: mesh_->facets) {
             index_t c1 = mesh_->facets.corners_begin(f);
             index_t v1 = mesh_->facet_corners.vertex(c1);
             for(
@@ -739,10 +788,8 @@ namespace GEO {
         glupSetMeshWidth(GLUPint(mesh_width_));        
         glupSetColor4fv(GLUP_FRONT_AND_BACK_COLOR, mesh_color_);
         glupBegin(GLUP_LINES);
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
-            for(index_t c1=mesh_->facets.corners_begin(f);
-                c1 < mesh_->facets.corners_end(f); ++c1
-                ) {
+        for(index_t f: mesh_->facets) {
+            for(index_t c1: mesh_->facets.corners(f)) {
                 index_t c2 =
                     mesh_->facets.next_corner_around_facet(f,c1);
                 index_t v1 = mesh_->facet_corners.vertex(c1);
@@ -762,11 +809,8 @@ namespace GEO {
         glupSetColor4fv(GLUP_FRONT_COLOR, mesh_color_);
         glupSetMeshWidth(GLUPint(mesh_border_width_));
         glupBegin(GLUP_LINES);
-        for(index_t f=0; f<mesh_->facets.nb(); ++f) {
-            for(
-                index_t c1=mesh_->facets.corners_begin(f);
-                c1<mesh_->facets.corners_end(f); ++c1
-            ) {
+        for(index_t f: mesh_->facets) {
+            for(index_t c1: mesh_->facets.corners(f)) {
                 if(mesh_->facet_corners.adjacent_facet(c1) == NO_FACET) {
                     index_t v1 = mesh_->facet_corners.vertex(c1);
                     index_t c2 = mesh_->facets.next_corner_around_facet(f,c1);
@@ -821,19 +865,72 @@ namespace GEO {
 
     void MeshGfx::draw_tets_immediate_plain() {
         glupBegin(GLUP_TETRAHEDRA);
-        for(index_t t=0; t<mesh_->cells.nb(); ++t) {
-            draw_vertex(mesh_->cells.vertex(t,0));
-            draw_vertex(mesh_->cells.vertex(t,1));
-            draw_vertex(mesh_->cells.vertex(t,2));
-            draw_vertex(mesh_->cells.vertex(t,3));            
-        }
+	// Optimized code for tet mesh with no attribute, single
+	// and double precision. Writes mesh data directly in GLUP buffers.
+	if(!do_animation_ && mesh_->vertices.dimension() >= 3) {
+	    GLUP::Context* context = (GLUP::Context*)(glupCurrentContext());
+	    GLUP::ImmediateState& state = context->immediate_state();
+	    GLUP::ImmediateBuffer& buffer =
+		state.buffer[GLUP::GLUP_VERTEX_ATTRIBUTE];
+	    if(mesh_->vertices.single_precision()) {
+		index_t t1 = 0;
+		while(t1 < mesh_->cells.nb()) {
+		    index_t t2 = t1 + (state.max_current_vertex()/4);
+		    t2 = std::min(t2, mesh_->cells.nb());
+		    GLfloat* current_vertex = buffer.data();
+		    for(index_t t=t1; t<t2; ++t) {
+			for(index_t lv=0; lv<4; ++lv) {
+			    index_t v = mesh_->cells.vertex(t,lv);
+			    const float* p = mesh_->vertices.
+				single_precision_point_ptr(v);
+			    current_vertex[0] = p[0];
+			    current_vertex[1] = p[1];
+			    current_vertex[2] = p[2];
+			    current_vertex[3] = 1.0f;
+			    current_vertex += 4;
+			}
+		    }
+		    state.set_current_vertex(4*(t2-t1));
+		    context->flush_immediate_buffers();
+		    t1 = t2;
+		}
+	    } else {
+		index_t t1 = 0;
+		while(t1 < mesh_->cells.nb()) {
+		    index_t t2 = t1 + (state.max_current_vertex()/4);
+		    t2 = std::min(t2, mesh_->cells.nb());
+		    GLfloat* current_vertex = buffer.data();
+		    for(index_t t=t1; t<t2; ++t) {
+			for(index_t lv=0; lv<4; ++lv) {
+			    index_t v = mesh_->cells.vertex(t,lv);
+			    const double* p = mesh_->vertices.point_ptr(v);
+			    current_vertex[0] = float(p[0]);
+			    current_vertex[1] = float(p[1]);
+			    current_vertex[2] = float(p[2]);
+			    current_vertex[3] = 1.0f;
+			    current_vertex += 4;
+			}
+		    }
+		    state.set_current_vertex(4*(t2-t1));
+		    context->flush_immediate_buffers();
+		    t1 = t2;
+		}
+	    }
+	} else {	
+	    for(index_t t: mesh_->cells) {
+		draw_vertex(mesh_->cells.vertex(t,0));
+		draw_vertex(mesh_->cells.vertex(t,1));
+		draw_vertex(mesh_->cells.vertex(t,2));
+		draw_vertex(mesh_->cells.vertex(t,3));            
+	    }
+	}
         glupEnd();
     }
 
     void MeshGfx::draw_tets_immediate_attrib() {
         begin_attributes();
         glupBegin(GLUP_TETRAHEDRA);
-        for(index_t t=0; t<mesh_->cells.nb(); ++t) {
+        for(index_t t: mesh_->cells) {
             index_t v0 = mesh_->cells.vertex(t,0);
             index_t v1 = mesh_->cells.vertex(t,1);
             index_t v2 = mesh_->cells.vertex(t,2);
@@ -895,7 +992,7 @@ namespace GEO {
         for(index_t type=0; type<MESH_NB_CELL_TYPES; ++type) {
             has_cells[type] = false;
         }
-        for(index_t cell=0; cell<mesh_->cells.nb(); ++cell) {
+        for(index_t cell: mesh_->cells) {
             has_cells[mesh_->cells.type(cell)] = true;
         }
 
@@ -956,7 +1053,7 @@ namespace GEO {
         for(index_t type=0; type<MESH_NB_CELL_TYPES; ++type) {
             has_cells[type] = false;
         }
-        for(index_t cell=0; cell<mesh_->cells.nb(); ++cell) {
+        for(index_t cell: mesh_->cells) {
             has_cells[mesh_->cells.type(cell)] = true;
         }
         for(index_t type=MESH_TET; type < MESH_NB_CELL_TYPES; ++type) {
@@ -965,7 +1062,7 @@ namespace GEO {
             }
             glupSetColor4fv(GLUP_FRONT_AND_BACK_COLOR, cells_color_[type]);
             glupBegin(geogram_cell_to_glup[type]);
-            for(index_t cell=0; cell<mesh_->cells.nb(); ++cell) {
+            for(index_t cell: mesh_->cells) {
                 index_t this_cell_type = index_t(mesh_->cells.type(cell));
                 if(this_cell_type != type) {
                     continue;
@@ -983,7 +1080,7 @@ namespace GEO {
         for(index_t type=0; type<MESH_NB_CELL_TYPES; ++type) {
             has_cells[type] = false;
         }
-        for(index_t cell=0; cell<mesh_->cells.nb(); ++cell) {
+        for(index_t cell: mesh_->cells) {
             has_cells[mesh_->cells.type(cell)] = true;
         }
         begin_attributes();
@@ -992,7 +1089,7 @@ namespace GEO {
                 continue;
             }
             glupBegin(geogram_cell_to_glup[type]);
-            for(index_t cell=0; cell<mesh_->cells.nb(); ++cell) {
+            for(index_t cell: mesh_->cells) {
                 index_t this_cell_type = index_t(mesh_->cells.type(cell));
                 if(this_cell_type != type) {
                     continue;
@@ -1038,7 +1135,7 @@ namespace GEO {
         triangles_and_quads_ = true;
         quads_ = true;
         if(mesh_ != nullptr) {
-            for(index_t f = 0; f<mesh_->facets.nb(); ++f) {
+            for(index_t f: mesh_->facets) {
                 index_t nb = mesh_->facets.nb_vertices(f);
                 if(nb != 3 && nb != 4) {
                     triangles_and_quads_ = false;
@@ -1053,20 +1150,6 @@ namespace GEO {
     }
     
     void MeshGfx::set_GLUP_parameters() {
-
-        //   If there was no GLUP context when this
-        // MeshGfx was first used, then we assume
-        // that the client code is using OpenGL
-        // fixed functionality pipeline, therefore
-        // we do two things:
-        //   - create the GLUP context
-        //   - activate automatic synchronization with
-        //      OpenGL fixed state.
-        
-        if(glupCurrentContext() == nullptr) {
-            glupMakeCurrent(glupCreateContext());
-        }
-        
         if(show_mesh_) {
             glupEnable(GLUP_DRAW_MESH);
         } else {
@@ -1137,11 +1220,9 @@ namespace GEO {
             );
         } else {
 #ifdef GEO_GL_NO_DOUBLES
-	    // TODO: switch to immediate mode API in this case, as when
-	    // mesh is displayed with ES2 profile.
-            // Logger::warn("MeshGfx")
-            //     << "Double precision GL attributes not supported by this arch."
-            //     << std::endl;
+	    // Do nothing, because if a double attribute is bound,
+	    // then can_use_array_mode() returns 0, then we switch
+	    // to immediate mode.
 #else            
             GLsizei stride = GLsizei(
                 mesh_->vertices.dimension() * sizeof(double)
@@ -1448,11 +1529,9 @@ namespace GEO {
         case ReadOnlyScalarAttributeAdapter::ET_VEC2:
         case ReadOnlyScalarAttributeAdapter::ET_VEC3:                        
 #ifdef GEO_GL_NO_DOUBLES
-	    // TODO: switch to immediate mode API in this case, as when
-	    // mesh is displayed with ES2 profile.
-            // Logger::warn("MeshGfx")
-            //   << "Double precision GL attributes not supported by this arch."
-            //   << std::endl;
+	    // Do nothing, because if a double attribute is bound,
+	    // then can_use_array_mode() returns 0, then we switch
+	    // to immediate mode.
 #else            
             glVertexAttribPointer(
                 2, dimension, GL_DOUBLE, GL_FALSE, stride, offset

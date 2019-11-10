@@ -19,6 +19,7 @@ set(CMAKE_CXX_COMPILER "em++")
 set(CMAKE_AR "emar")
 set(CMAKE_RANLIB "emranlib")
 set(CMAKE_LINKER "emld")
+set(CMAKE_SKIP_RPATH TRUE)
 
 include(${EMSCRIPTEN_DIR}/cmake/Modules/Platform/Emscripten.cmake)
 
@@ -56,11 +57,20 @@ endif()
 # way add_flags() works may remove the second "-s" argument.
 # Note: TOTAL_MEMORY needs to be a multiple of 16M
 set(EM_COMMON_FLAGS
-  -s WASM=0    
+  -s WASM=0
   -s USE_GLFW=3
+# -s USE_WEBGL2=1 -DGEO_WEBGL2
   -s TOTAL_MEMORY=268435456
   -s EXPORTED_FUNCTIONS='["_main","_file_system_changed_callback"]'
   -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall"]'
+  -s FORCE_FILESYSTEM=1
+#  For now, multithreading is deactivated, because it seems that
+#  browser support is not there yet !!
+#  -s USE_PTHREADS=1
+#  -s PTHREAD_POOL_SIZE=4
+#  -s PTHREAD_HINT_NUM_CORES=1
+#  -s ASSERTIONS=1
+#  -s DEMANGLE_SUPPORT=1
 )
 set(EM_FLAGS_RELEASE -O3  ${EM_COMMON_FLAGS})
 set(EM_FLAGS_DEBUG -O2 -s ASSERTIONS=2 -s SAFE_HEAP=1 -g ${EM_COMMON_FLAGS})

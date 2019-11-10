@@ -60,10 +60,7 @@ namespace GEO {
         ) {
             return false;
         }
-        for(
-            index_t c = mesh_.facets.corners_begin(f);
-            c < mesh_.facets.corners_end(f); c++
-        ) {
+        for(index_t c: mesh_.facets.corners(f)) {
             index_t pc = mesh_.facets.prev_corner_around_facet(f, c);
             if(
                 mesh_.facet_corners.vertex(c) == v &&
@@ -91,10 +88,7 @@ namespace GEO {
         ) {
             return false;
         }
-        for(
-            index_t c = mesh_.facets.corners_begin(f);
-            c < mesh_.facets.corners_end(f); c++
-        ) {
+        for(index_t c: mesh_.facets.corners(f)) {
             if(
                 mesh_.facet_corners.vertex(c) == v &&
                 mesh_.facet_corners.adjacent_facet(c) == H.facet
@@ -136,10 +130,7 @@ namespace GEO {
         );
         index_t f = mesh_.facet_corners.adjacent_facet(H.corner);
         geo_assert(f != NO_FACET);
-        for(
-            index_t c = mesh_.facets.corners_begin(f);
-            c != mesh_.facets.corners_end(f); ++c
-        ) {
+        for(index_t c: mesh_.facets.corners(f)) {
             if(mesh_.facet_corners.vertex(c) == v) {
                 H.facet = f;
                 H.corner = c;

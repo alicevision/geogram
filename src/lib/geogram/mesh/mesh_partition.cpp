@@ -123,7 +123,7 @@ namespace {
         vector<index_t> new_index(M.facets.nb(), UNVISITED);
         std::stack<index_t> S;
         index_t new_cur_index = 0;
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             if(new_index[f] == UNVISITED) {
                 facet_ptr.push_back(new_cur_index);
                 new_index[f] = new_cur_index;
@@ -133,8 +133,7 @@ namespace {
             while(!S.empty()) {
                 index_t ftop = S.top();
                 S.pop();
-                for(index_t c = M.facets.corners_begin(ftop);
-                    c < M.facets.corners_end(ftop); ++c) {
+                for(index_t c: M.facets.corners(ftop)) {
                     index_t g = M.facet_corners.adjacent_facet(c);
                     if(g != NO_FACET && new_index[g] == UNVISITED) {
                         new_index[g] = new_cur_index;
@@ -167,7 +166,7 @@ namespace {
         vector<index_t> new_index(M.cells.nb(), UNVISITED);
         std::stack<index_t> S;
         index_t new_cur_index = 0;
-        for(index_t t = 0; t < M.cells.nb(); ++t) {
+        for(index_t t: M.cells) {
             if(new_index[t] == UNVISITED) {
                 tet_ptr.push_back(new_cur_index);
                 new_index[t] = new_cur_index;

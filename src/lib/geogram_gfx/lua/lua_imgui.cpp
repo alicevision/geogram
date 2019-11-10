@@ -478,12 +478,22 @@ namespace {
     }
 
     int wrapper_Text(lua_State* L) {
+	if(lua_gettop(L) < 1) {
+	    return luaL_error(
+		L, "'imgui.Text()' invalid number of arguments"
+	    );
+	}
 	const char* str = lua_tostring(L,1);
 	ImGui::Text("%s",str);
 	return 0;
     }
 
     int wrapper_SetTooltip(lua_State* L) {
+	if(lua_gettop(L) != 1) {
+	    return luaL_error(
+		L, "'imgui.SetTooltip()' invalid number of arguments"
+	    );
+	}
 	const char* str = lua_tostring(L,1);
 	ImGui::SetTooltip("%s",str);
 	return 0;
@@ -572,6 +582,22 @@ namespace {
 	return 1;
     }
 
+    int wrapper_SimpleButton(lua_State* L) {
+	if(lua_gettop(L) != 1) {
+	    return luaL_error(
+		L, "'imgui.SimpleButton()' invalid number of arguments"
+	    );
+	}
+	if(!lua_isstring(L,1)) {
+	    return luaL_error(
+		L, "'imgui.SimpleButton()' argument is not a string"
+	    );
+	}
+	const char* K = lua_tostring(L,1);
+	lua_pushboolean(L,ImGui::SimpleButton(K));
+	return 1;
+    }
+    
 }
 
 void init_lua_imgui(lua_State* L) {
@@ -668,6 +694,10 @@ void init_lua_imgui(lua_State* L) {
     lua_pushcfunction(L,wrapper_BeginTabItem);
     lua_settable(L,-3);
 
+    lua_pushliteral(L,"SimpleButton");
+    lua_pushcfunction(L,wrapper_SimpleButton);
+    lua_settable(L,-3);
+    
     lua_pop(L,1);
 }
 

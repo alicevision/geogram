@@ -45,7 +45,8 @@
 
 #include <geogram_gfx/gui/status_bar.h>
 #include <geogram_gfx/gui/application.h>
-#include <geogram_gfx/third_party/ImGui/imgui.h>
+#include <geogram_gfx/ImGui_ext/imgui_ext.h>
+#include <geogram_gfx/ImGui_ext/icon_font.h>
 #include <geogram/basic/string.h>
 
 namespace GEO {
@@ -55,6 +56,7 @@ namespace GEO {
         progress_ = false;
         canceled_ = false;
         nb_active_ = 0;
+	height_ = 0.0f;
     }
     
     void StatusBar::begin() {
@@ -90,7 +92,7 @@ namespace GEO {
 // "Cancel" button does not work for now under Android
 // (to be investigated...)
 #ifndef GEO_OS_ANDROID	    
-            if(ImGui::Button("cancel")) {
+            if(ImGui::SimpleButton(icon_UTF8("window-close"))) {
                 Progress::cancel();
             }
             ImGui::SameLine();
@@ -113,6 +115,7 @@ namespace GEO {
                 overlay.c_str()
             );
         }
+	height_ = ImGui::GetFrameHeight();
         ImGui::End();
     }
 

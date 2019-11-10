@@ -94,22 +94,19 @@ namespace {
 
 
         // Replace vertex indices for edges
-        for(index_t e = 0; e < M.edges.nb(); ++e) {
+        for(index_t e: M.edges) {
             M.edges.set_vertex(e, 0, old2new[M.edges.vertex(e,0)]);
             M.edges.set_vertex(e, 1, old2new[M.edges.vertex(e,1)]);            
         }
 
         // Replace vertex indices for facets
-        for(index_t c = 0; c < M.facet_corners.nb(); ++c) {
+        for(index_t c: M.facet_corners) {
             M.facet_corners.set_vertex(c, old2new[M.facet_corners.vertex(c)]);
         }
 
         // Replace vertex indices for cells
-        for(index_t ce = 0; ce < M.cells.nb(); ++ce) {
-            for(
-                index_t c=M.cells.corners_begin(ce);
-                c<M.cells.corners_end(ce); ++c
-            ) {
+        for(index_t ce: M.cells) {
+            for(index_t c: M.cells.corners(ce)) {
                 M.cell_corners.set_vertex(c, old2new[M.cell_corners.vertex(c)]);
             }
         } 
@@ -168,8 +165,7 @@ namespace {
     void normalize_facet_vertices_order(Mesh& M, index_t f) {
         index_t d = M.facets.nb_vertices(f);
         index_t c_min = M.facets.corners_begin(f);
-        for(
-            index_t c = M.facets.corners_begin(f) + 1;
+        for(index_t c = M.facets.corners_begin(f) + 1;
             c < M.facets.corners_end(f); ++c
         ) {
             if(M.facet_corners.vertex(c) < M.facet_corners.vertex(c_min)) {
@@ -300,10 +296,7 @@ namespace {
         
         // Find the first vertex that is different from
         // its predecessor around the facet.
-        for(
-            index_t c1=M.facets.corners_begin(f);
-            c1<M.facets.corners_end(f); ++c1
-        ){
+        for(index_t c1: M.facets.corners(f)) {
             index_t c2 = M.facets.next_corner_around_facet(f,c1);
             if(M.facet_corners.vertex(c1) != M.facet_corners.vertex(c2)) {
                 first_corner = c2;
@@ -371,13 +364,13 @@ namespace {
         if(check_duplicates) {
             // Reorder vertices around each facet to make
             // it easier to compare two facets.
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 normalize_facet_vertices_order(M, f);
             }
             // Indirect-sort the facets in lexicographic
             // order. 
             vector<index_t> f_sort(M.facets.nb());
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 f_sort[f] = f;
             }
             CompareFacets compare_facets(M);
@@ -415,7 +408,7 @@ namespace {
         // Now, we tag the degenerate facets as 'to be removed'. A
         // facet is degenerate if it is incident to the same vertex several
         // times.
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             if(
                 (remove_f.size() == 0 || remove_f[f] == 0) &&
                 facet_is_degenerate(M, f)
@@ -525,7 +518,7 @@ namespace {
         const index_t NON_MANIFOLD=index_t(-2);
 
         // Reset all facet-facet adjacencies.
-        for(index_t c=0; c<M.facet_corners.nb(); ++c) {
+        for(index_t c: M.facet_corners) {
             M.facet_corners.set_adjacent_facet(c,NO_FACET);
         }
 
@@ -547,7 +540,7 @@ namespace {
         }
 
         // Compute v2c and next_c_around_v
-        for(index_t c=0; c<M.facet_corners.nb(); ++c) {
+        for(index_t c: M.facet_corners) {
             index_t v = M.facet_corners.vertex(c);
             next_c_around_v[c] = v2c[v];
             v2c[v] = c;
@@ -556,23 +549,15 @@ namespace {
         // Compute f2c (only if M is not triangulated, 
         // because if M is triangulated, we have f2c(c) = c/3).
         if(!M.facets.are_simplices()) {
-            for(index_t f=0; f<M.facets.nb(); ++f) {
-                for(
-                    index_t c=M.facets.corners_begin(f); 
-                    c<M.facets.corners_end(f); 
-                    ++c
-                ) {
+            for(index_t f: M.facets) {
+                for(index_t c: M.facets.corners(f)) {
                     c2f[c]=f;
                 }
             }
         }
 
-        for(index_t f1=0; f1<M.facets.nb(); ++f1) {
-            for(
-                index_t c1=M.facets.corners_begin(f1);
-                c1<M.facets.corners_end(f1); ++c1
-            ) {
-
+        for(index_t f1: M.facets) {
+            for(index_t c1: M.facets.corners(f1)) {
                 if(M.facet_corners.adjacent_facet(c1) == NO_FACET) {
                     index_t adj_corner = NO_CORNER;
                     index_t v1=M.facet_corners.vertex(c1);
@@ -645,10 +630,7 @@ namespace {
         index_t c12 = M.facets.next_corner_around_facet(f1, c11);
         index_t v11 = M.facet_corners.vertex(c11);
         index_t v12 = M.facet_corners.vertex(c12);
-        for(
-            index_t c21 = M.facets.corners_begin(f2);
-            c21 < M.facets.corners_end(f2); ++c21
-        ) {
+        for(index_t c21: M.facets.corners(f2)) {
             index_t c22 = M.facets.next_corner_around_facet(f2, c21);
             index_t v21 = M.facet_corners.vertex(c21);
             index_t v22 = M.facet_corners.vertex(c22);
@@ -671,18 +653,12 @@ namespace {
     void repair_dissociate(
         Mesh& M, index_t f1, index_t f2
     ) {
-        for(
-            index_t c = M.facets.corners_begin(f1);
-            c != M.facets.corners_end(f1); ++c
-        ) {
+        for(index_t c: M.facets.corners(f1)) {
             if(M.facet_corners.adjacent_facet(c) == f2) {
                 M.facet_corners.set_adjacent_facet(c, NO_FACET);
             }
         }
-        for(
-            index_t c = M.facets.corners_begin(f2);
-            c != M.facets.corners_end(f2); ++c
-        ) {
+        for(index_t c: M.facets.corners(f2)) {
             if(M.facet_corners.adjacent_facet(c) == f1) {
                 M.facet_corners.set_adjacent_facet(c, NO_FACET);
             }
@@ -710,10 +686,7 @@ namespace {
     ) {
         index_t nb_plus = 0;
         index_t nb_minus = 0;
-        for(
-            index_t c = M.facets.corners_begin(f);
-            c < M.facets.corners_end(f); ++c
-        ) {
+        for(index_t c: M.facets.corners(f)) {
             index_t f2 = M.facet_corners.adjacent_facet(c);
             if(f2 != NO_FACET && visited[index_t(f2)]) {
                 signed_index_t ori = 
@@ -735,10 +708,7 @@ namespace {
             if(moebius_facets != nullptr) {
                 moebius_facets->resize(M.facets.nb(), 0);
                 (*moebius_facets)[f] = 1;
-                for(
-                    index_t c = M.facets.corners_begin(f);
-                    c < M.facets.corners_end(f); ++c
-                ) {
+                for(index_t c: M.facets.corners(f)) {
                     index_t f2 = M.facet_corners.adjacent_facet(c);
                     if(f2 != NO_FACET) {
                         (*moebius_facets)[f2] = 1;
@@ -747,10 +717,7 @@ namespace {
             }
             if(nb_plus > nb_minus) {
                 nb_minus = 0;
-                for(
-                    index_t c = M.facets.corners_begin(f);
-                    c < M.facets.corners_end(f); ++c
-                ) {
+                for(index_t c: M.facets.corners(f)) {
                     index_t f2 = M.facet_corners.adjacent_facet(c);
                     if(
                         f2 != NO_FACET && visited[f2] &&
@@ -761,10 +728,7 @@ namespace {
                 }
             } else {
                 nb_plus = 0;
-                for(
-                    index_t c = M.facets.corners_begin(f);
-                    c < M.facets.corners_end(f); ++c
-                ) {
+                for(index_t c: M.facets.corners(f)) {
                     index_t f2 = M.facet_corners.adjacent_facet(c);
                     if(
                         f2 != NO_FACET && visited[index_t(f2)] &&
@@ -788,10 +752,7 @@ namespace {
      * \return true if \p f is on the border of \p M, false otherwise
      */
     bool facet_is_on_border(Mesh& M, index_t f) {
-        for(
-            index_t c = M.facets.corners_begin(f);
-            c < M.facets.corners_end(f); ++c
-        ) {
+        for(index_t c: M.facets.corners(f)) {
             if(M.facet_corners.adjacent_facet(c) == NO_FACET) {
                 return true;
             }
@@ -819,18 +780,15 @@ namespace {
     ) {
         geo_assert(max_iter < 256);
         D.assign(M.facets.nb(), facet_distance_t(max_iter));
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             if(facet_is_on_border(M, f)) {
                 D[f] = facet_distance_t(0);
             }
         }
         for(signed_index_t i = 1; i < signed_index_t(max_iter); i++) {
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 if(D[f] == signed_index_t(max_iter)) {
-                    for(
-                        index_t c = M.facets.corners_begin(f);
-                        c < M.facets.corners_end(f); ++c
-                    ) {
+                    for(index_t c: M.facets.corners(f)) {
                         index_t g = M.facet_corners.adjacent_facet(c);
                         if(g != NO_FACET && D[g] == facet_distance_t(i - 1)) {
                             D[f] = facet_distance_t(i);
@@ -930,17 +888,14 @@ namespace {
         index_t moebius_count = 0;
         index_t nb_visited = 0;
         for(signed_index_t i = max_iter; i >= 0; i--) {
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 if(!visited[f] && D[f] == i) {
                     Q.push(f);
                     visited[f] = true;
                     nb_visited++;
                     while(!Q.empty()) {
                         index_t f1 = Q.pop();
-                        for(
-                            index_t c = M.facets.corners_begin(f1);
-                            c != M.facets.corners_end(f1); c++
-                        ) {
+                        for(index_t c: M.facets.corners(f1)) {
                             index_t f2 = M.facet_corners.adjacent_facet(c);
                             if(f2 != NO_FACET && !visited[f2]) {
                                 visited[f2] = true;
@@ -980,10 +935,7 @@ namespace {
     inline index_t find_corner(
         const Mesh& M, index_t f, index_t v
     ) {
-        for(
-            index_t c = M.facets.corners_begin(f);
-            c != M.facets.corners_end(f); ++c
-        ) {
+        for(index_t c: M.facets.corners(f)) {
             if(M.facet_corners.vertex(c) == v) {
                 return c;
             }
@@ -1003,11 +955,8 @@ namespace {
         // pushed back to M.vertices_.
         vector<double> new_vertices;
         index_t nb_vertices = M.vertices.nb();
-        for(index_t f = 0; f < M.facets.nb(); f++) {
-            for(
-                index_t c = M.facets.corners_begin(f);
-                c < M.facets.corners_end(f); ++c
-            ) {
+        for(index_t f: M.facets) {
+            for(index_t c: M.facets.corners(f)) {
                 if(!c_is_visited[c]) {
                     index_t cur_f = f;
                     index_t cur_c = c;
@@ -1164,22 +1113,16 @@ namespace GEO {
         do {
             changed = false;
             v_nb_incident.assign(M.vertices.nb(), 0);
-            for(index_t f = 0; f < M.facets.nb(); ++f) {
+            for(index_t f: M.facets) {
                 if(f_is_bad[f] == 0) {
-                    for(
-                        index_t c = M.facets.corners_begin(f);
-                        c < M.facets.corners_end(f); ++c
-                    ) {
+                    for(index_t c: M.facets.corners(f)) {
                         ++v_nb_incident[M.facet_corners.vertex(c)];
                     }
                 }
             }
-            for(index_t f = 0; f < M.facets.nb(); ++f) {
+            for(index_t f: M.facets) {
                 if(f_is_bad[f] == 0) {
-                    for(
-                        index_t c = M.facets.corners_begin(f);
-                        c < M.facets.corners_end(f); ++c
-                    ) {
+                    for(index_t c: M.facets.corners(f)) {
                         if(v_nb_incident[M.facet_corners.vertex(c)] == 1) {
                             f_is_bad[f] = 1;
                             changed = true;
@@ -1219,16 +1162,16 @@ namespace GEO {
         const Mesh& M, vector<index_t>& v_is_isolated
     ) {
         v_is_isolated.assign(M.vertices.nb(),1);
-        for(index_t e=0; e<M.edges.nb(); ++e) {
+        for(index_t e: M.edges) {
             v_is_isolated[M.edges.vertex(e,0)] = 0;
             v_is_isolated[M.edges.vertex(e,1)] = 0;            
         }
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             for(index_t lv=0; lv<M.facets.nb_vertices(f); ++lv) {
                 v_is_isolated[M.facets.vertex(f,lv)] = 0;
             }
         }
-        for(index_t c=0; c<M.cells.nb(); ++c) {
+        for(index_t c: M.cells) {
             for(index_t lv=0; lv<M.cells.nb_vertices(c); ++lv) {
                 v_is_isolated[M.cells.vertex(c,lv)] = 0;
             }
@@ -1239,7 +1182,7 @@ namespace GEO {
         const Mesh& M, vector<index_t>& f_is_degenerate
     ) {
         f_is_degenerate.resize(M.facets.nb());
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             f_is_degenerate[f] = facet_is_degenerate(M,f);
         }
     }

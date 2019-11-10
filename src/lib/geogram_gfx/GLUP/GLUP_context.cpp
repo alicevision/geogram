@@ -613,7 +613,7 @@ namespace GLUP {
         // the offsets of GLUP context state variables.
         // Note: it needs to use all the variables of the uniform state,
         // else, depending on the OpenGL driver / library,
-        // some variables may be optimized-out and glGetUnformIndices()
+        // some variables may be optimized-out and glGetUniformIndices()
         // returns GL_INVALID_INDEX (stupid !), this is why there is
         // this (weird) function
         //  create_vertex_program_that_uses_all_UBO_variables()        
@@ -813,7 +813,7 @@ namespace GLUP {
         glupGenVertexArrays(1,&immediate_state_.VAO());
         glupBindVertexArray(immediate_state_.VAO());
         
-        for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+        for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
             update_buffer_object(
                 immediate_state_.buffer[i].VBO(),
                 GL_ARRAY_BUFFER,
@@ -828,7 +828,7 @@ namespace GLUP {
 
     void Context::stream_immediate_buffers() {
 	if(immediate_state_.nb_vertices() == IMMEDIATE_BUFFER_SIZE) {
-	    for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+	    for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
 		if(
 		    immediate_state_.buffer[i].is_enabled() &&
 		    immediate_state_.buffer[i].VBO() != 0
@@ -842,7 +842,7 @@ namespace GLUP {
 		}
 	    }
 	} else {
-	    for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+	    for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
 		if(
 		    immediate_state_.buffer[i].is_enabled() &&
 		    immediate_state_.buffer[i].VBO() != 0
@@ -958,7 +958,7 @@ namespace GLUP {
             GLenum GL_primitive = primitive_info_[primitive].GL_primitive;
             n /= nb_vertices_per_GL_primitive(GL_primitive);
 
-            for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+            for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
                 if(immediate_state_.buffer[i].is_enabled()) {                
                     for(index_t j=0; j<n; ++j) {
                         glEnableVertexAttribArray(i*n+j);
@@ -966,7 +966,7 @@ namespace GLUP {
                 }
             }
         } else {
-            for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+            for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
                 if(immediate_state_.buffer[i].is_enabled()) {
                     glEnableVertexAttribArray(i);
                     
@@ -1012,7 +1012,7 @@ namespace GLUP {
             GLenum GL_primitive =
                 primitive_info_[immediate_state_.primitive()].GL_primitive;
             n /= nb_vertices_per_GL_primitive(GL_primitive);
-            for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+            for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
                 if(immediate_state_.buffer[i].is_enabled()) {
 		    for(index_t j=0; j<n; ++j) {
 			GEO_CHECK_GL();
@@ -1022,7 +1022,7 @@ namespace GLUP {
 		}
             }
         } else {
-            for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+            for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
                 if(immediate_state_.buffer[i].is_enabled()) {		
 		    GEO_CHECK_GL();                
 		    glDisableVertexAttribArray(i);
@@ -1516,7 +1516,7 @@ namespace GLUP {
                 primitive_info_[glup_primitive].VAO
             );
 	    GEO_CHECK_GL();    			
-            for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+            for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
                 glBindBuffer(GL_ARRAY_BUFFER,immediate_state_.buffer[i].VBO());
 		GEO_CHECK_GL();    					
                 for(index_t j=0; j<n; ++j) {
@@ -1829,7 +1829,7 @@ namespace GLUP {
     }
 
     void Context::bind_immediate_state_buffers_to_VAO() {
-        for(index_t i=0; i<immediate_state_.buffer.size(); ++i) {
+        for(index_t i=0; i<ImmediateState::NB_IMMEDIATE_BUFFERS; ++i) {
             glBindBuffer(
                 GL_ARRAY_BUFFER,
                 immediate_state_.buffer[i].VBO()

@@ -433,7 +433,7 @@ namespace {
 	 * \brief Copies u,v coordinates from OpenNL solver to the mesh.
 	 */
 	void solver_to_mesh() {
-	    for(index_t i=0; i<mesh_.vertices.nb(); ++i) {
+	    for(index_t i: mesh_.vertices) {
 		double u = spectral_ ? nlMultiGetVariable(2 * i    ,eigen_)
 		                     : nlGetVariable(2 * i    );
 		double v = spectral_ ? nlMultiGetVariable(2 * i + 1,eigen_)
@@ -500,8 +500,6 @@ namespace {
 	 */
 	void project() {
 	    // Get bbox
-	    unsigned int i;
-	    
 	    double xmin =  1e30;
 	    double ymin =  1e30;
 	    double zmin =  1e30;
@@ -509,7 +507,7 @@ namespace {
 	    double ymax = -1e30;
 	    double zmax = -1e30;
 	    
-	    for(i=0; i<mesh_.vertices.nb(); i++) {
+	    for(index_t i: mesh_.vertices) {
 		const vec3& p = Geom::mesh_vertex(mesh_,i);
 		xmin = std::min(p.x, xmin);
 		ymin = std::min(p.y, ymin);
@@ -559,7 +557,7 @@ namespace {
 	    double  umin = 1e30;
 	    double  umax = -1e30;
 	    
-	    for(i=0; i<mesh_.vertices.nb(); i++) {
+	    for(index_t i: mesh_.vertices) {
 		const vec3& p = Geom::mesh_vertex(mesh_,i);
 		double u = dot(p,V1);
 		double v = dot(p,V2);

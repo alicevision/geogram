@@ -71,10 +71,8 @@ namespace GEO {
         std::vector<bool> is_required;
         if(mode & MESH_DECIMATE_KEEP_B) {
             is_required.assign(M.vertices.nb(), false);
-            for(index_t f = 0; f < M.facets.nb(); ++f) {
-                for(index_t c = M.facets.corners_begin(f);
-                    c < M.facets.corners_end(f); ++c
-                ) {
+            for(index_t f : M.facets) {
+                for(index_t c : M.facets.corners(f)) {
                     if(M.facet_corners.adjacent_facet(c) == NO_FACET) {
                         is_required[M.facet_corners.vertex(c)] = true;
                     }
@@ -83,7 +81,7 @@ namespace GEO {
         }
 
         if(vertices_flags != nullptr) {
-            for(index_t v = 0; v < M.vertices.nb(); ++v) {
+            for(index_t v: M.vertices) {
                 if(vertices_flags[v] != 0) {
                     is_required[v] = true;
                 }
@@ -91,7 +89,7 @@ namespace GEO {
         }
 
         vector<double> new_points(M.vertices.nb() * 3);
-        for(index_t v = 0; v < M.vertices.nb(); ++v) {
+        for(index_t v: M.vertices) {
             if(is_required.size() != 0 && is_required[v]) {
                 double* p = M.vertices.point_ptr(v);
                 for(coord_index_t c = 0; c < 3; ++c) {
@@ -122,7 +120,7 @@ namespace GEO {
             << M.vertices.nb() - nb_new_vertices
             << " vertices" << std::endl;
 
-        for(index_t c = 0; c < M.facet_corners.nb(); c++) {
+        for(index_t c: M.facet_corners) {
             M.facet_corners.set_vertex(c, old2new[M.facet_corners.vertex(c)]);
         }
 
@@ -130,7 +128,7 @@ namespace GEO {
         new_points.assign(M.vertices.dimension() * M.vertices.nb(), 0.0);
         vector<index_t> new_points_count(M.vertices.nb(), 0);
 
-        for(index_t v = 0; v < M.vertices.nb(); ++v) {
+        for(index_t v: M.vertices) {
             index_t w = old2new[v];
             for(coord_index_t c = 0; c < M.vertices.dimension(); ++c) {
                 new_points[w * M.vertices.dimension() + c] +=
@@ -139,7 +137,7 @@ namespace GEO {
             new_points_count[w]++;
         }
 
-        for(index_t w = 0; w < M.vertices.nb(); ++w) {
+        for(index_t w: M.vertices) {
             double s = double(new_points_count[w]);
             if(s != 0.0) {
                 s = 1.0 / s;

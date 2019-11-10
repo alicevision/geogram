@@ -92,14 +92,21 @@ namespace GEO {
             return;
         }
 
-        // previously: const GLint internal_format = GL_LUMINANCE_FLOAT32_ATI;
-        // Now deprecated, we use "red-only" texture format with floats
-#ifdef GEO_OS_EMSCRIPTEN
-        const GLint internal_format = GL_RGBA;
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_ANDROID)
+	// GL_R16F gives a different result (stripes) on Emscripten
+	// Note: does not work on Android for now.
+#  if defined(GEO_OS_EMSCRIPTEN) && !defined(GEO_WEBGL2)
+	const GLint internal_format = GL_RGBA;	
+#  else	
+	const GLint internal_format = GL_R32F;
+#  endif	
 #else
-        const GLint internal_format = GL_R32F;
-#endif       
-        
+	// Note: I do not know what GL_R16 corresponds to internally,
+	// it is different from GL_R16F and GL_R16I and GL_R16UI
+	// (different behavior when I use them).
+        const GLint internal_format = GL_R16; 
+#endif
+	
         if(!blur_1_.initialize(
 	       width(), height(), false, internal_format
 	   )

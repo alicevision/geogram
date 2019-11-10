@@ -40,6 +40,14 @@ add_library(geogram ${SOURCES} $<TARGET_OBJECTS:geogram_third_party>)
 # https://stackoverflow.com/questions/26243169/cmake-target-include-directories-meaning-of-scope
 target_include_directories(geogram PUBLIC ${GEOGRAM_PATH}/src/lib) 
 
+if(ANDROID)
+  target_include_directories(geogram PRIVATE
+    ${ANDROID_NDK}/sources/android/native_app_glue
+  )
+  message(STATUS "building for Android")
+endif()  
+
+
 set_target_properties(geogram PROPERTIES
                       VERSION ${VORPALINE_VERSION}
                       SOVERSION ${VORPALINE_VERSION_MAJOR}

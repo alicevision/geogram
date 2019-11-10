@@ -79,9 +79,7 @@ namespace GEO {
 
 	for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 	    index_t f = chart.facets[ff];
-	    for(
-		index_t c=chart.mesh.facets.corners_begin(f);
-		c < chart.mesh.facets.corners_end(f); ++c) {
+	    for(index_t c: chart.mesh.facets.corners(f)) {
 		if(GEO::Numeric::is_nan(tex_coord[2*c]) ||
 		   GEO::Numeric::is_nan(tex_coord[2*c+1])) {
 		    if(verbose_) {
@@ -155,14 +153,18 @@ namespace GEO {
 	Chart& chart
     ) {
 	Attribute<double> tex_coord;
-	tex_coord.bind_if_is_defined(chart.mesh.facet_corners.attributes(), "tex_coord");
+	tex_coord.bind_if_is_defined(
+	    chart.mesh.facet_corners.attributes(), "tex_coord"
+	);
 	geo_assert(tex_coord.is_bound() && tex_coord.dimension() == 2);
 
         // Compute largest facet area.
         double max_area = 0;
 	for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 	    index_t f = chart.facets[ff];
-            max_area = std::max(GEO::Geom::mesh_facet_area(chart.mesh,f), max_area);
+            max_area = std::max(
+		GEO::Geom::mesh_facet_area(chart.mesh,f), max_area
+	    );
         }
 
         // Ignore facets smaller than 1% of the largest facet.
@@ -191,7 +193,9 @@ namespace GEO {
 
     void ParamValidator::compute_fill_and_overlap_ratio(Chart& chart) {
 	Attribute<double> tex_coord;
-	tex_coord.bind_if_is_defined(chart.mesh.facet_corners.attributes(), "tex_coord");
+	tex_coord.bind_if_is_defined(
+	    chart.mesh.facet_corners.attributes(), "tex_coord"
+	);
 	geo_assert(tex_coord.is_bound() && tex_coord.dimension() == 2);
         begin_rasterizer(chart,tex_coord);
 	for(index_t ff=0; ff<chart.facets.size(); ++ff) {

@@ -485,7 +485,7 @@ namespace GEO {
             mesh_->vertices.attributes(), "weight"
         );
         
-        for(index_t t = 0; t < mesh_->facets.nb(); ++t) {
+        for(index_t t: mesh_->facets) {
             double tri_mass = GEO::Geom::triangle_area(
                 vec3(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 0))),
 		vec3(mesh_->vertices.point_ptr(mesh_->facets.vertex(t, 1))),

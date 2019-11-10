@@ -86,10 +86,7 @@ namespace {
 	    LSN.begin();
 	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 		index_t f=chart.facets[ff];
-		for(
-		    index_t c=M.facets.corners_begin(f);
-		    c < M.facets.corners_end(f); ++c
-		) {
+		for(index_t c: M.facets.corners(f)) {
 		    index_t v = M.facet_corners.vertex(c);
 		    LSN.add_point(vec3(M.vertices.point_ptr(v)));		
 		}
@@ -104,10 +101,7 @@ namespace {
 
 	for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 	    index_t f=chart.facets[ff];
-	    for(
-		index_t c=M.facets.corners_begin(f);
-		c < M.facets.corners_end(f); ++c
-	    ) {
+	    for(index_t c: M.facets.corners(f)) {
 		index_t v = M.facet_corners.vertex(c);
 		vec3 p(M.vertices.point_ptr(v));
 		p -= center;
@@ -143,7 +137,7 @@ namespace {
 	    chart_tex_coord_.create_vector_attribute(
 		chart_as_mesh_.vertices.attributes(), "tex_coord", 2
 	    );
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+	    for(index_t v: mesh_.vertices) {
 		vertex_id_[v] = NO_VERTEX;
 	    }
 	    chart_parameterizer_ = PARAM_ABF;
@@ -182,7 +176,7 @@ namespace {
 	    index_t total_f = mesh_.facets.nb();
 	    index_t param_f = 0;
 	    segment_mesh();
-	    for(index_t f=0; f<mesh_.facets.nb(); ++f) {
+	    for(index_t f: mesh_.facets) {
 		while(chart_[f] >= chart_queue_.size()) {
 		    chart_queue_.push_back(Chart(mesh_, chart_[f]));
 		}
@@ -271,8 +265,7 @@ namespace {
 	    index_t cur_vertex = 0;
 	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 		index_t f = chart.facets[ff];
-		for(index_t c=chart.mesh.facets.corners_begin(f);
-		    c < chart.mesh.facets.corners_end(f); ++c) {
+		for(index_t c: chart.mesh.facets.corners(f)) {
 		    index_t v = chart.mesh.facet_corners.vertex(c);
 		    if(vertex_id_[v] == NO_VERTEX) {
 			chart_as_mesh_.vertices.create_vertex(
@@ -330,9 +323,7 @@ namespace {
 	    // Copy tex coords
 	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 		index_t f = chart.facets[ff];
-		for(index_t c=chart.mesh.facets.corners_begin(f);
-		    c < chart.mesh.facets.corners_end(f); ++c
-		) {
+		for(index_t c: chart.mesh.facets.corners(f)) {
 		    index_t v = vertex_id_[chart.mesh.facet_corners.vertex(c)];
 			tex_coord_[2*c] = chart_tex_coord_[2*v];
 			tex_coord_[2*c+1] = chart_tex_coord_[2*v+1];
@@ -342,8 +333,7 @@ namespace {
 	    // Reset vertex ids
 	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 		index_t f = chart.facets[ff];
-		for(index_t c=chart.mesh.facets.corners_begin(f);
-		    c < chart.mesh.facets.corners_end(f); ++c) {
+		for(index_t c: chart.mesh.facets.corners(f)) {
 		    vertex_id_[chart.mesh.facet_corners.vertex(c)] = NO_VERTEX;
 		}
 	    }
@@ -352,11 +342,11 @@ namespace {
 	}
 
 	void segment_mesh() {
-	    for(index_t f=0; f<mesh_.facets.nb(); ++f) {
+	    for(index_t f: mesh_.facets) {
 		chart_[f] = index_t(-1);
 	    }
 	    nb_charts_ = 0;
-	    for(index_t f=0; f<mesh_.facets.nb(); ++f) {
+	    for(index_t f: mesh_.facets) {
 		std::stack<index_t> S;
 		if(chart_[f] == index_t(-1)) {
 		    chart_[f] = nb_charts_;
@@ -364,10 +354,7 @@ namespace {
 		    do {
 			index_t cur_f = S.top();
 			S.pop();
-			for(
-			    index_t c=mesh_.facets.corners_begin(cur_f);
-			    c<mesh_.facets.corners_end(cur_f); ++c
-			) {
+			for(index_t c: mesh_.facets.corners(cur_f)) {
 			    index_t f2=mesh_.facet_corners.adjacent_facet(c);
 			    if(
 				f2 != NO_FACET &&

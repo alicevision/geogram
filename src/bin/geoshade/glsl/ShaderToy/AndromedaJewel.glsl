@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/4sVfWR
+
 #define pi 3.14159265359
 //this noise stuff is from iq thanks
 float hash (vec2 v) {

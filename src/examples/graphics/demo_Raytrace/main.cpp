@@ -63,12 +63,17 @@ namespace {
 
 // Some phones (OpenGL ES) only support GL_RGBA as
 // internal format and also *image* format.
-#ifdef GEO_OS_ANDROID
+#if defined(GEO_OS_ANDROID) || defined(GEO_OS_EMSCRIPTEN)
     const GLenum image_format = GL_RGBA;
 #else
     const GLenum image_format = GL_RGB;
 #endif
 
+#if defined(GEO_OS_EMSCRIPTEN) && !defined(GEO_WEBGL2)
+   const GLenum internal_image_format = GL_RGBA;
+#else   
+   const GLenum internal_image_format = GL_RGBA8;
+#endif
     
     /**
      * \brief An application that demonstrates both
@@ -127,7 +132,9 @@ namespace {
 	    scene_changed_ = true;
 	    set_region_of_interest(-1.0, -1.0, -1.0, 1.0, 1.0, 1.0);
 
-	    viewer_properties_visible_ = false;
+	    FOR(i,4) {
+		my_viewport_[i] = 0.0;
+	    }
         }
 
         /**
@@ -143,7 +150,9 @@ namespace {
 	void GL_terminate() override {
             if(texture_ != 0) {
                 glDeleteTextures(1,&texture_);
+		texture_ = 0;
             }
+	    SimpleApplication::GL_terminate();
 	}
 
 	/**
@@ -179,7 +188,7 @@ namespace {
 		glTexImage2D(
 		    GL_TEXTURE_2D,
 		    0,
-		    GL_RGBA, 
+		    internal_image_format,
 		    GLsizei(camera_.image_width()),
 		    GLsizei(camera_.image_height()),
 		    0,
@@ -230,8 +239,8 @@ namespace {
 	    double x = double(X);
 	    double y = double(Y);
 	    vec4 nnear(
-		2.0*((x - viewport_[0]) / viewport_[2]-0.5),
-		2.0*((y - viewport_[1]) / viewport_[3]-0.5),
+		2.0*((x - my_viewport_[0]) / my_viewport_[2]-0.5),
+		2.0*((y - my_viewport_[1]) / my_viewport_[3]-0.5),
 		-1.0,
 		1.0
 	    );
@@ -252,10 +261,10 @@ namespace {
 	    GLint viewport[4];
 	    glGetIntegerv(GL_VIEWPORT, viewport);
 	    FOR(i,4) {
-		if(viewport_[i] != double(viewport[i])) {
+		if(my_viewport_[i] != double(viewport[i])) {
 		    scene_changed_ = true;
 		}
-		viewport_[i] = double(viewport[i]);
+		my_viewport_[i] = double(viewport[i]);
 	    }
 	
 	    mat4 modelview;
@@ -335,7 +344,6 @@ namespace {
          *  is meant to initialize the graphic objects used by the application.
          */
         void GL_initialize() override {
-	    GEO_CHECK_GL();
             SimpleApplication::GL_initialize();
             glGenTextures(1, &texture_);
 	    GEO_CHECK_GL();
@@ -376,6 +384,12 @@ namespace {
 		ImGui::EndMenu();
 	    }
 	}
+
+	void geogram_initialize(int argc, char** argv) override {
+	    SimpleApplication::geogram_initialize(argc, argv);
+	    viewer_properties_visible_ = false;
+	    object_properties_visible_ = true;
+	}
 	
     private:
 	Camera camera_;
@@ -386,7 +400,7 @@ namespace {
 	double total_time_;
 	index_t frames_;
 
-	double viewport_[4];
+	double my_viewport_[4];
 	mat4 inv_project_modelview_;
 	vec3 L_; /**< light vector in object space. */
     };

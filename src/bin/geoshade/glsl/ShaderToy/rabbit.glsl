@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/XlccWH
+
 float time;
 
 // polynomial smooth min (k = 0.1) (from IQ)

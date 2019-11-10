@@ -56,75 +56,6 @@
 /* requiring CUDA to be installed in the system.          */
 /**********************************************************/
 
-struct cudaDeviceProp {
-    char name[256];
-    size_t totalGlobalMem;
-    size_t sharedMemPerBlock;
-    int regsPerBlock;
-    int warpSize;
-    size_t memPitch;
-    int maxThreadsPerBlock;
-    int maxThreadsDim[3];
-    int maxGridSize[3];
-    int clockRate;
-    size_t totalConstMem;
-    int major;
-    int minor;
-    size_t textureAlignment;
-    size_t texturePitchAlignment;
-    int deviceOverlap;
-    int multiProcessorCount;
-    int kernelExecTimeoutEnabled;
-    int integrated;
-    int canMapHostMemory;
-    int computeMode;
-    int maxTexture1D;
-    int maxTexture1DMipmap;
-    int maxTexture1DLinear;
-    int maxTexture2D[2];
-    int maxTexture2DMipmap[2];
-    int maxTexture2DLinear[3];
-    int maxTexture2DGather[2];
-    int maxTexture3D[3];
-    int maxTexture3DAlt[3];
-    int maxTextureCubemap;
-    int maxTexture1DLayered[2];
-    int maxTexture2DLayered[3];
-    int maxTextureCubemapLayered[2];
-    int maxSurface1D;
-    int maxSurface2D[2];
-    int maxSurface3D[3];
-    int maxSurface1DLayered[2];
-    int maxSurface2DLayered[3];
-    int maxSurfaceCubemap;
-    int maxSurfaceCubemapLayered[2];
-    size_t surfaceAlignment;
-    int concurrentKernels;
-    int ECCEnabled;
-    int pciBusID;
-    int pciDeviceID;
-    int pciDomainID;
-    int tccDriver;
-    int asyncEngineCount;
-    int unifiedAddressing;
-    int memoryClockRate;
-    int memoryBusWidth;
-    int l2CacheSize;
-    int maxThreadsPerMultiProcessor;
-    int streamPrioritiesSupported;
-    int globalL1CacheSupported;
-    int localL1CacheSupported;
-    size_t sharedMemPerMultiprocessor;
-    int regsPerMultiprocessor;
-    int managedMemSupported;
-    int isMultiGpuBoard;
-    int multiGpuBoardGroupID;
-    int singleToDoublePrecisionPerfRatio;
-    int pageableMemoryAccess;
-    int concurrentManagedAccess;
-    char padding[1024]; /* More room for future evolutions */
-};
-
 enum cudaComputeMode {
     cudaComputeModeDefault          = 0, 
     cudaComputeModeExclusive        = 1, 
@@ -140,6 +71,127 @@ enum cudaMemcpyKind {
     cudaMemcpyDefault             =   4  
 };
 
+enum cudaDeviceAttribute {
+    CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK = 1,
+    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2,      
+    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y = 3,      
+    CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z = 4,      
+    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X = 5,       
+    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y = 6,       
+    CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z = 7,       
+    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK = 8,  
+    CU_DEVICE_ATTRIBUTE_SHARED_MEMORY_PER_BLOCK = 8,      
+    CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY = 9,        
+    CU_DEVICE_ATTRIBUTE_WARP_SIZE = 10,                   
+    CU_DEVICE_ATTRIBUTE_MAX_PITCH = 11,                   
+    CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK = 12,     
+    CU_DEVICE_ATTRIBUTE_REGISTERS_PER_BLOCK = 12,         
+    CU_DEVICE_ATTRIBUTE_CLOCK_RATE = 13,                  
+    CU_DEVICE_ATTRIBUTE_TEXTURE_ALIGNMENT = 14,           
+    CU_DEVICE_ATTRIBUTE_GPU_OVERLAP = 15,                 
+    CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16,        
+    CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT = 17,         
+    CU_DEVICE_ATTRIBUTE_INTEGRATED = 18,                  
+    CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY = 19,         
+    CU_DEVICE_ATTRIBUTE_COMPUTE_MODE = 20,                
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_WIDTH = 21,     
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_WIDTH = 22,     
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_HEIGHT = 23,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_WIDTH = 24,     
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_HEIGHT = 25,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_DEPTH = 26,           
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_LAYERED_WIDTH = 27,   
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_LAYERED_HEIGHT = 28,  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_LAYERED_LAYERS = 29,  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_ARRAY_WIDTH = 27,     
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_ARRAY_HEIGHT = 28,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_ARRAY_NUMSLICES = 29, 
+    CU_DEVICE_ATTRIBUTE_SURFACE_ALIGNMENT = 30,                 
+    CU_DEVICE_ATTRIBUTE_CONCURRENT_KERNELS = 31,                
+    CU_DEVICE_ATTRIBUTE_ECC_ENABLED = 32,                       
+    CU_DEVICE_ATTRIBUTE_PCI_BUS_ID = 33,                        
+    CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 34,                     
+    CU_DEVICE_ATTRIBUTE_TCC_DRIVER = 35,                        
+    CU_DEVICE_ATTRIBUTE_MEMORY_CLOCK_RATE = 36,                 
+    CU_DEVICE_ATTRIBUTE_GLOBAL_MEMORY_BUS_WIDTH = 37,           
+    CU_DEVICE_ATTRIBUTE_L2_CACHE_SIZE = 38,                     
+    CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR = 39,    
+    CU_DEVICE_ATTRIBUTE_ASYNC_ENGINE_COUNT = 40,                
+    CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING = 41,                
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_LAYERED_WIDTH = 42,   
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_LAYERED_LAYERS = 43,  
+    CU_DEVICE_ATTRIBUTE_CAN_TEX2D_GATHER = 44,                  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_GATHER_WIDTH = 45,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_GATHER_HEIGHT = 46,   
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_WIDTH_ALTERNATE = 47, 
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_HEIGHT_ALTERNATE = 48,
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_DEPTH_ALTERNATE = 49, 
+    CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID = 50,                     
+    CU_DEVICE_ATTRIBUTE_TEXTURE_PITCH_ALIGNMENT = 51,           
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURECUBEMAP_WIDTH = 52,      
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURECUBEMAP_LAYERED_WIDTH = 53,  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURECUBEMAP_LAYERED_LAYERS = 54, 
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE1D_WIDTH = 55,           
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE2D_WIDTH = 56,           
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE2D_HEIGHT = 57,          
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE3D_WIDTH = 58,           
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE3D_HEIGHT = 59,          
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE3D_DEPTH = 60,           
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE1D_LAYERED_WIDTH = 61,   
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE1D_LAYERED_LAYERS = 62,  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE2D_LAYERED_WIDTH = 63,   
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE2D_LAYERED_HEIGHT = 64,  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE2D_LAYERED_LAYERS = 65,  
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACECUBEMAP_WIDTH = 66,      
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACECUBEMAP_LAYERED_WIDTH = 67, 
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACECUBEMAP_LAYERED_LAYERS = 68,
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_LINEAR_WIDTH = 69,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_LINEAR_WIDTH = 70,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_LINEAR_HEIGHT = 71,   
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_LINEAR_PITCH = 72,    
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_MIPMAPPED_WIDTH = 73, 
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_MIPMAPPED_HEIGHT = 74,
+    CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75,          
+    CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76,          
+    CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_MIPMAPPED_WIDTH = 77, 
+    CU_DEVICE_ATTRIBUTE_STREAM_PRIORITIES_SUPPORTED = 78,       
+    CU_DEVICE_ATTRIBUTE_GLOBAL_L1_CACHE_SUPPORTED = 79,         
+    CU_DEVICE_ATTRIBUTE_LOCAL_L1_CACHE_SUPPORTED = 80,          
+    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR = 81,
+    CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR = 82,  
+    CU_DEVICE_ATTRIBUTE_MANAGED_MEMORY = 83,                  
+    CU_DEVICE_ATTRIBUTE_MULTI_GPU_BOARD = 84,                 
+    CU_DEVICE_ATTRIBUTE_MULTI_GPU_BOARD_GROUP_ID = 85,        
+    CU_DEVICE_ATTRIBUTE_HOST_NATIVE_ATOMIC_SUPPORTED = 86,    
+    CU_DEVICE_ATTRIBUTE_SINGLE_TO_DOUBLE_PRECISION_PERF_RATIO = 87, 
+    CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS = 88,            
+    CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS = 89,         
+    CU_DEVICE_ATTRIBUTE_COMPUTE_PREEMPTION_SUPPORTED = 90,      
+    CU_DEVICE_ATTRIBUTE_CAN_USE_HOST_POINTER_FOR_REGISTERED_MEM = 91, 
+    CU_DEVICE_ATTRIBUTE_CAN_USE_STREAM_MEM_OPS = 92,          
+    CU_DEVICE_ATTRIBUTE_CAN_USE_64_BIT_STREAM_MEM_OPS = 93,   
+    CU_DEVICE_ATTRIBUTE_CAN_USE_STREAM_WAIT_VALUE_NOR = 94,   
+    CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH = 95,              
+    CU_DEVICE_ATTRIBUTE_COOPERATIVE_MULTI_DEVICE_LAUNCH = 96, 
+    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN = 97,
+    CU_DEVICE_ATTRIBUTE_CAN_FLUSH_REMOTE_WRITES = 98,          
+    CU_DEVICE_ATTRIBUTE_HOST_REGISTER_SUPPORTED = 99,          
+    CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = 100,
+    CU_DEVICE_ATTRIBUTE_DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = 101,
+    CU_DEVICE_ATTRIBUTE_MAX
+};
+
+/*
+ * We use cudaGetDeviceProperties() to get the name of the device.
+ * There should be cudaDeviceGetName() but it is not always there.
+ * We do not use the other device properties because the order of
+ * the fields change in the different CUDA versions.
+ */
+struct cudaDeviceProp {
+    char name[256]; 
+    char buff[4096];
+};
+
 typedef int cudaError_t;
 
 typedef cudaError_t (*FUNPTR_cudaDriverGetVersion)(int* version);
@@ -147,6 +199,9 @@ typedef cudaError_t (*FUNPTR_cudaRuntimeGetVersion)(int* version);
 typedef cudaError_t (*FUNPTR_cudaGetDeviceCount)(int* device_count);
 typedef cudaError_t (*FUNPTR_cudaGetDeviceProperties)(
     struct cudaDeviceProp *props, int device
+);
+typedef cudaError_t (*FUNPTR_cudaDeviceGetAttribute)(
+    int* attrib_value, enum cudaDeviceAttribute attrib, int device
 );
 typedef cudaError_t (*FUNPTR_cudaDeviceReset)(void);
 typedef cudaError_t (*FUNPTR_cudaMalloc)(void **devPtr, size_t size);
@@ -446,7 +501,8 @@ typedef struct {
     FUNPTR_cudaDriverGetVersion cudaDriverGetVersion;
     FUNPTR_cudaRuntimeGetVersion cudaRuntimeGetVersion;    
     FUNPTR_cudaGetDeviceCount cudaGetDeviceCount;
-    FUNPTR_cudaGetDeviceProperties cudaGetDeviceProperties;
+    FUNPTR_cudaGetDeviceProperties cudaGetDeviceProperties;    
+    FUNPTR_cudaDeviceGetAttribute cudaDeviceGetAttribute;
     FUNPTR_cudaDeviceReset cudaDeviceReset;
     FUNPTR_cudaMalloc cudaMalloc;
     FUNPTR_cudaFree cudaFree;
@@ -504,7 +560,8 @@ NLboolean nlExtensionIsInitialized_CUDA() {
 	CUDA()->cudaDriverGetVersion == NULL ||
 	CUDA()->cudaRuntimeGetVersion == NULL ||	
 	CUDA()->cudaGetDeviceCount == NULL ||
-	CUDA()->cudaGetDeviceProperties == NULL ||
+	CUDA()->cudaGetDeviceProperties == NULL ||	
+	CUDA()->cudaDeviceGetAttribute == NULL ||
 	CUDA()->cudaDeviceReset == NULL ||
 	CUDA()->cudaMalloc == NULL ||
 	CUDA()->cudaFree == NULL ||
@@ -564,7 +621,8 @@ static void nlTerminateExtension_CUDA(void) {
 /**
  * \brief Finds the number of cores from the major and minor versions of the
  *  shader model.
- * \details Highly inspired by the helpers library in CUDA examples.
+ * \details Highly inspired by the helpers library in CUDA examples,
+ *  see https://github.com/NVIDIA/cuda-samples/blob/master/Common/helper_cuda.h
  */
 static int ConvertSMVer2Cores(int major, int minor) {
     /* Defines for GPU Architecture types (using the SM version 
@@ -591,7 +649,10 @@ static int ConvertSMVer2Cores(int major, int minor) {
 	{ 0x60, 64 }, /* Pascal Generation  (SM 6.0) GP100,GP102  
               (yes, 64, but GP100 has superfast double precision) */
 	{ 0x61, 128}, /* Pascal Generation  (SM 6.1) GP104 class  
-                               (but FP64 runs as 1/32 FP32 speed) */ 	
+                               (but FP64 runs as 1/32 FP32 speed) */
+	{ 0x70, 64 }, /* yes, nb cores decreased in SM 7.x        */
+	{ 0x72, 64 },
+	{ 0x75, 64 },
         {   -1, -1 }
     };
     int index = 0;
@@ -601,29 +662,104 @@ static int ConvertSMVer2Cores(int major, int minor) {
         }
         index++;
     }
-    /* If we don't find the values, we default use the 
-       previous one to run properly */
+    /* If we don't find the values, we use a default value (64) */
     nl_printf(
       "MapSMtoCores for SM %d.%d is undefined.  Default to use %d Cores/SM\n",
-      major, minor, nGpuArchCoresPerSM[8].Cores
+       major, minor, 64
     );
-    return nGpuArchCoresPerSM[8].Cores;
+    return 64;
 }
 
 /**
- * \brief Finds among all detected GPUs the fastest one.
- * \details Highly inspired by the helpers library in
- *  CUDA examples.
+ * \brief Gets the double-precision performance for a device.
+ * \param[in] device the device
+ * \return the peak GFlops double-precision performance of the device,
+ *  or 0.0 if device's compute mode is prohibited.
+ */
+static double getDeviceDoublePrecisionGFlops(int device) {
+    int compute_mode;
+    int compute_capability_major;
+    int compute_capability_minor;
+    int cores_per_multiprocessor;
+    int multiprocessor_count;
+    int double_precision_perf_ratio;
+    int clock_rate;
+    double result = 0.0;
+
+    CUDA()->cudaDeviceGetAttribute(
+	&compute_mode,
+	CU_DEVICE_ATTRIBUTE_COMPUTE_MODE,
+	device
+    );
+
+    if(compute_mode == cudaComputeModeProhibited) {
+	return 0.0;
+    }
+    
+    CUDA()->cudaDeviceGetAttribute(
+	&compute_capability_major,
+	CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
+	device
+    );
+	
+    CUDA()->cudaDeviceGetAttribute(	
+	&compute_capability_minor,
+	CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR,
+	device
+    );
+
+    CUDA()->cudaDeviceGetAttribute(	
+	&multiprocessor_count,
+	CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
+	device
+    );
+
+    CUDA()->cudaDeviceGetAttribute(			
+	&double_precision_perf_ratio,
+	CU_DEVICE_ATTRIBUTE_SINGLE_TO_DOUBLE_PRECISION_PERF_RATIO,
+	device
+    );
+	
+    CUDA()->cudaDeviceGetAttribute(			
+	&clock_rate,
+	CU_DEVICE_ATTRIBUTE_CLOCK_RATE,
+	device
+    );
+    
+    cores_per_multiprocessor = ConvertSMVer2Cores(
+	compute_capability_major, compute_capability_minor
+    );
+
+    /* 
+     * I need this 2.0 factor to match the specs,
+     * does it mean a CUDA core does two FPs per cycle ?
+     * They probably count FMAs as 2 ops for the "peak perf"
+     * stat...
+     */
+    result = 2.0 * 
+	((double)(clock_rate) / (1024.0 * 1024.0)) *
+	(double)(multiprocessor_count) *
+	(double)(cores_per_multiprocessor) /
+	(double)(double_precision_perf_ratio) ;
+
+    return result;
+}
+
+/**
+ * \brief Gets the device ID with the maximum double precision 
+ *  performance.
+ * \return the ID of the fastest device or -1 is no device is 
+ *  available.
  */
 static int getBestDeviceID() {
-    int current_device     = 0, sm_per_multiproc  = 0;
-    int max_compute_perf   = 0, max_perf_device   = 0;
-    int device_count       = 0, best_SM_arch      = 0;
-    int compute_perf       = 0;
-    int driver_ver         = 0;
-    int runtime_ver        = 0;
-    struct cudaDeviceProp deviceProp;
+    int result = -1;
+    double fastest_GFlops = 0.0;
+    int device_count;
     int retval = CUDA()->cudaGetDeviceCount(&device_count);
+    int device;
+    double device_GFlops;
+    int driver_ver;
+    int runtime_ver;
     if(retval == 35) {
 	nl_printf("Error: Driver/CUDA versions mismatch\n");
 	retval = CUDA()->cudaDriverGetVersion(&driver_ver);
@@ -632,67 +768,18 @@ static int getBestDeviceID() {
 	nl_printf("cudaRuntimeGetVersion()  retval=%d\n",retval);
 	
 	nl_printf("  Driver  version=%d\n",driver_ver);
-	nl_printf("  Runtime version=%d\n",driver_ver);	
+	nl_printf("  Runtime version=%d\n",driver_ver);
+	return result;
     }
-    
-    /* Find the best major SM Architecture GPU device */
-
-    while (current_device < device_count) {
-        CUDA()->cudaGetDeviceProperties(&deviceProp, current_device);
-        /* If this GPU is not running on Compute Mode prohibited, 
-           then we can add it to the list */
-        if (deviceProp.computeMode != cudaComputeModeProhibited) {
-            if (deviceProp.major > 0 && deviceProp.major < 9999) {
-                best_SM_arch = MAX(best_SM_arch, deviceProp.major);
-            }
-        }
-        current_device++;
+    for(device=0; device<device_count; ++device) {
+	device_GFlops = getDeviceDoublePrecisionGFlops(device);
+	if(device_GFlops > fastest_GFlops) {
+	    fastest_GFlops = device_GFlops;
+	    result = device;
+	}
     }
-    /* Find the best CUDA capable GPU device */
-    current_device = 0;
-    while (current_device < device_count) {
-        CUDA()->cudaGetDeviceProperties(&deviceProp, current_device);
-        /* If this GPU is not running on Compute Mode prohibited, 
-           then we can add it to the list */
-        if (deviceProp.computeMode != cudaComputeModeProhibited) {
-            if (deviceProp.major == 9999 && deviceProp.minor == 9999) {
-                sm_per_multiproc = 1;
-            } else {
-                sm_per_multiproc = ConvertSMVer2Cores(
-		    deviceProp.major, deviceProp.minor
-		);
-            }
-            compute_perf  =
-		deviceProp.multiProcessorCount *
-		sm_per_multiproc * deviceProp.clockRate;
-            if (compute_perf  > max_compute_perf) {
-                /* If we find GPU with SM major > 2, search only these */
-                if (best_SM_arch > 2) {
-                    /* If our device==dest_SM_arch, choose this, or else pass */
-                    if (deviceProp.major == best_SM_arch) {
-                        max_compute_perf  = compute_perf;
-                        max_perf_device   = current_device;
-                    }
-                } else {
-                    max_compute_perf  = compute_perf;
-                    max_perf_device   = current_device;
-                }
-            }
-        }
-        ++current_device;
-    }
-
-    /**
-     * Wrong ! It says 1TFlops for GTX 1080, whereas the specs say 8TFlops
-     nl_printf(
-	"OpenNL CUDA: maximum device single-precision Gflops=%f\n",
-	(double)(2*max_compute_perf)/(double)(1e6)
-     );
-    */
- 
-    return max_perf_device;
+    return result;
 }
-
 
 /**************************************************************************/
 
@@ -710,9 +797,19 @@ static int getBestDeviceID() {
 
 
 NLboolean nlInitExtension_CUDA(void) {
-    struct cudaDeviceProp deviceProp;
     int cublas_version;
     int cusparse_version;
+    static struct cudaDeviceProp deviceProp;
+    int compute_capability_major;
+    int compute_capability_minor;
+    int multiprocessor_count;
+    int max_shared_mem_per_block;
+    int max_shared_mem_per_multiprocessor;
+    int max_regs_per_block;
+    int max_regs_per_multiprocessor;
+    int warp_size;
+    int double_precision_perf_ratio;
+    
     NLenum flags = NL_LINK_LAZY | NL_LINK_GLOBAL;
     if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
 	flags |= NL_LINK_QUIET;
@@ -729,7 +826,8 @@ NLboolean nlInitExtension_CUDA(void) {
     find_cuda_func(cudaDriverGetVersion);
     find_cuda_func(cudaRuntimeGetVersion);
     find_cuda_func(cudaGetDeviceCount);
-    find_cuda_func(cudaGetDeviceProperties);
+    find_cuda_func(cudaGetDeviceProperties);    
+    find_cuda_func(cudaDeviceGetAttribute);
     find_cuda_func(cudaDeviceReset);        
     find_cuda_func(cudaMalloc);
     find_cuda_func(cudaFree);
@@ -737,42 +835,113 @@ NLboolean nlInitExtension_CUDA(void) {
     
     CUDA()->devID = getBestDeviceID(); 
 
-    if(CUDA()->cudaGetDeviceProperties(&deviceProp, CUDA()->devID)) {
+    if(
+       CUDA()->devID == -1 ||
+       CUDA()->cudaGetDeviceProperties(&deviceProp, CUDA()->devID) 
+    ) {
 	nl_fprintf(stderr,"OpenNL CUDA: could not find a CUDA device\n");
 	return NL_FALSE;
     }
-    
+
     nl_printf("OpenNL CUDA: Device ID = %d\n", CUDA()->devID);
-    nl_printf("OpenNL CUDA: Device name=%s\n", deviceProp.name);
-    nl_printf(
-	"OpenNL CUDA: Device has %d Multi-Processors, "
-	"%d cores per Multi-Processor, SM %d.%d compute capabilities\n",
-	deviceProp.multiProcessorCount,
-	ConvertSMVer2Cores(deviceProp.major, deviceProp.minor),
-	deviceProp.major, deviceProp.minor
-    );
+    nl_printf("OpenNL CUDA: Device name=%s\n", deviceProp.name); 
 
-    nl_printf(
-	"OpenNL CUDA: %d kB shared mem. per block, %d per MP\n",
-	(int)(deviceProp.sharedMemPerBlock / 1024),
-	(int)(deviceProp.sharedMemPerMultiprocessor / 1024)
-    );
-    
-    nl_printf(
-	"OpenNL CUDA: %d regs. per block, %d per MP\n",
-	deviceProp.regsPerBlock,
-	deviceProp.regsPerMultiprocessor	
-    );
+    {
+	CUDA()->cudaDeviceGetAttribute(
+	    &compute_capability_major,
+	    CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
+	    CUDA()->devID
+	);
+	
+	CUDA()->cudaDeviceGetAttribute(	
+	    &compute_capability_minor,
+	    CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR,
+	    CUDA()->devID
+	);
 
-    nl_printf(
-	"OpenNL CUDA: warpsize=%d\n",
-	deviceProp.warpSize
-    );
+	CUDA()->cudaDeviceGetAttribute(	
+	    &multiprocessor_count,
+	    CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
+	    CUDA()->devID
+	);
+	
+	CUDA()->cudaDeviceGetAttribute(	
+	    &max_shared_mem_per_block,	
+	    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,    
+	    CUDA()->devID	    
+	);
+
+	CUDA()->cudaDeviceGetAttribute(		
+	    &max_shared_mem_per_multiprocessor,
+	    CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR,	    
+	    CUDA()->devID	    
+	);
+
+	CUDA()->cudaDeviceGetAttribute(			
+	    &max_regs_per_block,
+	    CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK,	    
+	    CUDA()->devID	    
+	);
+
+	CUDA()->cudaDeviceGetAttribute(			
+	    &max_regs_per_multiprocessor,
+	    CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR,	    
+	    CUDA()->devID	    
+	);
+
+	CUDA()->cudaDeviceGetAttribute(			
+	    &warp_size,
+	    CU_DEVICE_ATTRIBUTE_WARP_SIZE,	    
+	    CUDA()->devID	    
+	);
+
+	CUDA()->cudaDeviceGetAttribute(			
+	    &double_precision_perf_ratio,
+	    CU_DEVICE_ATTRIBUTE_SINGLE_TO_DOUBLE_PRECISION_PERF_RATIO,
+	    CUDA()->devID	    
+	);
+	
+	nl_printf(
+	    "OpenNL CUDA: Device has %d Multi-Processors, "
+	    "%d cores per Multi-Processor, SM %d.%d compute capabilities\n",
+	    multiprocessor_count,
+	    ConvertSMVer2Cores(
+		compute_capability_major, compute_capability_minor
+	    ),
+	    compute_capability_major, compute_capability_minor
+	);
+
+	nl_printf(
+	    "OpenNL CUDA: %d kB shared mem. per block, %d per MP\n",
+	    (int)(max_shared_mem_per_block / 1024),
+	    (int)(max_shared_mem_per_multiprocessor / 1024)
+	);
     
-    if ((deviceProp.major * 0x10 + deviceProp.minor) < 0x11) {
-        nl_fprintf(stderr, "OpenNL CUDA requires a minimum CUDA compute 1.1 capability\n");
-        CUDA()->cudaDeviceReset();
-	return NL_FALSE;
+	nl_printf(
+	    "OpenNL CUDA: %d regs. per block, %d per MP\n",
+	    max_regs_per_block, max_regs_per_multiprocessor
+	);
+
+	nl_printf("OpenNL CUDA: warpsize = %d\n", warp_size);
+
+	nl_printf(
+	    "OpenNL CUDA: double precision perf ratio = %d\n",
+	    double_precision_perf_ratio
+	);
+	nl_printf(
+	    "OpenNL CUDA: theoretical peak double precision GFlops = %f\n",
+	    getDeviceDoublePrecisionGFlops(CUDA()->devID)
+	);
+	if (
+	    (compute_capability_major * 0x10 + compute_capability_minor) < 0x11
+	) {
+	    nl_fprintf(
+		stderr,
+		"OpenNL CUDA requires a minimum CUDA compute 1.1 capability\n"
+	    );
+	    CUDA()->cudaDeviceReset();
+	    return NL_FALSE;
+	}
     }
     
     CUDA()->DLL_cublas = nlOpenDLL(

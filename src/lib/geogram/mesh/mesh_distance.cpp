@@ -212,22 +212,19 @@ namespace GEO {
             // that are not on the surface, else their distance to the
             // other surface will be included in the computation !
             vector<bool> on_surface(m1.vertices.nb(),false);
-            for(index_t f=0; f<m1.facets.nb(); ++f) {
-                for(
-                    index_t c = m1.facets.corners_begin(f);
-                    c < m1.facets.corners_end(f); ++c
-                ) {
+            for(index_t f: m1.facets) {
+                for(index_t c: m1.facets.corners(f)) {
                     on_surface[m1.facet_corners.vertex(c)] = true;
                 }
             }
-            for(index_t v=0; v<m1.vertices.nb(); ++v) {
+            for(index_t v: m1.vertices) {
                 if(on_surface[v]) {
                     ++nb_points;
                 }
             }
             vector<double> points;
             points.reserve(nb_points*m1.vertices.dimension());
-            for(index_t v=0; v<m1.vertices.nb(); ++v) {
+            for(index_t v: m1.vertices) {
                 if(on_surface[v]) {                
                     for(index_t c=0; c<m1.vertices.dimension(); ++c) {
                         points.push_back(m1.vertices.point_ptr(v)[c]);

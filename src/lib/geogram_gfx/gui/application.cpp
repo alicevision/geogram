@@ -60,6 +60,7 @@
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
 #include <geogram/basic/logger.h>
+#include <geogram/basic/file_system.h>
 
 
 #if defined(GEO_GLFW)
@@ -76,12 +77,13 @@
 #    include <third_party/glfw/include/GLFW/glfw3.h>
 #  endif
 
+#ifdef GEO_OS_EMSCRIPTEN
+#  include <emscripten.h>
+#endif
+
 
 #endif
 
-namespace ImGui {
-    void UpdateHoveredWindowAndCaptureFlags();
-}
 
 namespace GEO {
 
@@ -150,8 +152,11 @@ namespace GEO {
 	ImGui_restart_ = false;
 	ImGui_reload_font_ = false;
 	ImGui_initialized_ = false;
+	ImGui_firsttime_init_ = false;	
 	width_ = 800;
 	height_ = 800;
+	frame_buffer_width_ = 800;
+	frame_buffer_height_ = 800;
 	in_main_loop_ = false;
 	accept_drops_ = true;
 	scaling_ = 1.0;
@@ -163,9 +168,12 @@ namespace GEO {
 	currently_drawing_gui_ = false;
 	animate_ = false;
 	menubar_visible_ = true;
+	phone_screen_ = false;
+	soft_keyboard_visible_ = false;
     }
 
     Application::~Application() {
+	delete_window();
 	geo_assert(instance_ == this);
 	delete data_;
 	data_ = nullptr;
@@ -181,7 +189,6 @@ namespace GEO {
 	}
 	create_window();
 	main_loop();
-	delete_window();
     }
     
     void Application::stop() {
@@ -189,7 +196,11 @@ namespace GEO {
     }
 
     std::string Application::get_styles() {
+#ifdef GEO_OS_ANDROID
+	return "Light;Dark";	
+#else
 	return "Light;Dark;CorporateGrey";
+#endif	
     }
     
     void Application::set_style(const std::string& style_name) {
@@ -235,12 +246,18 @@ namespace GEO {
 	    style.Alpha = 0.90f;
 	}
 
-	
+	if(phone_screen_) {
+	    style.ScrollbarSize = 10.0f * float(scaling_);
+	    style.GrabMinSize   = 15.0f * float(scaling_);
+	}
     }
     
     void Application::set_font_size(index_t value) {
 	font_size_ = index_t(value);
 	scaling_ = double(font_size_)/16.0;
+	if(phone_screen_) {
+	    scaling_ *= double(std::max(get_width(), get_height()))/600.0;
+	}
 	if(CmdLine::arg_is_declared("gui:font_size")) {	
 	    CmdLine::set_arg("gui:font_size", String::to_string(value));
 	}
@@ -253,10 +270,13 @@ namespace GEO {
         return scaling_ * hidpi_scaling_ / pixel_ratio_;
     }
 
-
     void Application::resize(index_t w, index_t h) {
 	width_ = w;
 	height_ = h;
+	scaling_ = double(font_size_)/16.0;
+	if(phone_screen_) {
+	    scaling_ *= double(std::max(get_width(), get_height()))/600.0;
+	}
 	update();
     }
 
@@ -366,6 +386,7 @@ namespace GEO {
     void Application::GL_terminate() {
 	glupDeleteContext(glupCurrentContext());
 	glupMakeCurrent(nullptr);
+	GEO::Graphics::terminate();
     }
     
     void Application::ImGui_initialize() {
@@ -417,13 +438,19 @@ namespace GEO {
         
 	ImGui_load_fonts();
 	ImGui_initialized_ = true;
+	ImGui_firsttime_init_ = true;
     }
 
     void Application::ImGui_load_fonts() {
 	ImGuiIO& io = ImGui::GetIO();
 	io.IniFilename = nullptr; 
 
-	float font_size = float(double(font_size_) * hidpi_scaling_);
+	float s = 1.0f;
+	if(phone_screen_) {
+	    s = float(std::max(get_width(), get_height())) / 600.0f;
+	}
+	
+	float font_size = s * float(double(font_size_) * hidpi_scaling_);
 
 	// Default font
 	io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
@@ -468,6 +495,13 @@ namespace GEO {
 	    roboto_medium_compressed_size, font_size*1.5f
 	);
 
+	if(phone_screen_) {
+	    // Smaller fixed font for console
+	    io.Fonts->AddFontFromMemoryCompressedTTF(
+		cousine_regular_compressed_data,
+		cousine_regular_compressed_size, font_size*0.5f
+	    );
+	}
 	
 	io.FontGlobalScale = float(1.0 / pixel_ratio_);
     }
@@ -488,6 +522,7 @@ namespace GEO {
 	ImGui_ImplGlfw_NewFrame();
 #endif	
 	ImGui::NewFrame();
+
     }
 
     void Application::geogram_initialize(int argc, char** argv) {
@@ -497,6 +532,12 @@ namespace GEO {
 	CmdLine::import_arg_group("gfx");
 	CmdLine::import_arg_group("gui");	    
 	CmdLine::parse(argc, argv, filenames_);
+	phone_screen_ = CmdLine::get_arg_bool("gui:phone_screen");
+#ifndef GEO_OS_ANDROID	
+	if(phone_screen_ && CmdLine::get_arg("gfx:geometry") == "1024x1024") {
+	    CmdLine::set_arg("gfx:geometry", "768x1024");
+	}
+#endif	
     }
     
     bool Application::needs_to_redraw() const {
@@ -536,6 +577,7 @@ namespace GEO {
 
     /**************************** GLFW-specific code *********************/
 #if defined(GEO_GLFW)
+
 
     void Application::pre_draw() {
     }
@@ -614,7 +656,7 @@ namespace GEO {
 		no_decoration ? glfwGetPrimaryMonitor() : nullptr, 
 		nullptr
 	    );
-
+	    
 	} else {
 	    data_->window_ = glfwCreateWindow(
 		int(width_), int(height_), title, nullptr, nullptr
@@ -668,7 +710,14 @@ namespace GEO {
 
 	{
 	    int cur_width, cur_height;
-	    glfwGetFramebufferSize(data_->window_, &cur_width, &cur_height);
+	    int fb_width,  fb_height;
+	    
+	    // TODO: test on MacOS / Retina
+	    glfwGetWindowSize(data_->window_, &cur_width, &cur_height);
+	    glfwGetFramebufferSize(data_->window_, &fb_width, &fb_height);
+	    frame_buffer_width_ = index_t(fb_width);
+	    frame_buffer_height_ = index_t(fb_height);
+
 	    if(int(width_) != cur_width || int(height_) != cur_height) {
 		resize(index_t(cur_width), index_t(cur_height));
 	    }
@@ -700,6 +749,16 @@ namespace GEO {
 	    ImGui::Render();
 	    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	    currently_drawing_gui_ = false;
+
+#ifdef GEO_OS_EMSCRIPTEN
+	    // Set alpha channel to 1 else the image is composited 
+	    // with the background 
+	    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	    glClear(GL_COLOR_BUFFER_BIT);
+	    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+#endif	
+	    
 	    glfwSwapBuffers(data_->window_);
 	    post_draw();
 	    if(nb_frames_update_ > 0 && !animate_) {
@@ -730,8 +789,65 @@ namespace GEO {
 	}
     }
 
+#ifdef GEO_OS_EMSCRIPTEN
+
+    void emscripten_load_latest_file();
+    
+    /**
+     * \brief This function is called by the HTML shell each
+     *  time a file is loaded.
+     */
+    void emscripten_load_latest_file() {
+	if(Application::instance() == nullptr) {
+	    return;
+	}
+	std::vector<std::string> all_files;
+	GEO::FileSystem::get_directory_entries("/",all_files);
+	std::string filename = "";
+	Numeric::uint64 timestamp = 0;
+	for(auto f: all_files) {
+	    if(GEO::FileSystem::is_file(f)) {
+		Numeric::uint64 f_timestamp =
+		    GEO::FileSystem::get_time_stamp(f);
+		if(f_timestamp > timestamp) {
+		    timestamp = f_timestamp;
+		    filename = f;
+		}
+	    }
+	}
+	if(filename != "") {
+	    const char* filename_str = filename.c_str();
+	    Application::instance()->drop_callback(1, &filename_str);
+	}
+    }
+    
+    
+    /**
+     * \brief The job to be done for each frame when running
+     *  in Emscripten.
+     * \details The browser keeps control of the main loop 
+     *  in Emscripten. This function is a callback passed to
+     *  the Emscripten runtime.
+     */
+    void emscripten_one_frame() {
+	if(Application::instance() == nullptr) {
+	    return;
+	}
+	Application::instance()->one_frame();
+    }
+#endif   
+   
     void Application::main_loop() {
 	in_main_loop_ = true;
+#ifdef GEO_OS_EMSCRIPTEN
+	FileSystem::set_file_system_changed_callback(
+	    emscripten_load_latest_file
+	);
+	GL_initialize();
+	ImGui_initialize();
+	emscripten_load_latest_file();
+	emscripten_set_main_loop(emscripten_one_frame, 0, 1);
+#else       
 	bool initialized = false;
 	while (!glfwWindowShouldClose(data_->window_) && in_main_loop_) {
 	    if(!initialized) {
@@ -745,6 +861,7 @@ namespace GEO {
 	    ImGui_terminate();
 	    GL_terminate();
 	}
+#endif       
     }
 
     namespace {
@@ -766,7 +883,9 @@ namespace GEO {
 	    // to solve this problem.
 	    if(ImGui::GetIO().WantCaptureMouse && action==EVENT_ACTION_UP) {
 		ImVec2 mouse_pos = ImGui::GetIO().MousePos;
-		app->cursor_pos_callback(mouse_pos.x, mouse_pos.y);		
+		app->cursor_pos_callback(
+		    double(mouse_pos.x), double(mouse_pos.y)
+		);		
 		app->mouse_button_callback(button,action,mods);
 	    }
 	    if(app->impl_data()->ImGui_callback_mouse_button != nullptr) {
@@ -787,8 +906,7 @@ namespace GEO {
 		app->impl_data()->ImGui_callback_cursor_pos(w, xf, yf);
 	    }
 	    if(!ImGui::GetIO().WantCaptureMouse) {
-		double s = app->hidpi_scaling();
-		app->cursor_pos_callback(s*xf, s*yf);
+		app->cursor_pos_callback(xf, yf);
 	    }
 	}
     
@@ -800,7 +918,11 @@ namespace GEO {
 	    );
 	    app->update();
 	    if(!ImGui::GetIO().WantCaptureMouse) {
-		app->scroll_callback(xoffset, yoffset);
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_APPLE)
+		app->scroll_callback(xoffset,-yoffset);
+#else
+		app->scroll_callback(xoffset, yoffset);		
+#endif    
 	    }	
 	    if(app->impl_data()->ImGui_callback_scroll != nullptr) {
 		app->impl_data()->ImGui_callback_scroll(w, xoffset, yoffset);
@@ -863,8 +985,10 @@ namespace GEO {
     
     void Application::callbacks_initialize() {
 	if(data_->GLFW_callbacks_initialized_) {
+	    /*
 	    GEO::Logger::out("ImGui") << "Viewer GUI restart (config. changed)"
 				      << std::endl;
+	    */
 	} else {
 	    GEO::Logger::out("ImGui") << "Viewer GUI init (GL3)"
 				      << std::endl;
@@ -894,6 +1018,17 @@ namespace GEO {
 	    data_->ImGui_callback_refresh = glfwSetWindowRefreshCallback(
 		data_->window_,GLFW_callback_refresh
 	    );
+
+#ifdef GEO_OS_EMSCRIPTEN
+	    // It seems that Emscripten's implementation of
+	    // glfwSetXXXCallback() does not always return previous
+	    // callback bindings.
+	    data_->ImGui_callback_mouse_button =
+		ImGui_ImplGlfw_MouseButtonCallback;
+	    data_->ImGui_callback_char = ImGui_ImplGlfw_CharCallback;
+	    data_->ImGui_callback_key  = ImGui_ImplGlfw_KeyCallback;
+	    data_->ImGui_callback_scroll  = ImGui_ImplGlfw_ScrollCallback;
+#endif	    
 	    data_->GLFW_callbacks_initialized_ = true;
 	} 
     }
@@ -915,8 +1050,8 @@ namespace GEO {
 	int count;
 	GLFWmonitor** monitors = glfwGetMonitors(&count);
 	if(int(monitor) >= count) {
-	    Logger::err("Skin") << monitor << ": no such monitor"
-				<< std::endl;
+	    Logger::err("Application") << monitor << ": no such monitor"
+	                               << std::endl;
 	}
 	if((w == 0) || (h == 0) || (Hz == 0)) {
 	    Logger::out("Application")

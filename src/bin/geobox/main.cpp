@@ -63,6 +63,7 @@
 
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/command_line_args.h>
+#include <geogram/basic/file_system.h>
 
 namespace {
     using namespace GEO;
@@ -93,7 +94,7 @@ namespace {
 
         void draw_about() override {
             ImGui::Separator();            
-            if(ImGui::BeginMenu("About...")) {
+            if(ImGui::BeginMenu(icon_UTF8("info") + " About...")) {
                 ImGui::Text(
                     "             GEObox\n"
                     "  The geometry processing toolbox\n"
@@ -162,7 +163,7 @@ namespace {
                     GEO::Command::set_current(
                 "void reconstruct(                                    "
                 "   double radius=5.0       [search radius (in % bbox. diag.)],"
-                "   index_t nb_iterations=0 [number of smoothing iterations],  "
+                "   index_t nb_smth_iter=2  [number of smoothing iterations],  "
                 "   index_t nb_neighbors=30 [number of nearest neighbors]      "
                 ") [reconstructs a surface from a pointset]",
                         this, &GeoBoxApplication::reconstruct
@@ -173,9 +174,10 @@ namespace {
 
             
             if(ImGui::BeginMenu("Surface")) {
-                if(ImGui::BeginMenu("Repair")) {        
-                    if(ImGui::MenuItem("repair surface")) {
-                        GEO::Command::set_current(
+		ImGui::MenuItem("    Repair", nullptr, false, false);
+		
+		if(ImGui::MenuItem("repair surface")) {
+		    GEO::Command::set_current(
                 " void repair(                        "
                 "   double epsilon = 1e-6 [point merging tol. (% bbox. diag.)],"
                 "   double min_comp_area = 0.03                   "
@@ -191,23 +193,23 @@ namespace {
                 " ) [repairs a surfacic mesh]",
                             this, &GeoBoxApplication::repair_surface
                         );
-                    }
+		}
 
-                    if(ImGui::MenuItem("merge vertices")) {
-                        GEO::Command::set_current(
+		if(ImGui::MenuItem("merge vertices")) {
+		    GEO::Command::set_current(
                 "void merge_vertices(                                       "
                 "   double epsilon=1e-6                                     "
                 "     [tolerance for merging vertices (in % bbox diagonal)],"
                 ") [merges the vertices that are within tolerance]          ",
                             this, &GeoBoxApplication::merge_vertices
-                        );
-                    }
-                    ImGui::EndMenu();            
-                }
-
-                if(ImGui::BeginMenu("Remesh")) {
-                    if(ImGui::MenuItem("remesh smooth")) {
-                        GEO::Command::set_current(
+                    );
+		}
+		
+		ImGui::Separator();
+		ImGui::MenuItem("    Remesh", nullptr, false, false);
+		
+		if(ImGui::MenuItem("remesh smooth")) {
+		    GEO::Command::set_current(
                     "void remesh_smooth(                                      "
 #ifdef GEO_OS_EMSCRIPTEN                    
                     "  index_t nb_points = 5000  [number of points in remesh],"
@@ -226,11 +228,11 @@ namespace {
                     "    [nb samples (used if size adapt != 0)]               "
                     ")",
                              this, &GeoBoxApplication::remesh_smooth  
-                       );
-                    }
+                    );
+		}
 
-                    if(ImGui::MenuItem("decimate")) {
-                        GEO::Command::set_current(
+		if(ImGui::MenuItem("decimate")) {
+		    GEO::Command::set_current(
                     "void decimate(                                            "
                     "   index_t nb_bins = 100  [the higher-the more precise],  "
                     "   bool remove_deg3_vrtx = true [remove degree3 vertices],"
@@ -238,28 +240,26 @@ namespace {
                     "   bool repair = true                                     "
                     ") [quick and dirty mesh decimator (vertex clustering)]",
                              this, &GeoBoxApplication::decimate
-                        );
-                    }
-                    ImGui::EndMenu();                        
-                }
-                
-                if(ImGui::BeginMenu("Shapes")) {
-                    if(ImGui::MenuItem("create cube")) {
-                        GEO::Command::set_current(
-                            "void create_cube("
-                            "    double x1=0, double y1=0, double z1=0,"
-                            "    double x2=1, double y2=1, double z2=1"
-                            ")",
-                            this, &GeoBoxApplication::create_cube
-                        );
-                    }
-                    if(ImGui::MenuItem("create icosahedron")) {
-                        create_icosahedron();
-                    }
-                    ImGui::EndMenu();
-                }
-                ImGui::EndMenu();
-            }
+                    );
+		}
+		
+		ImGui::Separator();
+		ImGui::MenuItem("    Create...", nullptr, false, false);
+		
+		if(ImGui::MenuItem("create cube")) {
+		    GEO::Command::set_current(
+			"void create_cube("
+			"    double x1=0, double y1=0, double z1=0,"
+			"    double x2=1, double y2=1, double z2=1"
+			")",
+			this, &GeoBoxApplication::create_cube
+                    );
+		}
+		if(ImGui::MenuItem("create icosahedron")) {
+		    create_icosahedron();
+		}
+		ImGui::EndMenu();
+	    }
             
             if(ImGui::BeginMenu("Volume")) {
                 if(ImGui::MenuItem("tet meshing")) {
@@ -277,15 +277,19 @@ namespace {
             }
             
             if(ImGui::BeginMenu("Mesh")) {
-                if(ImGui::BeginMenu("Stats")) {
-                    if(ImGui::MenuItem("show mesh statistics")) {
-                        show_statistics();
-                    }
-                    if(ImGui::MenuItem("show mesh topology")) {
-                        show_topology();
-                    }
-                    ImGui::EndMenu();
-                }
+		
+		ImGui::MenuItem("    Stats", nullptr, false, false);
+		
+		if(ImGui::MenuItem("show mesh stats")) {
+		    show_statistics();
+		}
+		if(ImGui::MenuItem("show mesh topo")) {
+		    show_topology();
+		}
+
+		ImGui::Separator();
+		ImGui::MenuItem("    Edit", nullptr, false, false);		
+		    
                 if(ImGui::MenuItem("clear")) {
                     Command::set_current(
                         "void clear(bool yes_I_am_sure=false) "
@@ -307,7 +311,7 @@ namespace {
                     );
                 }
                 
-                if(ImGui::MenuItem("remove isolated vertices")) {
+                if(ImGui::MenuItem("remove isolated vrtx")) {
                     Command::set_current(
                 "void remove_isolated_vertices(bool yes_I_am_sure=false) "
                 "[removes vertices that are not connected to any element]",
@@ -315,42 +319,40 @@ namespace {
                     );
                 }
 
-                if(ImGui::BeginMenu("Selection")) {
-                    if(ImGui::BeginMenu("vertices")) {
-                        if(ImGui::MenuItem("select all vertices")) {
-                            select_all_vertices();
-                        }
-                        if(ImGui::MenuItem("unselect all vertices")) {
-                            unselect_all_vertices();
-                        }
-                        if(ImGui::MenuItem("invert vertices selection")) {
-                            invert_vertices_selection();
-                        }
-                        if(ImGui::MenuItem("select vertices on surface border")) {
-                            select_vertices_on_surface_border();
-                        }
-                        if(ImGui::MenuItem("unselect vertices on surface border")) {
-                            unselect_vertices_on_surface_border();
-                        }
-                        if(ImGui::MenuItem("delete selected vertices")) {
-                            delete_selected_vertices();
-                        }
-                        ImGui::EndMenu();
-                    }
-                    ImGui::EndMenu();
-                }
-                
+		ImGui::Separator();
+		ImGui::MenuItem("    Selection", nullptr, false, false);				
+		
+		if(ImGui::MenuItem("select all vrtx")) {
+		    select_all_vertices();
+		}
+		if(ImGui::MenuItem("unselect all vrtx")) {
+		    unselect_all_vertices();
+		}
+		if(ImGui::MenuItem("invert vrtx sel")) {
+		    invert_vertices_selection();
+		}
+		if(ImGui::MenuItem(
+		       "sel vrtx on surf brdr")
+		) {
+		    select_vertices_on_surface_border();
+		}
+		if(ImGui::MenuItem("unsel vrtx on surf brdr")) {
+		    unselect_vertices_on_surface_border();
+		}
+		if(ImGui::MenuItem("delete sel vrtx")) {
+		    delete_selected_vertices();
+		}
                 ImGui::EndMenu();
             }
 
             if(ImGui::BeginMenu("Attributes")) {
-                if(ImGui::MenuItem("compute local feature size")) {
+                if(ImGui::MenuItem("compute LFS")) {
                     Command::set_current(
                         "compute_local_feature_size(std::string attribute_name=\"LFS\")",
                         this, &GeoBoxApplication::compute_local_feature_size
                     );
                 }
-                if(ImGui::MenuItem("compute distance to border")) {
+                if(ImGui::MenuItem("compute dist. to brdr")) {
                     Command::set_current(
                         "compute_distance_to_border(std::string attribute_name=\"distance\")",
                         this, &GeoBoxApplication::compute_distance_to_border
@@ -368,7 +370,16 @@ namespace {
             }
         }
 
-
+	bool load(const std::string& filename) override {
+	    bool result = SimpleMeshApplication::load(filename);
+	    if(result && FileSystem::extension(filename) == "stl") {
+		mesh_.vertices.set_double_precision();	
+		mesh_repair(mesh_);
+		mesh_.vertices.set_single_precision();			
+	    }
+	    return result;
+	}
+	
         void remove_elements(
             bool vertices=false,
             bool edges=false,

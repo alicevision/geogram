@@ -280,12 +280,9 @@ namespace GEO {
         //   or -1 if v is on border or if v has an incident facet that
         // is not a triangle.
 
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             bool f_is_triangle = (M.facets.nb_vertices(f) == 3);
-            for(
-                index_t c = M.facets.corners_begin(f);
-                c < M.facets.corners_end(f); c++
-            ) {
+            for(index_t c: M.facets.corners(f)) {
                 index_t v = M.facet_corners.vertex(c);
                 if(
                     !f_is_triangle ||
@@ -303,7 +300,7 @@ namespace GEO {
         // Step 2: count degree3 vertices
 
         index_t nb_degree3_vertices = 0;
-        for(index_t v = 0; v < M.vertices.nb(); v++) {
+        for(index_t v: M.vertices) {
             if(vertex_degree[v] == 3) {
                 nb_degree3_vertices++;
             }
@@ -318,11 +315,8 @@ namespace GEO {
         // Step 3: v2f[v] is one of the facets adjacent to v
 
         vector<index_t> v2f(M.vertices.nb());
-        for(index_t f = 0; f < M.facets.nb(); f++) {
-            for(
-                index_t c = M.facets.corners_begin(f);
-                c < M.facets.corners_end(f); c++
-            ) {
+        for(index_t f: M.facets) {
+            for(index_t c: M.facets.corners(f)) {
                 index_t v = M.facet_corners.vertex(c);
                 v2f[v] = f;
             }
@@ -332,7 +326,7 @@ namespace GEO {
 
         vector<Degree3Vertex> degree3vertices;
         degree3vertices.reserve(nb_degree3_vertices);
-        for(index_t v = 0; v < M.vertices.nb(); v++) {
+        for(index_t v: M.vertices) {
             if(vertex_degree[v] == 3) {
                 Degree3Vertex V(M, v, v2f[v]);
                 if(V.dist < max_dist) {
@@ -404,10 +398,7 @@ namespace GEO {
             for(index_t j = 1; j <= 2; j++) {
                 if(V.adj[j] != NO_FACET) {
                     index_t f = index_t(V.adj[j]);
-                    for(
-                        index_t c = M.facets.corners_begin(f);
-                        c < M.facets.corners_end(f); ++c
-                    ) {
+                    for(index_t c: M.facets.corners(f)) {
                         if(M.facet_corners.adjacent_facet(c) == V.t[j]) {
                             M.facet_corners.set_adjacent_facet(c, V.t[0]);
                         }

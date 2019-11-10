@@ -224,6 +224,12 @@ namespace GEO {
 	 * \return the 2d point in model space coordinates.
 	 */
 	vec2 unproject_2d(const vec2& p);
+
+
+	/**
+	 * \copydoc Application::drop_callback()
+	 */
+	void drop_callback(int nb, const char** f) override;
 	
       protected:
 
@@ -231,15 +237,23 @@ namespace GEO {
 	 * \brief Declares a function to be triggered when a key is pressed.
 	 * \param[in] key the key ("a" for a, "F1" for F1)
 	 * \param[in] cb the function to be called
+	 * \param[in] help an optional help string
 	 */
-	void add_key_func(const std::string& key, std::function<void()> cb);
+	void add_key_func(
+	    const std::string& key, std::function<void()> cb,
+	    const char* help = nullptr
+	);
 
 	/**
 	 * \brief Declares a boolean to be toggled when a key is pressed.
 	 * \param[in] key the key ("a" for a, "F1" for F1)
 	 * \param[in] p_val a pointer to the boolean
+	 * \param[in] help an optional help string
 	 */
-	void add_key_toggle(const std::string& key, bool* p_val);
+	void add_key_toggle(
+	    const std::string& key, bool* p_val,
+	    const char* help = nullptr
+	);
 
 	/**
 	 * \copydoc GEO::Application::char_callback()
@@ -345,6 +359,11 @@ namespace GEO {
         virtual void draw_about();
 
         /**
+         * \brief Draws help info (accelarators)
+         */
+        virtual void draw_help();
+	
+        /**
          * \brief Draws the windows menu.
          */
         virtual void draw_windows_menu();
@@ -355,6 +374,12 @@ namespace GEO {
          */
         virtual void draw_application_menus();
 
+        /**
+         * \brief Draws the application icons on the menubar.
+         * \details Meant to be overloaded by derived classes.
+         */
+	virtual void draw_application_icons();
+	
 	/**
 	 * \copydoc Application::post_draw()
 	 */
@@ -494,6 +519,8 @@ namespace GEO {
 	bool    three_D_;
 	double  zoom_;
 	double  zoom_down_; /**< Zoom when mouse down. */
+
+	bool props_pinned_;
 	
 	enum MouseOp {
 	    MOUSE_NOOP, MOUSE_ROTATE, MOUSE_TRANSLATE, MOUSE_ZOOM
@@ -521,6 +548,7 @@ namespace GEO {
 	TextEditor text_editor_;
 
 	std::map< std::string, std::function<void()> > key_funcs_;
+	std::map< std::string, std::string > key_funcs_help_;
 
         struct ColormapInfo {
             ColormapInfo() : texture(0) {

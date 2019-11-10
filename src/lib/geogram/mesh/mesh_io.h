@@ -205,10 +205,31 @@ namespace GEO {
             return (elements_ & x) != 0;
         }
 
+        /**
+	 * \brief Sets the name of the texture image file
+	 *  associated with this mesh.
+	 * \details Used by the OBJ file format. If present
+	 *  generates a material lib.
+	 * \param[in] x the name of the file with the texture.
+	 */
+        void set_texture_filename(const std::string& x) {
+	    texture_filename_ = x;
+	}
+
+        /**
+	 * \brief Gets the name of the texture image file.
+	 * \return the name of the file.
+	 * \see set_texture_filename()
+	 */
+        const std::string& get_texture_filename() const {
+	    return texture_filename_;
+	}
+    
     private:
         coord_index_t dimension_;
         MeshAttributesFlags attributes_;
         MeshElementsFlags elements_;
+        std::string texture_filename_;
     };
 
     

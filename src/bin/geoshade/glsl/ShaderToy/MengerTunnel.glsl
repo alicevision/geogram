@@ -1,3 +1,4 @@
+// https://www.shadertoy.com/view/4scXzn
 /*
 
 	Winding Menger Tunnel
@@ -44,11 +45,12 @@ float hash( float n ){ return fract(cos(n)*45758.5453); }
 // Tri-Planar blending function. Based on an old Nvidia writeup:
 // GPU Gems 3 - Ryan Geiss: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch01.html
 vec3 tex3D( sampler2D tex, in vec3 p, in vec3 n ){
-   
+   /*
     n = max(abs(n), 0.001); // n = max((abs(n) - 0.2)*7., 0.001); // n = max(abs(n), 0.001), etc.
     n /= (n.x + n.y + n.z); 
-	return (texture(tex, p.yz)*n.x + texture(tex, p.zx)*n.y + texture(tex, p.xy)*n.z).xyz;
-    
+	return (texture2D(tex, p.yz)*n.x + texture2D(tex, p.zx)*n.y + texture2D(tex, p.xy)*n.z).xyz;
+    */
+    return vec3(0.0, 0.0, 0.0); // [BL] removed texturing to make it "embeddable" in geoshade.
 }
 
 // Common formula for rounded squares, for all intended purposes.
@@ -167,8 +169,8 @@ float map(in vec3 p){
     // Again a little expensive, but it's a surprisingly effective way to bump the tunnel walls.
     // This is a variation, but you can thank "aeikick" for this little snippet. :)
     //vec3 u = p;
-    //p.x -= sign(u.x)*(texture(iChannel0, u.yz/8.).x - .0)*.03;//-.2;
-	//p.y -= sign(u.y)*(texture(iChannel0, u.xz/8.).x - .0)*.03;  
+    //p.x -= sign(u.x)*(texture2D(iChannel0, u.yz/8.).x - .0)*.03;//-.2;
+	//p.y -= sign(u.y)*(texture2D(iChannel0, u.xz/8.).x - .0)*.03;  
 
     
     // The walls. I have another Menger example, if you'd like to look into that more closely.

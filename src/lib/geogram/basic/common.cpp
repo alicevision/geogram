@@ -48,6 +48,7 @@
 #include <geogram/basic/logger.h>
 #include <geogram/basic/progress.h>
 #include <geogram/basic/command_line.h>
+#include <geogram/basic/file_system.h>
 #include <geogram/basic/stopwatch.h>
 #include <geogram/numerics/multi_precision.h>
 #include <geogram/numerics/predicates.h>
@@ -94,7 +95,7 @@ namespace GEO {
         env->set_value("release_date", VORPALINE_BUILD_DATE);
         env->set_value("SVN revision", VORPALINE_SVN_REVISION);        
 #endif
-	
+	FileSystem::initialize();
         Logger::initialize();
         Process::initialize(flags);
         Progress::initialize();
@@ -183,6 +184,7 @@ namespace GEO {
         Process::terminate();
         CmdLine::terminate();
         Logger::terminate();
+	FileSystem::terminate();
         Environment::terminate();
     }
 }

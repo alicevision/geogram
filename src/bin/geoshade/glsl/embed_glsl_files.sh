@@ -7,7 +7,6 @@ glsl_files="
   course/raytrace_step4.glsl
   course/raytrace_step5.glsl
   course/raytrace_step6.glsl  
-  course/raytrace_step7.glsl
 ShaderToy/AlloyPlatedVoronoi.glsl
 ShaderToy/AndromedaJewel.glsl
 ShaderToy/Circuits.glsl
@@ -15,12 +14,15 @@ ShaderToy/ContouredLayers.glsl
 ShaderToy/FractalLand.glsl
 ShaderToy/GeodesicTiling.glsl
 ShaderToy/Geomechanical.glsl
+ShaderToy/HappyJumping.glsl
 ShaderToy/HexFlow.glsl
 ShaderToy/JellyTubes.glsl
 ShaderToy/MengerTunnel.glsl
+ShaderToy/ProteanClouds.glsl
 ShaderToy/QuadTreeTruchet.glsl
 ShaderToy/rabbit.glsl
 ShaderToy/RayMarchingPrimitives.glsl
+ShaderToy/SeaScape.glsl
 ShaderToy/RoundedVoronoiEdges.glsl
 ShaderToy/RounderVoronoi.glsl
 ShaderToy/SiggraphLogo.glsl
@@ -36,19 +38,20 @@ cat <<EOF
  * This file was automatically generated, do not edit.
  */
 
-#include <string>
+#include <geogram/basic/file_system.h>
 
-void register_embedded_glsl_file(
-      const char* filename, const char* body
+void register_embedded_glsl_files(
+   GEO::FileSystem::MemoryNode* n
 );
-void register_embedded_glsl_files(void);
-   
-void register_embedded_glsl_files() {
+
+void register_embedded_glsl_files(
+   GEO::FileSystem::MemoryNode* n
+) {
 EOF
 
 for f in $glsl_files
 do
-    echo "     register_embedded_glsl_file(\"$f\","
+    echo "     n->create_file(\"$f\","
     cat $f | sed -e 's|\\|\\\\|' \
                  -e 's|"|\\\"|g' \
 	         -e 's|^|        \"|' \

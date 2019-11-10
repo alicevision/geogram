@@ -81,6 +81,7 @@ namespace {
     GLuint quad_vertices_VBO = 0;
     GLuint quad_tex_coords_VBO = 0;
     GLuint quad_program = 0;
+    GLuint quad_program_BW = 0;
 
     /**
      * \brief Creates the VAO, VBOs and program used to draw
@@ -173,14 +174,26 @@ namespace {
             "}                                          \n"
             ;
 
+        static const char* fshader_BW_source =
+            "#version 100                               \n"
+	    "precision mediump float;                   \n"        	    
+            "varying vec2 tex_coord;                    \n"
+            "uniform sampler2D tex;                     \n"
+            "void main() {                              \n"
+            "   gl_FragColor = vec4(texture2D(          \n"
+            "       tex, tex_coord                      \n"
+            "   ).xxx,1.0);                             \n"
+            "}                                          \n"
+            ;
+	
 #else
 
         static const char* vshader_source =
-#ifdef GEO_OS_APPLE
+#   ifdef GEO_OS_APPLE
             "#version 330                               \n"	    
-#else	    
+#   else	    
             "#version 130                               \n"
-#endif	    
+#   endif	    
             "in vec2 vertex_in;                         \n"
             "in vec2 tex_coord_in;                      \n"
             "out vec2 tex_coord;                        \n"
@@ -191,11 +204,11 @@ namespace {
             ;
 
         static const char* fshader_source =
-#ifdef GEO_OS_APPLE
+#   ifdef GEO_OS_APPLE
             "#version 330                               \n"	    
-#else	    
+#   else	    
             "#version 130                               \n"
-#endif	    
+#   endif	    
             "out vec4 frag_color ;                      \n"
             "in vec2 tex_coord;                         \n"
             "uniform sampler2D tex;                     \n"
@@ -203,6 +216,22 @@ namespace {
             "   frag_color = texture(                   \n"
             "       tex, tex_coord                      \n"
             "   );                                      \n"
+            "}                                          \n"
+            ;
+
+        static const char* fshader_BW_source =
+#   ifdef GEO_OS_APPLE
+            "#version 330                               \n"	    
+#   else	    
+            "#version 130                               \n"
+#   endif	    
+            "out vec4 frag_color ;                      \n"
+            "in vec2 tex_coord;                         \n"
+            "uniform sampler2D tex;                     \n"
+            "void main() {                              \n"
+            "   frag_color = vec4(texture(              \n"
+            "       tex, tex_coord                      \n"
+            "   ).xxx,1.0);                             \n"
             "}                                          \n"
             ;
 #endif
@@ -214,18 +243,34 @@ namespace {
         GLuint fshader = GLSL::compile_shader(
             GL_FRAGMENT_SHADER, fshader_source, nullptr
         );
+
+        GLuint fshader_BW = GLSL::compile_shader(
+            GL_FRAGMENT_SHADER, fshader_BW_source, nullptr
+        );
         
+	
         quad_program = GLSL::create_program_from_shaders_no_link(
             vshader, fshader, nullptr
         );
+
+        quad_program_BW = GLSL::create_program_from_shaders_no_link(
+            vshader, fshader_BW, nullptr
+        );
+	
         glBindAttribLocation(quad_program, 0, "vertex_in");
         glBindAttribLocation(quad_program, 1, "tex_coord_in");
         GLSL::link_program(quad_program);
-        
-        GLSL::set_program_uniform_by_name(quad_program, "tex", 0);
+
+
+        glBindAttribLocation(quad_program_BW, 0, "vertex_in");
+        glBindAttribLocation(quad_program_BW, 1, "tex_coord_in");
+        GLSL::link_program(quad_program_BW);
+	
+        GLSL::set_program_uniform_by_name(quad_program_BW, "tex", 0);
         
         glDeleteShader(vshader);
         glDeleteShader(fshader);
+        glDeleteShader(fshader_BW);	
     }
 }
 
@@ -240,6 +285,10 @@ namespace GEO {
             if(quad_program != 0) {
                 glDeleteProgram(quad_program);
                 quad_program = 0;
+            }
+            if(quad_program_BW != 0) {
+                glDeleteProgram(quad_program_BW);
+                quad_program_BW = 0;
             }
             if(quad_VAO != 0) {
                 glupDeleteVertexArrays(1, &quad_VAO);
@@ -469,14 +518,14 @@ namespace GEO {
 #endif	
     }
     
-    void draw_unit_textured_quad() {
+    void draw_unit_textured_quad(bool BW) {
         if(quad_VAO == 0) {
             create_quad_VAO_and_program();
         }
         GLint current_program = 0;
         glGetIntegerv(GL_CURRENT_PROGRAM, &current_program);
         if(current_program == 0) {
-            glUseProgram(quad_program);
+            glUseProgram(BW ? quad_program_BW : quad_program);
         }
         glupBindVertexArray(quad_VAO);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);        
@@ -546,9 +595,9 @@ namespace GEO {
 	    key2 = (chars_per_pixel == 2) ? xpm_data[line][1] : 0;
 	    colorcode = strstr(xpm_data[line], "c #");
 	    none = 0;
-	    if(colorcode == NULL) {
+	    if(colorcode == nullptr) {
 		colorcode = "c #000000";
-		if(strstr(xpm_data[line], "None") != NULL) {
+		if(strstr(xpm_data[line], "None") != nullptr) {
 		    none = 1;
 		} else {
 		    fprintf(

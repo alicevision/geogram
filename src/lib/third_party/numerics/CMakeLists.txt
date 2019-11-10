@@ -29,3 +29,4 @@ set_target_properties(geogram_num_3rdparty PROPERTIES
                       SOVERSION ${VORPALINE_VERSION_MAJOR}
 		      FOLDER "GEOGRAM")
 
+install_devkit_targets(geogram_num_3rdparty)

@@ -52,6 +52,108 @@
 #include <emscripten.h>
 #endif
 
+namespace {
+    using namespace GEO;
+
+    /**
+     * \brief Allocates the currently bound GL_TEXTURE_2D object.
+     * \param[in] width , height size of the texture.
+     * \param[in] internalformat internal format for the texture.
+     * \details Under WebGL2, if a generic internal format is specified,
+     *  then a specific one is chosen (generic internal formats are
+     *  not supported under WebGL2).
+     */
+    void allocate_texture_2D(
+	index_t width, index_t height, GLint internalformat
+    ) {
+
+      // - glTexImage2d in WebGL2 is very picky on what combination of
+      //   internalformat/format/type is accepted, and it needs a full
+      //   specification of internalformat (for instance, GL_RGBA8 instead
+      //   of GL_RGBA)
+      //   See
+      //   https://webgl2fundamentals.org/webgl/lessons/webgl-data-textures.html
+      //   for the valid combinations
+      //   OpenGL ES 3.0: see:
+      //   https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml
+      //	
+      // - not all internalformat defines are available in Emscripten, 
+      //   added the ones that I need in geogram_gfx/basic/GL.h
+      //
+      // TODO: initialize the WebGL extension "floating point render target"
+      // if needed
+
+	GLenum format=0;
+	GLenum type=0;
+	
+	switch(internalformat) {
+	    case GL_RGBA:
+		format = GL_RGBA;
+#if defined(GEO_OS_EMSCRIPTEN) && !defined(GEO_WEBGL2)
+		type = GL_FLOAT;		
+#else
+		type = GL_UNSIGNED_BYTE;
+#endif		
+		break;
+	    case GL_RGB:
+		format = GL_RGB;
+		type = GL_UNSIGNED_BYTE;
+		break;
+	    case GL_RED:
+		format = GL_RED;
+		type = GL_UNSIGNED_BYTE;
+		break;
+	    case GL_R16:
+		format = GL_RED;
+		type = GL_SHORT;
+		break;
+	    case GL_R32F:
+		format = GL_RED;
+		type = GL_FLOAT;
+		break;
+	    case GL_R16F:
+		format = GL_RED;
+		type = GL_FLOAT;
+		break;
+	    case GL_DEPTH_COMPONENT:
+		format = GL_DEPTH_COMPONENT;
+		type = GL_UNSIGNED_INT;
+		break;
+	}
+
+#if (defined(GEO_OS_EMSCRIPTEN) && defined(GEO_WEBGL2)) || defined(GEO_OS_ANDROID)
+	// Replace generic internal format with specific
+	// one, as required by WebGL2 and ES3
+	if(internalformat == GL_RGBA) {
+	    internalformat = GL_RGBA8;
+	} else if(internalformat == GL_RGB) {
+	    internalformat = GL_RGB8;
+	} else if(internalformat == GL_DEPTH_COMPONENT) {
+	    internalformat = GL_DEPTH_COMPONENT24;
+	} else if(internalformat == GL_RED) {
+	    internalformat = GL_R8;
+	}
+#endif
+
+	// If the following assertions fail, then
+	// this means that the internalformat that
+	// was given is not taken into account (just
+	// add it in the previous switch() and cascading
+	// ifs).
+	geo_assert(format != 0);
+	geo_assert(type != 0);
+
+	glTexImage2D(
+	    GL_TEXTURE_2D, 0,
+	    internalformat,
+	    GLsizei(width), GLsizei(height), 0,
+	    format,
+	    type,
+	    nullptr
+	);
+    }
+}
+
 namespace GEO {
 
     FrameBufferObject::FrameBufferObject() : 
@@ -85,24 +187,13 @@ namespace GEO {
             height = new_height;
 
 	    GEO_CHECK_GL();
-            glBindTexture(GL_TEXTURE_2D, offscreen_id);	    
-            glTexImage2D(
-                GL_TEXTURE_2D, 0, internal_storage,
-                GLsizei(width), GLsizei(height), 0,
-                GL_RGBA, GL_FLOAT, nullptr
-            );
+            glBindTexture(GL_TEXTURE_2D, offscreen_id);
+	    allocate_texture_2D(width, height, internal_storage);
 	    GEO_CHECK_GL();	    
             if(depth_buffer_id != 0) {
                 glBindTexture(GL_TEXTURE_2D, depth_buffer_id);
-		GEO_CHECK_GL();		
-                glTexImage2D(
-                    GL_TEXTURE_2D, 0,
-		    GL_DEPTH_COMPONENT,
-                    GLsizei(width), GLsizei(height), 0,
-                    GL_DEPTH_COMPONENT,
-		    GL_UNSIGNED_SHORT,
-		    nullptr
-                );
+		GEO_CHECK_GL();
+		allocate_texture_2D(width, height, GL_DEPTH_COMPONENT);
 		GEO_CHECK_GL();				
             }
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -115,28 +206,6 @@ namespace GEO {
         bool mipmaps
     ) {
 
-#ifdef GEO_OS_EMSCRIPTEN
-	// Initialize WEBGL extension for floating point textures.
-	// Note: the object returned by getExtension() needs to be
-	// stored (else when it is garbage collected the extension
-	// is deinitialized). It is stored in a new field of the
-	// Emscripten Module object.
-	if(with_depth_buffer) {
-	    EM_ASM(
-		if(!Module.WEBGL_depth_texture_ext) {
-		    Module.WEBGL_depth_texture_ext =
-			Module.ctx.getExtension("WEBGL_depth_texture");
-		    if(!Module.WEBGL_depth_texture_ext) {
-			alert("No WEBGL_depth_texture support");
-		    }
-		}
-		// In older browser: maybe try as well:
-		//   WEBKIT_WEBGL_depth_texture
-		//   MOZ_WEBGL_depth_texture"
-	    );
-	}
-#endif	
-	
 	GEO_CHECK_GL();
 	
         //  Get the id of the default frame buffer used by the
@@ -170,11 +239,11 @@ namespace GEO {
         glBindTexture(GL_TEXTURE_2D, offscreen_id);
 
 	GEO_CHECK_GL();
-	
-        if(!mipmaps) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        }
+
+	if(!mipmaps) {
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
 
 	GEO_CHECK_GL();
 	
@@ -182,15 +251,7 @@ namespace GEO {
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	GEO_CHECK_GL();
-	
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, internal_storage,
-            GLsizei(width), GLsizei(height), 0,
-            GL_RGBA,
-	    GL_FLOAT,
-	    nullptr
-        );
-
+	allocate_texture_2D(width, height, internal_storage);
 	GEO_CHECK_GL();
 	
         // Bind the texture to the frame buffer.
@@ -205,15 +266,7 @@ namespace GEO {
         if(with_depth_buffer) {
 
             glBindTexture(GL_TEXTURE_2D, depth_buffer_id);
-            glTexImage2D(
-                GL_TEXTURE_2D, 0,
-		GL_DEPTH_COMPONENT,
-                GLsizei(width), GLsizei(height), 0,
-                GL_DEPTH_COMPONENT,
-		GL_UNSIGNED_SHORT,
-		nullptr
-            );
-
+	    allocate_texture_2D(width, height, GL_DEPTH_COMPONENT);
 	    GEO_CHECK_GL();
 	
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

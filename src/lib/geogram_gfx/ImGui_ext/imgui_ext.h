@@ -74,6 +74,10 @@ namespace GEO {
      *  InputText().
      */
     enum { geo_imgui_string_length = 4096 };
+
+    namespace FileSystem {
+	class Node;
+    }
 }
 
 typedef int ImGuiExtFileDialogFlags;
@@ -137,6 +141,8 @@ namespace ImGui {
      * \param[in] extensions semi-colon-separated list of extensions, without
      *  the dot
      * \param[in] filename initial filename or empty string
+     * \param(in] root an optional root Node. If null or unspecified, then
+     *  the default root is used.
      * \details The file dialog is drawn and handled after, by calling
      *  FileDialog()
      */
@@ -144,7 +150,8 @@ namespace ImGui {
 	const char* label,
 	const char* extensions,
 	const char* filename,
-	ImGuiExtFileDialogFlags flags
+	ImGuiExtFileDialogFlags flags,
+	GEO::FileSystem::Node* root = nullptr
     );
 
     /**
@@ -189,6 +196,12 @@ namespace ImGui {
 	return ImGui::BeginMenu(name.c_str());
     }
 
+    /**
+     * \brief Adapter for ImGui::Button() for std::string.
+     */
+    inline bool Button(const std::string& name) {
+	return ImGui::Button(name.c_str());
+    }
 
     /**
      * \brief Displays a tooltip.
@@ -203,7 +216,7 @@ namespace ImGui {
      * \brief Displays a tooltip.
      * \details The tooltip is displayed if the previous item is hovered,
      *  \p str is non-null and tooltips are enabled.
-     * \param[in] str the tooltip to be displayed.
+     * \param[in] s the tooltip to be displayed.
      * \see EnableTooltips(), DisableToolTips()
      */
     inline void Tooltip(const std::string& s) {
@@ -221,6 +234,30 @@ namespace ImGui {
      * \see ToolTip()
      */
     void GEOGRAM_GFX_API DisableTooltips();
+
+
+    /**
+     * \brief Button without border.
+     */
+    bool GEOGRAM_GFX_API SimpleButton(const char* label);
+
+    /**
+     * \brief Button without border.
+     */
+    bool GEOGRAM_GFX_API SimpleButton(const char* label, const ImVec2& size);
+
+    /**
+     * \brief Wrapper for std::string around SimpleButton()
+     */
+    inline bool SimpleButton(const std::string& label) {
+	return SimpleButton(label.c_str());
+    }
+
+    /**
+     * \brief Draws a text label centered in the current window.
+     * \param[in] text the text to be drawn.
+     */
+    void GEOGRAM_GFX_API CenteredText(const char* text);
 }
 
 #endif

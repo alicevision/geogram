@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/ld3yRn
+
 // ST_MODE = "ShaderToy mode". Do not undefine. It is here for PolyCube compatibility.
 #define ST_MODE
 

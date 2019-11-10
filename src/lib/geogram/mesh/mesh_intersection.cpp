@@ -99,8 +99,7 @@ namespace {
         if(f1 == f2) {
             return true;
         }
-        for(index_t c = M.facets.corners_begin(f1);
-            c != M.facets.corners_end(f1); ++c) {
+        for(index_t c: M.facets.corners(f1)) {
             if(M.facet_corners.adjacent_facet(c) == f2) {
                 return true;
             }
@@ -169,11 +168,9 @@ namespace {
         AABB.compute_facet_bbox_intersections(action);
 
         for(index_t i = 1; i <= nb_neigh; i++) {
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 if(has_intersection[f] == 0) {
-                    for(index_t c = M.facets.corners_begin(f);
-                        c < M.facets.corners_end(f); c++
-                     ) {
+                    for(index_t c: M.facets.corners(f)) {
                         index_t f2 = M.facet_corners.adjacent_facet(c);
                         if(f2 != NO_FACET && has_intersection[f2] == i) {
                             has_intersection[f] = i + 1;

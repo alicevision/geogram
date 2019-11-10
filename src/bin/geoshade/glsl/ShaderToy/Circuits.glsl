@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/XlX3Rj
+
 #define time iTime*.02
 
 
@@ -22,9 +24,9 @@ void formula(vec2 z, float c) {
 	float w=width*minit*2.;
 	float circ=pow(max(0.,w-ot2)/w,6.);
 	shape+=max(pow(max(0.,w-ot)/w,.25),circ);
-	vec3 col=normalize(.3+texture(iChannel1,vec2(minit*.1)).rgb);
+	vec3 col=normalize(vec3(0.3,0.3,0.3));
 	color+=col*(.4+mod(minit/9.-time*10.+ot2*2.,1.)*1.6);
-	color+=vec3(1.,.7,.3)*circ*(10.-minit)*3.*smoothstep(0.,.5,.15+texture(iChannel0,vec2(.0,1.)).x-.5);
+	color+=vec3(1.,.7,.3)*circ*(10.-minit)*3.*smoothstep(0.,.5,.15-.5);
 }
 
 

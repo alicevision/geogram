@@ -50,6 +50,7 @@
 #include <geogram/basic/string.h>
 #include <geogram/basic/logger.h>
 #include <geogram/basic/file_system.h>
+#include <geogram/basic/command_line.h>
 #include <map>
 
 namespace {
@@ -249,16 +250,30 @@ namespace {
      * \brief Converts an icon symbolic name and a label to a string.
      * \param[in] icon_sym the symbolic name of the icon.
      * \param[in] label the label to be displayed.
+     * \param[in] no_label if true, do not display the label
      * \return a UTF8 string with the icon and label, or just the label
      *  if the icon font is not initialized.
      */
-    std::string icon_label(const char* icon_sym, const char* label) {
+    std::string icon_label(
+	const char* icon_sym,
+	const char* label = nullptr,
+	bool no_label = false
+    ) {
 	wchar_t str[2];
 	str[0] = icon_wchar(icon_sym);
 	if(str[0] == '\0') {
 	    return std::string(label);
 	}
 	str[1] = '\0';
+	if(label == nullptr) {
+	    return GEO::String::wchar_to_UTF8(str);
+	}
+	if(no_label) {
+	    return GEO::String::wchar_to_UTF8(str) + "##" + label;
+	}
+	if(label[0] == '#') {
+	    return GEO::String::wchar_to_UTF8(str) + label;
+	}
 	return GEO::String::wchar_to_UTF8(str) + " " + label;
     }
 
@@ -278,8 +293,10 @@ namespace {
          */
         FileDialog(
             bool save_mode=false,
-            const std::string& default_filename=""
+            const std::string& default_filename="",
+	    FileSystem::Node* root = nullptr
         ) : visible_(false),
+	    root_(nullptr),
 	    current_write_extension_index_(0),        
 	    pinned_(false),
 	    show_hidden_(false),
@@ -287,17 +304,42 @@ namespace {
 	    save_mode_(save_mode),
 	    are_you_sure_(false)
 	{
-#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
-	    directory_ = FileSystem::documents_directory() + "/";
-#else	
-	    directory_ = FileSystem::get_current_working_directory() + "/";
-#endif	
+	    set_root(root);
 	    set_default_filename(default_filename);
 	    current_file_index_ = 0;
 	    current_directory_index_ = 0;
 	    current_write_extension_index_ = 0;
+	    no_docking_ =
+		!CmdLine::get_arg_bool("gui:expert") &&
+		!CmdLine::get_arg_bool("gui:phone_screen");
 	}
 
+
+	/**
+	 * \brief Sets the root node to be used with the FileDialog.
+	 * \param[in] root a pointer to the root node.
+	 */
+	void set_root(FileSystem::Node* root) {
+	    FileSystem::Node* prev_root = root_;
+	    root_ = root;
+	    if(root_ == nullptr) {
+		FileSystem::get_root(root_);
+	    }
+	    if(prev_root != root_) {
+#if defined(GEO_OS_WINDOWS) || defined(GEO_OS_ANDROID)
+		directory_ = root_->documents_directory();
+#else	
+		directory_ = root_->get_current_working_directory();
+#endif
+		if(
+		    directory_ == "" ||
+		    directory_[directory_.length()-1] != '/'
+		) {
+		    directory_ += "/";
+		}
+	    }
+	}
+	
 	/** 
 	 * \brief Sets the default file.
 	 * \details Only valid if save_mode is set.
@@ -332,37 +374,87 @@ namespace {
 		return;
 	    }
 
-	    ImGui::SetNextWindowSize(
-		ImVec2(ImGui::scaling()*400.0f, ImGui::scaling()*415.0f),
-		ImGuiCond_Once
-	    );
+	    bool phone_screen = CmdLine::get_arg_bool("gui:phone_screen");
 
+	    if(!phone_screen) {
+		ImGui::SetNextWindowSize(
+		    ImVec2(ImGui::scaling()*400.0f, ImGui::scaling()*415.0f),
+		    ImGuiCond_Once
+		);
+	    }
+
+	    std::string label = std::string(
+		save_mode_ ? "Save as...##" : "Load...##"		
+	    );
+	    
+	    if(!phone_screen) {
+		label += String::to_string(this);
+	    }
+	    
 	    ImGui::Begin(
-		(std::string(
-		    save_mode_ ? "Save as...##" : "Load...##"
-		)+String::to_string(this)).c_str(),
+		label.c_str(),
 		&visible_,
-		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking
+		ImGuiWindowFlags_NoCollapse | (
+		    no_docking_ ? ImGuiWindowFlags_NoDocking : 0
+		)
 	    );
 
-	    if(ImGui::Button(icon_label("arrow-circle-up","parent").c_str())) {
+	    float s = ImGui::CalcTextSize(icon_UTF8("thumbtack").c_str()).x;
+	    float spacing = 0.15f*s;
+
+	    bool compact = (ImGui::GetContentRegionAvail().x < s*10.0f);
+	    
+	    if(phone_screen) {
+		if(ImGui::SimpleButton(icon_label(
+		   "window-close","##file_dialog_close", compact
+		))) {
+		    visible_ = false;
+		}
+		ImGui::SameLine();
+		ImGui::Dummy(ImVec2(spacing,1.0f));
+		ImGui::SameLine();
+	    }
+	    
+	    if(ImGui::SimpleButton(icon_label(
+		"arrow-circle-up","parent", compact
+	    ))) {
 		set_directory("../");
 	    }
 	    ImGui::SameLine();
-	    if(ImGui::Button(icon_label("home","home").c_str())) {
-		set_directory(FileSystem::documents_directory());
+	    ImGui::Dummy(ImVec2(spacing,1.0f));
+	    ImGui::SameLine();
+	    if(ImGui::SimpleButton(icon_label("home","home",compact))) {
+		set_directory(root_->documents_directory());
 		update_files();
 	    }
-	    ImGui::SameLine();            
-	    if(ImGui::Button(icon_label("recycle","refresh").c_str())) {
+	    ImGui::SameLine();
+	    ImGui::Dummy(ImVec2(spacing,1.0f));
+	    ImGui::SameLine();
+	    if(ImGui::SimpleButton(icon_label("sync-alt","refresh",compact))) {
 		update_files();
 	    }
 
-	    if(!save_mode_) {
-		ImGui::SameLine();        
-		ImGui::Text("pin");
+	    if(!save_mode_ && !phone_screen) {
+		ImGui::SameLine();        		
+		ImGui::Dummy(
+		    ImVec2(
+			ImGui::GetContentRegionAvail().x - s*1.1f,1.0f
+		    )
+		);
 		ImGui::SameLine();
-		ImGui::Checkbox("##pin", &pinned_);
+		if(pinned_) {
+		    if(ImGui::SimpleButton(
+			   icon_UTF8("dot-circle") + "##pin"
+		    )) {
+			pinned_ = !pinned_;
+		    }
+		} else {
+		    if(ImGui::SimpleButton(
+			   icon_UTF8("thumbtack") + "##pin"
+		    )) {
+			pinned_ = !pinned_;
+		    }
+		}
 		if(ImGui::IsItemHovered()) {
 		    ImGui::SetTooltip("Keeps this dialog open.");
 		}
@@ -370,7 +462,7 @@ namespace {
 
 	    draw_disk_drives();
 	    ImGui::Separator();
-	
+	    
 	    {
 		std::vector<std::string> path;
 		String::split_string(directory_, '/', path);
@@ -387,9 +479,9 @@ namespace {
 		    }
 		    // We need to generate a unique id, else there is an id
 		    // clash with the "home" button right before !!
-		    if(ImGui::SmallButton(
-			   (path[i] + "##path" + String::to_string(i)).c_str())
-			) {
+		    if(ImGui::SimpleButton(
+			   (path[i] + "##path" + String::to_string(i))
+		    )) {
 			std::string new_dir;
 			if(path[0].length() >= 2 && path[0][1] == ':') {
 			    new_dir = path[0];
@@ -408,7 +500,12 @@ namespace {
 		}
 	    }
 
-	    const float footer_size = 35.0f*ImGui::scaling();
+	    const float footer_size =
+		phone_screen ? 0.0f : 35.0f*ImGui::scaling();
+	    
+	    if(phone_screen) {
+		draw_footer();
+	    }
 	    {
 		ImGui::BeginChild(
 		    "##directories",
@@ -422,8 +519,7 @@ namespace {
 		    if(ImGui::Selectable(
 			   directories_[i].c_str(),
 			   (i == current_directory_index_)
-			   )
-		    ) {
+		    )) {
 			current_directory_index_ = i;
 			set_directory(directories_[current_directory_index_]);
 		    }
@@ -444,8 +540,7 @@ namespace {
 		    if(ImGui::Selectable(
 			   files_[i].c_str(),
 			   (i == current_file_index_)
-			   )
-		    ) {
+		    )) {
 			safe_strncpy(
 			    current_file_,files_[i].c_str(),
 			    sizeof(current_file_)
@@ -462,73 +557,9 @@ namespace {
 		    }
 		}
 		ImGui::EndChild();
-
-		{
-		    if(ImGui::Button(
-			   save_mode_ ?
-			   icon_label("save","Save as").c_str() :
-			   icon_label("folder-open","Load").c_str()
-			   )
-		    ) {
-			file_selected();
-		    }
-		    ImGui::SameLine();
-		    ImGui::PushItemWidth(
-			save_mode_ ?
-			-80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
-		    );
-		    if(ImGui::InputText(
-			   "##filename",
-			   current_file_, geo_imgui_string_length,
-			   ImGuiInputTextFlags_EnterReturnsTrue    |
-			   ImGuiInputTextFlags_CallbackHistory     |
-			   ImGuiInputTextFlags_CallbackCompletion ,
-			   text_input_callback,
-			   this 
-		       )
-		    ) {
-			scroll_to_file_ = true;
-			std::string file = current_file_;
-			for(index_t i=0; i<files_.size(); ++i) {
-			    if(files_[i] == file) {
-				current_file_index_ = i;
-			    }
-			}
-			file_selected();
-		    }
-		    ImGui::PopItemWidth();
-		    // Keep auto focus on the input box
-		    if (ImGui::IsItemHovered()) {
-			// Auto focus previous widget                
-			ImGui::SetKeyboardFocusHere(-1); 
-		    }
-
-		    if(save_mode_) {
-			ImGui::SameLine();
-			ImGui::PushItemWidth(-5.0f*ImGui::scaling());
-
-			std::vector<const char*> write_extensions;
-			for(index_t i=0; i<extensions_.size(); ++i) {
-			    write_extensions.push_back(&extensions_[i][0]);
-			}
-			if(ImGui::Combo(
-			       "##extension",
-			       (int*)(&current_write_extension_index_),
-			       &write_extensions[0],
-			       int(write_extensions.size())
-			       )
-			 ) {
-			    std::string file = current_file_;
-			    file = FileSystem::base_name(file) + "." +
-				extensions_[current_write_extension_index_];
-			    safe_strncpy(
-				current_file_, file.c_str(),
-				sizeof(current_file_)
-			    );
-			}
-			ImGui::PopItemWidth();
-		    }
-		}
+	    }
+	    if(!phone_screen) {
+		draw_footer();
 	    }
 	    ImGui::End();
 	    draw_are_you_sure();
@@ -571,6 +602,72 @@ namespace {
 	
     protected:
 
+	void draw_footer() { 
+	    if(ImGui::Button(
+		   save_mode_ ?
+		   icon_label("save","Save as").c_str() :
+		   icon_label("folder-open","Load").c_str()
+ 	    )) {
+		file_selected();
+	    }
+	    ImGui::SameLine();
+	    ImGui::PushItemWidth(
+		save_mode_ ?
+		-80.0f*ImGui::scaling() : -5.0f*ImGui::scaling()
+		);
+	    if(ImGui::InputText(
+		   "##filename",
+		   current_file_, geo_imgui_string_length,
+		   ImGuiInputTextFlags_EnterReturnsTrue    |
+		   ImGuiInputTextFlags_CallbackHistory     |
+		   ImGuiInputTextFlags_CallbackCompletion ,
+		   text_input_callback,
+		   this 
+		   )
+		) {
+		scroll_to_file_ = true;
+		std::string file = current_file_;
+		for(index_t i=0; i<files_.size(); ++i) {
+		    if(files_[i] == file) {
+			current_file_index_ = i;
+		    }
+		}
+		file_selected();
+	    }
+	    ImGui::PopItemWidth();
+	    // Keep auto focus on the input box
+	    if (ImGui::IsItemHovered()) {
+		// Auto focus previous widget                
+		ImGui::SetKeyboardFocusHere(-1); 
+	    }
+
+	    if(save_mode_) {
+		ImGui::SameLine();
+		ImGui::PushItemWidth(-5.0f*ImGui::scaling());
+		
+		std::vector<const char*> write_extensions;
+		for(index_t i=0; i<extensions_.size(); ++i) {
+		    write_extensions.push_back(&extensions_[i][0]);
+		}
+		if(ImGui::Combo(
+		       "##extension",
+		       (int*)(&current_write_extension_index_),
+		       &write_extensions[0],
+		       int(write_extensions.size())
+		       )
+		    ) {
+		    std::string file = current_file_;
+		    file = root_->base_name(file) + "." +
+			extensions_[current_write_extension_index_];
+		    safe_strncpy(
+			current_file_, file.c_str(),
+			sizeof(current_file_)
+		    );
+		}
+		ImGui::PopItemWidth();
+	    }
+	}
+	
 	/**
 	 * \brief Tests whether a file can be read.
 	 * \param[in] filename the file name to be tested.
@@ -578,10 +675,10 @@ namespace {
 	 * \retval false otherwise.
 	 */
 	bool can_load(const std::string& filename) {
-	    if(!FileSystem::is_file(filename)) {
+	    if(!root_->is_file(filename)) {
 		return false;
 	    }
-	    std::string ext = FileSystem::extension(filename);
+	    std::string ext = root_->extension(filename);
 	    for(size_t i=0; i<extensions_.size(); ++i) {
 		if(extensions_[i] == ext || extensions_[i] == "*") {
 		    return true;
@@ -601,12 +698,12 @@ namespace {
 	    directories_.push_back("../");
         
 	    std::vector<std::string> entries;
-	    FileSystem::get_directory_entries(directory_, entries);
+	    root_->get_directory_entries(directory_, entries);
 	    std::sort(entries.begin(), entries.end());
 	    for(index_t i=0; i<entries.size(); ++i) {
 		if(can_load(entries[i])) {
 		    files_.push_back(path_to_label(directory_,entries[i]));
-		} else if(FileSystem::is_directory(entries[i])) {
+		} else if(root_->is_directory(entries[i])) {
 		    std::string subdir =
 			path_to_label(directory_,entries[i]) + "/";
 		    if(show_hidden_ || subdir[0] != '.') {
@@ -644,7 +741,7 @@ namespace {
 	    if(directory[0] == '/' || directory[1] == ':') {
 		directory_ = directory;
 	    } else {
-		directory_ = FileSystem::normalized_path(
+		directory_ = root_->normalized_path(
 		    directory_ + "/" +
 		    directory 
 		);
@@ -763,10 +860,10 @@ namespace {
          */
         void file_selected(bool force=false) {
 	    std::string file =
-		FileSystem::normalized_path(directory_+"/"+current_file_);
+		root_->normalized_path(directory_+"/"+current_file_);
         
 	    if(save_mode_) {
-		if(!force && FileSystem::is_file(file)) {
+		if(!force && root_->is_file(file)) {
 		    are_you_sure_ = true;
 		    return;
 		} else {
@@ -830,7 +927,7 @@ namespace {
 		    std::string drive;
 		    drive += char('A' + char(b));
 		    drive += ":";
-		    if(ImGui::Button(drive.c_str())) {
+		    if(ImGui::Button(drive)) {
 			set_directory(drive);
 		    }
 		    ImGui::SameLine();
@@ -847,6 +944,7 @@ namespace {
 	
     private:
         bool visible_;
+	FileSystem::Node* root_;
         std::string directory_;
         index_t current_directory_index_;
         index_t current_file_index_;
@@ -861,6 +959,7 @@ namespace {
         bool save_mode_;
         bool are_you_sure_;
 	std::string selected_file_;
+	bool no_docking_;
     };
 
     std::map<std::string, FileDialog*> file_dialogs;
@@ -912,7 +1011,8 @@ namespace ImGui {
 	const char* label,
 	const char* extensions,
 	const char* filename,
-	ImGuiExtFileDialogFlags flags
+	ImGuiExtFileDialogFlags flags,
+	FileSystem::Node* root
     ) {
 	initialize_imgui_ext();	
 	::FileDialog* dlg = nullptr;
@@ -927,6 +1027,7 @@ namespace ImGui {
 	} else {
 	    dlg->set_save_mode(false);
 	}
+	dlg->set_root(root);
 	dlg->show();
     }
 
@@ -973,7 +1074,29 @@ namespace ImGui {
     void DisableTooltips() {
 	tooltips_enabled = false;	
     }
-    
+
+    /****************************************************************/
+
+    bool SimpleButton(const char* label) {
+	std::string str(label);
+	size_t off = str.find("##");
+	if(off != std::string::npos) {
+	    str = str.substr(0, off);
+	}
+	ImVec2 label_size = ImGui::CalcTextSize(str.c_str(), NULL, true);
+	return ImGui::Selectable(label, false, 0, label_size);
+    }
+
+    void CenteredText(const char* text) {
+	ImVec2 text_size = ImGui::CalcTextSize(text, NULL, true);
+	ImVec2 avail_size = ImGui::GetContentRegionAvail();
+	float w = 0.95f*(avail_size.x - text_size.x) / 2.0f;
+	if(w > 0.0f) {
+	    ImGui::Dummy(ImVec2(w, text_size.y));
+	}
+	ImGui::SameLine();
+	ImGui::Text("%s",text);
+    }
 }
 
 

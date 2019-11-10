@@ -85,14 +85,45 @@ namespace {
 
 namespace GLUP {
     using namespace GEO;
-    static Context* current_context_ = nullptr;
+    
+    extern GLUP_API Context* current_context_;
+    Context* current_context_ = nullptr;
+    
     static std::set<Context*> all_contexts_;
     static bool initialized_ = false;
     static void cleanup() {
-        for(auto ctxt : all_contexts_) {
-            delete ctxt;
-        }
-        all_contexts_.clear();
+#ifdef GEO_OS_ANDROID
+	// Note: removal of context from all_contexts_
+	// is done in glupDeleteContext() (not in Context
+	// destructor), so we can direcly iterate on all_contexts_
+	// and delete.
+	// TODO: check that GLUP contexts are really destroyed *before*
+	// the OpenGL context. (yes it is, because if I output
+	// something to the logger here, it appears in the app's temrinal).
+	for(auto ctxt: all_contexts_) {
+	    delete ctxt;
+	}
+	all_contexts_.clear();
+	return;
+#endif	
+	
+	// Note: remaining contexts are not deallocated here because:
+	// (1) there should be no remaining context (it is Application's
+	//   job to deallocate them).
+	// (2) when cleanup() is called, Application's delete_window() was
+	//   called before, as well as glfwDeleteWindow() / glfwTerminate()
+	//   so the OpenGL context is destroyed (and it is not legal to destroy
+	//   it before the OpenGL objects in the GLUP context)
+	if(all_contexts_.size() != 0) {
+	    Logger::warn("GLUP") << "Some GLUP contexts were not deallocated"
+				 << std::endl;
+	    Logger::warn("GLUP") << "App\'s GL_terminate() probably forgot to"
+				 << std::endl;
+	    Logger::warn("GLUP") << "call SimpleApplication\'s GL_terminate()"
+				 << std::endl;
+	    Logger::warn("GLUP") << "(needs to be at then end of the function)"
+				 << std::endl;
+	}
     }
     
 }
@@ -206,7 +237,11 @@ GLUPuint glupCompileProgram(const char* source_in) {
 	for(index_t i=0; i<index_t(sources.size()); ++i) {
 	    GLUPuint shader = glupCompileShader(targets[i], sources[i]);
 	    if(shader == 0) {
+#ifdef GEO_OS_EMSCRIPTEN
+		return 0;
+#else
 		throw(GLSL::GLSLCompileError());
+#endif		
 	    }
 	    shaders.push_back(shader);
 	}
@@ -220,7 +255,9 @@ GLUPuint glupCompileProgram(const char* source_in) {
         GEO_CHECK_GL();    	
         glBindAttribLocation(program, GLUP::GLUP_VERTEX_ATTRIBUTE, "vertex_in");
         glBindAttribLocation(program, GLUP::GLUP_COLOR_ATTRIBUTE, "color_in");
-        glBindAttribLocation(program, GLUP::GLUP_TEX_COORD_ATTRIBUTE, "tex_coord_in");
+        glBindAttribLocation(
+	    program, GLUP::GLUP_TEX_COORD_ATTRIBUTE, "tex_coord_in"
+	);
         glBindAttribLocation(program, GLUP::GLUP_NORMAL_ATTRIBUTE, "normal_in");
 	
         GEO_CHECK_GL();    		
@@ -428,7 +465,11 @@ void glupDeleteContext(GLUPcontext context_in) {
 
 
 GLUPcontext glupCurrentContext() {
-    GEO_CHECK_GL();    
+    // Note: we cannot check GL state if OpenGL
+    // is not initialized.
+    if(GLUP::current_context_ != nullptr) {
+	GEO_CHECK_GL();
+    }
     return GLUP::current_context_;
 }
 

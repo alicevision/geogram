@@ -1265,7 +1265,7 @@ namespace GLUP {
         "#endif \n"
         " \n"
         "out VertexData { \n"
-        "#  ifdef GL_ES \n"
+        "#ifdef GL_ES \n"
         "      vec4 vertex_clip_space; \n"
         "#endif \n"
         "    vec4 color; \n"

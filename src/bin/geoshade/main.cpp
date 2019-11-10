@@ -51,28 +51,7 @@
 #include <algorithm>
 #include <map>
 
-std::map<std::string, const char*> embedded_files;
-
-void register_embedded_glsl_file(const char* filename, const char* body) {
-    embedded_files[std::string(filename)] = body;
-}
-
-extern void register_embedded_glsl_files(void);
-
-void list_embedded_glsl_files(std::vector<std::string>& files) {
-    files.clear();
-    for(auto it : embedded_files) {
-	files.push_back(it.first);
-    }
-}
-
-void get_embedded_glsl_file(const char* filename, const char** data) {
-    *data = nullptr;
-    auto it = embedded_files.find(std::string(filename));
-    if(it != embedded_files.end()) {
-	*data = it->second;
-    }
-}
+extern void register_embedded_glsl_files(GEO::FileSystem::MemoryNode* n);
 
 namespace {
 
@@ -88,18 +67,16 @@ namespace {
          * \brief GeoShadeApplication constructor.
          */
         GeoShadeApplication() : SimpleApplication("GeoShade") {
+	    builtin_files_ = new FileSystem::MemoryNode();
 	    set_default_filename("hello.glsl");
 	    use_text_editor_ = true;
             set_region_of_interest(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-	    register_embedded_glsl_files();
+	    register_embedded_glsl_files(builtin_files_);
 	    glsl_program_ = 0;	    
 	    three_D_ = false;
 	    glsl_frame_ = 0;
 	    glsl_start_time_ = SystemStopwatch::now();
 	    object_properties_visible_ = false;
-#ifdef GEO_OS_ANDROID
-	    viewer_properties_visible_ = false;
-#endif	    
 	    new_file();
         }
 
@@ -112,7 +89,19 @@ namespace {
 		glsl_program_ = 0;
 	    }
         }
-        
+
+
+	/**
+	 * \copydoc SimpleApplication::geogram_initialize()
+	 */
+	void geogram_initialize(int argc, char** argv) override {
+	    SimpleApplication::geogram_initialize(argc, argv);
+	    if(phone_screen_) {
+		viewer_properties_visible_ = false;
+	    }
+	}
+
+	
         /**
          * \brief Displays and handles the GUI for object properties.
          * \details Overloads Application::draw_object_properties().
@@ -135,21 +124,29 @@ namespace {
 		    // If shader has an iTime uniform (e.g. a ShaderToy shader),
 		    // then update it, and indicate that graphics should be
 		    // updated again and again (call update() at each frame).
-		    GLint iTime_loc = glGetUniformLocation(glsl_program_, "iTime");
+		    GLint iTime_loc = glGetUniformLocation(
+			glsl_program_, "iTime"
+		    );
 		    if(iTime_loc != -1) {
 			glUniform1f(
-			    iTime_loc, float(SystemStopwatch::now() - glsl_start_time_)
+			    iTime_loc,
+			    float(SystemStopwatch::now() - glsl_start_time_)
 			);
 		    }
 
-		    GLint iFrame_loc = glGetUniformLocation(glsl_program_, "iFrame");
+		    GLint iFrame_loc = glGetUniformLocation(
+			glsl_program_, "iFrame"
+		    );
 		    if(iFrame_loc != -1) {
 			glUniform1f(
 			    iFrame_loc, float(glsl_frame_)
 			);
 		    }
 
-		    GLint iDate_loc = glGetUniformLocation(glsl_program_, "iDate");
+		    GLint iDate_loc = glGetUniformLocation(
+			glsl_program_, "iDate"
+		    );
+
 		    if(iDate_loc != -1) {
 			time_t t = time(nullptr);
 			struct tm* tm = localtime(&t);
@@ -201,24 +198,6 @@ namespace {
 	    }
         }
 
-	void embedded_files_menu(const std::string& prefix) {
-	    std::vector<std::string> embedded_files;
-	    list_embedded_glsl_files(embedded_files);
-	    std::sort(embedded_files.begin(), embedded_files.end());
-	    for(index_t i=0; i<embedded_files.size(); ++i) {
-		if(String::string_starts_with(
-		       embedded_files[i],prefix) &&
-		   ImGui::MenuItem(embedded_files[i].c_str())
-		) {
-		    const char* data;
-		    get_embedded_glsl_file(embedded_files[i].c_str(), &data);
-		    text_editor_.load_data(data);
-		    current_file_ = "";
-		    text_editor_visible_ = true;
-		}
-	    }
-	}
-
 	void new_file() {
 	    text_editor_.clear();
 	    text_editor_.load_data(
@@ -236,21 +215,36 @@ namespace {
 	}
 	
 	virtual void draw_fileops_menu() override {
-	    if(ImGui::MenuItem("New...")) {
+	    if(ImGui::MenuItem(
+		   (icon_UTF8("play-circle") + " Run program").c_str(),
+		   phone_screen_ ? nullptr : "[F5]"
+	    )) {
+		run_program();
+	    }
+	    if(ImGui::MenuItem(
+		   (icon_UTF8("stop-circle") + "Stop program").c_str()
+	    )) {
+		stop_program();
+	    }
+	    ImGui::Separator();
+	    if(ImGui::MenuItem(icon_UTF8("file")+" New...")) {
 		new_file();
 		current_file_ = "";
 	    }
-	    if(ImGui::BeginMenu("Load example...")) {
-		embedded_files_menu("ShaderToy/");				
-		embedded_files_menu("course/");		
-		ImGui::EndMenu();
+	    if(phone_screen_) {
+		draw_load_menu();
+		draw_save_menu();
 	    }
-	    if(ImGui::MenuItem("Run program [F5]")) {
-		run_program();
-	    }
-	    if(ImGui::MenuItem("Stop program")) {
-		stop_program();
-	    }
+	    ImGui::Separator();
+	    if(ImGui::MenuItem(icon_UTF8("folder-open")+"Load example...")) {
+		ImGui::OpenFileDialog(
+		    "##load_dlg",
+		    supported_read_file_extensions().c_str(),
+		    filename_,
+		    ImGuiExtFileDialogFlags_Load,
+		    builtin_files_
+		);
+	    } 
 	}
 
 	void run_program() {
@@ -260,7 +254,9 @@ namespace {
 	    }
 	    glsl_frame_ = 0;
 	    glsl_start_time_ = SystemStopwatch::now();
-	    {
+	    if(text_editor_.text().find("<GLUP/ShaderToy.h>") != std::string::npos) {
+		glsl_program_ = glupCompileProgram(text_editor_.text().c_str());		
+	    } else {
 		std::string source = (
 		    "//stage GL_FRAGMENT_SHADER\n"
 		    "//import <GLUP/ShaderToy.h>\n"
@@ -277,45 +273,41 @@ namespace {
 	    text_editor_visible_ = true;
 	}
 
-	
-        /**
-         * \brief Draws the application menus.
-         * \details This function overloads 
-         *  Application::draw_application_menus(). It can be used to create
-         *  additional menus in the main menu bar.
-         */
-	void draw_application_menus() override {
-#ifdef GEO_OS_ANDROID
-	    ImGui::Dummy(ImVec2(10.0f * scaling(), 0.0f));	    	    
-	    if(ImGui::Button(
-		   (icon_UTF8("play-circle") + " Run").c_str()
-	    )) {
-		run_program();
+	/**
+	 * \copydoc SimpleApplication::draw_application_icons()
+	 */
+	void draw_application_icons() override {
+	    if(phone_screen_) {
+		if(ImGui::SimpleButton(icon_UTF8("home"))) {
+		    home();
+		}
+		if(ImGui::SimpleButton(icon_UTF8("play-circle"))) {
+		    run_program();
+		}
+		if(ImGui::SimpleButton(icon_UTF8("stop-circle"))) {
+		    stop_program();
+		}
 	    }
-	    ImGui::Dummy(ImVec2(10.0f * scaling(), 0.0f));
-	    if(ImGui::Button(
-		   (icon_UTF8("stop-circle") + " Stop").c_str()
-	    )) {		   
-		stop_program();
-	    }
-	    ImGui::Dummy(ImVec2(10.0f * scaling(), 0.0f));	    
-	    if(ImGui::Button(
-		   (icon_UTF8("home") + " Home [H]").c_str()
-	    )) {
-		home();
-	    }
-#endif	    
 	}
-	
 
+	
 	/**
 	 * \copydoc Application::load()
 	 */
 	bool load(const std::string& filename) override {
-	    text_editor_.load(filename);
-	    current_file_ = filename;
-	    text_editor_visible_ = true;
-	    return true;
+	    if(FileSystem::is_file(filename)) {
+		text_editor_.load(filename);
+		current_file_ = filename;
+		text_editor_visible_ = true;
+		return true;
+	    } else if(builtin_files_->is_file(filename)) {
+		const char* data = builtin_files_->get_file_contents(filename);
+		text_editor_.load_data(data);
+		current_file_ = "";
+		text_editor_visible_ = true;
+		return true;
+	    }
+	    return false;
 	}
 
 	/**
@@ -341,23 +333,24 @@ namespace {
 	    return "glsl";
 	}
 
-
-	
     protected:
 	void draw_viewer_properties() override {
 	    if(ImGui::Button(
-		   "run",
-		   ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f))
+		   (icon_UTF8("play-circle")+" run").c_str(),
+		   ImVec2(-ImGui::GetContentRegionAvailWidth()/1.8f,0.0f))
 	    ) {
 		run_program();
 	    }
 	    ImGui::SameLine();
-	    if(ImGui::Button("stop", ImVec2(-1.0f, 0.0f))) {
+	    if(ImGui::Button(
+		   (icon_UTF8("stop-circle")+" stop").c_str(),
+		   ImVec2(-1.0f, 0.0f))
+	    ) {
 		stop_program();
 	    }
             ImGui::Separator();
 	    if(ImGui::Button(
-		   (icon_UTF8("home") + " Home [H]").c_str(), ImVec2(-1.0, 0.0))
+		   (icon_UTF8("home") + " Home").c_str(), ImVec2(-1.0, 0.0))
 	    ) {
 		home();
 	    }
@@ -367,6 +360,7 @@ namespace {
 	GLuint glsl_program_;
 	int glsl_frame_;
 	double glsl_start_time_;
+	SmartPointer<FileSystem::MemoryNode> builtin_files_;
     };
       
 }

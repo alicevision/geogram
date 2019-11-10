@@ -83,7 +83,7 @@ namespace GEO {
             return false;
         }
         if(preprocess) {
-            for(index_t c=0; c<M.facet_corners.nb(); ++c) {
+            for(index_t c: M.facet_corners) {
                 if(M.facet_corners.adjacent_facet(c) == NO_FACET) {
                     Logger::err("TetMeshing")
                         << "Mesh is not closed"
@@ -105,17 +105,20 @@ namespace GEO {
             delaunay->set_vertices(0,nullptr); // No additional vertex
         } catch(const Delaunay::InvalidInput& error_report) {
             if(CmdLine::get_arg_bool("dbg:tetgen")) {
-                Logger::err("Tetgen") << "Reporting intersections in tetgen_intersections.obj"
-                                      << std::endl;
+                Logger::err("Tetgen")
+		    << "Reporting intersections in tetgen_intersections.obj"
+		    << std::endl;
                 std::ofstream out("tetgen_intersections.obj");
                 index_t cur = 1;
                 for(index_t i=0; i<error_report.invalid_facets.size(); ++i) {
                     index_t f = error_report.invalid_facets[i];
                     for(index_t lv=0; lv<3; ++lv) {
                         index_t v = M.facets.vertex(f,lv);
-                        out << "v " << vec3(M.vertices.point_ptr(v)) << std::endl;
+                        out << "v " << vec3(M.vertices.point_ptr(v))
+			    << std::endl;
                     }
-                    out << "f " << cur << " " << cur+1 << " " << cur+2 << std::endl;
+                    out << "f " << cur << " " << cur+1 << " " << cur+2
+			<< std::endl;
                     cur += 3;
                 }
             }
@@ -139,7 +142,7 @@ namespace GEO {
 
 	if(keep_regions) {
 	    Attribute<index_t> region(M.cells.attributes(), "region");
-	    FOR(t,M.cells.nb()) {
+	    for(index_t t: M.cells) {
 		region[t] = delaunay->region(t);
 	    }
 	}

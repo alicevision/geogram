@@ -54,10 +54,8 @@ namespace GEO {
 	vector<index_t> v2c(M.vertices.nb(), index_t(-1));
 	vector<index_t> next_c_around_v(M.facet_corners.nb(), index_t(-1));
 	vector<index_t> c2f(M.facet_corners.nb(), index_t(-1));
-	for(index_t f=0; f<M.facets.nb(); ++f) {
-	    for(index_t c=M.facets.corners_begin(f);
-		c<M.facets.corners_end(f); ++c
-	    ) {
+	for(index_t f: M.facets) {
+	    for(index_t c: M.facets.corners(f)) {
 		index_t v = M.facet_corners.vertex(c);
 		next_c_around_v[c] = v2c[v];
 		v2c[v] = c;
@@ -87,20 +85,17 @@ namespace GEO {
 	    );
 	}
 	
-	for(index_t v=0; v<M.vertices.nb(); ++v) {
+	for(index_t v: M.vertices) {
 	    if(v_is_locked[v]) {
 		nlLockVariable(v);
 	    }
 	}
 	
 	nlBegin(NL_MATRIX);
-	for(index_t v=0; v<M.vertices.nb(); ++v) {
+	for(index_t v: M.vertices) {
 	    nlBegin(NL_ROW);
 	    index_t count = 0;
-	    for(
-		index_t c = v2c[v];
-		c != index_t(-1); c = next_c_around_v[c]
-	    ) {
+	    for(index_t c = v2c[v]; c != index_t(-1); c = next_c_around_v[c]) {
 		index_t f = c2f[c];
 		index_t c2 = M.facets.next_corner_around_facet(f,c);
 		index_t w = M.facet_corners.vertex(c2);

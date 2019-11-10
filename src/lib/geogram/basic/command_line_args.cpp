@@ -340,6 +340,10 @@ namespace {
             "sys:use_doubles", false,
             "Uses double precision in output .mesh files"
         );
+	declare_arg(
+	    "sys:ascii", false,
+	    "Use ASCII files whenever supported"
+	);	    
         declare_arg(
             "sys:compression_level", 3,
             "Compression level for created .geogram files, in [0..9]"
@@ -719,12 +723,13 @@ namespace {
         declare_arg_group("gui", "gui options", ARG_ADVANCED);
 	declare_arg("gui:state", "", "gui layout state");
 	declare_arg("gui:style", "Dark", "gui style, one of Dark,Light");
-#ifdef GEO_OS_ANDROID
-	declare_arg("gui:font_size", 56, "font size");	
-#else	
 	declare_arg("gui:font_size", 18, "font size");
-#endif	
 	declare_arg("gui:expert", false, "expert mode for developpers");
+#ifdef GEO_OS_ANDROID
+	declare_arg("gui:phone_screen", true, "running on a phone (or testing)");	
+#else	
+	declare_arg("gui:phone_screen", false, "running on a phone (or testing)");
+#endif	
     }
     
     /************************************************************************/

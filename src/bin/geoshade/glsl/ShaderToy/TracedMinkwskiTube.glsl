@@ -1,3 +1,4 @@
+// https://www.shadertoy.com/view/4lSXzh
 /*
     Simplified, Traced Minkowski Tube.
     ----------------------------------

@@ -58,7 +58,7 @@ namespace {
      */
     index_t mesh_nb_facet_borders(const Mesh& M) {
         index_t nb_borders = 0;
-        for(index_t i = 0; i < M.facet_corners.nb(); i++) {
+        for(index_t i: M.facet_corners) {
             if(M.facet_corners.adjacent_facet(i) == NO_FACET) {
                 nb_borders++;
             }
@@ -71,7 +71,7 @@ namespace {
      */
     index_t mesh_nb_cell_borders(const Mesh& M) {
         index_t nb_borders = 0;
-        for(index_t c = 0; c < M.cells.nb(); ++c) {
+        for(index_t c: M.cells) {
             for(index_t lf = 0; lf < M.cells.nb_facets(c); ++lf) {
                 if(M.cells.adjacent(c, lf) == NO_CELL) {
                     nb_borders++;

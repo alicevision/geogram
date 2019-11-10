@@ -44,6 +44,7 @@
  */
 
 #include <geogram_gfx/gui/simple_application.h>
+#include <geogram_gfx/GLUP/GLUP_private.h>
 #include <geogram/basic/stopwatch.h>
 #include "generateGeometry.h"
 #include "uv.xpm"
@@ -363,17 +364,17 @@ namespace {
             vertices_dirty_ = false;
         }
 
-        void draw_vertex(int u, int v) {
+        inline void draw_vertex(int u, int v) {
             if(textured_) {
-                glupTexCoord2f(
+                glupPrivateTexCoord2f(
                     float(u) / float(nb_lat_per_hemisphere_),
                     float(v) / float(nb_long_per_strip_)
                 );
             }
-	    glupNormal3fv(
+	    glupPrivateNormal3fv(
                 &(normals_[3*(v * (nb_lat_per_hemisphere_ + 1) + u)])		
 	    );
-            glupVertex3fv(
+            glupPrivateVertex3fv(
                 &(vertices_[3*(v * (nb_lat_per_hemisphere_ + 1) + u)])
             );
         }
@@ -447,6 +448,7 @@ namespace {
             if(texture_ != 0) {
                 glDeleteTextures(1,&texture_);
             }
+	    SimpleApplication::GL_terminate();
         }
         
         /**
@@ -626,8 +628,7 @@ namespace {
                 ImGui::EndMenu();
             }
         }
-        
-        
+	
     private:
         EvertableSphere sphere_;
         float time_;

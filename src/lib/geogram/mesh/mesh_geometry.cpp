@@ -66,7 +66,7 @@ namespace {
         Mesh& M, const LocalFeatureSize& LFS, double gradation
     ) {
         Attribute<double> weight(M.vertices.attributes(),"weight");
-        for(index_t v = 0; v < M.vertices.nb(); v++) {
+        for(index_t v: M.vertices) {
             double lfs2 = LFS.squared_lfs(M.vertices.point_ptr(v));
             double w = pow(lfs2, -2.0 * gradation);
             weight[v] = w;
@@ -96,7 +96,9 @@ namespace GEO {
 	    return result;
 	}
 
-	double mesh_unsigned_normal_angle(const Mesh& M, index_t f1, index_t f2) {
+	double mesh_unsigned_normal_angle(
+	    const Mesh& M, index_t f1, index_t f2
+	) {
             vec3 n1 = mesh_facet_normal(M,f1);
             vec3 n2 = mesh_facet_normal(M,f2);
 	    double l = length(n1)*length(n2);
@@ -130,7 +132,7 @@ namespace GEO {
 
         double mesh_area(const Mesh& M, index_t dim) {
             double result = 0.0;
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 result += mesh_facet_area(M, f, dim);
             }
             return result;
@@ -141,21 +143,18 @@ namespace GEO {
         if(M.vertices.dimension() < 6) {
             M.vertices.set_dimension(6);
         } else {
-            for(index_t i = 0; i < M.vertices.nb(); i++) {
+            for(index_t i: M.vertices) {
                 Geom::mesh_vertex_normal_ref(M, i) = vec3(0.0, 0.0, 0.0);
             }
         }
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             vec3 N = Geom::mesh_facet_normal(M, f);
-            for(
-                index_t corner = M.facets.corners_begin(f);
-                corner < M.facets.corners_end(f); corner++
-            ) {
+            for(index_t corner: M.facets.corners(f)) {
                 index_t v = M.facet_corners.vertex(corner);
                 Geom::mesh_vertex_normal_ref(M, v) += N;
             }
         }
-        for(index_t i = 0; i < M.vertices.nb(); i++) {
+        for(index_t i: M.vertices) {
             Geom::mesh_vertex_normal_ref(M, i) = normalize(
                 Geom::mesh_vertex_normal(M, i)
             );
@@ -170,7 +169,7 @@ namespace GEO {
         for(index_t k = 0; k < nb_iter; k++) {
             p.assign(M.vertices.nb(), vec3(0.0, 0.0, 0.0));
             c.assign(M.vertices.nb(), 0);
-            for(index_t f = 0; f < M.facets.nb(); f++) {
+            for(index_t f: M.facets) {
                 index_t b = M.facets.corners_begin(f);
                 index_t e = M.facets.corners_end(f);
                 for(index_t c1 = b; c1 != e; c1++) {
@@ -191,7 +190,7 @@ namespace GEO {
                     }
                 }
             }
-            for(index_t v = 0; v < M.vertices.nb(); v++) {
+            for(index_t v: M.vertices) {
                 if(normals_only) {
                     double l = length(p[v]);
                     if(l > 1e-30) {
@@ -213,7 +212,7 @@ namespace GEO {
             xyzmin[c] = Numeric::max_float64();
             xyzmax[c] = Numeric::min_float64();
         }
-        for(index_t v = 0; v < M.vertices.nb(); v++) {
+        for(index_t v: M.vertices) {
             const double* p = M.vertices.point_ptr(v);
             for(index_t c = 0; c < 3; c++) {
                 xyzmin[c] = std::min(xyzmin[c], p[c]);
@@ -243,7 +242,7 @@ namespace GEO {
             return;
         }
         s *= bbox_diagonal(M);
-        for(index_t i = 0; i < M.vertices.nb(); i++) {
+        for(index_t i: M.vertices) {
             Geom::mesh_vertex_normal_ref(M, i) =
                 s * normalize(Geom::mesh_vertex_normal(M, i));
         }
@@ -253,7 +252,7 @@ namespace GEO {
         if(M.vertices.dimension() < 6) {
             return;
         }
-        for(index_t i = 0; i < M.vertices.nb(); i++) {
+        for(index_t i: M.vertices) {
             Geom::mesh_vertex_normal_ref(M, i) = normalize(
                 Geom::mesh_vertex_normal(M, i)
             );
@@ -282,7 +281,7 @@ namespace GEO {
             } else {
                 std::vector<double> pts;
                 pts.reserve(M.vertices.nb() * 3);
-                for(index_t v = 0; v < M.vertices.nb(); v++) {
+                for(index_t v: M.vertices) {
                     pts.push_back(M.vertices.point_ptr(v)[0]);
                     pts.push_back(M.vertices.point_ptr(v)[1]);
                     pts.push_back(M.vertices.point_ptr(v)[2]);
@@ -303,19 +302,16 @@ namespace GEO {
         Attribute<double> weight(M.vertices.attributes(), "weight");
         std::vector<double> area3d(M.vertices.nb(), 0.0);
         std::vector<double> areaNd(M.vertices.nb(), 0.0);
-        for(index_t f = 0; f < M.facets.nb(); f++) {
+        for(index_t f: M.facets) {
             double A3d = Geom::mesh_facet_area(M, f, 3);
             double ANd = Geom::mesh_facet_area(M, f);
-            for(
-                index_t c = M.facets.corners_begin(f);
-                c < M.facets.corners_end(f); c++
-            ) {
+            for(index_t c: M.facets.corners(f)) {
                 index_t v = M.facet_corners.vertex(c);
                 area3d[v] += A3d;
                 areaNd[v] += ANd;
             }
         }
-        for(index_t v = 0; v < M.vertices.nb(); v++) {
+        for(index_t v: M.vertices) {
             double A3d = area3d[v];
             double ANd = areaNd[v];
             ANd = std::max(ANd, 1e-6);
@@ -356,8 +352,8 @@ namespace GEO {
 	// signed tetrahedra volumes, in such a way that overlapping volumes
 	// will cancel-out in such a configuration.
 	//  Therefore, we could take an arbitrary point as the enter point,
-	// including the origin, but taking the center probably makes computations
-	// more stable, by cancelling the translations.
+	// including the origin, but taking the center probably makes
+	// computations more stable, by cancelling the translations.
         
         double result = 0.0;
         double center[3];
@@ -375,15 +371,19 @@ namespace GEO {
         for(index_t lf=0; lf<M.cells.nb_facets(c); ++lf) {
 	    index_t nbcfv = M.cells.facet_nb_vertices(c,lf);
 	    if(nbcfv == 3) {
-		const double* p1 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,0));
-		const double* p2 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,1));
-		const double* p3 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,2));
+		const double* p1 =
+		    M.vertices.point_ptr(M.cells.facet_vertex(c,lf,0));
+		const double* p2 =
+		    M.vertices.point_ptr(M.cells.facet_vertex(c,lf,1));
+		const double* p3 =
+		    M.vertices.point_ptr(M.cells.facet_vertex(c,lf,2));
 		result += Geom::tetra_signed_volume(center, p1, p2, p3);
 	    } else {
 		double facet_center[3];
 		facet_center[0] = facet_center[1] = facet_center[2] = 0.0;
 		for(index_t lfv=0; lfv<nbcfv; ++lfv) {
-		    const double* p = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv));
+		    const double* p =
+			M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv));
 		    facet_center[0] += p[0];
 		    facet_center[1] += p[1];
 		    facet_center[2] += p[2];
@@ -393,9 +393,12 @@ namespace GEO {
 		facet_center[2] /= double(nbcfv);
 		for(index_t lfv1=0; lfv1<nbcfv; ++lfv1) {
 		    index_t lfv2 = (lfv1 + 1) % nbcfv;
-		    const double* p1 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv1));
-		    const double* p2 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv2));
-		    result += Geom::tetra_signed_volume(center, facet_center, p1, p2);
+		    const double* p1 =
+			M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv1));
+		    const double* p2 =
+			M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv2));
+		    result +=
+			Geom::tetra_signed_volume(center, facet_center, p1, p2);
 		}
 	    }
         }
@@ -405,7 +408,7 @@ namespace GEO {
     
     double mesh_cells_volume(const Mesh& M) {
         double result = 0.0;
-        for(index_t c=0; c<M.cells.nb(); ++c) {
+        for(index_t c: M.cells) {
             result += mesh_cell_volume(M,c);
         }
         return result;
@@ -434,11 +437,8 @@ namespace GEO {
     double surface_average_edge_length(const Mesh& M) {
         double result = 0.0;
         index_t count = 0;
-        for(index_t f=0; f<M.facets.nb(); ++f) {
-            for(
-                index_t c1=M.facets.corners_begin(f);
-                c1<M.facets.corners_end(f); ++c1
-            ) {
+        for(index_t f: M.facets) {
+            for(index_t c1: M.facets.corners(f)) {
                 index_t c2 = M.facets.next_corner_around_facet(f,c1);
                 index_t v1 = M.facet_corners.vertex(c1);
                 index_t v2 = M.facet_corners.vertex(c2);

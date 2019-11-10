@@ -47,7 +47,7 @@
 
 int main(int argc, char** argv) {
     // A SimpleMeshApplication is already a mesh viewer (nothing to do !)
-    GEO::SimpleMeshApplication app("Vorpaview");
+    GEO::SimpleMeshApplication app("GeoView");
     app.start(argc, argv);
     return 0;
 }

@@ -67,27 +67,32 @@
 #include <geogram_gfx/gui/colormaps/blue_red.xpm>
 
 #ifdef GEOGRAM_WITH_LUA
-#include <geogram_gfx/lua/lua_glup.h>
-#include <geogram_gfx/lua/lua_simple_application.h>
-#include <geogram_gfx/lua/lua_imgui.h>
-#include <geogram/lua/lua_io.h>
+
+#  include <geogram_gfx/lua/lua_glup.h>
+#  include <geogram_gfx/lua/lua_simple_application.h>
+#  include <geogram_gfx/lua/lua_imgui.h>
+#  include <geogram/lua/lua_io.h>
 
 extern "C" {
-#include <geogram/third_party/lua/lua.h>    
-#include <geogram/third_party/lua/lauxlib.h>
-#include <geogram/third_party/lua/lualib.h>
+#    include <geogram/third_party/lua/lua.h>    
+#    include <geogram/third_party/lua/lauxlib.h>
+#    include <geogram/third_party/lua/lualib.h>
 }
 
 #endif
 
 #ifdef GEO_OS_EMSCRIPTEN
-#include <emscripten.h>
+#  include <emscripten.h>
+#endif
+
+#ifdef GEO_OS_ANDROID
+#  include <geogram/basic/android_utils.h>
 #endif
 
 namespace {
-#include <geogram_gfx/gui/gui_state_bigfont_v.h>
-#include <geogram_gfx/gui/gui_state_bigfont_h.h>
-#include <geogram_gfx/gui/gui_state.h>
+#  include <geogram_gfx/gui/gui_state_v.h>
+#  include <geogram_gfx/gui/gui_state_h.h>
+#  include <geogram_gfx/gui/gui_state.h>
 }
 
 /******************************************************************************/
@@ -140,11 +145,7 @@ namespace GEO {
 	geogram_logo_texture_ = 0;
 	viewer_properties_visible_ = true;
 	object_properties_visible_ = true;
-#ifdef GEO_OS_ANDROID
-	console_visible_           = false;	
-#else	
-	console_visible_           = true;
-#endif
+	console_visible_ = true;
 	use_text_editor_           = false;
 	text_editor_visible_       = false;
 	menubar_visible_           = true;
@@ -154,21 +155,21 @@ namespace GEO {
 	text_editor_.set_fixed_layout(false);
         status_bar_ = new StatusBar;
 
-	add_key_func("q", [this]() { stop(); });
-	add_key_func("z", [this]() { zoom_in(); });
-	add_key_func("Z", [this]() { zoom_out(); });
-	add_key_func("H", [this]() { home(); });		
-	add_key_toggle("L",   &lighting_);
-	add_key_toggle("l",   &edit_light_);
-	add_key_toggle("F1",  &clipping_);
-	add_key_toggle("F2",  &edit_clip_);
-	add_key_toggle("F3",  &fixed_clip_);
-	add_key_toggle("a",   animate_ptr());
-	add_key_toggle("F6",  &text_editor_visible_);				
-	add_key_toggle("F7",  &viewer_properties_visible_);
-	add_key_toggle("F8",  &object_properties_visible_);
-	add_key_toggle("F9",  &console_visible_);
-	add_key_toggle("F12", &menubar_visible_);
+	add_key_func("q", [this]() { stop(); }, "quit");
+	add_key_func("z", [this]() { zoom_in(); }, "zoom in");
+	add_key_func("Z", [this]() { zoom_out(); }, "zoom out");
+	add_key_func("H", [this]() { home(); }, "home");		
+	add_key_toggle("L",   &lighting_, "light");
+	add_key_toggle("l",   &edit_light_, "light edit");
+	add_key_toggle("F1",  &clipping_, "clipping");
+	add_key_toggle("F2",  &edit_clip_, "clip plane edit");
+	add_key_toggle("F3",  &fixed_clip_, "fixed clip plane");
+	add_key_toggle("a",   animate_ptr(), "animate");
+	add_key_toggle("F6",  &text_editor_visible_, "text editor");
+	add_key_toggle("F7",  &viewer_properties_visible_, "viewer properties");
+	add_key_toggle("F8",  &object_properties_visible_, "object properties");
+	add_key_toggle("F9",  &console_visible_, "console");
+	add_key_toggle("F12", &menubar_visible_, "menubar");
 	set_region_of_interest(
 	    0.0, 0.0, 0.0, 1.0, 1.0, 1.0
 	);
@@ -199,6 +200,8 @@ namespace GEO {
 	    "Used to create the GUI of GEOGRAM utilities "
 	    "(vorpaview, geobox, geocod)."
 	);
+
+	props_pinned_ = false;
     }
 
     SimpleApplication::~SimpleApplication() {
@@ -224,16 +227,23 @@ namespace GEO {
     }
 
     void SimpleApplication::add_key_func(
-	const std::string& key, std::function<void()> cb
+	const std::string& key, std::function<void()> cb,
+	const char* help
     ) {
 	key_funcs_[key] = cb;
+	if(help != nullptr) {
+	    key_funcs_help_[key] = help;
+	}
     }
     
     void SimpleApplication::add_key_toggle(
-	const std::string& key, bool* p_val
+	const std::string& key, bool* p_val,
+	const char* help
     ) {
 	add_key_func(
-	    key, [p_val]() { *p_val = !*p_val; }
+	    key, [p_val]() { *p_val = !*p_val; },
+	    (help != nullptr) ?
+	    (std::string("toggle ") + help).c_str() : nullptr
 	);
     }
 
@@ -301,6 +311,33 @@ namespace GEO {
     }
     
     void SimpleApplication::draw_gui() {
+#ifdef GEO_OS_ANDROID
+	if(
+	    supported_read_file_extensions() != "" ||
+	    supported_write_file_extensions() != ""
+	) {
+	    static bool firsttime = true;
+	    static int nb_perms = 2;
+	    static const char* perms[] = {
+		"READ_EXTERNAL_STORAGE",
+		"WRITE_EXTERNAL_STORAGE"
+	    };
+	    if(firsttime) {
+		firsttime = false;
+		bool OK = true;
+		for(int i=0; i<nb_perms; ++i) {
+		    OK = OK && AndroidUtils::has_permission(
+			CmdLine::get_android_app(), perms[i]
+		    );
+		}
+		if(!OK) {
+		    AndroidUtils::request_permissions(
+			CmdLine::get_android_app(), nb_perms, perms
+		    );
+		}
+	    }
+	}
+#endif	
 	draw_menu_bar();
 	draw_dock_space();
 	draw_viewer_properties_window();
@@ -321,9 +358,16 @@ namespace GEO {
 	    save(filename_);
 	}
 	if(status_bar_->active()) {
-	    float w = float(get_width());
-	    float h = float(get_height());
-	    float STATUS_HEIGHT = 50.0f * float(scaling());
+	    float w = float(get_frame_buffer_width());
+	    float h = float(get_frame_buffer_height());
+	    float STATUS_HEIGHT = status_bar_->get_window_height();
+	    if(STATUS_HEIGHT == 0.0f) {
+		STATUS_HEIGHT = float(get_font_size());
+		if(phone_screen_) {
+		    STATUS_HEIGHT *= std::max(w,h)/600.f;
+		}
+	    }
+	    STATUS_HEIGHT *= 1.5f;
 	    ImGui::SetNextWindowPos(
 		ImVec2(0.0f, h-STATUS_HEIGHT),
 		ImGuiCond_Always
@@ -337,6 +381,7 @@ namespace GEO {
     }
 
     void SimpleApplication::draw_scene_begin() {
+
 	glClearColor(
 	    background_color_.x,
 	    background_color_.y,
@@ -344,13 +389,14 @@ namespace GEO {
 	    background_color_.w
 	);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
 	glViewport(
 	    0, 0,
-	    int(double(get_width())*hidpi_scaling()),
-	    int(double(get_height())*hidpi_scaling())
+	    int(double(get_frame_buffer_width())),
+	    int(double(get_frame_buffer_height()))
 	);
 
 	double zScreen = 5.0; // screen projection plane 
@@ -418,8 +464,11 @@ namespace GEO {
 		    clip_translation_.z
 		);
 		glupMultMatrix(clip_rotation_.get_value());
-
+		
 		{
+		    if(effect_ != 0) {
+			glDepthMask(GL_FALSE);
+		    }
 		    glupSetColor3f(
 			GLUP_FRONT_AND_BACK_COLOR,
 			1.0f - background_color_.x,
@@ -469,6 +518,9 @@ namespace GEO {
 		glupClipPlane(clip_eqn);
 		glupClipMode(clip_mode_);
 		glupPopMatrix();
+		if(effect_ != 0) {
+		    glDepthMask(GL_TRUE);
+		}
 	    } 
 	}
 	
@@ -534,7 +586,12 @@ namespace GEO {
     
     void SimpleApplication::draw_graphics() {
 	if(!full_screen_effect_.is_null()) {
-	    full_screen_effect_->pre_render(get_width(), get_height());
+	    // Note: on retina, we use window resolution
+	    // rather than frame buffer resolution
+	    // (we do not need fullres for shadows)
+	    full_screen_effect_->pre_render(
+		get_width(), get_height()
+	    );
 	}
 	draw_scene_begin();
 	draw_scene();
@@ -558,52 +615,77 @@ namespace GEO {
     }
 
     void SimpleApplication::draw_viewer_properties() {
+	if(phone_screen_ && get_height() >= get_width()) {
+	    if(props_pinned_) {
+		if(ImGui::SimpleButton(
+		       icon_UTF8("dot-circle") + "##props_pin"
+		)) {
+		    props_pinned_ = !props_pinned_;
+		}
+	    } else {
+		if(ImGui::SimpleButton(
+		       icon_UTF8("thumbtack") + "##props_pin"
+		)) {
+		    props_pinned_ = !props_pinned_;
+		}
+	    }
+	    ImGui::SameLine();
+	}
+	
 	if(ImGui::Button(
-	       (icon_UTF8("home") + " Home [H]").c_str(), ImVec2(-1.0, 0.0))
-	) {
+	       (icon_UTF8("home") + " Home").c_str(),
+	       ImVec2(-1.0, 0.0)
+	)) {
 	    home();
 	}
 	ImGui::Separator();
-	ImGui::Checkbox("Animate [a]", animate_ptr());
+	ImGui::Checkbox("Animate", animate_ptr());
 	if(three_D_) {
-	    ImGui::Checkbox("Lighting [L]", &lighting_);
+	    ImGui::Checkbox("Lighting", &lighting_);
 	    if(lighting_) {
-		ImGui::Checkbox("Edit light [l]", &edit_light_);	    
+		ImGui::Checkbox("Edit light", &edit_light_);	    
 	    }
 	    ImGui::Separator();
-	    ImGui::Checkbox("Clipping [F1]", &clipping_);
+	    ImGui::Checkbox("Clipping", &clipping_);
 	    if(clipping_) {
 		ImGui::Combo(
-		    "mode", (int*)&clip_mode_,                
+		    "##mode", (int*)&clip_mode_,                
 		    "std. GL\0cells\0straddle\0slice\0\0"
 		);
 		ImGui::Checkbox(
-		    "edit clip [F2]", &edit_clip_
+		    "edit clip", &edit_clip_
 		);
 		ImGui::Checkbox(
-		    "fixed clip [F3]", &fixed_clip_
+		    "fixed clip", &fixed_clip_
 		);
 	    }
 	    ImGui::Separator();
 	}
 	ImGui::ColorEdit3WithPalette("Background", background_color_.data());
-#ifndef GEO_OS_ANDROID
-	if(three_D_) {
-	    if(ImGui::Combo("sfx", (int*)&effect_, "none\0SSAO\0cartoon\0\0")) {
-		switch(effect_) {
-		    case 0:
-			full_screen_effect_.reset();
-			break;
-		    case 1:
-			full_screen_effect_ = new AmbientOcclusionImpl();
-			break;
-		    case 2:
-			full_screen_effect_ = new UnsharpMaskingImpl();
-			break;
+	// Full-screen effects are for now deactivated under Android:
+	// SSAO has stripes (and is damned slow)
+	// unsharp masking gives a black screen
+	if(!phone_screen_) {
+	    if(three_D_) {
+		if(ImGui::Combo(
+		       "sfx",
+		       (int*)&effect_,
+		       "none\0SSAO\0cartoon\0\0"
+		)) {
+		    switch(effect_) {
+			case 0:
+			    full_screen_effect_.reset();
+			    break;
+			case 1:
+			    full_screen_effect_ = new AmbientOcclusionImpl();
+			    break;
+			case 2:
+			    full_screen_effect_ = new UnsharpMaskingImpl();
+			    break;
+		    }
 		}
 	    }
 	}
-#endif	
     }
 
     void SimpleApplication::draw_object_properties_window() {
@@ -647,6 +729,72 @@ namespace GEO {
 	if(!menubar_visible_) {
 	    return;
 	}
+
+	if(phone_screen_) {
+	    if(ImGui::BeginMainMenuBar()) {
+
+		float w = ImGui::GetContentRegionAvail().x;
+		if(ImGui::BeginMenu(icon_UTF8("ellipsis-v"))) {
+		    draw_application_menus();
+		    draw_fileops_menu();
+		    draw_about();
+		    ImGui::EndMenu();
+		}
+		w -= ImGui::GetContentRegionAvail().x; // gets btn size
+
+		ImGui::Dummy(ImVec2(0.5f*w, 1.0));
+		
+		if(supported_read_file_extensions() != "") {
+		    if(ImGui::SimpleButton(
+			   icon_UTF8("folder-open") + "##menubar_open")
+		    ) {
+			ImGui::OpenFileDialog(
+			    "##load_dlg",
+			    supported_read_file_extensions().c_str(),
+			    filename_,
+			    ImGuiExtFileDialogFlags_Load		
+			);
+		    }
+		}
+
+                if(supported_write_file_extensions() != "") {
+		    if(ImGui::SimpleButton(
+			   icon_UTF8("save") + "##menubar_save")
+		    ) {
+			ImGui::OpenFileDialog(
+			    "##save_dlg",
+			    supported_write_file_extensions().c_str(),
+			    filename_,
+			    ImGuiExtFileDialogFlags_Save
+			);
+		    }
+		}
+
+		draw_application_icons();
+		
+		if(use_text_editor_) {
+		    ImGui::Dummy(ImVec2(0.5f*w, 1.0));
+		    if(ImGui::SimpleButton(icon_UTF8("keyboard"))) {
+#ifdef GEO_OS_ANDROID			
+			AndroidUtils::show_soft_keyboard(
+			    CmdLine::get_android_app()
+			);
+#endif			
+		    }
+		}
+
+		ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - w, 1.0));
+		
+		if(ImGui::BeginMenu(icon_UTF8("bars"))) {
+		    draw_windows_menu();
+		    ImGui::EndMenu();
+		}
+
+		ImGui::EndMainMenuBar();
+	    }
+	    return;
+	} 
+	
         if(ImGui::BeginMainMenuBar()) {
             if(ImGui::BeginMenu("File")) {
                 if(supported_read_file_extensions() != "") {
@@ -678,6 +826,10 @@ namespace GEO {
                 }
 #endif
                 draw_about();
+                // Key shortcuts not really relevant on Android		
+		if(!phone_screen_) {
+		    draw_help();
+		}
                 ImGui::EndMenu();
             }
 	    if(ImGui::BeginMenu("Windows")) {
@@ -798,64 +950,126 @@ namespace GEO {
         }
     }
 
+    void SimpleApplication::draw_help() {
+	if(ImGui::BeginMenu(icon_UTF8("question") + " help")) {
+	    ImGui::Text("Key shortcuts");
+	    ImGui::Separator();
+	    std::vector<std::string> helps;
+	    for(auto it: key_funcs_help_) {
+		helps.push_back(it.first + " : " + it.second);
+	    }
+	    std::sort(helps.begin(), helps.end());
+	    for(const std::string& s: helps) {
+		ImGui::Text("%s",s.c_str());
+	    }
+	    ImGui::EndMenu();
+	}
+    }
+    
     void SimpleApplication::draw_windows_menu() {
+	if(phone_screen_) {
+	    ImGui::MenuItem(
+		"     " + icon_UTF8("window-restore") + " Windows",
+		nullptr,
+		false, false
+	    );
+	}
 	if(use_text_editor_) {
 	    ImGui::MenuItem(
-		"text editor", "[F6]", &text_editor_visible_
+		icon_UTF8("code") + " text editor",
+		phone_screen_ ? nullptr : "[F6]",
+		&text_editor_visible_
 	    );
 	}
 	ImGui::MenuItem(
-	    "viewer properties", "[F7]", &viewer_properties_visible_
+	    icon_UTF8("eye") + " viewer properties",
+	    phone_screen_ ? nullptr : "[F7]",
+	    &viewer_properties_visible_
 	);
 	ImGui::MenuItem(
-	    "object properties", "[F8]", &object_properties_visible_
+	    icon_UTF8("edit") + " object properties",
+	    phone_screen_ ? nullptr : "[F8]",
+	    &object_properties_visible_
 	);
 	ImGui::MenuItem(
-	    "console", "[F9]", &console_visible_
+	    icon_UTF8("terminal") + " console",
+	    phone_screen_ ? nullptr : "[F9]",
+	    &console_visible_
 	);
-#ifndef GEO_OS_ANDROID	
-	ImGui::MenuItem(
-	    "menubar", "[F12]", &menubar_visible_
-	);
-#endif	
-	ImGui::Separator();
-	if(ImGui::BeginMenu("Font size")) {
-	    static index_t font_sizes[] = {
-		10, 12, 18, 22, 24, 30, 32, 36, 40, 46, 50, 56
-	    };
-	    for(index_t i=0; i<sizeof(font_sizes)/sizeof(int); ++i) {
-		bool selected = (get_font_size() == font_sizes[i]);
-		if(ImGui::MenuItem(
-		       String::to_string(
-			   font_sizes[i]).c_str(), nullptr, &selected)
-		    ) {
-		    set_font_size(font_sizes[i]);
-		}
-	    }
-	    ImGui::EndMenu();
-	}
-	if(ImGui::BeginMenu("Style")) {
-	    std::vector<std::string> styles;
-	    String::split_string(get_styles(), ';', styles);
-	    for(index_t i=0; i<styles.size(); ++i) {
-		bool selected = (get_style() == styles[i]);
-		if(ImGui::MenuItem(styles[i].c_str(), nullptr, &selected)) {
-		    set_style(styles[i]);
-		}
-	    }
-	    ImGui::EndMenu();
+	if(!phone_screen_) {
+	    ImGui::MenuItem(
+		icon_UTF8("bars") + " menubar", "[F12]", &menubar_visible_
+	    );
 	}
 	ImGui::Separator();
-	if(ImGui::MenuItem("Restore default layout")) {
+
+	{
+	    bool needs_to_close = false;
+	    if(phone_screen_) {
+		ImGui::MenuItem(
+		    "     " + icon_UTF8("font") + " Font size",
+		    nullptr,
+		    false, false
+		);
+	    }
+	    if(phone_screen_ ||
+	       (needs_to_close =
+		ImGui::BeginMenu(icon_UTF8("font") + " Font size"))
+	    ) {
+		static index_t font_sizes[] = {10, 12, 14, 16, 18, 22};
+		for(index_t i=0; i<sizeof(font_sizes)/sizeof(int); ++i) {
+		    bool selected = (get_font_size() == font_sizes[i]);
+		    if(ImGui::MenuItem(
+			   String::to_string(font_sizes[i]),
+			   nullptr,
+			   &selected
+		    )) {
+			set_font_size(font_sizes[i]);
+		    }
+		}
+		if(needs_to_close) {
+		    ImGui::EndMenu();
+		}
+	    }
+	}
+	if(phone_screen_) {	
+	    ImGui::Separator();
+	}
+	{
+	    bool needs_to_close = false;
+	    if(phone_screen_) {
+		ImGui::MenuItem(
+		    "     " + icon_UTF8("palette") + " Style",
+		    nullptr,
+		    false, false
+		);
+	    }
+	    if(
+		phone_screen_ ||
+		(needs_to_close = ImGui::BeginMenu(icon_UTF8("cog") + " Style"))
+	    ) {
+		std::vector<std::string> styles;
+		String::split_string(get_styles(), ';', styles);
+		for(index_t i=0; i<styles.size(); ++i) {
+		    bool selected = (get_style() == styles[i]);
+		    if(ImGui::MenuItem(styles[i], nullptr, &selected)) {
+			set_style(styles[i]);
+		    }
+		}
+		if(needs_to_close) {
+		    ImGui::EndMenu();
+		}
+	    }
+	}
+	ImGui::Separator();
+	if(ImGui::MenuItem(icon_UTF8("undo") +  " Restore layout")) {
 	    set_default_layout();
 	}
 	if(CmdLine::get_arg_bool("gui:expert")) {
 	    if(ImGui::MenuItem("Test android vertical layout")) {
-		set_font_size(56);
 		set_gui_state(default_layout_android_vertical());
 	    }
 	    if(ImGui::MenuItem("Test android horizontal layout")) {
-		set_font_size(56);
 		set_gui_state(default_layout_android_horizontal());		
 	    }
 	    if(ImGui::MenuItem("Export gui state to C++")) {
@@ -904,28 +1118,44 @@ namespace GEO {
     }
     
     const char* SimpleApplication::default_layout() const {
-#ifdef GEO_OS_ANDROID
-	if(get_height() >= get_width()) {
-	    return default_layout_android_vertical();
+	const char* result = nullptr;
+	if(phone_screen_) {
+	    if(get_height() >= get_width()) {
+		result = default_layout_android_vertical();
+	    } else {
+		result = default_layout_android_horizontal();
+	    }
 	} else {
-	    return default_layout_android_horizontal();
+	    result = gui_state;
 	}
-#else
-	return gui_state;
-#endif	
+	return result;
     }
 
     
     void SimpleApplication::resize(index_t w, index_t h) {
 	Application::resize(w,h);
-#ifdef GEO_OS_ANDROID	
-	set_default_layout();
-#endif	
+	if(phone_screen_) {
+	    set_default_layout();
+	}
     }
     
     void SimpleApplication::draw_application_menus() {
     }
 
+    void SimpleApplication::draw_application_icons() {
+	if(phone_screen_) {
+	    if(ImGui::SimpleButton(icon_UTF8("sliders-h"))) {
+		if(object_properties_visible_) {
+		    object_properties_visible_ = false;
+		    viewer_properties_visible_ = false;
+		} else {
+		    object_properties_visible_ = true;
+		    viewer_properties_visible_ = true;
+		}
+	    }
+	}
+    }
+    
     void SimpleApplication::post_draw() {
 	Command::flush_queue();
     }
@@ -934,7 +1164,20 @@ namespace GEO {
 	int button, int action, int mods, int source
     ) {
 	geo_argused(mods);
+	
+	// Hide object and viewer properties if in phone
+	// mode and user clicked elsewhere.
+	if(phone_screen_ &&
+	   !ImGui::GetIO().WantCaptureMouse &&
+	   get_height() >= get_width()
+	) {
+	    if(!props_pinned_) {
+		object_properties_visible_ = false;
+		viewer_properties_visible_ = false;
+	    }
+	}
 
+	
 	// Swap "buttons" if using fingers (it is more
 	// natural to do the rotation with one finger,
 	// zoom with two fingers and then translation)
@@ -1166,13 +1409,13 @@ namespace GEO {
         
         for(index_t i=0; i<files.size(); ++i) {
             if(FileSystem::is_directory(files[i]) && subdirs) {
-                if(ImGui::BeginMenu(path_to_label(path_,files[i]).c_str())) {
+                if(ImGui::BeginMenu(path_to_label(path_,files[i]))) {
                     browse(files[i]);
                     ImGui::EndMenu();
                 }
             } else {
                 if(can_load(files[i])) {
-                    if(ImGui::MenuItem(path_to_label(path_,files[i]).c_str())) {
+                    if(ImGui::MenuItem(path_to_label(path_,files[i]))) {
                         load(files[i]);
                     }
                 }
@@ -1199,6 +1442,10 @@ namespace GEO {
         Logger::instance()->register_client(console_);
         Progress::set_client(status_bar_);
 	set_default_layout();
+	if(phone_screen_) {
+	    object_properties_visible_ = false;
+	    viewer_properties_visible_ = false;
+	}
     }
 
     void SimpleApplication::init_colormap(
@@ -1256,11 +1503,22 @@ namespace GEO {
     }
 
     void SimpleApplication::ImGui_initialize() {
+	if(phone_screen_ && !ImGui_firsttime_init_) {
+	    console_visible_ = false;
+	    // Tooltips do not play well with touch screens.
+	    ImGui::DisableTooltips();
+#ifndef GEO_OS_ANDROID
+	    set_default_layout();
+#endif	    
+	}
 	CmdLine::set_arg("gui:style","Light");
 	Application::ImGui_initialize();
-// Tooltips do not play well with touch screens.	
-#ifdef GEO_OS_ANDROID	
-	ImGui::DisableTooltips();
-#endif	
+    }
+
+    void SimpleApplication::drop_callback(int nb, const char** f) {
+	for(int i=0; i<nb; ++i) {
+	    load(f[i]);
+	}
     }
 }
+

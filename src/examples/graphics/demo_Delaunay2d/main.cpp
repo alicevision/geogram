@@ -651,7 +651,7 @@ namespace {
 	    ) {
 		home();
 	    }
-	    ImGui::Checkbox("Edit [F10]", &edit_);
+	    ImGui::Checkbox("Edit", &edit_);
 
 	    ImGui::Separator();        
 	    if(ImGui::Button("Relax.")) {
@@ -687,6 +687,19 @@ namespace {
 	    int button, int action, int mods, int source
 	) override {
 	    geo_argused(source);
+
+	    // Hide object and viewer properties if in phone
+	    // mode and user clicked elsewhere.
+	    if(phone_screen_ &&
+	       !ImGui::GetIO().WantCaptureMouse &&
+	       get_height() >= get_width()
+	    ) {
+		if(!props_pinned_) {
+		    object_properties_visible_ = false;
+		    viewer_properties_visible_ = false;
+		}
+	    }
+
 	    if(!edit_) {
 		SimpleApplication::mouse_button_callback(
 		    button, action, mods, source
@@ -744,11 +757,17 @@ namespace {
 		SimpleApplication::cursor_pos_callback(x,y,source);
 		return;
 	    }
+
+	    // For retina displays: x and y are in 'window pixels',
+	    // and GLUP project / unproject expect 'framebuffer pixels'.
+	    double sx =
+		double(get_frame_buffer_width()) / double(get_width());
+	    
+	    double sy =
+		double(get_frame_buffer_height()) / double(get_height());
+	    
 	    mouse_point_ = unproject_2d(
-		vec2(
-		    x,
-		    double(get_height()) * hidpi_scaling() - y
-		)
+		vec2(sx*x, sy*(double(get_height()) - y))
 	    );
 	    if(animate()) {
 		if(last_button_ == 0) {

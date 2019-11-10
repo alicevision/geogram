@@ -1154,9 +1154,9 @@ namespace GEO {
                 index_t cell_size =
                     std::max(nb_vertices(old_cell), nb_facets(old_cell));
                 for(index_t i=0; i<cell_size; ++i) {
-                    cell_corner_facets_permutation.push_back(
-                        cell_ptr_[old_cell]+i
-                    );
+		    cell_corner_facets_permutation.push_back(
+			corners_begin(old_cell)+i
+		    );
                 }
             }
             

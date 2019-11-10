@@ -103,7 +103,7 @@ namespace GEO {
          * \copydoc SimpleApplication::save()
          */
 	bool save(const std::string& filename) override;
-        
+
         /**
          * \brief Gets the instance.
          * \return a pointer to the current SimpleMeshApplication.

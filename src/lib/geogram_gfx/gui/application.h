@@ -268,9 +268,7 @@ namespace GEO {
 	 * \return the width of the window in pixels.
 	 */
 	index_t get_width() const {
-	    // I do not understand why I need to divide by pixel_ratio_
-	    // (experimentally it does the correct thing on HiDPI Macs)
-	    return index_t(double(width_) / pixel_ratio_);
+	    return width_;
 	}
 
 	/**
@@ -278,11 +276,25 @@ namespace GEO {
 	 * \return the height of the window in pixels.
 	 */
 	index_t get_height() const {
-	    // I do not understand why I need to divide by pixel_ratio_
-	    // (experimentally it does the correct thing on HiDPI Macs)
-	    return index_t(double(height_) / pixel_ratio_);
+	    return height_;
 	}
 
+	/**
+	 * \brief Gets the width of the window.
+	 * \return the width of the frame buffer in pixels.
+	 */
+	index_t get_frame_buffer_width() const {
+	    return frame_buffer_width_;
+	}
+
+	/**
+	 * \brief Gets the height of the window.
+	 * \return the height of the frame buffer in pixels.
+	 */
+	index_t get_frame_buffer_height() const {
+	    return frame_buffer_height_;
+	}
+    
         /**
          * \brief Sets whether drag and drop events should be
          *  taken into account.
@@ -406,6 +418,13 @@ namespace GEO {
 	 */
         double pixel_ratio() const {
 	    return pixel_ratio_;
+	}
+
+        /**
+	 * \brief Used internally.
+	 */
+        void reset_soft_keyboard_flag() {
+	    soft_keyboard_visible_ = false;
 	}
     
     protected:
@@ -548,30 +567,41 @@ namespace GEO {
         void stop_animation() {
 	    animate_ = false;
 	}
-    
+
       private:
         static Application* instance_; /**< a pointer to the instance */
-        ApplicationData* data_;      /**< implementation dependent */
-        index_t width_;              /**< window width */
-        index_t height_;             /**< window height */
-        bool in_main_loop_;          /**< main loop is running */
-        bool accept_drops_;          /**< application accepts dropping files */
-        double scaling_;             /**< global scaling applied to all sizes */
-        index_t nb_update_locks_;    /**< lock graphic updates */
-        std::string style_;          /**< ImGui style (Dark, Light, ...) */
-        bool ImGui_restart_;         /**< true if ImGui needs to be restarted */
-        bool ImGui_reload_font_;     /**< true if font size has changed */
-        bool ImGui_initialized_;     /**< true if ImGui was initialized */ 
-        index_t font_size_;          /**< current font size */
-        index_t nb_frames_update_;   /**< if 0, take a small sleep */
-        double hidpi_scaling_;       /**< for retina displays */ 
-        double pixel_ratio_;         /**< for retina displays */
-        std::string name_;           /**< application name */
-        bool currently_drawing_gui_; /**< currently drawing ImGui elements */
+        ApplicationData* data_;        /**< implementation dependent */
+        index_t width_;                /**< window width */
+        index_t height_;               /**< window height */
+        index_t frame_buffer_width_;   /**< frame buffer width (glViewport) */
+        index_t frame_buffer_height_;  /**< frame buffer height (glViewport) */
+        bool in_main_loop_;            /**< main loop is running */
+        bool accept_drops_;            /**< app. accepts dropping files */
+        double scaling_;               /**< global scaling for to all sizes */
+        index_t nb_update_locks_;      /**< lock graphic updates */
+        std::string style_;            /**< ImGui style (Dark, Light, ...) */
+        bool ImGui_restart_;           /**< ImGui needs to be restarted */
+        bool ImGui_reload_font_;       /**< font size has changed */
+        bool ImGui_initialized_;       /**< ImGui was initialized */
+        index_t font_size_;            /**< current font size */
+        index_t nb_frames_update_;     /**< if 0, take a small sleep */
+        double hidpi_scaling_;         /**< for retina displays */ 
+        double pixel_ratio_;           /**< for retina displays */
+        std::string name_;             /**< application name */
+        bool currently_drawing_gui_;   /**< currently drawing ImGui elements */
         std::vector<std::string> filenames_; /**< from the command line */
-        bool animate_;               /**< true if drawing always */
+        bool animate_;                 /**< true if drawing always */
+
+    
       protected:
-        bool menubar_visible_; 
+        bool ImGui_firsttime_init_;  /**< true if ImGui was once initialized */
+        bool menubar_visible_;
+        bool phone_screen_;          /**< true if running on a phone */
+        bool soft_keyboard_visible_;
+
+#ifdef GEO_OS_EMSCRIPTEN
+       friend void emscripten_one_frame();
+#endif
     };
 
 }

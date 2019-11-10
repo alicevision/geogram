@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/3tXXRn
+
 // Spherical Fibonnacci points, as described by Benjamin Keinert, Matthias Innmann, 
 // Michael Sanger and Marc Stamminger in their paper (below)
 

@@ -639,13 +639,13 @@ namespace {
             return;
         }
         index_t nb_RVD_cells = 0;
-        for(index_t c=0; c<mesh.cells.nb(); ++c) {
+        for(index_t c: mesh.cells) {
             nb_RVD_cells = std::max(nb_RVD_cells, cell_region[c]);
         }
         ++nb_RVD_cells;
         vector<vec3> center(nb_RVD_cells, vec3(0.0, 0.0, 0.0));
         vector<index_t> nb(nb_RVD_cells, 0);
-        for(index_t c=0; c<mesh.cells.nb(); ++c) {
+        for(index_t c: mesh.cells) {
             index_t rvc = cell_region[c];
             for(index_t lv=0; lv<4; ++lv) {
                 index_t v = mesh.cells.vertex(c,lv);
@@ -658,11 +658,11 @@ namespace {
                 center[rvc] /= double(nb[rvc]);
             }
         }
-        for(index_t v=0; v<mesh.vertices.nb(); ++v) {
+        for(index_t v: mesh.vertices) {
             W[v] = mesh.vertices.point_ptr(v)[3];
         }
         mesh.vertices.set_dimension(6);
-        for(index_t c=0; c<mesh.cells.nb(); ++c) {
+        for(index_t c: mesh.cells) {
             index_t rvc = cell_region[c];
             for(index_t lv=0; lv<4; ++lv) {
                 index_t v = mesh.cells.vertex(c,lv);
@@ -731,7 +731,7 @@ namespace GEO {
             mesh_->vertices.attributes(), "weight"
         );
         
-        for(index_t t = 0; t < mesh_->cells.nb(); ++t) {
+        for(index_t t: mesh_->cells) {
             double tet_mass = GEO::Geom::tetra_volume<3>(
                 mesh_->vertices.point_ptr(mesh_->cells.tet_vertex(t, 0)),
                 mesh_->vertices.point_ptr(mesh_->cells.tet_vertex(t, 1)),

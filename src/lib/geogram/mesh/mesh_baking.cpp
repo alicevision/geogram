@@ -114,7 +114,7 @@ namespace GEO {
 	);
 	geo_assert(tex_coord.is_bound() && tex_coord.dimension() == 2);
 	ImageRasterizer rasterizer(target);
-	for(index_t f=0; f<mesh->facets.nb(); ++f) {
+	for(index_t f: mesh->facets) {
 	    vec3 N = normalize(Geom::mesh_facet_normal(*mesh, f));
 	    Color C = 0.5*Color(N.x+1.0, N.y+1.0, N.z+1.0, 2.0);
 	    index_t c1 = mesh->facets.corners_begin(f);
@@ -140,24 +140,21 @@ namespace GEO {
 	// Step 1: compute vertex normals.
 	Attribute<double> N;
 	N.create_vector_attribute(mesh->vertices.attributes(), "N", 3);
-	FOR(v, mesh->vertices.nb()) {
+	for(index_t v: mesh->vertices) {
 	    N[3*v]   = 0.0;
 	    N[3*v+1] = 0.0;
 	    N[3*v+2] = 0.0;
 	}
-	FOR(f, mesh->facets.nb()) {
+	for(index_t f: mesh->facets) {
 	    vec3 Nf = GEO::Geom::mesh_facet_normal(*mesh, f);
-            for(
-                index_t corner = mesh->facets.corners_begin(f);
-                corner < mesh->facets.corners_end(f); corner++
-		) {
+            for(index_t corner : mesh->facets.corners(f)) {
                 index_t v = mesh->facet_corners.vertex(corner);
 		N[3*v]   += Nf.x;
 		N[3*v+1] += Nf.y ;
 		N[3*v+2] += Nf.z;
             }
 	}
-	FOR(v, mesh->vertices.nb()) {
+	for(index_t v: mesh->vertices) {
 	    vec3 Nf(N[3*v], N[3*v+1], N[3*v+2]);
 	    Nf = normalize(Nf);
 	    N[3*v]   = Nf.x;
@@ -211,7 +208,7 @@ namespace GEO {
 	}
 	
 	ImageRasterizer rasterizer(target);
-	for(index_t f=0; f<mesh->facets.nb(); ++f) {
+	for(index_t f: mesh->facets) {
 	    Color C1,C2,C3;
 	    index_t c1 = mesh->facets.corners_begin(f);
 	    vec2 p1(tex_coord[2*c1], tex_coord[2*c1+1]);
@@ -274,7 +271,7 @@ namespace GEO {
 
 	MeshFacetsAABB AABB(*highres);	    
 	vector<Color> normal(highres->facets.nb());
-	for(index_t f=0; f<highres->facets.nb(); ++f) {
+	for(index_t f: highres->facets) {
 	    vec3 N = normalize(Geom::mesh_facet_normal(*highres,f));
 	    normal[f] = Color(
 		0.5*(N.x+1.0), 0.5*(N.y+1.0), 0.5*(N.z+1.0)

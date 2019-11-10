@@ -47,7 +47,7 @@
 #include <geogram/basic/string.h>
 #include <geogram/basic/logger.h>
 #include <geogram/third_party/pstdint.h>
-
+#include <ctype.h>
 
 /* Using portable printf modifier for 64 bit ints from pstdint.h */
 #include <geogram/third_party/pstdint.h> 
@@ -749,7 +749,26 @@ namespace GEO {
         const std::vector<std::string>& args
     ) {
         write_chunk_header("CMDL", string_array_size(args));
-        write_string_array(args);
+	if(ascii_) {
+	    std::vector<std::string> new_args;
+	    for(const std::string& arg : args) {
+		bool serializable = true;
+		for(index_t i=0; i<arg.size(); ++i) {
+		    if(!isprint(arg[i]) || arg[i] == '\"') {
+			serializable = false;
+			break;
+		    }
+		}
+		if(serializable) {
+		    new_args.push_back(arg);
+		} else {
+		    Logger::warn("GeoFile") << "Skipping arg: " << arg << std::endl;
+		}
+	    }
+	    write_string_array(new_args);	    
+	} else {
+	    write_string_array(args);
+	}
         check_chunk_size();
     }
 

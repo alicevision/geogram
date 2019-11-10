@@ -185,7 +185,7 @@ namespace {
         const vector<double>& local_fitting = vector<double>() 
     ) {
         // Step 0: normalize variables
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             double c = sincos_alpha[2*f];
             double s = sincos_alpha[2*f+1];
             double scale = sqrt(s*s+c*c);
@@ -206,7 +206,7 @@ namespace {
 
         // Step 2: setup the variables
         nlBegin(NL_SYSTEM);
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             nlSetVariable(2*f, sincos_alpha[2*f]);
             nlSetVariable(2*f+1, sincos_alpha[2*f+1]);
             if(locked.size() != 0 && locked[f]) {
@@ -218,11 +218,8 @@ namespace {
         nlBegin(NL_MATRIX);
 
         // Step 3: setup the PGP smoothness term
-        for(index_t f1=0; f1<M.facets.nb(); ++f1) {
-            for(
-                index_t c1=M.facets.corners_begin(f1);
-                c1<M.facets.corners_end(f1); ++c1
-            ) {
+        for(index_t f1: M.facets) {
+            for(index_t c1: M.facets.corners(f1)) {
                 index_t f2 = M.facet_corners.adjacent_facet(c1);
                 if(f2 == NO_FACET || f1 < f2) {
                     continue;
@@ -252,7 +249,7 @@ namespace {
 
         // Step 4: setup the data fitting term
         if(global_fitting != 0) {
-            for(index_t f=0; f<M.facets.nb(); ++f) {
+            for(index_t f: M.facets) {
 
                 double fitting = global_fitting;
                 if(local_fitting.size() != 0) {
@@ -284,7 +281,7 @@ namespace {
         nlSolve() ;
 
         // Step 6: read the new values of the variables
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             sincos_alpha[2*f] = nlGetVariable(2*f);
             sincos_alpha[2*f+1] = nlGetVariable(2*f+1);
         }
@@ -524,11 +521,8 @@ namespace {
         vector<double> matrices(M.vertices.nb()*6,0.0);
 
         // Compute tensors of vertex neighborhoods
-        for(index_t f1=0; f1<M.facets.nb(); ++f1) {
-            for(
-                index_t c=M.facets.corners_begin(f1);
-                c<M.facets.corners_end(f1); ++c
-            ) {
+        for(index_t f1: M.facets) {
+            for(index_t c: M.facets.corners(f1)) {
                 index_t f2 = M.facet_corners.adjacent_facet(c);
                 if(f2 == NO_FACET || f2 < f1) {
                     continue;
@@ -550,15 +544,12 @@ namespace {
 
         //  For each facet, accumulate the tensors of all its
         // vertices.
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             if(locked.size() != 0 && locked[f]) {
                 continue;
             }
             NC.clear();
-            for(
-                index_t c=M.facets.corners_begin(f);
-                c<M.facets.corners_end(f); ++c
-            ) {
+            for(index_t c: M.facets.corners(f)) {
                 index_t v=M.facet_corners.vertex(c);
                 NC.add_matrix(&matrices[6*v]);
             }
@@ -660,7 +651,7 @@ namespace GEO {
                     return false;
                 }
                 centers_.resize(M.cells.nb() * 3);
-                for(index_t t = 0; t < M.cells.nb(); ++t) {
+                for(index_t t : M.cells) {
                     vec3 g = Geom::mesh_tet_center(M, t);
                     centers_[3 * t] = g.x;
                     centers_[3 * t + 1] = g.y;
@@ -674,7 +665,7 @@ namespace GEO {
                     return false;
                 }
                 centers_.resize(M.facets.nb() * 3);
-                for(index_t f = 0; f < M.facets.nb(); ++f) {
+                for(index_t f: M.facets) {
                     vec3 g = Geom::mesh_facet_center(M, f);
                     centers_[3 * f] = g.x;
                     centers_[3 * f + 1] = g.y;
@@ -726,10 +717,8 @@ namespace GEO {
         // Step 1: setup the fixed variables
         index_t nb_constrained = 0;
 
-        for(index_t f1=0; f1<M.facets.nb(); ++f1) {
-            for(index_t c1=M.facets.corners_begin(f1);
-                c1<M.facets.corners_end(f1); ++c1
-            ) {
+        for(index_t f1: M.facets) {
+            for(index_t c1: M.facets.corners(f1)) {
                 index_t f2 = M.facet_corners.adjacent_facet(c1);
                 if(
                     f2 == NO_FACET || (
@@ -757,10 +746,10 @@ namespace GEO {
         vector<double> certainty(M.facets.nb());
         estimate_max_curvature_direction(M,alpha_sincos,locked,certainty);
         double max_certainty = 0.0;
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             max_certainty = std::max(max_certainty,certainty[f]);
         }
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             certainty[f] /= max_certainty;
             if(Numeric::is_nan(certainty[f])) {
                 certainty[f] = 0.0;
@@ -783,7 +772,7 @@ namespace GEO {
         //  the solution of the linear system
         frames_.resize(M.facets.nb()*9);
         centers_.resize(M.facets.nb()*3);
-        for(index_t f=0; f<M.facets.nb(); ++f) {
+        for(index_t f: M.facets) {
             double angle = atan2(
                              alpha_sincos[2*f+1],
                              alpha_sincos[2*f]
@@ -818,7 +807,7 @@ namespace GEO {
         if(volumetric) {
             vector<double> new_frames(9*M.cells.nb());
             vector<double> new_centers(3*M.cells.nb());
-            for(index_t t=0; t<M.cells.nb(); ++t) {
+            for(index_t t: M.cells) {
                 vec3 g = Geom::mesh_tet_center(M,t);
                 get_nearest_frame(g.data(), &new_frames[9*t]);
                 new_centers[3*t+0] = g.x;

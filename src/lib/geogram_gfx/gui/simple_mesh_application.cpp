@@ -77,7 +77,7 @@ namespace GEO {
 	mesh_width_ = 0.1f;
 	
         show_surface_borders_ = false;
-	surface_color_ =   vec4f(0.0f, 0.5f, 1.0f, 1.0f);
+	surface_color_ =   vec4f(0.5f, 0.5f, 1.0f, 1.0f);
 	surface_color_2_ = vec4f(1.0f, 0.5f, 0.0f, 1.0f); 
 	
         show_volume_ = false;
@@ -95,20 +95,20 @@ namespace GEO {
         attribute_name_ = "point_fp32[0]";
         attribute_subelements_ = MESH_VERTICES;
 
-        add_key_toggle("p", &show_vertices_);
-        add_key_toggle("S", &show_surface_);
-        add_key_toggle("c", &show_surface_sides_);
-        add_key_toggle("B", &show_surface_borders_);
-        add_key_toggle("m", &show_mesh_);
-        add_key_toggle("V", &show_volume_);
-        add_key_toggle("j", &show_hexes_);
-        add_key_toggle("k", &show_connectors_);
-        add_key_toggle("C", &show_colored_cells_);
+        add_key_toggle("p", &show_vertices_, "vertices");
+        add_key_toggle("S", &show_surface_, "surface");
+        add_key_toggle("c", &show_surface_sides_, "two-sided");
+        add_key_toggle("B", &show_surface_borders_, "borders");
+        add_key_toggle("m", &show_mesh_, "mesh");
+        add_key_toggle("V", &show_volume_, "volume");
+        add_key_toggle("j", &show_hexes_, "hexes");
+        add_key_toggle("k", &show_connectors_, "connectors");
+        add_key_toggle("C", &show_colored_cells_, "colored cells");
 
-        add_key_func("r", decrement_anim_time_callback);
-        add_key_func("t", increment_anim_time_callback);
-        add_key_func("x", decrement_cells_shrink_callback);
-        add_key_func("w", increment_cells_shrink_callback);
+        add_key_func("r", decrement_anim_time_callback, "- anim speed");
+        add_key_func("t", increment_anim_time_callback, "+ anim speed");
+        add_key_func("x", decrement_cells_shrink_callback, "- cells shrink");
+        add_key_func("w", increment_cells_shrink_callback, "+ cells shrink");
     }
 
     void SimpleMeshApplication::geogram_initialize(int argc, char** argv) {
@@ -224,7 +224,7 @@ namespace GEO {
         if(mesh_.vertices.dimension() >= 6) {
             ImGui::Separator();
             ImGui::Checkbox(
-                "Animate [a]", animate_ptr()
+                "Animate", animate_ptr()
             );
             ImGui::SliderFloat("spd.", &anim_speed_, 1.0f, 10.0f, "%.1f");
             ImGui::SliderFloat("t.", &anim_time_, 0.0f, 1.0f, "%.2f");
@@ -233,7 +233,7 @@ namespace GEO {
         ImGui::Separator();    
         ImGui::Checkbox("##VertOnOff", &show_vertices_);
 	ImGui::SameLine();
-	ImGui::ColorEdit3WithPalette("Vert. [p]", vertices_color_.data());
+	ImGui::ColorEdit3WithPalette("Vert.", vertices_color_.data());
 
         if(show_vertices_) {
             ImGui::Checkbox("selection", &show_vertices_selection_);            
@@ -245,18 +245,18 @@ namespace GEO {
             ImGui::Checkbox("##SurfOnOff", &show_surface_);
 	    ImGui::SameLine();
 	    ImGui::ColorEdit3WithPalette(
-		"Surf. [S]", surface_color_.data()
+		"Surf.", surface_color_.data()
 	    );
             if(show_surface_) {
 		ImGui::Checkbox("##SidesOnOff", &show_surface_sides_);
 		ImGui::SameLine();
 		ImGui::ColorEdit3WithPalette(
-		    "2sided [c]", surface_color_2_.data()
+		    "2sided", surface_color_2_.data()
 		);
 		
                 ImGui::Checkbox("##MeshOnOff", &show_mesh_);
 		ImGui::SameLine();
-		ImGui::ColorEdit3WithPalette("mesh [m]", mesh_color_.data());
+		ImGui::ColorEdit3WithPalette("mesh", mesh_color_.data());
 
 		if(show_mesh_) {
 		    ImGui::SliderFloat(
@@ -264,7 +264,7 @@ namespace GEO {
 		    );
 		}
 		
-                ImGui::Checkbox("borders [B]", &show_surface_borders_);
+                ImGui::Checkbox("borders", &show_surface_borders_);
             }
         }
 
@@ -272,14 +272,14 @@ namespace GEO {
             ImGui::Separator();
             ImGui::Checkbox("##VolumeOnOff", &show_volume_);
 	    ImGui::SameLine();
-	    ImGui::ColorEdit3WithPalette("Volume [V]", volume_color_.data());
+	    ImGui::ColorEdit3WithPalette("Volume", volume_color_.data());
             if(show_volume_) {
                 ImGui::SliderFloat(
                     "shrk.", &cells_shrink_, 0.0f, 1.0f, "%.2f"
                 );        
                 if(!mesh_.cells.are_simplices()) {
-                    ImGui::Checkbox("colored cells [C]", &show_colored_cells_);
-                    ImGui::Checkbox("hexes [j]", &show_hexes_);
+                    ImGui::Checkbox("colored cells", &show_colored_cells_);
+                    ImGui::Checkbox("hexes", &show_hexes_);
                 }
             }
         }
@@ -523,5 +523,4 @@ namespace GEO {
             }
         }
     }
-
 }

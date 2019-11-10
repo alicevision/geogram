@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/3lj3zt
+
 /*
 
 	Contoured Layers
@@ -264,7 +266,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord){
     float flNum = 5.;
     
     
-    for(int i = 0; i<lNum; i++){
+    for(int i = 0; i<5; i++){
         
         
         float fi = float(i);

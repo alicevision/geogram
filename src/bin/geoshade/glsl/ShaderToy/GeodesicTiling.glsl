@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/llVXRd
+
 #define MODEL_ROTATION vec2(.3, .25)
 #define CAMERA_ROTATION vec2(.5, .5)
 

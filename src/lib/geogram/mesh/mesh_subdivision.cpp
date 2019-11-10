@@ -298,12 +298,9 @@ namespace GEO {
 	index_t nb_f_orig = M.facets.nb();
 	
 	// Create edge and facet vertices
-	FOR(f1,M.facets.nb()) {
+	for(index_t f1: M.facets) {
 	    facet_vertex[f1] = cb->create_vertex();
-	    for(
-		index_t c1 = M.facets.corners_begin(f1);
-		c1<M.facets.corners_end(f1); ++c1
-	    ) {
+	    for(index_t c1: M.facets.corners(f1)) {
 		index_t v = M.facet_corners.vertex(c1);
 		++vertex_degree[v];
 		index_t f2 = M.facet_corners.adjacent_facet(c1);
@@ -328,12 +325,9 @@ namespace GEO {
 	}
 	
 	// Compute facet vertices
-	FOR(f, M.facets.nb()) {
+	for(index_t f: M.facets) {
 	    double f_degree = double(M.facets.nb_vertices(f));
-	    for(
-		index_t c=M.facets.corners_begin(f);
-		c<M.facets.corners_end(f); ++c
-	    ) {
+	    for(index_t c: M.facets.corners(f)) {
 		index_t v = M.facet_corners.vertex(c);
 		cb->madd_vertex(facet_vertex[f], 1.0 / f_degree, v);
 		if(M.facet_corners.adjacent_facet(c) == NO_FACET) {
@@ -343,11 +337,8 @@ namespace GEO {
 	}
 
 	// Compute edge vertices
-	FOR(f, M.facets.nb()) {
-	    for(
-		index_t c=M.facets.corners_begin(f);
-		c<M.facets.corners_end(f); ++c
-	    ) {
+	for(index_t f: M.facets) {
+	    for(index_t c: M.facets.corners(f)) {
 		index_t v = M.facet_corners.vertex(c);
 		if(M.facet_corners.adjacent_facet(c) == NO_FACET) {
 		    cb->madd_vertex(corner_vertex[c], 1.0/2.0, v);
@@ -375,11 +366,8 @@ namespace GEO {
 	    }
 	}
 
-	FOR(f, M.facets.nb()) {
-	    for(
-		index_t c = M.facets.corners_begin(f);
-		c<M.facets.corners_end(f); ++c
-	    ) {
+	for(index_t f: M.facets) {
+	    for(index_t c: M.facets.corners(f)) {
 		index_t v = M.facet_corners.vertex(c);
 		double n = double(vertex_degree[v]);
 		
@@ -399,10 +387,7 @@ namespace GEO {
 	
 	// Create new facets
 	FOR(f, nb_f_orig) {
-	    for(
-		index_t c = M.facets.corners_begin(f);
-		c<M.facets.corners_end(f); ++c
-	    ) {
+	    for(index_t c: M.facets.corners(f)) {
 		index_t v = M.facet_corners.vertex(c);
 		index_t c2 = M.facets.prev_corner_around_facet(f,c);
 		index_t new_f = M.facets.create_quad(

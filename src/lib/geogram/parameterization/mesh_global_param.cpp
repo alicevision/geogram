@@ -162,7 +162,7 @@ namespace GEO {
 	    void compute_R_ff(
 		Mesh* mesh, Attribute<vec3>& B, Attribute<index_t>& R_ff
 	    ) {
-		FOR(f1, mesh->facets.nb()) {
+		for(index_t f1: mesh->facets) {
 		    FOR(e1, mesh->facets.nb_vertices(f1)) {
 			index_t f2 = mesh->facets.adjacent(f1,e1);
 			index_t c = mesh->facets.corners_begin(f1) + e1;
@@ -197,7 +197,7 @@ namespace GEO {
 		
 		vector<index_t> v2c(mesh->vertices.nb(), NO_CORNER);
 		{
-		    FOR(c,mesh->facet_corners.nb()) {
+		    for(index_t c: mesh->facet_corners) {
 			index_t f = c/3;
 			index_t c_prev =
 			    mesh->facets.prev_corner_around_facet(f,c);
@@ -208,7 +208,7 @@ namespace GEO {
 			    v2c[v] = c;
 			}
 		    }
-		    FOR(c,mesh->facet_corners.nb()) {
+		    for(index_t c: mesh->facet_corners) {
 			index_t v = mesh->facet_corners.vertex(c);
 			if(v2c[v] == NO_CORNER) {
 			    v2c[v] = c;
@@ -222,7 +222,7 @@ namespace GEO {
 		//   for pairs of *adjacent* facets (and I cannot think about
 		//   a way of making work it *reliably* for any pair of facets).
 		{
-		    FOR(v,mesh->vertices.nb()) {
+		    for(index_t v: mesh->vertices) {
 			index_t prev_c = NO_CORNER;
 			index_t c = v2c[v];
 			
@@ -236,12 +236,7 @@ namespace GEO {
 				next_f = mesh->facet_corners.adjacent_facet(c);
 			    index_t next_c = NO_CORNER;
 			    if(next_f != NO_FACET) {
-				for(
-				    index_t c2 =
-					mesh->facets.corners_begin(next_f);
-				    c2 != mesh->facets.corners_end(next_f);
-				    ++c2
-				 ) {
+				for(index_t c2: mesh->facets.corners(next_f)) {
 				    if(mesh->facet_corners.vertex(c2) == v) {
 					next_c = c2;
 				    break;
@@ -264,9 +259,8 @@ namespace GEO {
 		Attribute<index_t>& R_ff, Attribute<bool>& v_is_singular
 	    ) {
 		vector<index_t> Rsum(mesh->vertices.nb(),0);
-		FOR(f, mesh->facets.nb()) {
-		    for(index_t c=mesh->facets.corners_begin(f);
-			c<mesh->facets.corners_end(f); ++c) {
+		for(index_t f: mesh->facets) {
+		    for(index_t c: mesh->facets.corners(f)) {
 			if(
 			    mesh->facet_corners.adjacent_facet(c) !=
 			    index_t(-1)
@@ -276,12 +270,12 @@ namespace GEO {
 			}
 		    }
 		}
-		FOR(v, mesh->vertices.nb()) {
+		for(index_t v: mesh->vertices) {
 		    v_is_singular[v] = ((Rsum[v] % 4) != 0);
 		}
 		// Vertices on border can have non-zero Rsum without being
 		// singular.
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    if(mesh->facet_corners.adjacent_facet(c) == NO_FACET) {
 			v_is_singular[mesh->facet_corners.vertex(c)] = false;
 		    }
@@ -318,7 +312,7 @@ namespace GEO {
 		Mesh* mesh,
 		Attribute<index_t>& R_ff, Attribute<index_t>& c_on_border
 	    ) {
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    c_on_border[c] = 1;
 		}
 		
@@ -331,10 +325,7 @@ namespace GEO {
 		while(!S.empty()) {
 		    index_t f1 = S.front();
 		    S.pop_front();
-		    for(
-			index_t c1=mesh->facets.corners_begin(f1);
-			c1 < mesh->facets.corners_end(f1); ++c1
-		     ) {
+		    for(index_t c1: mesh->facets.corners(f1)) {
 			index_t f2 = mesh->facet_corners.adjacent_facet(c1);
 			if(f2 != NO_FACET && !visited[f2] && R_ff[c1] == 0) {
 			    set_edge_attr(mesh, c_on_border, f1, f2, 0);
@@ -347,7 +338,7 @@ namespace GEO {
 		// Zipping
 
 		vector<index_t> v_nb_borders(mesh->vertices.nb(), 0);
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    if(c_on_border[c]) {
 			++v_nb_borders[mesh->facet_corners.vertex(c)];
 		    }
@@ -356,7 +347,7 @@ namespace GEO {
 		bool there_are_degree1_vertices = true;
 		while(there_are_degree1_vertices) {
 		    there_are_degree1_vertices = false;
-		    FOR(c1, mesh->facet_corners.nb()) {
+		    for(index_t c1: mesh->facet_corners) {
 			index_t v1 = mesh->facet_corners.vertex(c1);
 			if(v_nb_borders[v1] == 1 &&
 			   (c_on_border[c1] != 0) && R_ff[c1] == 0
@@ -382,7 +373,7 @@ namespace GEO {
 	    void do_the_ball_no_brush_no_zip(
 		Mesh* mesh, Attribute<index_t>& c_on_border
 	    ) {
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    c_on_border[c] = 1;
 		}
 
@@ -395,10 +386,7 @@ namespace GEO {
 		while(!S.empty()) {
 		    index_t f1 = S.front();
 		    S.pop_front();
-		    for(
-			index_t c1=mesh->facets.corners_begin(f1);
-			c1 < mesh->facets.corners_end(f1); ++c1
-		    ) {
+		    for(index_t c1: mesh->facets.corners(f1)) {
 			index_t f2 = mesh->facet_corners.adjacent_facet(c1);
 			if(f2 != NO_FACET && !visited[f2]) {
 			    set_edge_attr(mesh, c_on_border, f1, f2, 0);
@@ -440,11 +428,11 @@ namespace GEO {
 
 		geo_argused(R_ff);
 
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    constraint[c] = CNSTR_NONE;
 		}
 
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    index_t edge_constraints = get_edge_constraints(mesh,c,B);
 		    index_t f = c/3;
 		    index_t c2 = mesh->facets.next_corner_around_facet(f,c);
@@ -590,10 +578,10 @@ namespace GEO {
 		Attribute<vec3>& B, Attribute<vec3>& Bv,
 		Attribute<index_t>& R_fv
 	    ) {
-		FOR(v, mesh->vertices.nb()) {
+		for(index_t v: mesh->vertices) {
 		    Bv[v] = vec3(0.0, 0.0, 0.0);
 		}
-		FOR(c, mesh->facet_corners.nb()) {
+		for(index_t c: mesh->facet_corners) {
 		    index_t v = mesh->facet_corners.vertex(c);	    
 		    index_t f = c/3;
 		    vec3 Bf = normalize(B[f]);
@@ -603,7 +591,7 @@ namespace GEO {
 		    }
 		    Bv[v] += Bf;
 		}
-		FOR(v, mesh->vertices.nb()) {
+		for(index_t v: mesh->vertices) {
 		    Bv[v] = normalize(Bv[v]);
 		}
 	    }
@@ -619,7 +607,7 @@ namespace GEO {
 	    FF.set_use_spatial_search(false);
 	    FF.create_from_surface_mesh(*mesh,false,hard_angle_threshold);
 	    const vector<double>& frames = FF.frames();
-	    FOR(f, mesh->facets.nb()) {
+	    for(index_t f: mesh->facets) {
 		B[f] = vec3(
 		    frames[9*f+0],
 		    frames[9*f+1],

@@ -47,6 +47,7 @@
 #include <geogram_gfx/gui/application.h>
 #include <geogram_gfx/ImGui_ext/icon_font.h>
 #include <geogram/basic/string.h>
+#include <geogram/basic/command_line.h>
 
 namespace GEO {
 
@@ -272,36 +273,41 @@ namespace GEO {
 	if(with_window) {
 	    ImGui::Begin("Console", visible);
 	}
-// Add a close button under Android 	
-#ifdef GEO_OS_ANDROID
-        if (ImGui::Button(icon_UTF8("window-close").c_str())) {
-            *visible = false;
-        }
-	ImGui::SameLine();
-#endif	
-        if (ImGui::Button("Clear")) {
+
+	bool phone_screen = CmdLine::get_arg_bool("gui:phone_screen");
+	
+        // Add a close button under Android 	
+	if(phone_screen) {
+	    if (ImGui::SimpleButton(icon_UTF8("window-close").c_str())) {
+		*visible = false;
+	    }
+	    ImGui::SameLine();
+	}
+        if (ImGui::SimpleButton(icon_UTF8("eraser").c_str())) {
             clear();
         }
+	ImGui::Tooltip("clear");
         ImGui::SameLine();
-        bool copy = ImGui::Button("Copy");
+        bool copy = ImGui::SimpleButton(icon_UTF8("copy").c_str());
+	ImGui::Tooltip("copy");	
         ImGui::SameLine();
-        filter_.Draw("Filter", -200.0f);
+        filter_.Draw((icon_UTF8("filter")+" Filter").c_str(), -200.0f);
         ImGui::Separator();
 	
-#ifdef GEO_OS_ANDROID
-	// Use smaller font if using phone in vertical mode.
-	if(
-	    Application::instance() != nullptr &&
-	    Application::instance()->get_height() >
-	    Application::instance()->get_width()
-	) {
-	    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[3]);
-	} else {
+	if(phone_screen) {
+	    // Use smaller font if using phone in vertical mode.
+	    if(
+		Application::instance() != nullptr &&
+		Application::instance()->get_height() >
+		Application::instance()->get_width()
+	    ) {
+		ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[3]);
+	    } else {
 	    	ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]); 
+	    }
+	} else {
+	    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);	    	    
 	}
-#else	
-	ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);	    	    
-#endif
 	
 	float scaling = ImGui::GetIO().FontDefault->FontSize / 16.0f;
 	

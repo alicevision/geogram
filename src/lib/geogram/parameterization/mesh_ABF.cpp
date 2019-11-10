@@ -72,7 +72,7 @@ namespace {
 	    v_on_border_.assign(mesh.vertices.nb(),false);
 	    v_to_c_.assign(mesh.vertices.nb(),NO_VERTEX);
 	    next_c_around_v_.assign(mesh.facet_corners.nb(), NO_CORNER);
-	    for(index_t c=0; c<mesh.facet_corners.nb(); ++c) {
+	    for(index_t c: mesh.facet_corners) {
 		index_t v = mesh.facet_corners.vertex(c);
 		if(mesh.facet_corners.adjacent_facet(c) == NO_FACET) {
 		    v_on_border_[v] = true;
@@ -82,9 +82,8 @@ namespace {
 	    }
 	    if(!mesh_.facets.are_simplices()) {
 		c_to_f_.resize(mesh_.facet_corners.nb());
-		for(index_t f=0; f<mesh_.facets.nb(); ++f) {
-		    for(index_t c = mesh_.facets.corners_begin(f);
-			c < mesh_.facets.corners_end(f); ++c) {
+		for(index_t f: mesh_.facets) {
+		    for(index_t c: mesh_.facets.corners(f)) {
 			c_to_f_[c] = f;
 		    }
 		}
@@ -112,7 +111,7 @@ namespace {
 		}
 		// Note: AnglesToUV with angles measured on the mesh
 		//  (i.e. beta's) = LSCM !!!
-		for(index_t c=0; c<mesh_.facet_corners.nb(); ++c) {
+		for(index_t c: mesh_.facet_corners) {
 		    angle_[c] = beta_[c];
 		}
 	    } 
@@ -129,7 +128,7 @@ namespace {
 	
 	index_t nb_interior_vertices(const Mesh& M) const {
 	    index_t result=0;
-	    for(index_t v=0; v<M.vertices.nb(); ++v) {
+	    for(index_t v: M.vertices) {
 		if(!v_on_border_[v]) {
 		    ++result;
 		}
@@ -199,7 +198,7 @@ namespace {
 
 	void compute_beta() {
 
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+	    for(index_t v: mesh_.vertices) {
 		// Compute sum_angles
 		double sum_angle = 0.0 ;
 		{
@@ -330,14 +329,14 @@ namespace {
 		}
 
 		if(angle_.is_bound()) {
-		    for(index_t c=0; c<mesh_.facet_corners.nb(); ++c) {
+		    for(index_t c: mesh_.facet_corners) {
 			angle_[c] = alpha_[c];
 		    }
 		}
 	    }
 
 
-	    for(index_t c=0; c<mesh_.facet_corners.nb(); ++c) {
+	    for(index_t c: mesh_.facet_corners) {
 		if(Numeric::is_nan(alpha_[c])) {
 		    return false;
 		}
@@ -363,8 +362,7 @@ namespace {
 	    Delta_star_inv_.resize(nf_) ;
 	    for(index_t f=0; f<nf_; ++f) {
 		double S = 0.0;
-		for(index_t c = mesh_.facets.corners_begin(f);
-		    c < mesh_.facets.corners_end(f); ++c) {
+		for(index_t c: mesh_.facets.corners(f)) {
 		    S += Delta_inv_[c];
 		}
 		Delta_star_inv_[f] =  1.0 / S;
@@ -390,8 +388,7 @@ namespace {
 	    
 	    for(index_t f=0; f<nf_; ++f) {
 		b1_star_[f] = -b2_[f];
-		for(index_t c = mesh_.facets.corners_begin(f);
-		    c < mesh_.facets.corners_end(f); ++c) {
+		for(index_t c: mesh_.facets.corners(f)) {
 		    b1_star_[f] += Delta_inv_[c] * b1_[c];
 		}
 	    }
@@ -447,8 +444,7 @@ namespace {
 	    mult_transpose(J2_, dlambda2_, dalpha_) ;
 
 	    for(index_t f=0; f<nf_; ++f) {
-		for(index_t c = mesh_.facets.corners_begin(f);
-		    c < mesh_.facets.corners_end(f); ++c) {
+		for(index_t c: mesh_.facets.corners(f)) {
 		    dalpha_[c] += dlambda1_[f];
 		}		
 	    }
@@ -489,7 +485,7 @@ namespace {
 
 	void add_JC2() {
 	    index_t i = 0 ;
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+	    for(index_t v: mesh_.vertices) {
 		if(v_on_border_[v]) {
 		    continue ;
 		}
@@ -504,7 +500,7 @@ namespace {
 	
 	void add_JC3() {
             index_t i = nint_ ;
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+	    for(index_t v: mesh_.vertices) {
                 if(v_on_border_[v]) {
                     continue ;
                 }
@@ -541,15 +537,13 @@ namespace {
 	// For each facet: sum angles - PI * (nb_vertices(f)-2)
 	void sub_grad_C1() {
 	    for(index_t f=0; f < nf_; ++f) {
-		for(index_t c = mesh_.facets.corners_begin(f);
-		    c < mesh_.facets.corners_end(f); ++c) {
+		for(index_t c: mesh_.facets.corners(f)) {
 		    b1_[c] -= lambda_[f];
 		}
 	    }
 	    for(index_t f=0; f < nf_; ++f) {
 		b2_[f] += M_PI * (mesh_.facets.nb_vertices(f)-2);
-		for(index_t c = mesh_.facets.corners_begin(f);
-		    c < mesh_.facets.corners_end(f); ++c) {		    
+		for(index_t c: mesh_.facets.corners(f)) {
 		    b2_[f] -= alpha_[c];
 		}
 	    }
@@ -557,7 +551,7 @@ namespace {
 	
 	void sub_grad_C2() {
 	    index_t i = nf_ ;
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+	    for(index_t v: mesh_.vertices) {
 		if(v_on_border_[v]) {
 		    continue ;
 		}
@@ -576,7 +570,7 @@ namespace {
 	// For each vertex: prod sin(next angle) - prod sin(prev angle)
 	void sub_grad_C3() {
             index_t i = nf_ + nint_ ;
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+	    for(index_t v: mesh_.vertices) {
 		if(v_on_border_[v]) {
                     continue ;
                 }

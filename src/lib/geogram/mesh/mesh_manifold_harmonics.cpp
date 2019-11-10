@@ -107,7 +107,7 @@ namespace {
 	vector<index_t> v_degree;
 	if(discretization == UNIFORM) {
 	    v_degree.assign(M.vertices.nb(), 0);
-	    for(index_t c=0; c<M.facet_corners.nb(); ++c) {
+	    for(index_t c: M.facet_corners) {
 		index_t v = M.facet_corners.vertex(c);
 		++v_degree[v];
 	    }
@@ -122,7 +122,7 @@ namespace {
 	nlMatrixMode(NL_STIFFNESS_MATRIX);	
 	nlBegin(NL_MATRIX);
 
-	for(index_t f=0; f<M.facets.nb(); ++f) {
+	for(index_t f: M.facets) {
 	    index_t fnv = M.facets.nb_vertices(f);
 	    for(index_t lv=0; lv<fnv; ++lv) {
 		index_t v1 = M.facets.vertex(f,lv);
@@ -149,7 +149,7 @@ namespace {
 		}
 	    }
 	}
-	for(index_t v=0; v<M.vertices.nb(); ++v) {
+	for(index_t v: M.vertices) {
 	    // Diagonal term is minus row sum
 	    // plus small number to make M non-singular
 	    nlAddIJCoefficient(v,v,-v_row_sum[v] + 1e-6);
@@ -162,7 +162,7 @@ namespace {
 	if(discretization == FEM_P1 || discretization == FEM_P1_LUMPED) {
 	    nlMatrixMode(NL_MASS_MATRIX);
 	    nlBegin(NL_MATRIX);
-	    for(index_t f=0; f<M.facets.nb(); ++f) {
+	    for(index_t f: M.facets) {
 		index_t v1 = M.facets.vertex(f,0);
 		index_t v2 = M.facets.vertex(f,1);
 		index_t v3 = M.facets.vertex(f,2);
@@ -273,7 +273,8 @@ namespace GEO {
 
 	if(print_spectrum) {
 	    for(index_t i=0; i<nb_eigens; ++i) {
-		Logger::out("MH") << i << ":" << nlGetEigenValue(i) << std::endl;
+		Logger::out("MH") << i << ":" << nlGetEigenValue(i)
+				  << std::endl;
 	    }
 	}
 	
@@ -363,7 +364,7 @@ namespace GEO {
 		    ::fabs(nlGetEigenValue(i)) > ::fabs(latest_eigen)
 		) {
 		    latest_eigen = nlGetEigenValue(i);
-		    for(index_t j=0; j<M.vertices.nb(); ++j) {
+		    for(index_t j: M.vertices) {
 			eigen_vector[j] = nlMultiGetVariable(j,i);
 		    }
 		    callback(

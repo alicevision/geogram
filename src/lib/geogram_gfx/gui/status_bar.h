@@ -100,6 +100,16 @@ namespace GEO {
 	 * \brief Redraws the GUI.
 	 */
 	virtual void update();
+
+	/**
+	 * \brief Gets the height of the status bar window.
+	 * \return the height of the window.
+	 * \details Needs to have drawn the window at least once,
+	 *  else it returns 0.
+	 */
+	float get_window_height() const {
+	    return height_;
+	}
 	
       private:
         bool progress_;
@@ -107,6 +117,7 @@ namespace GEO {
         index_t percent_;
         bool canceled_;
         index_t nb_active_;
+	float height_;
     };
 
     typedef SmartPointer<StatusBar> StatusBar_var;

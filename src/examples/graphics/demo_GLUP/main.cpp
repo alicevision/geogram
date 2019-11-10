@@ -96,6 +96,7 @@ namespace {
             if(texture_ != 0) {
                 glDeleteTextures(1,&texture_);
             }
+	    SimpleApplication::GL_terminate();
         }
         
         /**

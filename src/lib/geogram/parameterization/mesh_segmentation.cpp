@@ -223,8 +223,7 @@ namespace GEO {
         while (!queue.empty()) {
             index_t top = *(queue.begin());
             queue.erase(queue.begin());
-	    for(index_t c=chart.mesh.facets.corners_begin(top);
-		c<chart.mesh.facets.corners_end(top); ++c) {
+	    for(index_t c: chart.mesh.facets.corners(top)) {
 		index_t neigh = chart.mesh.facet_corners.adjacent_facet(c);
 		
 		if(
@@ -289,7 +288,7 @@ namespace GEO {
 	    ymin = Numeric::max_float64();
 	    xmax = Numeric::min_float64();
 	    ymax = Numeric::min_float64();
-	    for(index_t c=0; c<mesh.facet_corners.nb(); ++c) {
+	    for(index_t c: mesh.facet_corners) {
 		xmin = std::min(xmin, tex_coord[2*c]);
 		ymin = std::min(ymin, tex_coord[2*c+1]);
 		xmax = std::max(xmax, tex_coord[2*c]);
@@ -308,10 +307,7 @@ namespace GEO {
 	    ymax = Numeric::min_float64();
 	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
 		index_t f = chart.facets[ff];
-		for(
-		    index_t c = chart.mesh.facets.corners_begin(f);
-		    c<chart.mesh.facets.corners_end(f); ++c
-		) {
+		for(index_t c: chart.mesh.facets.corners(f)) {
 		    xmin = std::min(xmin, tex_coord[2*c]);
 		    ymin = std::min(ymin, tex_coord[2*c+1]);
 		    xmax = std::max(xmax, tex_coord[2*c]);
@@ -340,7 +336,7 @@ namespace GEO {
 	
 	double mesh_area_2d(const Mesh& mesh, Attribute<double>& tex_coord) {
 	    double result = 0.0;
-	    for(index_t f=0; f<mesh.facets.nb(); ++f) {
+	    for(index_t f: mesh.facets) {
 		result += mesh_facet_area_2d(mesh, f, tex_coord);
 	    }
 	    return result;

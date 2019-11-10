@@ -48,6 +48,7 @@
 
 #include <geogram_gfx/basic/common.h>
 #include <geogram_gfx/GLUP/GLUP.h>
+#include <geogram_gfx/GLUP/GLUP_private.h>
 #include <geogram/mesh/mesh.h>
 
 /**
@@ -665,16 +666,16 @@ namespace GEO {
 	    if(picking_mode_ == MESH_NONE) {
 		switch(attribute_dim_) {
 		    case 1:
-			glupTexCoord1d(scalar_attribute_[element]);
+			glupPrivateTexCoord1d(scalar_attribute_[element]);
 			break;
 		    case 2:
-			glupTexCoord2d(
+			glupPrivateTexCoord2d(
 			    tex_coord_attribute_[0][element],
 			    tex_coord_attribute_[1][element]
 			);
 			break;
 		    case 3:
-			glupTexCoord3d(
+			glupPrivateTexCoord3d(
 			    tex_coord_attribute_[0][element],
 			    tex_coord_attribute_[1][element],
 			    tex_coord_attribute_[2][element]
@@ -724,7 +725,7 @@ namespace GEO {
                         mesh_->vertices.single_precision_point_ptr(v);
                     float t = float(time_);
                     float s = 1.0f - float(time_);
-                    glupVertex3f(
+                    glupPrivateVertex3f(
                         s*p[0] + t*p[3],
                         s*p[1] + t*p[4],
                         s*p[2] + t*p[5]
@@ -732,7 +733,7 @@ namespace GEO {
                 } else {
                     const GLUPdouble* p = mesh_->vertices.point_ptr(v);
                     double s = 1.0 - time_;
-                    glupVertex3d(
+                    glupPrivateVertex3d(
                         s*p[0] + time_*p[3],
                         s*p[1] + time_*p[4],
                         s*p[2] + time_*p[5]
@@ -741,21 +742,21 @@ namespace GEO {
             } else {
                 if(mesh_->vertices.single_precision()) {
 		    if(mesh_->vertices.dimension() < 3) {
-			glupVertex2fv(
+			glupPrivateVertex2fv(
 			    mesh_->vertices.single_precision_point_ptr(v)
 			);
 		    } else {
-			glupVertex3fv(
+			glupPrivateVertex3fv(
 			    mesh_->vertices.single_precision_point_ptr(v)
 			);
 		    }
                 } else {
 		    if(mesh_->vertices.dimension() < 3) {
-			glupVertex2dv(
+			glupPrivateVertex2dv(
 			    mesh_->vertices.point_ptr(v)
 			);
 		    } else {
-			glupVertex3dv(
+			glupPrivateVertex3dv(
 			    mesh_->vertices.point_ptr(v)
 			);
 		    }

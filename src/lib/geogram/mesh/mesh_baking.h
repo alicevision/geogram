@@ -96,7 +96,8 @@ namespace GEO {
      * \param[in] attribute the attribute, can be a vertex, facet corner
      *  or facet attribute. Vertex and facet corner attributes are 
      *  linearly interpolated. If it is a vector attribute, its available
-     *  components are copied to the r,g,b,a components of the interpolated color.
+     *  components are copied to the r,g,b,a components of the interpolated 
+     *  color.
      * \param[in] bias optional value to be added to the attribute values 
      *  before storing them into the color components.
      * \param[in] scale optional value that scales the attribute values 
@@ -136,7 +137,7 @@ namespace GEO {
      * \param[in] geometry the geometry image
      * \param[out] target the target image
      * \param[in] highres the high-resolution mesh
-     * \pre geometry and target have the same size, and geometry uses
+     * \pre \p geometry and \p target have the same size, and \p geometry uses
      *  FLOAT64 component encoding.
      */
     void GEOGRAM_API bake_mesh_facet_normals_indirect(

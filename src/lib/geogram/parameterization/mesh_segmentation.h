@@ -139,10 +139,10 @@ namespace GEO {
 	/**
 	 * \brief Computes the 2D bounding box of a parameterized mesh.
 	 * \param[in] mesh a const reference to a parameterized surface mesh.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \param[out] xmin , ymin , xmax , ymax references to the extremum coordinates
-	 *  of the parameterization.
+	 * \param[in] tex_coord the texture coordinates as a 2d vector 
+	 *  attribute attached to the facet corners.
+	 * \param[out] xmin , ymin , xmax , ymax references to the 
+	 *  extremum coordinates of the parameterization.
 	 */
 	void GEOGRAM_API get_mesh_bbox_2d(
 	    const Mesh& mesh, Attribute<double>& tex_coord,
@@ -153,10 +153,10 @@ namespace GEO {
 	/**
 	 * \brief Computes the 2D bounding box of a parameterized chart.
 	 * \param[in] chart a const reference to a parameterized surface chart.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \param[out] xmin , ymin , xmax , ymax references to the extremum coordinates
-	 *  of the parameterization.
+	 * \param[in] tex_coord the texture coordinates as a 
+	 *  2d vector attribute attached to the facet corners.
+	 * \param[out] xmin , ymin , xmax , ymax references to the 
+	 *  extremum coordinates of the parameterization.
 	 */
 	void GEOGRAM_API get_chart_bbox_2d(
 	    const Chart& chart, Attribute<double>& tex_coord,
@@ -167,20 +167,24 @@ namespace GEO {
 	/**
 	 * \brief Computes the 2D parameter-space area of a parameterized mesh.
 	 * \param[in] mesh a const reference to a parameterized surface mesh.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
+	 * \param[in] tex_coord the texture coordinates as a 
+	 *  2d vector attribute attached to the facet corners.
 	 * \return the area of the parameter space.
 	 */
-	double GEOGRAM_API mesh_area_2d(const Mesh& mesh, Attribute<double>& tex_coord);
+	double GEOGRAM_API mesh_area_2d(
+	    const Mesh& mesh, Attribute<double>& tex_coord
+	);
 
 	/**
 	 * \brief Computes the 2D parameter-space area of a parameterized chart.
 	 * \param[in] chart a const reference to a parameterized surface chart.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
+	 * \param[in] tex_coord the texture coordinates as a 2d vector 
+	 *  attribute attached to the facet corners.
 	 * \return the area of the parameter space.
 	 */
-	double GEOGRAM_API chart_area_2d(const Chart& chart, Attribute<double>& tex_coord);
+	double GEOGRAM_API chart_area_2d(
+	    const Chart& chart, Attribute<double>& tex_coord
+	);
 
 	/**
 	 * \brief Computes the area of a chart.
@@ -191,11 +195,12 @@ namespace GEO {
 
 
 	/**
-	 * \brief Computes the 2D parameter-space area of a facet in a parameterized mesh.
+	 * \brief Computes the 2D parameter-space area of a facet in 
+	 *  a parameterized mesh.
 	 * \param[in] mesh a const reference to the mesh.
 	 * \param[in] f a facet of \p mesh.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
+	 * \param[in] tex_coord the texture coordinates as a 2d vector 
+	 *  attribute attached to the facet corners.
 	 * \return the area of the facet in parameter space.
 	 */
 	double GEOGRAM_API mesh_facet_area_2d(

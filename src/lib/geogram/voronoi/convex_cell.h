@@ -288,7 +288,8 @@ namespace VBW {
      */
     enum {
 	CONFLICT_MASK  = 32768, /**< \brief The mask for conflict triangles.  */
-	END_OF_LIST    = 32767, /**< \brief Constant to indicate end of list. */
+	MARKED_MASK    = 16384, /**< \brief The mask for marked triangles.    */	
+	END_OF_LIST    = 16383, /**< \brief Constant to indicate end of list. */
 	VERTEX_AT_INFINITY = 0  /**< \brief Vertex at infinity.               */
     };
 
@@ -579,7 +580,31 @@ namespace VBW {
 	 * \param[in] j the global index of the plane.
 	 */
 	void clip_by_plane(vec4 P, global_index_t j);
-	
+
+
+	/**
+	 * \brief Clips this convex cell by a new plane and stores
+	 *  the corresponding global index in the newly created vertex.
+	 * \details For a ConvexCell with a large number of facets, this
+	 *  version is faster than clip_by_plane(). However, it cannot be
+	 *  used with a ConvexCell that has infinite faces.
+	 * \param[in] P the plane equation.
+	 * \see clip_by_plane()
+	 */
+        void clip_by_plane_fast(vec4 P);
+
+	/**
+	 * \brief Clips this convex cell by a new plane and stores
+	 *  the corresponding global index in the newly created vertex.
+	 * \details For a ConvexCell with a large number of facets, this
+	 *  version is faster than clip_by_plane(). However, it cannot be
+	 *  used with a ConvexCell that has infinite faces.
+	 * \param[in] P the plane equation.
+	 * \param[in] j the global index of the plane.
+	 * \see clip_by_plane()
+	 */
+        void clip_by_plane_fast(vec4 P, global_index_t j);      
+      
 	/**
 	 * \brief Gets the number of triangles.
 	 * \return the number of created triangles.
@@ -941,8 +966,10 @@ namespace VBW {
 	     vbw_assert(t < max_t());
 	     vbw_assert(le < 3);
 	     Triangle T = get_triangle(t);
-	     index_t v1 = index_t((le == 0)*T.j + (le == 1)*T.k + (le == 2)*T.i);
-	     index_t v2 = index_t((le == 0)*T.k + (le == 1)*T.i + (le == 2)*T.j);
+	     index_t v1 =
+		 index_t((le == 0)*T.j + (le == 1)*T.k + (le == 2)*T.i);
+	     index_t v2 =
+		 index_t((le == 0)*T.k + (le == 1)*T.i + (le == 2)*T.j);
 	     vbw_assert(vv2t(v1,v2) == t);
 	     vbw_assert(vv2t(v2,v1) != END_OF_LIST);
 	     return vv2t(v2,v1);
@@ -1237,6 +1264,17 @@ namespace VBW {
       
       protected:
 
+        /**
+	 * \brief Triangulates the conflict zone.
+	 * \param[in] lv the local index of the new vertex
+	 * \param[in] conflict_head , conflict tail the first
+	 *  and last triangle of the conflict zone stored 
+	 *  as a linked list.
+	 */
+        void triangulate_conflict_zone(
+	   index_t lv, index_t conflict_head, index_t conflict_tail
+	);
+      
 	/**
 	 * \brief Changes a vertex plane equation.
 	 * \param[in] v the vertex.
@@ -1328,7 +1366,7 @@ namespace VBW {
 	 * \brief True if exact predicates should be used.
 	 */
 	bool use_exact_predicates_;
-#endif	
+#endif
     };
 }
 

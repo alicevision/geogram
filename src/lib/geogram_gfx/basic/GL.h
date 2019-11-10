@@ -85,6 +85,42 @@
 #include <geogram_gfx/GLUP/GLUP.h>
 #include <geogram/basic/geometry.h>
 
+// Some defines missing in Emscripten GL headers
+#if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_ANDROID)
+#   ifndef GL_RGB8
+#   define GL_RGB8 0x8051
+#   endif
+
+#   ifndef GL_RGBA8
+#   define GL_RGBA8 0x8058
+#   endif
+
+#   ifndef GL_R16F
+#   define GL_R16F 0x822D
+#   endif
+
+#   ifndef GL_R32F
+#   define GL_R32F 0x822E
+#   endif
+
+#   ifndef GL_RED
+#   define GL_RED 0x1903
+#   endif
+
+#   ifndef GL_R8
+#   define GL_R8 0x8229
+#   endif
+
+#   ifndef GL_R16
+#   define GL_R16 0x822A
+#   endif
+
+#   ifndef GL_DEPTH_COMPONENT24
+#   define GL_DEPTH_COMPONENT24 0x81A6
+#   endif
+
+#endif
+
 /**
  * \file geogram_gfx/basic/GL.h
  * \brief Some utility functions for OpenGL graphics.
@@ -313,6 +349,8 @@ namespace GEO {
     
     /**
      * \brief Draws a textured quad.
+     * \param[in] BW if set, copy the red channel to the output red, green
+     *  blue channels (and set alpha to 1.0).
      * \details The textured quad spans the [-1,1]x[-1,1] square with
      *  texture coordinates in [0,1]x[0,1]. If no program is currently
      *  bound, then a default one is used, and it uses the texture bound
@@ -320,7 +358,7 @@ namespace GEO {
      *  Vertices coordinates are sent to vertex attribute 0 and texture 
      *  coordinates to vertex attribute 1.
      */
-    void GEOGRAM_GFX_API draw_unit_textured_quad();
+    void GEOGRAM_GFX_API draw_unit_textured_quad(bool BW=false);
     
     /**
      * \brief Tests for OpenGL errors. 

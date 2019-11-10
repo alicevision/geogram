@@ -44,7 +44,9 @@
  */
 
 #include <geogram_gfx/gui/simple_application.h>
+#include <geogram_gfx/GLUP/GLUP_private.h>
 #include <geogram/delaunay/periodic_delaunay_3d.h>
+
 
 namespace {
 
@@ -76,7 +78,7 @@ namespace {
 	    nb_points_ = 100;
 	    draw_box_ = false;
 	    draw_period_ = false;
-
+	    
 	    start_animation();
         }
 
@@ -226,11 +228,11 @@ namespace {
 			P[2] = C.triangle_point(VBW::ushort(t));
 			if(s == 0.0) {
 			    for(index_t i=0; i<3; ++i) {
-				glupVertex3d(P[i].x + Tx, P[i].y + Ty, P[i].z + Tz);
+				glupPrivateVertex3d(P[i].x + Tx, P[i].y + Ty, P[i].z + Tz);
 			    }
 			} else {
 			    for(index_t i=0; i<3; ++i) {				    
-				glupVertex3d(
+				glupPrivateVertex3d(
 				    s*g.x + (1.0-s)*P[i].x + Tx,
 				    s*g.y + (1.0-s)*P[i].y + Ty,
 				    s*g.z + (1.0-s)*P[i].z + Tz
@@ -284,7 +286,7 @@ namespace {
 		
 		    glupBegin(GLUP_SPHERES);
 		    for(index_t v=0; v<points_.size()/3; ++v) {
-			glupVertex4d(
+			glupPrivateVertex4d(
 			    points_[3*v],
 			    points_[3*v+1],
 			    points_[3*v+2],

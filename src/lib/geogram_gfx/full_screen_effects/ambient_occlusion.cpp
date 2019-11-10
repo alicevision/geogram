@@ -157,23 +157,13 @@ namespace GEO {
         if(!OK()) {
             return;
         }
-
-	GEO_CHECK_GL();	
-        
-        // previously: const GLint internal_format = GL_LUMINANCE_FLOAT32_ATI;
-        // Now deprecated, we use "red-only" texture format with floats
-        // This requires using texture swizzle to copy the red component into
-        // the other ones when looking-up the texture
-        // (see display_final_texture()).
-#ifdef GEO_OS_EMSCRIPTEN
-        const GLint internal_format = GL_RGBA;       
-#else
-        const GLint internal_format = GL_R32F;
-#endif
-	GEO_CHECK_GL();	
-
+#if defined(GEO_OS_EMSCRIPTEN) && !defined(GEO_WEBGL2)
+	const GLint internal_format = GL_RGBA;	
+#else	
+	const GLint internal_format = GL_RED;
+#endif	
 	// Shader sources are embedded in source code,
-	// Initial sourcecode is in:
+	// Sourcecode is in:
 	// geogram_gfx/GLUP/shaders/fullscreen
 	SSAO_program_ = GLSL::compile_program_with_includes_no_link(
 	    this,
@@ -182,8 +172,7 @@ namespace GEO {
 	    "//stage GL_FRAGMENT_SHADER\n"
 	    "//import <fullscreen/ambient_occlusion_fragment_shader.h>\n"
 	);
-	
-	
+	GEO_CHECK_GL();
         glBindAttribLocation(SSAO_program_, 0, "vertex_in");
         glBindAttribLocation(SSAO_program_, 1, "tex_coord_in");
         GLSL::link_program(SSAO_program_);
@@ -286,7 +275,6 @@ namespace GEO {
         FullScreenEffectImpl::resize(width, height);
     }
 
-
     void AmbientOcclusionImpl::create_random_tex() {
         glGenTextures(1, &random_tex_);
         glBindTexture(GL_TEXTURE_2D, random_tex_);
@@ -294,12 +282,6 @@ namespace GEO {
         for (unsigned int i = 0; i < R_WIDTH * R_HEIGHT; i++) {
             tex_buff[i] = Memory::byte(Numeric::random_int32() & 255);
         }
-#ifdef GEO_OS_EMSCRIPTEN
-#  ifdef GL_RED
-#    undef GL_RED
-#  endif	
-#  define GL_RED GL_LUMINANCE
-#endif       
         glTexImage2D(
             GL_TEXTURE_2D, 0, 
 	    GL_RED,
@@ -318,32 +300,11 @@ namespace GEO {
         glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
         glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-
-        //  Go back to viewport transform that coverts the [-1,1]x[-1,1]
+        //  Go back to viewport transform that covers the [-1,1]x[-1,1]
         // normalized device coordinates space.
         glViewport(0, 0, GLsizei(width()), GLsizei(height()));        
-        
         blur_1_.bind_as_texture();
-
-#ifndef GEO_OS_EMSCRIPTEN       
-        //   Since there is no more GL_LUMINANCE, our texture has GL_RED
-        // texture storage. We can avoid writing a specialized shader by
-        // using texture swizzle mask to copy the red comonent into the
-        // other components (this emulates the old GL_LUMINANCE mode).
-        static GLint swizzle_mask[] = {GL_RED, GL_RED, GL_RED, GL_RED};
-        glTexParameteriv(
-            GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask
-        );
-#endif
-       
-        draw_unit_textured_quad();
-       
-#ifndef GEO_OS_EMSCRIPTEN       
-        static GLint no_swizzle_mask[] = {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA};
-        glTexParameteriv(
-            GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, no_swizzle_mask
-        );
-#endif       
+        draw_unit_textured_quad(true); // true: expand red channel to (r,g,b)
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
         blur_1_.unbind();

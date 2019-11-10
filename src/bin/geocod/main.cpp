@@ -169,10 +169,12 @@ namespace {
 		embedded_files_menu("games/");		
 		ImGui::EndMenu();
 	    }
+	    /*
 	    if(ImGui::BeginMenu("Load Shift and Tab\'s adventure...")) {
 		embedded_files_menu("book/");		
 		ImGui::EndMenu();
 	    }
+	    */
 	    if(ImGui::BeginMenu("Load internal lib...")) {
 		ImGui::MenuItem("These files are those", nullptr, false, false);
 		ImGui::MenuItem(
@@ -187,7 +189,10 @@ namespace {
 		embedded_files_menu("lib/");		
 		ImGui::EndMenu();
 	    }
-	    if(ImGui::MenuItem("Run program [F5]")) {
+	    if(ImGui::MenuItem(
+		   "Run program",
+		   phone_screen_ ? nullptr : "[F5]"
+	    )) {
 		run_program();
 	    }
 	}

@@ -81,7 +81,6 @@ namespace GEO {
         OK_(true),
         width_(0),
         height_(0),
-        core_profile_(false),
         ES_profile_(false) {
     }
 
@@ -176,7 +175,6 @@ namespace GEO {
         width_       = width;
         height_      = height;
         initialized_ = true ;
-	core_profile_ = CmdLine::get_arg("gfx:GL_profile") == "core";
 #if defined(GEO_OS_EMSCRIPTEN) || defined(GEO_OS_ANDROID)
 	ES_profile_ = true;
 #endif

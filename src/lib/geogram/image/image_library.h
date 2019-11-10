@@ -74,7 +74,7 @@ namespace GEO {
         /**
          * \brief Initializes the ImageLibrary instance.
          * \details This function is automatically called during
-         *  Graphite startup. It should not be called by client
+         *  Geogram startup. It should not be called by client
          *  code.
          */
         static void initialize();
@@ -82,7 +82,7 @@ namespace GEO {
         /**
          * \brief Terminates the ImageLibrary instance.
          * \details This function is automatically called during
-         *  Graphite shutdown. It should not be called by client
+         *  Geogram shutdown. It should not be called by client
          *  code.
          */
         static void terminate();

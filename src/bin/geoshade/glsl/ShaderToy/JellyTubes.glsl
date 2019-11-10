@@ -1,3 +1,5 @@
+// https://www.shadertoy.com/view/tsBSzc
+
 #define AA 2 // Square root of the number of anti-aliasing samples to make.
 
 vec2 intersectSphere(vec3 ro, vec3 rd, vec3 org, float rad)
