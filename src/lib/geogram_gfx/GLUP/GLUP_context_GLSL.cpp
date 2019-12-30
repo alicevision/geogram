@@ -55,10 +55,6 @@ namespace GLUP {
     using namespace GEO;
 
     Context_GLSL150::Context_GLSL150() {
-	const char* vendor = (const char*)glGetString(GL_VENDOR);
-	// Workaround for problem with picking and depth update
-	// in points fragment shader.
-	is_intel_graphics_ = (strstr(vendor,"Intel") != nullptr);
     }
     
     void Context_GLSL150::setup() {
@@ -356,11 +352,6 @@ namespace GLUP {
 	    "#endif\n"
         );
 	
-	// Workaround for problem with picking and depth update
-	// in points fragment shader.
-	if(is_intel_graphics_) {
-	    sources.push_back("#define GLUP_INTEL\n");
-	}
         OES_extensions(sources);        
     }
 
@@ -564,13 +555,6 @@ namespace GLUP {
             "#define GLUP_FRAGMENT_SHADER\n"            
 	    "#extension GL_ARB_conservative_depth : enable\n"
         );
-
-	// Workaround for problem with picking and depth update
-	// in points fragment shader.
-	if(is_intel_graphics_) {
-	    sources.push_back("#define GLUP_INTEL\n");
-	}
-	
         OES_extensions(sources);        
     }
 

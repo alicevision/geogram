@@ -126,7 +126,8 @@ namespace GEO {
 	 * \brief Sets the size of the margin (or "gutter") around the charts.
 	 * \details This may be required to avoid undesirable blends due to
 	 *  mip-mapping.
-	 * \param[in] width the number of empty pixels to be preserved around each chart.
+	 * \param[in] width the number of empty pixels to be preserved 
+	 *  around each chart.
 	 */
         void set_margin_width_in_pixels(index_t width) {
             margin_width_in_pixels_ = width;
@@ -135,9 +136,10 @@ namespace GEO {
       protected:
 	/**
 	 * \brief Packs a set of charts.
-	 * \param[in,out] charts a const reference to a vector with the charts to be packed.
-	 * \param[in] normalize_only if set, just normalize texture coordinates and do not
-	 *  pack the charts.
+	 * \param[in,out] charts a const reference to a vector with the 
+	 *  charts to be packed.
+	 * \param[in] normalize_only if set, just normalize texture coordinates
+	 *  and do not pack the charts.
 	 * \details All the charts are supposed to be attached to the same mesh.
 	 *  Texture coordinates are stored in a 2d vector attribute attached to
 	 *  the facet corners of the mesh and called "tex_coord".
@@ -148,10 +150,11 @@ namespace GEO {
 	 * \brief Normalizes the parameterization of a chart.
 	 * \param[in,out] chart a reference to the chart to be normalized.
 	 * \details This rescales texture coordinates in such a way that the
-	 *  chart has the same area in 3D and in texture space. This also applies
-	 *  a rotation to the texture coordinates such that the area of the bounding
-	 *  rectangle is minimized. Texture coordinates are stored in a 2d vector 
-	 *  attribute attached to the facet corners of the mesh and called "tex_coord".
+	 *  chart has the same area in 3D and in texture space. 
+	 *  This also applies a rotation to the texture coordinates such that 
+	 *  the area of the bounding rectangle is minimized. 
+	 *  Texture coordinates are stored in a 2d vector attribute attached 
+	 *  to the facet corners of the mesh and called "tex_coord".
 	 */
         void normalize_chart(Chart& chart);
 

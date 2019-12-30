@@ -1,7 +1,7 @@
 // dear imgui: Platform Binding for GLFW
 // This needs to be used along with a Renderer (e.g. OpenGL3, Vulkan..)
 // (Info: GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan graphics context creation, etc.)
-// (Requires: GLFW 3.1+)
+// (Requires: GLFW 3.1+. Prefer GLFW 3.3+ for full feature support.)
 
 // Implemented features:
 //  [X] Platform: Clipboard support.
@@ -16,7 +16,10 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2018-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2019-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2019-10-18: Misc: Previously installed user callbacks are now restored on shutdown.
+//  2019-07-21: Inputs: Added mapping for ImGuiKey_KeyPadEnter.
+//  2019-05-11: Inputs: Don't filter value from character callback before calling AddInputCharacter().
 //  2019-03-12: Misc: Preserve DisplayFramebufferScale when main window is minimized.
 //  2018-11-30: Misc: Setting up io.BackendPlatformName so it can be displayed in the About Window.
 //  2018-11-07: Inputs: When installing our GLFW callbacks, we save user's previously installed ones - if any - and chain call them.
@@ -35,6 +38,8 @@
 //  2016-10-15: Misc: Added a void* user_data parameter to Clipboard function handlers.
 
 #ifndef __ANDROID__ // [Bruno Levy] 
+
+#include <stdio.h>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -82,7 +87,8 @@ static GLFWwindow*          g_Window = NULL;    // Main window
 static GlfwClientApi        g_ClientApi = GlfwClientApi_Unknown;
 static double               g_Time = 0.0;
 static bool                 g_MouseJustPressed[5] = { false, false, false, false, false };
-static GLFWcursor*          g_MouseCursors[ImGuiMouseCursor_COUNT] = { 0 };
+static GLFWcursor*          g_MouseCursors[ImGuiMouseCursor_COUNT] = {};
+static bool                 g_InstalledCallbacks = false;
 static bool                 g_WantUpdateMonitors = true;
 
 // Chain GLFW callbacks for main viewport: our callbacks will call the user's previously installed callbacks, if any.
@@ -164,8 +170,7 @@ void ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c)
         g_PrevUserCallbackChar(window, c);
 
     ImGuiIO& io = ImGui::GetIO();
-    if (c > 0 && c < 0x10000)
-        io.AddInputCharacter((unsigned short)c);
+    io.AddInputCharacter(c);
 }
 
 static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, GlfwClientApi client_api)
@@ -199,6 +204,7 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     io.KeyMap[ImGuiKey_Space] = GLFW_KEY_SPACE;
     io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_KeyPadEnter] = GLFW_KEY_KP_ENTER;
     io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
     io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
     io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
@@ -230,6 +236,7 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     g_PrevUserCallbackChar = NULL;
     if (install_callbacks)
     {
+        g_InstalledCallbacks = true;
         g_PrevUserCallbackMousebutton = glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
         g_PrevUserCallbackScroll = glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
         g_PrevUserCallbackKey = glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
@@ -239,6 +246,9 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     // Our mouse update function expect PlatformHandle to be filled for the main viewport
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     main_viewport->PlatformHandle = (void*)g_Window;
+#ifdef _WIN32
+    main_viewport->PlatformHandleRaw = glfwGetWin32Window(g_Window);
+#endif
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         ImGui_ImplGlfw_InitPlatformInterface();
 
@@ -260,6 +270,19 @@ void ImGui_ImplGlfw_Shutdown()
 {
     ImGui_ImplGlfw_ShutdownPlatformInterface();
 
+    // [Bruno Levy] Nov 26 2019: removed to have previous behavior
+    // (need that when window layout is reloaded, did not manage to
+    // figure out how to do that properly)
+    // TODO: find a way to fix geogram_gfx/gui/application.cpp
+    if (false && g_InstalledCallbacks)
+    {
+        glfwSetMouseButtonCallback(g_Window, g_PrevUserCallbackMousebutton);
+        glfwSetScrollCallback(g_Window, g_PrevUserCallbackScroll);
+        glfwSetKeyCallback(g_Window, g_PrevUserCallbackKey);
+        glfwSetCharCallback(g_Window, g_PrevUserCallbackChar);
+        g_InstalledCallbacks = false;
+    }
+
     for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
     {
         glfwDestroyCursor(g_MouseCursors[cursor_n]);
@@ -270,12 +293,8 @@ void ImGui_ImplGlfw_Shutdown()
 
 static void ImGui_ImplGlfw_UpdateMousePosAndButtons()
 {
-    ImGuiIO& io = ImGui::GetIO();
-    const ImVec2 mouse_pos_backup = io.MousePos;
-    io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-    io.MouseHoveredViewport = 0;
-
     // Update buttons
+    ImGuiIO& io = ImGui::GetIO();
     for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
     {
         // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
@@ -283,6 +302,10 @@ static void ImGui_ImplGlfw_UpdateMousePosAndButtons()
         g_MouseJustPressed[i] = false;
     }
 
+    // Update mouse position
+    const ImVec2 mouse_pos_backup = io.MousePos;
+    io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+    io.MouseHoveredViewport = 0;
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     for (int n = 0; n < platform_io.Viewports.Size; n++)
     {
@@ -438,8 +461,9 @@ struct ImGuiViewportDataGlfw
 {
     GLFWwindow* Window;
     bool        WindowOwned;
+    int         IgnoreWindowSizeEventFrame;
 
-    ImGuiViewportDataGlfw() { Window = NULL; WindowOwned = false; }
+    ImGuiViewportDataGlfw()  { Window = NULL; WindowOwned = false; IgnoreWindowSizeEventFrame = -1; }
     ~ImGuiViewportDataGlfw() { IM_ASSERT(Window == NULL); }
 };
 
@@ -458,7 +482,22 @@ static void ImGui_ImplGlfw_WindowPosCallback(GLFWwindow* window, int, int)
 static void ImGui_ImplGlfw_WindowSizeCallback(GLFWwindow* window, int, int)
 {
     if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(window))
+    {
+        if (ImGuiViewportDataGlfw* data = (ImGuiViewportDataGlfw*)viewport->PlatformUserData)
+        {
+            // GLFW may dispatch window size event after calling glfwSetWindowSize().
+            // However depending on the platform the callback may be invoked at different time: on Windows it
+            // appears to be called within the glfwSetWindowSize() call whereas on Linux it is queued and invoked
+            // during glfwPollEvents().
+            // Because the event doesn't always fire on glfwSetWindowSize() we use a frame counter tag to only
+            // ignore recent glfwSetWindowSize() calls.
+            bool ignore_event = (ImGui::GetFrameCount() <= data->IgnoreWindowSizeEventFrame + 1);
+            data->IgnoreWindowSizeEventFrame = -1;
+            if (ignore_event)
+                return;
+        }
         viewport->PlatformRequestResize = true;
+    }
 }
 
 static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
@@ -467,8 +506,12 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
     viewport->PlatformUserData = data;
 
     // GLFW 3.2 unfortunately always set focus on glfwCreateWindow() if GLFW_VISIBLE is set, regardless of GLFW_FOCUSED
+    // With GLFW 3.3, the hint GLFW_FOCUS_ON_SHOW fixes this problem
     glfwWindowHint(GLFW_VISIBLE, false);
     glfwWindowHint(GLFW_FOCUSED, false);
+#if GLFW_HAS_FOCUS_ON_SHOW
+     glfwWindowHint(GLFW_FOCUS_ON_SHOW, false);
+ #endif
     glfwWindowHint(GLFW_DECORATED, (viewport->Flags & ImGuiViewportFlags_NoDecoration) ? false : true);
 #if GLFW_HAS_WINDOW_TOPMOST
     glfwWindowHint(GLFW_FLOATING, (viewport->Flags & ImGuiViewportFlags_TopMost) ? true : false);
@@ -477,6 +520,9 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
     data->Window = glfwCreateWindow((int)viewport->Size.x, (int)viewport->Size.y, "No Title Yet", NULL, share_window);
     data->WindowOwned = true;
     viewport->PlatformHandle = (void*)data->Window;
+#ifdef _WIN32
+    viewport->PlatformHandleRaw = glfwGetWin32Window(data->Window);
+#endif
     glfwSetWindowPos(data->Window, (int)viewport->Pos.x, (int)viewport->Pos.y);
 
     // Install callbacks for secondary viewports
@@ -501,7 +547,7 @@ static void ImGui_ImplGlfw_DestroyWindow(ImGuiViewport* viewport)
         if (data->WindowOwned)
         {
 #if GLFW_HAS_GLFW_HOVERED && defined(_WIN32)
-            HWND hwnd = glfwGetWin32Window(data->Window);
+            HWND hwnd = (HWND)viewport->PlatformHandleRaw;
             ::RemovePropA(hwnd, "IMGUI_VIEWPORT");
 #endif
             glfwDestroyWindow(data->Window);
@@ -537,7 +583,7 @@ static void ImGui_ImplGlfw_ShowWindow(ImGuiViewport* viewport)
 
 #if defined(_WIN32)
     // GLFW hack: Hide icon from task bar
-    HWND hwnd = glfwGetWin32Window(data->Window);
+    HWND hwnd = (HWND)viewport->PlatformHandleRaw;
     if (viewport->Flags & ImGuiViewportFlags_NoTaskBarIcon)
     {
         LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -554,6 +600,7 @@ static void ImGui_ImplGlfw_ShowWindow(ImGuiViewport* viewport)
     ::SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProcNoInputs);
 #endif
 
+#if !GLFW_HAS_FOCUS_ON_SHOW
     // GLFW hack: GLFW 3.2 has a bug where glfwShowWindow() also activates/focus the window.
     // The fix was pushed to GLFW repository on 2018/01/09 and should be included in GLFW 3.3 via a GLFW_FOCUS_ON_SHOW window attribute.
     // See https://github.com/glfw/glfw/issues/1189
@@ -563,6 +610,7 @@ static void ImGui_ImplGlfw_ShowWindow(ImGuiViewport* viewport)
         ::ShowWindow(hwnd, SW_SHOWNA);
         return;
     }
+#endif
 #endif
 
     glfwShowWindow(data->Window);
@@ -593,6 +641,17 @@ static ImVec2 ImGui_ImplGlfw_GetWindowSize(ImGuiViewport* viewport)
 static void ImGui_ImplGlfw_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
 {
     ImGuiViewportDataGlfw* data = (ImGuiViewportDataGlfw*)viewport->PlatformUserData;
+#if __APPLE__
+    // Native OS windows are positioned from the bottom-left corner on macOS, whereas on other platforms they are
+    // positioned from the upper-left corner. GLFW makes an effort to convert macOS style coordinates, however it
+    // doesn't handle it when changing size. We are manually moving the window in order for changes of size to be based
+    // on the upper-left corner.
+    int x, y, width, height;
+    glfwGetWindowPos(data->Window, &x, &y);
+    glfwGetWindowSize(data->Window, &width, &height);
+    glfwSetWindowPos(data->Window, x, y - height + size.y);
+#endif
+    data->IgnoreWindowSizeEventFrame = ImGui::GetFrameCount();
     glfwSetWindowSize(data->Window, (int)size.x, (int)size.y);
 }
 
@@ -643,7 +702,7 @@ static void ImGui_ImplGlfw_RenderWindow(ImGuiViewport* viewport, void*)
 static void ImGui_ImplGlfw_SwapBuffers(ImGuiViewport* viewport, void*)
 {
     ImGuiViewportDataGlfw* data = (ImGuiViewportDataGlfw*)viewport->PlatformUserData;
-    if (g_ClientApi == GlfwClientApi_OpenGL) 
+    if (g_ClientApi == GlfwClientApi_OpenGL)
     {
         glfwMakeContextCurrent(data->Window);
         glfwSwapBuffers(data->Window);
@@ -664,13 +723,12 @@ static void ImGui_ImplGlfw_SwapBuffers(ImGuiViewport* viewport, void*)
 static void ImGui_ImplWin32_SetImeInputPos(ImGuiViewport* viewport, ImVec2 pos)
 {
     COMPOSITIONFORM cf = { CFS_FORCE_POSITION, { (LONG)(pos.x - viewport->Pos.x), (LONG)(pos.y - viewport->Pos.y) }, { 0, 0, 0, 0 } };
-    if (ImGuiViewportDataGlfw* data = (ImGuiViewportDataGlfw*)viewport->PlatformUserData)
-        if (HWND hwnd = glfwGetWin32Window(data->Window))
-            if (HIMC himc = ::ImmGetContext(hwnd))
-            {
-                ::ImmSetCompositionWindow(himc, &cf);
-                ::ImmReleaseContext(hwnd, himc);
-            }
+    if (HWND hwnd = (HWND)viewport->PlatformHandleRaw)
+        if (HIMC himc = ::ImmGetContext(hwnd))
+        {
+            ::ImmSetCompositionWindow(himc, &cf);
+            ::ImmReleaseContext(hwnd, himc);
+        }
 }
 #else
 #define HAS_WIN32_IME   0
@@ -707,7 +765,7 @@ static int ImGui_ImplGlfw_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_inst
 // FIXME-PLATFORM: GLFW doesn't export monitor work area (see https://github.com/glfw/glfw/pull/989)
 static void ImGui_ImplGlfw_UpdateMonitors()
 {
-#ifdef __EMSCRIPTEN__ // [Bruno]
+#ifdef __EMSCRIPTEN__ // [Bruno Levy]
     return;
 #endif    
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
@@ -720,8 +778,17 @@ static void ImGui_ImplGlfw_UpdateMonitors()
         int x, y;
         glfwGetMonitorPos(glfw_monitors[n], &x, &y);
         const GLFWvidmode* vid_mode = glfwGetVideoMode(glfw_monitors[n]);
+#if GLFW_HAS_MONITOR_WORK_AREA
+        monitor.MainPos = ImVec2((float)x, (float)y);
+        monitor.MainSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
+        int w, h;
+        glfwGetMonitorWorkarea(glfw_monitors[n], &x, &y, &w, &h);
+        monitor.WorkPos = ImVec2((float)x, (float)y);;
+        monitor.WorkSize = ImVec2((float)w, (float)h);
+#else
         monitor.MainPos = monitor.WorkPos = ImVec2((float)x, (float)y);
         monitor.MainSize = monitor.WorkSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
+#endif
 #if GLFW_HAS_PER_MONITOR_DPI
         // Warning: the validity of monitor DPI information on Windows depends on the application DPI awareness settings, which generally needs to be set in the manifest or at runtime.
         float x_scale, y_scale;

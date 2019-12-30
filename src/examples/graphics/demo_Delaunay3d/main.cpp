@@ -115,7 +115,7 @@ namespace {
 	    if(
 		ImGui::Button(
 		    "+",
-		    ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f)
+		    ImVec2(-ImGui::GetContentRegionAvail().x/2.0f,0.0f)
 		) && nb_points_ < 10000
 	    ) {
 		++nb_points_;
@@ -156,13 +156,23 @@ namespace {
 	    ImGui::Spacing();
 	    
 	    ImGui::Checkbox("Box", &draw_box_);
-	    ImGui::Checkbox("Period 3x3x3", &draw_period_);	    
+	    if(ImGui::Checkbox("Period 3x3x3", &draw_period_)) {
+		if(draw_period_) {
+		    set_region_of_interest(
+			-1.0, -1.0, -1.0, 2.0, 2.0, 2.0
+		    );
+		} else {
+		    set_region_of_interest(
+			0.0, 0.0, 0.0, 1.0, 1.0, 1.0
+		    );
+		}
+	    }
 	    ImGui::Checkbox("Points", &draw_points_);
 	    ImGui::SameLine();
 	    ImGui::SliderFloat("##PtSz.", &point_size_, 1.0f, 50.0f, "%.1f");
 	    ImGui::Checkbox("Cells", &draw_cells_);
 	    ImGui::SameLine();
-	    ImGui::SliderFloat("##Shrk.", &cells_shrink_, 0.0f, 1.0f, "%.2f");	    
+	    ImGui::SliderFloat("##Shrk.", &cells_shrink_, 0.0f, 1.0f, "%.2f");
         }
 
 	/**
@@ -186,13 +196,14 @@ namespace {
 
 	/**
 	 * \brief Draws a cell.
-	 * \details Needs to be called between glupBegin(GLUP_TRIANGLES) and glupEnd().
+	 * \details Needs to be called between glupBegin(GLUP_TRIANGLES) 
+	 *  and glupEnd().
 	 */
 	void draw_cell(ConvexCell& C, index_t instance = 0) {
 	    double s = double(cells_shrink_);
 	    double Tx = double(Periodic::translation[instance][0]);
 	    double Ty = double(Periodic::translation[instance][1]);
-	    double Tz = double(Periodic::translation[instance][2]);			       
+	    double Tz = double(Periodic::translation[instance][2]);
 	    
 	    vec3 g;
 	    if(cells_shrink_ != 0.0f) {
@@ -223,15 +234,17 @@ namespace {
 		    if(n == 0) {
 			P[0] = C.triangle_point(VBW::ushort(t));
 		    } else if(n == 1) {
-			P[1] = C.triangle_point(VBW::ushort(t));				
+			P[1] = C.triangle_point(VBW::ushort(t));
 		    } else {
 			P[2] = C.triangle_point(VBW::ushort(t));
 			if(s == 0.0) {
 			    for(index_t i=0; i<3; ++i) {
-				glupPrivateVertex3d(P[i].x + Tx, P[i].y + Ty, P[i].z + Tz);
+				glupPrivateVertex3d(
+				    P[i].x + Tx, P[i].y + Ty, P[i].z + Tz
+				);
 			    }
 			} else {
-			    for(index_t i=0; i<3; ++i) {				    
+			    for(index_t i=0; i<3; ++i) {  
 				glupPrivateVertex3d(
 				    s*g.x + (1.0-s)*P[i].x + Tx,
 				    s*g.y + (1.0-s)*P[i].y + Ty,
@@ -281,7 +294,7 @@ namespace {
 		    glupTranslated(
 			double(Periodic::translation[i][0]),
 			double(Periodic::translation[i][1]),
-			double(Periodic::translation[i][2])			       
+			double(Periodic::translation[i][2])
 	    	    );
 		
 		    glupBegin(GLUP_SPHERES);
@@ -298,7 +311,7 @@ namespace {
 		    glupTranslated(
 			-double(Periodic::translation[i][0]),
 			-double(Periodic::translation[i][1]),
-			-double(Periodic::translation[i][2])			       
+			-double(Periodic::translation[i][2])
 	    	    );
 		}
 		
@@ -335,7 +348,9 @@ namespace {
 		
 		glupEnable(GLUP_DRAW_MESH);
 		glupEnable(GLUP_ALPHA_DISCARD);
-		glupSetColor4f(GLUP_FRONT_AND_BACK_COLOR, 1.0f, 1.0f, 1.0f, 0.0f);		
+		glupSetColor4f(
+		    GLUP_FRONT_AND_BACK_COLOR, 1.0f, 1.0f, 1.0f, 0.0f
+		);		
 		glupSetMeshWidth(10);
 		glupDisable(GLUP_LIGHTING);
 
@@ -343,7 +358,7 @@ namespace {
 		    glupTranslated(
 			double(Periodic::translation[i][0]),
 			double(Periodic::translation[i][1]),
-			double(Periodic::translation[i][2])			       
+			double(Periodic::translation[i][2])
 	    	    );
 		    
 		    glupBegin(GLUP_QUADS);
@@ -383,7 +398,7 @@ namespace {
 		    glupTranslated(
 			-double(Periodic::translation[i][0]),
 			-double(Periodic::translation[i][1]),
-			-double(Periodic::translation[i][2])			       
+			-double(Periodic::translation[i][2])
 	    	    );
 		}
 

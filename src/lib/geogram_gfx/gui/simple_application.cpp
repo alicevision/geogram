@@ -1132,8 +1132,10 @@ namespace GEO {
     }
 
     
-    void SimpleApplication::resize(index_t w, index_t h) {
-	Application::resize(w,h);
+    void SimpleApplication::resize(
+	index_t w, index_t h, index_t fb_w, index_t fb_h
+    ) {
+	Application::resize(w,h,fb_w,fb_h);
 	if(phone_screen_) {
 	    set_default_layout();
 	}

@@ -212,19 +212,19 @@ namespace GEO {
             return ;
         }
         
-        int h = image->height() ;
-        int w = image->width() ;
+        index_t h = image->height() ;
+        index_t w = image->width() ;
         
         // Step 2: Prepare the image for Windows:
         //   flip the image and flip rgb -> bgr
         {
-            int row_len = image->width() * 3 ;
-            for(int j=0; j< h/2; j++) {
+            index_t row_len = image->width() * 3 ;
+            for(index_t j=0; j< h/2; j++) {
                 Memory::pointer row1 =
                     image->base_mem() + j * row_len ;
                 Memory::pointer row2 =
                     image->base_mem() + (h - 1 - j) * row_len ;
-                for(int i=0; i<w; i++) {
+                for(index_t i=0; i<w; i++) {
                     std::swap(row1[3*i+2], row2[3*i  ]) ;
                     std::swap(row1[3*i+1], row2[3*i+1]) ;
                     std::swap(row1[3*i  ], row2[3*i+2]) ;
@@ -236,8 +236,8 @@ namespace GEO {
         // a DIB (Device Independent Bitmap) in it.
         HANDLE handle;
         
-        int image_size = 3 * image->width() * image->height();
-        int size = sizeof(BITMAPINFOHEADER) + image_size ;
+        index_t image_size = 3 * image->width() * image->height();
+        index_t size = index_t(sizeof(BITMAPINFOHEADER)) + image_size ;
         
         handle = (HANDLE)::GlobalAlloc(GHND,size);
         if(handle != nullptr) {
@@ -267,13 +267,13 @@ namespace GEO {
 
             // Step 5: restore the image
             {
-                int row_len = image->width() * 3 ;
-                for(int j=0; j< h/2; j++) {
+                index_t row_len = image->width() * 3 ;
+                for(index_t j=0; j< h/2; j++) {
                     Memory::pointer
                         row1 = image->base_mem() + j * row_len ;
                     Memory::pointer
                         row2 = image->base_mem() + (h - 1 - j) * row_len ;
-                    for(int i=0; i<w; i++) {
+                    for(index_t i=0; i<w; i++) {
                         std::swap(row1[3*i+2], row2[3*i  ]) ;
                         std::swap(row1[3*i+1], row2[3*i+1]) ;
                         std::swap(row1[3*i  ], row2[3*i+2]) ;

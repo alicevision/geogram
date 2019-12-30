@@ -487,7 +487,7 @@ namespace GEO {
 
 	void set_default_layout();
 
-        void resize(index_t w, index_t h) override;
+        void resize(index_t w, index_t h, index_t fb_w, index_t fb_h) override;
 
 	virtual const char* default_layout() const;
 	virtual const char* default_layout_android_vertical() const;

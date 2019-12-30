@@ -403,15 +403,6 @@ typedef enum {
     CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE = 2  
 } cusparseOperation_t;
 
-struct cusparseHybMat;
-typedef struct cusparseHybMat *cusparseHybMat_t;
-
-typedef enum {
-    CUSPARSE_HYB_PARTITION_AUTO = 0,  
-    CUSPARSE_HYB_PARTITION_USER = 1,  
-    CUSPARSE_HYB_PARTITION_MAX = 2    
-} cusparseHybPartition_t;
-
 typedef cusparseStatus_t (*FUNPTR_cusparseCreate)(cusparseHandle_t* handle);
 typedef cusparseStatus_t (*FUNPTR_cusparseDestroy)(cusparseHandle_t handle);
 typedef cusparseStatus_t (*FUNPTR_cusparseGetVersion)(
@@ -436,34 +427,6 @@ typedef cusparseStatus_t (*FUNPTR_cusparseDcsrmv)(
      const double *csrSortedValA, const int *csrSortedRowPtrA, 
      const int *csrSortedColIndA, const double *x, 
      const double *beta, double *y
-);
-typedef cusparseStatus_t (*FUNPTR_cusparseCreateHybMat)(
-    cusparseHybMat_t *hybA
-);
-typedef cusparseStatus_t (*FUNPTR_cusparseDestroyHybMat)(
-    cusparseHybMat_t hybA
-);
-typedef cusparseStatus_t (*FUNPTR_cusparseDcsr2hyb)(
-    cusparseHandle_t handle,
-    int m,
-    int n,
-    const cusparseMatDescr_t descrA,
-    const double *csrSortedValA,
-    const int *csrSortedRowPtrA,
-    const int *csrSortedColIndA,
-    cusparseHybMat_t hybA,
-    int userEllWidth,
-    cusparseHybPartition_t partitionType
-);
-typedef cusparseStatus_t (*FUNPTR_cusparseDhybmv)(
-    cusparseHandle_t handle,
-    cusparseOperation_t transA,
-    const double *alpha,
-    const cusparseMatDescr_t descrA,
-    const cusparseHybMat_t hybA,
-    const double *x,
-    const double *beta,
-    double *y
 );
 
 /**
@@ -532,10 +495,6 @@ typedef struct {
     FUNPTR_cusparseSetMatType cusparseSetMatType;
     FUNPTR_cusparseSetMatIndexBase cusparseSetMatIndexBase;    
     FUNPTR_cusparseDcsrmv cusparseDcsrmv;
-    FUNPTR_cusparseCreateHybMat cusparseCreateHybMat;
-    FUNPTR_cusparseDestroyHybMat cusparseDestroyHybMat;
-    FUNPTR_cusparseDcsr2hyb cusparseDcsr2hyb;
-    FUNPTR_cusparseDhybmv cusparseDhybmv;
     
     int devID;
 } CUDAContext;
@@ -588,11 +547,7 @@ NLboolean nlExtensionIsInitialized_CUDA() {
 	CUDA()->cusparseDestroyMatDescr == NULL ||	
 	CUDA()->cusparseSetMatType == NULL ||
 	CUDA()->cusparseSetMatIndexBase == NULL ||
-	CUDA()->cusparseDcsrmv == NULL ||
-	CUDA()->cusparseCreateHybMat == NULL ||
-	CUDA()->cusparseDestroyHybMat == NULL ||
-	CUDA()->cusparseDcsr2hyb == NULL ||
-	CUDA()->cusparseDhybmv == NULL
+	CUDA()->cusparseDcsrmv == NULL 
     ) {
         return NL_FALSE;
     }
@@ -981,10 +936,6 @@ NLboolean nlInitExtension_CUDA(void) {
     find_cusparse_func(cusparseSetMatType);
     find_cusparse_func(cusparseSetMatIndexBase);
     find_cusparse_func(cusparseDcsrmv);
-    find_cusparse_func(cusparseCreateHybMat);
-    find_cusparse_func(cusparseDestroyHybMat);
-    find_cusparse_func(cusparseDcsr2hyb);
-    find_cusparse_func(cusparseDhybmv);                    
     
     if(CUDA()->cusparseCreate(&CUDA()->HNDL_cusparse)) {
 	return NL_FALSE;
@@ -1029,7 +980,6 @@ typedef struct {
     int* colind;
     int* rowptr;
     double* val;
-    cusparseHybMat_t hyb;
 } NLCUDASparseMatrix;
 
 
@@ -1058,9 +1008,6 @@ static void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
     if(!nlExtensionIsInitialized_CUDA()) {
 	return;
     }
-    if(Mcuda->hyb != NULL) {
-	nlCUDACheck(CUDA()->cusparseDestroyHybMat(Mcuda->hyb));
-    }
     nlCRSMatrixCUDADestroyCRS(Mcuda);
     nlCUDACheck(CUDA()->cusparseDestroyMatDescr(Mcuda->descr));
     memset(Mcuda, 0, sizeof(*Mcuda));
@@ -1069,40 +1016,25 @@ static void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
 static void nlCRSMatrixCUDAMult(
     NLCUDASparseMatrix* Mcuda, const double* x, double* y
 ) {
-    const double one = 1;
-    const double zero = 0;
-    if(Mcuda->hyb != NULL) {
-	nlCUDACheck(
-	    CUDA()->cusparseDhybmv(
-		CUDA()->HNDL_cusparse,
-		CUSPARSE_OPERATION_NON_TRANSPOSE,
-		&one,
-		Mcuda->descr,
-		Mcuda->hyb,
-		x,
-		&zero,
-		y
-	    )
-	);
-    } else {
-	nlCUDACheck(
-	    CUDA()->cusparseDcsrmv(
-		CUDA()->HNDL_cusparse,
-		CUSPARSE_OPERATION_NON_TRANSPOSE,
-		(int)Mcuda->m,
-		(int)Mcuda->n,
-		(int)Mcuda->nnz,
-		&one,
-		Mcuda->descr,
-		Mcuda->val,
-		Mcuda->rowptr,
-		Mcuda->colind,
-		x,
-		&zero,
-		y
-		)
-	    );
-    }
+    const double one = 1.0;
+    const double zero = 0.0;
+    nlCUDACheck(
+	CUDA()->cusparseDcsrmv(
+	    CUDA()->HNDL_cusparse,
+	    CUSPARSE_OPERATION_NON_TRANSPOSE,
+	    (int)Mcuda->m,
+	    (int)Mcuda->n,
+	    (int)Mcuda->nnz,
+	    &one,
+	    Mcuda->descr,
+	    Mcuda->val,
+	    Mcuda->rowptr,
+	    Mcuda->colind,
+	    x,
+	    &zero,
+	    y
+	)
+    );
     nlCUDABlas()->flops += (NLulong)(2*Mcuda->nnz);
 }
 
@@ -1144,24 +1076,6 @@ NLMatrix nlCUDAMatrixNewFromCRSMatrix(NLMatrix M_in) {
     nlCUDACheck(CUDA()->cudaMemcpy(
       Mcuda->val, M->val, val_sz, cudaMemcpyHostToDevice)
     );
-    Mcuda->hyb=NULL;
-    if(!M->symmetric_storage) {
-	nlCUDACheck(CUDA()->cusparseCreateHybMat(&Mcuda->hyb));
-	nlCUDACheck(CUDA()->cusparseDcsr2hyb(
-			CUDA()->HNDL_cusparse,
-			(int)M->m,
-			(int)M->n,
-			Mcuda->descr,
-			Mcuda->val,
-			Mcuda->rowptr,
-			Mcuda->colind,
-			Mcuda->hyb,
-			0,
-			CUSPARSE_HYB_PARTITION_AUTO 
-	));
-	/* We no longer need the CRS part */
-	nlCRSMatrixCUDADestroyCRS(Mcuda);	
-    }
     Mcuda->type=NL_MATRIX_OTHER;
     Mcuda->destroy_func=(NLDestroyMatrixFunc)nlCRSMatrixCUDADestroy;
     Mcuda->mult_func=(NLMultMatrixVectorFunc)nlCRSMatrixCUDAMult;

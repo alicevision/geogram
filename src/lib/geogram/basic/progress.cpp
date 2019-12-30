@@ -280,13 +280,14 @@ namespace GEO {
     void ProgressTask::next() {
         step_++;
 	step_ = std::min(step_, max_steps_);
-        update();
+	update();
     }
 
     void ProgressTask::progress(index_t step) {
         if(step_ != step) {
             step_ = step;
-            update();
+	    step_ = std::min(step_, max_steps_);	    
+	    update();
         }
     }
 
@@ -295,10 +296,14 @@ namespace GEO {
     }
 
     void ProgressTask::update() {
-        percent_ = std::min(index_t(100), index_t(step_ * 100 / max_steps_));
-        if(!quiet_) {
-            task_progress(step_, percent_);
-        }
+	index_t new_percent =
+	    std::min(index_t(100), index_t(step_ * 100 / max_steps_));
+	if(new_percent != percent_) {
+	    percent_ = new_percent;
+	    if(!quiet_) {
+		task_progress(step_, percent_);
+	    }
+	}
     }
 }
 

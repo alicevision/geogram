@@ -175,9 +175,6 @@ namespace GLUP {
         virtual void get_geometry_shader_layout(
             std::vector<GLSL::Source>& sources                        
         );
-
-      protected:
-	bool is_intel_graphics_;
     };
 
     /*********************************************************************/

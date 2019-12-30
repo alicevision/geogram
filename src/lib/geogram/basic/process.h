@@ -553,7 +553,7 @@ namespace GEO {
      *   Executes a parallel for loop from index \p to index \p to, calling
      *   functional object \p func at each iteration.
      *
-     * Calling parallel_for(func, from, to) is equivalent
+     * Calling parallel_for(from, to, func) is equivalent
      * to the following loop, computed in parallel:
      * \code
      * for(index_t i = from; i < to; i++) {

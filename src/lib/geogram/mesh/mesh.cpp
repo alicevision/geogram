@@ -2157,6 +2157,29 @@ namespace {
         return result;
     }
 
+    /**
+     * \brief Gets the names of all attributes from an AttributeManager
+     * \param[in] attributes a const reference to the attribute manager
+     * \param[in] prefix a const rerefenre to a string to be prepended to
+     *  all attribute names
+     * \return a ';'-separated list of all the attributes
+     */
+    std::string get_attributes_impl(
+        const AttributesManager& attributes,
+        const std::string& prefix
+    ) {
+        std::string result;
+        vector<std::string> attribute_names;
+        attributes.list_attribute_names(attribute_names);
+
+        for(index_t i=0; i<attribute_names.size(); ++i) {
+	    if(result != "") {
+		result += ";";
+	    }
+	    result += prefix + "." + attribute_names[i];
+        }
+        return result;
+    }
 
     /**
      * \brief Gets the names of all vector attributes from an AttributeManager
@@ -2196,7 +2219,7 @@ namespace {
 	    }
 	    if(
 		store->elements_type_matches(typeid(vec3).name()) &&
-		(max_dim == 0 || 2 <= max_dim)
+		(max_dim == 0 || 3 <= max_dim)
 	    ) {
 		if(result != "") {
 		    result += ";";
@@ -2225,6 +2248,36 @@ namespace {
 }
 
 namespace GEO {
+
+    std::string Mesh::get_attributes() const {
+        std::string result;
+        strappend(
+            result,get_attributes_impl(vertices.attributes(),"vertices")
+        );
+        strappend(
+            result,get_attributes_impl(edges.attributes(),"edges")
+        );
+        strappend(
+            result,get_attributes_impl(facets.attributes(),"facets")
+        );
+        strappend(
+	    result,get_attributes_impl(
+		facet_corners.attributes(),"facet_corners"
+	    )
+        );
+        strappend(
+            result,get_attributes_impl(cells.attributes(),"cells")
+        );
+        strappend(
+            result,get_attributes_impl(
+                cell_corners.attributes(),"cell_corners"
+            )
+        );
+        strappend(result,get_attributes_impl(
+            cell_facets.attributes(),"cell_facets")
+        );        
+        return result;
+    }
     
     std::string Mesh::get_scalar_attributes() const {
         std::string result;

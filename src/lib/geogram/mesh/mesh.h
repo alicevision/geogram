@@ -2702,12 +2702,20 @@ namespace GEO {
             MeshElementsFlags what=MESH_ALL_ELEMENTS
         );
 
+
+        /**
+         * \brief Gets the list of all attributes.
+         * \return a ';'-separated list of all attributes. 
+         */
+        std::string get_attributes() const;
+    
         /**
          * \brief Gets the list of all scalar attributes.
          * \return a ';'-separated list of all scalar attributes. 
+	 * \details Whenever there is a vector attribute v of dim d,
+	 *  it appends v[0];v[1];...v[d-1] to the list.
          */
         std::string get_scalar_attributes() const;
-
 
 	/**
 	 * \brief Gets the list of all vector attributes.

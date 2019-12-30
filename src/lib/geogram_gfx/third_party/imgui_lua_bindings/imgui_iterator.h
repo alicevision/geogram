@@ -168,10 +168,10 @@ PUSH_NUMBER(ret.x)
 PUSH_NUMBER(ret.y)
 END_IMGUI_FUNC
 //    IMGUI_API float         GetContentRegionAvailWidth();               // == GetContentRegionAvail().x
-IMGUI_FUNCTION(GetContentRegionAvailWidth)
-CALL_FUNCTION(GetContentRegionAvailWidth, float)
-PUSH_NUMBER(ret)
-END_IMGUI_FUNC
+// IMGUI_FUNCTION(GetContentRegionAvailWidth)
+// CALL_FUNCTION(GetContentRegionAvailWidth, float)
+// PUSH_NUMBER(ret)
+// END_IMGUI_FUNC
 //    IMGUI_API ImVec2        GetWindowContentRegionMin();                // content boundaries min (roughly (0,0)-Scroll), in window coordinates
 IMGUI_FUNCTION(GetWindowContentRegionMin)
 CALL_FUNCTION(GetWindowContentRegionMin, ImVec2)
@@ -983,9 +983,9 @@ CALL_FUNCTION_NO_RET(TreePop)
 POP_END_STACK(6)
 END_IMGUI_FUNC
 //    IMGUI_API void          TreeAdvanceToLabelPos();                                            // advance cursor x position by GetTreeNodeToLabelSpacing()
-IMGUI_FUNCTION(TreeAdvanceToLabelPos)
-CALL_FUNCTION_NO_RET(TreeAdvanceToLabelPos)
-END_IMGUI_FUNC
+// IMGUI_FUNCTION(TreeAdvanceToLabelPos)
+// CALL_FUNCTION_NO_RET(TreeAdvanceToLabelPos)
+// END_IMGUI_FUNC
 //    IMGUI_API float         GetTreeNodeToLabelSpacing();                                        // horizontal distance preceding label when using TreeNode*() or Bullet() == (g.FontSize + style.FramePadding.x*2) for a regular unframed TreeNode
 IMGUI_FUNCTION(GetTreeNodeToLabelSpacing)
 CALL_FUNCTION(GetTreeNodeToLabelSpacing, float)

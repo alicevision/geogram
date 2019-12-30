@@ -215,7 +215,8 @@ namespace GEO {
 	 * \brief computes the set of tetrahedra that are incident to
 	 *  a vertex.
 	 * \param[in] v the index of the vertex.
-	 * \param[in,out] W a reference to a PeriodicDelaunay3d::IncidentTetrahedra.
+	 * \param[in,out] W a reference to a 
+	 *  PeriodicDelaunay3d::IncidentTetrahedra.
 	 *  On exit it contains the list of incident tets.
 	 */
 	void get_incident_tets(index_t v, IncidentTetrahedra& W) const;
@@ -227,7 +228,8 @@ namespace GEO {
 	 * \param[in] i the index of the vertex of which the Laguerre cell
 	 *  should be computed.
 	 * \param[out] C the Laguerre cell.
-	 * \param[in,out] W a reference to a PeriodicDelaunay3d::IncidentTetrahedra
+	 * \param[in,out] W a reference to a 
+	 *  PeriodicDelaunay3d::IncidentTetrahedra
 	 */
 	void copy_Laguerre_cell_from_Delaunay(
 	    GEO::index_t i,
@@ -286,7 +288,8 @@ namespace GEO {
 	 * \param[in] t a tetrahedron of the Delaunay triangulation, 
 	 *  incident to vertex i
 	 * \param[out] C the Laguerre cell.
-	 * \param[in,out] W a reference to a PeriodicDelaunay3d::IncidentTetrahedra
+	 * \param[in,out] W a reference to a 
+	 *  PeriodicDelaunay3d::IncidentTetrahedra
 	 * \return the local index of vertex \p i within tetrahedron \p t
 	 */
 	GEO::index_t copy_Laguerre_cell_facet_from_Delaunay(
@@ -322,21 +325,24 @@ namespace GEO {
 	virtual void update_cicl();
 
 	/**
-	 * \brief Duplicates the points with Voronoi cells that cross the boundary.
+	 * \brief Duplicates the points with Voronoi cells 
+	 *  that cross the boundary.
 	 */
 	void handle_periodic_boundaries();
 
 	/**
-	 * \brief Computes the periodic vertex instances that should be generated.
+	 * \brief Computes the periodic vertex instances 
+	 *  that should be generated.
 	 * \param[in] v vertex index, in 0..nb_vertices_non_periodic_-1
 	 * \param[out] C the clipped Laguerre cell
 	 * \param[out] use_instance the array of booleans that indicates which
 	 *  instance should be generated.
-	 * \param[out] cell_is_on_boundary true if the cell has an intersection with 
-	 *  the cube, false otherwise.
-	 * \param[out] cell_is_outside_cube true if the cell is completely outside 
-	 *  the cube, false otherwise.
-	 * \param[in,out] W a reference to a PeriodicDelaunay3d::IncidentTetrahedra
+	 * \param[out] cell_is_on_boundary true if the cell 
+	 *  has an intersection with the cube, false otherwise.
+	 * \param[out] cell_is_outside_cube true if the cell 
+	 *  is completely outside the cube, false otherwise.
+	 * \param[in,out] W a reference to a 
+	 *  PeriodicDelaunay3d::IncidentTetrahedra
 	 * \return the number of instances to generate.
 	 */
 	index_t get_periodic_vertex_instances_to_create(

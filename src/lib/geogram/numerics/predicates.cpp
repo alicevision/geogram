@@ -227,8 +227,9 @@ namespace {
      * \brief Computes four 2x2 determinants simultaneously in AVX2
      *  registers.
      * \param[in] A , B , C , D the coefficients of the four determinants
-     *  distributed over four AVX2 registers. Note: each component corresponds to
-     *  one determinant (and not each register).
+     *  distributed over four AVX2 registers. 
+     *  Note: each component corresponds to one determinant 
+     *   (and not each register).
      * \return an AVX2 register with the four determinants
      */
     inline __m256d avx2_vecdet(__m256d A, __m256d B, __m256d C, __m256d D) {
@@ -371,7 +372,7 @@ namespace {
 
 	return (det > epsval) * -1 + (det < -epsval);
     }
-    
+
 #endif
     
     /**

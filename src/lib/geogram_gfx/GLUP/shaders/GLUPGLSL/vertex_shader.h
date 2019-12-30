@@ -13,14 +13,14 @@ in vec4 normal_in;
 #endif
 
 out VertexData {
-#ifdef GL_ES
+#ifdef GLUP_GL_ES
       vec4 vertex_clip_space;
 #endif    
     vec4 color;                             
     vec4 tex_coord;
 #if GLUP_PRIMITIVE_DIMENSION==2    
     vec3 normal;
-#  ifdef GL_ES
+#  ifdef GLUP_GL_ES
       vec4 mesh_tex_coord;
 #  endif    
 #endif
@@ -63,7 +63,7 @@ void main(void) {
 #endif    
     gl_Position = GLUP.modelviewprojection_matrix * vertex_in;
 #if GLUP_PRIMITIVE_DIMENSION==2
-#  ifdef GL_ES
+#  ifdef GLUP_GL_ES
     VertexOut.vertex_clip_space = gl_Position;
     if(glupIsEnabled(GLUP_DRAW_MESH)) {
 	// Note: does not work with glDrawElements because gl_VertexID is

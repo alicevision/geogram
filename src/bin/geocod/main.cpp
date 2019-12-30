@@ -310,7 +310,7 @@ namespace {
 	void draw_viewer_properties() override {
 	    if(ImGui::Button(
 		   "run",
-		   ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f))
+		   ImVec2(-ImGui::GetContentRegionAvail().x/2.0f,0.0f))
 	    ) {
 		run_program();
 	    }

@@ -395,7 +395,7 @@ namespace {
 		label.c_str(),
 		&visible_,
 		ImGuiWindowFlags_NoCollapse | (
-		    no_docking_ ? ImGuiWindowFlags_NoDocking : 0
+		    (no_docking_ && !pinned_) ? ImGuiWindowFlags_NoDocking : 0
 		)
 	    );
 
@@ -470,7 +470,7 @@ namespace {
 		    if(i != 0) {
 			ImGui::SameLine();
 			if(
-			    ImGui::GetContentRegionAvailWidth() <
+			    ImGui::GetContentRegionAvail().x <
 			    ImGui::CalcTextSize(path[i].c_str()).x +
 			    10.0f*ImGui::scaling()
 			    ) {
@@ -552,7 +552,7 @@ namespace {
 			}
 		    }
 		    if(scroll_to_file_ && i == current_file_index_) {
-			ImGui::SetScrollHere();
+			ImGui::SetScrollHereY();
 			scroll_to_file_ = false;
 		    }
 		}
@@ -756,7 +756,7 @@ namespace {
          * \brief The callback for handling the text input.
          * \param[in,out] data a pointer to the callback data
          */
-        static int text_input_callback(ImGuiTextEditCallbackData* data) {
+        static int text_input_callback(ImGuiInputTextCallbackData* data) {
 	    FileDialog* dlg = static_cast<FileDialog*>(data->UserData);
 	    if(
 		(data->EventFlag &
@@ -781,7 +781,7 @@ namespace {
          * \param[in] direction -1 if the up arrow was pressed, 1 if the
          *  down arrow was pressed
          */
-        void updown_callback(ImGuiTextEditCallbackData* data, int direction) {
+        void updown_callback(ImGuiInputTextCallbackData* data, int direction) {
 	    int next = int(current_file_index_) + direction;
 	    if(next < 0) {
 		if(files_.size() == 0) {
@@ -812,7 +812,7 @@ namespace {
          * \brief Called whenever the tab key is pressed.
          * \param[in,out] data a pointer to the callback data
          */
-        void tab_callback(ImGuiTextEditCallbackData* data) {
+        void tab_callback(ImGuiInputTextCallbackData* data) {
 	    std::string file(current_file_);
 	    bool found = false;
 	    for(index_t i=0; i<files_.size(); ++i) {
@@ -839,7 +839,7 @@ namespace {
          * \param[out] data a pointer to the callback data
          */
         void update_text_edit_callback_data(
-            ImGuiTextEditCallbackData* data
+            ImGuiInputTextCallbackData* data
 	) {
 	    data->BufTextLen = int(
 		safe_strncpy(
@@ -900,7 +900,7 @@ namespace {
 		ImGui::Separator();
 		if (ImGui::Button(
 			"Overwrite",
-			ImVec2(-ImGui::GetContentRegionAvailWidth()/2.0f,0.0f))
+			ImVec2(-ImGui::GetContentRegionAvail().x/2.0f,0.0f))
 		) {
 		    are_you_sure_ = false;
 		    ImGui::CloseCurrentPopup();
@@ -932,9 +932,9 @@ namespace {
 		    }
 		    ImGui::SameLine();
 		    if(
-			ImGui::GetContentRegionAvailWidth() <
+			ImGui::GetContentRegionAvail().x <
 			ImGui::CalcTextSize("X:").x + 10.0f*ImGui::scaling()
-			) {
+		    ) {
 			ImGui::NewLine();
 		    }
 		}

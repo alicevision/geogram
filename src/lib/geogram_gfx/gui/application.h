@@ -483,11 +483,13 @@ namespace GEO {
 
 	/**
 	 * \brief Called whenever window size changes
-	 * \param[in] w , h the new width and height in pixels.
+	 * \param[in] w , h the new window width and height in pixels.
+	 * \param[in] fb_w , fb_h the new framebuffer width and height in
+	 *   pixels.
 	 * \details Called whenenver the size of the window does not
 	 *  match the current size.
 	 */
-        virtual void resize(index_t w, index_t h);
+         virtual void resize(index_t w, index_t h, index_t fb_w, index_t fb_h);
 
 	/**
 	 * \brief Draws one frame.

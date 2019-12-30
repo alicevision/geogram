@@ -129,13 +129,13 @@ namespace GEO {
 	}
     }
 
-    static int TextEditCallbackStub(ImGuiTextEditCallbackData* data) {
+    static int TextEditCallbackStub(ImGuiInputTextCallbackData* data) {
         Console* console = (Console*)data->UserData;
 	return console->TextEditCallback(data);
     }
 
 
-    int Console::TextEditCallback(ImGuiTextEditCallbackData* data)  {
+    int Console::TextEditCallback(ImGuiInputTextCallbackData* data)  {
         switch (data->EventFlag) {
         case ImGuiInputTextFlags_CallbackCompletion: {
 	    if(completion_callback_ != nullptr) {

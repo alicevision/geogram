@@ -2,109 +2,113 @@
 /* Generated from source file: orient4d.pck */
 
 inline int orienth_3d_filter( const double* p0, const double* p1, const double* p2, const double* p3, const double* p4, double h0, double h1, double h2, double h3, double h4) {
+    double a00;
+    a00 = (p1[0] - p0[0]);
+    double a01;
+    a01 = (p1[1] - p0[1]);
+    double a02;
+    a02 = (p1[2] - p0[2]);
+    double a03;
+    a03 = (h1 - h0);
+    double a10;
+    a10 = (p2[0] - p0[0]);
     double a11;
-    a11 = (p1[0] - p0[0]);
+    a11 = (p2[1] - p0[1]);
     double a12;
-    a12 = (p1[1] - p0[1]);
+    a12 = (p2[2] - p0[2]);
     double a13;
-    a13 = (p1[2] - p0[2]);
-    double a14;
-    a14 = (h1 - h0);
+    a13 = (h2 - h0);
+    double a20;
+    a20 = (p3[0] - p0[0]);
     double a21;
-    a21 = (p2[0] - p0[0]);
+    a21 = (p3[1] - p0[1]);
     double a22;
-    a22 = (p2[1] - p0[1]);
+    a22 = (p3[2] - p0[2]);
     double a23;
-    a23 = (p2[2] - p0[2]);
-    double a24;
-    a24 = (h2 - h0);
+    a23 = (h3 - h0);
+    double a30;
+    a30 = (p4[0] - p0[0]);
     double a31;
-    a31 = (p3[0] - p0[0]);
+    a31 = (p4[1] - p0[1]);
     double a32;
-    a32 = (p3[1] - p0[1]);
+    a32 = (p4[2] - p0[2]);
     double a33;
-    a33 = (p3[2] - p0[2]);
-    double a34;
-    a34 = (h3 - h0);
-    double a41;
-    a41 = (p3[0] - p0[0]);
-    double a42;
-    a42 = (p3[1] - p0[1]);
-    double a43;
-    a43 = (p3[2] - p0[2]);
-    double a44;
-    a44 = (h4 - h0);
+    a33 = (h4 - h0);
+    double m12;
+    m12 = ((a10 * a01) - (a00 * a11));
+    double m13;
+    m13 = ((a20 * a01) - (a00 * a21));
+    double m14;
+    m14 = ((a30 * a01) - (a00 * a31));
+    double m23;
+    m23 = ((a20 * a11) - (a10 * a21));
+    double m24;
+    m24 = ((a30 * a11) - (a10 * a31));
+    double m34;
+    m34 = ((a30 * a21) - (a20 * a31));
+    double m123;
+    m123 = (((m23 * a02) - (m13 * a12)) + (m12 * a22));
+    double m124;
+    m124 = (((m24 * a02) - (m14 * a12)) + (m12 * a32));
+    double m134;
+    m134 = (((m34 * a02) - (m14 * a22)) + (m13 * a32));
+    double m234;
+    m234 = (((m34 * a12) - (m24 * a22)) + (m23 * a32));
     double Delta;
-    Delta = ((((a11 * (((a22 * ((a33 * a44) - (a34 * a43))) - (a32 * ((a23 * a44) - (a24 * a43)))) + (a42 * ((a23 * a34) - (a24 * a33))))) - (a21 * (((a12 * ((a33 * a44) - (a34 * a43))) - (a32 * ((a13 * a44) - (a14 * a43)))) + (a42 * ((a13 * a34) - (a14 * a33)))))) + (a31 * (((a12 * ((a23 * a44) - (a24 * a43))) - (a22 * ((a13 * a44) - (a14 * a43)))) + (a42 * ((a13 * a24) - (a14 * a23)))))) - (a41 * (((a12 * ((a23 * a34) - (a24 * a33))) - (a22 * ((a13 * a34) - (a14 * a33)))) + (a32 * ((a13 * a24) - (a14 * a23))))));
+    Delta = ((((m234 * a03) - (m134 * a13)) + (m124 * a23)) - (m123 * a33));
     int int_tmp_result;
     double eps;
-    double max1 = fabs(a11);
-    if( (max1 < fabs(a21)) )
+    double max1 = fabs(a00);
+    if( (max1 < fabs(a10)) )
     {
-        max1 = fabs(a21);
+        max1 = fabs(a10);
     } 
-    if( (max1 < fabs(a31)) )
+    if( (max1 < fabs(a20)) )
     {
-        max1 = fabs(a31);
+        max1 = fabs(a20);
     } 
-    if( (max1 < fabs(a41)) )
+    if( (max1 < fabs(a30)) )
     {
-        max1 = fabs(a41);
+        max1 = fabs(a30);
     } 
-    double max2 = fabs(a12);
-    if( (max2 < fabs(a22)) )
+    double max2 = fabs(a01);
+    if( (max2 < fabs(a11)) )
     {
-        max2 = fabs(a22);
+        max2 = fabs(a11);
     } 
-    if( (max2 < fabs(a32)) )
+    if( (max2 < fabs(a21)) )
     {
-        max2 = fabs(a32);
+        max2 = fabs(a21);
     } 
-    if( (max2 < fabs(a42)) )
+    if( (max2 < fabs(a31)) )
     {
-        max2 = fabs(a42);
+        max2 = fabs(a31);
     } 
-    double max3 = fabs(a13);
-    if( (max3 < fabs(a14)) )
+    double max3 = fabs(a02);
+    if( (max3 < fabs(a12)) )
     {
-        max3 = fabs(a14);
+        max3 = fabs(a12);
     } 
-    if( (max3 < fabs(a23)) )
+    if( (max3 < fabs(a22)) )
     {
-        max3 = fabs(a23);
+        max3 = fabs(a22);
     } 
-    if( (max3 < fabs(a24)) )
+    if( (max3 < fabs(a32)) )
     {
-        max3 = fabs(a24);
+        max3 = fabs(a32);
     } 
-    if( (max3 < fabs(a33)) )
+    double max4 = fabs(a03);
+    if( (max4 < fabs(a13)) )
     {
-        max3 = fabs(a33);
+        max4 = fabs(a13);
     } 
-    if( (max3 < fabs(a34)) )
+    if( (max4 < fabs(a23)) )
     {
-        max3 = fabs(a34);
-    } 
-    double max4 = fabs(a23);
-    if( (max4 < fabs(a24)) )
-    {
-        max4 = fabs(a24);
+        max4 = fabs(a23);
     } 
     if( (max4 < fabs(a33)) )
     {
         max4 = fabs(a33);
-    } 
-    if( (max4 < fabs(a34)) )
-    {
-        max4 = fabs(a34);
-    } 
-    if( (max4 < fabs(a43)) )
-    {
-        max4 = fabs(a43);
-    } 
-    if( (max4 < fabs(a44)) )
-    {
-        max4 = fabs(a44);
     } 
     double lower_bound_1;
     double upper_bound_1;
@@ -143,17 +147,17 @@ inline int orienth_3d_filter( const double* p0, const double* p1, const double* 
             upper_bound_1 = max4;
         } 
     } 
-    if( (lower_bound_1 < 2.89273249588395194294e-74) )
+    if( (lower_bound_1 < 2.89273249588395233567e-74) )
     {
         return FPG_UNCERTAIN_VALUE;
     } 
     else 
     {
-        if( (upper_bound_1 > 7.23700557733225980357e+75) )
+        if( (upper_bound_1 > 7.23700557733225900010e+75) )
         {
             return FPG_UNCERTAIN_VALUE;
         } 
-        eps = (3.17768858673611390687e-14 * (((max3 * max4) * max2) * max1));
+        eps = (3.17768858673611390687e-14 * (((max1 * max2) * max3) * max4));
         if( (Delta > eps) )
         {
             int_tmp_result = 1;
@@ -172,3 +176,4 @@ inline int orienth_3d_filter( const double* p0, const double* p1, const double* 
     } 
     return int_tmp_result;
 } 
+

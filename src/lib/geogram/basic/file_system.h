@@ -439,7 +439,7 @@ namespace GEO {
 	    /**
 	     * \brief Splits a path.
 	     * \param[in] path the path
-	     * \param[out] leading_subdir the leading subdirectory or the
+	     * \param[out] leadingsubdir the leading subdirectory or the
 	     *  empty string
 	     * \param[out] rest the rest of the path
 	     */

@@ -270,9 +270,13 @@ namespace GEO {
         return scaling_ * hidpi_scaling_ / pixel_ratio_;
     }
 
-    void Application::resize(index_t w, index_t h) {
+    void Application::resize(
+	index_t w, index_t h, index_t fb_w, index_t fb_h
+    ) {
 	width_ = w;
 	height_ = h;
+	frame_buffer_width_ = fb_w;
+	frame_buffer_height_ = fb_h;
 	scaling_ = double(font_size_)/16.0;
 	if(phone_screen_) {
 	    scaling_ *= double(std::max(get_width(), get_height()))/600.0;
@@ -402,7 +406,11 @@ namespace GEO {
 	    ImGui::LoadIniSettingsFromMemory(state.c_str());
 	}
 	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; 
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	// Viewports allow to drag ImGui windows outside the app's window,
+	// but it is still a bit unstable, so deactivated it for now.
+	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	
 	// Note: NavKeyboard sets WantsCaptureKeyboard all the time and
 	// thus prevents from nanosleeping !
 	// io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -509,7 +517,11 @@ namespace GEO {
     void Application::ImGui_terminate() {
 	geo_assert(ImGui_initialized_);
 	ImGui_ImplOpenGL3_Shutdown();
-#if defined(GEO_GLFW)	
+#if defined(GEO_GLFW)
+	// Note: normally, with the new ImGui (1.74), this
+	// desinstalls user callbacks and reinstalls the previous
+	// callbacks. I deactivated this mechanism to have the same
+	// behavior as in ImGui 1.72. TODO: do that properly !
 	ImGui_ImplGlfw_Shutdown();
 #endif	
 	ImGui::DestroyContext();
@@ -708,18 +720,26 @@ namespace GEO {
 	    return;
 	}
 
+	
 	{
 	    int cur_width, cur_height;
-	    int fb_width,  fb_height;
+	    int cur_fb_width,  cur_fb_height;
 	    
-	    // TODO: test on MacOS / Retina
 	    glfwGetWindowSize(data_->window_, &cur_width, &cur_height);
-	    glfwGetFramebufferSize(data_->window_, &fb_width, &fb_height);
-	    frame_buffer_width_ = index_t(fb_width);
-	    frame_buffer_height_ = index_t(fb_height);
+	    glfwGetFramebufferSize(
+		data_->window_, &cur_fb_width, &cur_fb_height
+	    );
 
-	    if(int(width_) != cur_width || int(height_) != cur_height) {
-		resize(index_t(cur_width), index_t(cur_height));
+	    if(
+		int(width_) != cur_width ||
+		int(height_) != cur_height ||
+		int(frame_buffer_width_) != cur_fb_width ||
+		int(frame_buffer_height_) != cur_fb_height
+	    ) {
+		resize(
+		    index_t(cur_width), index_t(cur_height),
+		    index_t(cur_fb_width), index_t(cur_fb_height)
+		);
 	    }
 	}
 
@@ -737,8 +757,8 @@ namespace GEO {
 	    }
 	}
 	
+	
 	glfwPollEvents();
-
 
 	if(needs_to_redraw()) {
 	    pre_draw();
@@ -748,6 +768,18 @@ namespace GEO {
 	    draw_gui();
 	    ImGui::Render();
 	    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+#ifndef GEO_OS_EMSCRIPTEN	    
+	    // Update and Render additional Platform Windows
+	    // (see ImGui demo app).
+	    if(ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		GLFWwindow* backup_current_context = glfwGetCurrentContext();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		glfwMakeContextCurrent(backup_current_context);
+	    }
+#endif
+	    
 	    currently_drawing_gui_ = false;
 
 #ifdef GEO_OS_EMSCRIPTEN
@@ -761,7 +793,10 @@ namespace GEO {
 	    
 	    glfwSwapBuffers(data_->window_);
 	    post_draw();
-	    if(nb_frames_update_ > 0 && !animate_) {
+	    if(
+		nb_frames_update_ > 0 && !animate_ &&
+	        !(ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	    ) {
 		--nb_frames_update_;
 	    }
 	} else {
@@ -984,12 +1019,7 @@ namespace GEO {
     }
     
     void Application::callbacks_initialize() {
-	if(data_->GLFW_callbacks_initialized_) {
-	    /*
-	    GEO::Logger::out("ImGui") << "Viewer GUI restart (config. changed)"
-				      << std::endl;
-	    */
-	} else {
+	if(!data_->GLFW_callbacks_initialized_) {
 	    GEO::Logger::out("ImGui") << "Viewer GUI init (GL3)"
 				      << std::endl;
 	}

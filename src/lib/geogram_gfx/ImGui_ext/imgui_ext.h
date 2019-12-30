@@ -141,7 +141,7 @@ namespace ImGui {
      * \param[in] extensions semi-colon-separated list of extensions, without
      *  the dot
      * \param[in] filename initial filename or empty string
-     * \param(in] root an optional root Node. If null or unspecified, then
+     * \param[in] root an optional root Node. If null or unspecified, then
      *  the default root is used.
      * \details The file dialog is drawn and handled after, by calling
      *  FileDialog()

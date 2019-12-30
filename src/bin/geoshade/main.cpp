@@ -337,7 +337,7 @@ namespace {
 	void draw_viewer_properties() override {
 	    if(ImGui::Button(
 		   (icon_UTF8("play-circle")+" run").c_str(),
-		   ImVec2(-ImGui::GetContentRegionAvailWidth()/1.8f,0.0f))
+		   ImVec2(-ImGui::GetContentRegionAvail().x/1.8f,0.0f))
 	    ) {
 		run_program();
 	    }

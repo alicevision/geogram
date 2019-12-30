@@ -60,7 +60,7 @@ vec4 glup_draw_mesh(in vec4 color, in vec4 mesh_tex_coord) {
 
 void main() {
 
-#ifdef GL_ES
+#ifdef GLUP_GL_ES
 #ifndef GLUP_NO_GL_CLIPPING    
     if(glupIsEnabled(GLUP_CLIPPING) && (gl_ClipDistance[0] < 0.0)) {
         discard;                                                
@@ -121,7 +121,7 @@ void main() {
 // have the same transform orientation, but then I
 // do not understand why it gives the same result as
 // the desktop version with GLUPES2...)		
-#ifdef GL_ES
+#ifdef GLUP_GL_ES
 		N = normalize(M*cross(U,V));		
 #else		
 		N = -normalize(M*cross(U,V));

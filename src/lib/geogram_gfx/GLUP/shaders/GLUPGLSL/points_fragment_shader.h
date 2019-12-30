@@ -21,7 +21,7 @@ in VertexData {
 
 void main() {
 
-#ifdef GL_ES
+#ifdef GLUP_GL_ES
 #ifndef GLUP_NO_GL_CLIPPING            
     if(glupIsEnabled(GLUP_CLIPPING) && (gl_ClipDistance[0] < 0.0)) {
         discard;                                                

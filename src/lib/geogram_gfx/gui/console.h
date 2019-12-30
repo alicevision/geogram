@@ -118,7 +118,7 @@ namespace GEO {
          */
         virtual void draw(bool* visible=nullptr, bool with_window=true);
 
-	int TextEditCallback(ImGuiTextEditCallbackData* data);
+	int TextEditCallback(ImGuiInputTextCallbackData* data);
 
 	void show() {
 	    *visible_flag_ = true;

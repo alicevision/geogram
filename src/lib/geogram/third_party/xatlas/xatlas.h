@@ -33,42 +33,39 @@ Copyright NVIDIA Corporation 2006 -- Ignacio Castano <icastano@nvidia.com>
 #define XATLAS_H
 #include <stdint.h>
 
-
-// [Bruno] I got too many complaints in tetgen so I "close my eyes" :-)
-#ifdef __GNUC__
-#ifndef __ICC
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wdouble-promotion"
-#pragma GCC diagnostic ignored "-Wfloat-conversion"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#endif
-
-// [Bruno]
-//   TODO: use std::vector instead of Array (Array has
-// memory leaks !)
-//   Still some bugs with elf (some overlapping triangles
-// in atlas, but did not try 'conservative' mode).
-//   Add clean way for my 'KeepMyUVs' mode (in particular,
-// to ignore problems with zero-facets areas).
-
 namespace xatlas {
 
-struct Chart
+struct ChartType
 {
-	uint32_t atlasIndex;
-	uint32_t *indexArray;
-	uint32_t indexCount;
+	enum Enum
+	{
+		Planar,
+		Ortho,
+		LSCM,
+		Piecewise
+	};
 };
 
+// A group of connected faces, belonging to a single atlas.
+struct Chart
+{
+	uint32_t atlasIndex; // Sub-atlas index.
+	uint32_t *faceArray;
+	uint32_t faceCount;
+	uint32_t material;
+	ChartType::Enum type;
+};
+
+// Output vertex.
 struct Vertex
 {
-	int32_t atlasIndex; // -1 if the vertex doesn't exist in any atlas.
-	float uv[2]; // Not normalized, values are in Atlas width and height range.
+	int32_t atlasIndex; // Sub-atlas index. -1 if the vertex doesn't exist in any atlas.
+	int32_t chartIndex; // -1 if the vertex doesn't exist in any chart.
+	float uv[2]; // Not normalized - values are in Atlas width and height range.
 	uint32_t xref; // Index of input vertex from which this output vertex originated.
 };
 
+// Output mesh.
 struct Mesh
 {
 	Chart *chartArray;
@@ -79,34 +76,29 @@ struct Mesh
 	uint32_t vertexCount;
 };
 
+static const uint32_t kImageChartIndexMask = 0x1FFFFFFF;
+static const uint32_t kImageHasChartIndexBit = 0x80000000;
+static const uint32_t kImageIsBilinearBit = 0x40000000;
+static const uint32_t kImageIsPaddingBit = 0x20000000;
+
+// Empty on creation. Populated after charts are packed.
 struct Atlas
 {
-	uint32_t width;
-	uint32_t height;
-	uint32_t atlasCount;
-	uint32_t chartCount;
-	uint32_t meshCount;
-	Mesh *meshes;
-
-	// Normalized atlas texel utilization. atlasCount in length.
-	float *utilization;
-
-	// Equal to PackOptions texelsPerUnit if texelsPerUnit > 0, otherwise an estimated value to try and match PackOptions resolution.
-	float texelsPerUnit;
+	uint32_t width; // Atlas width in texels.
+	uint32_t height; // Atlas height in texels.
+	uint32_t atlasCount; // Number of sub-atlases. Equal to 0 unless PackOptions resolution is changed from default (0).
+	uint32_t chartCount; // Total number of charts in all meshes.
+	uint32_t meshCount; // Number of output meshes. Equal to the number of times AddMesh was called.
+	Mesh *meshes; // The output meshes, corresponding to each AddMesh call.
+	float *utilization; // Normalized atlas texel utilization array. E.g. a value of 0.8 means 20% empty space. atlasCount in length.
+	float texelsPerUnit; // Equal to PackOptions texelsPerUnit if texelsPerUnit > 0, otherwise an estimated value to match PackOptions resolution.
+	uint32_t *image;
 };
 
+// Create an empty atlas.
 Atlas *Create();
-void Destroy(Atlas *atlas);
 
-struct AddMeshError
-{
-	enum Enum
-	{
-		Success,
-		IndexOutOfRange,
-		InvalidIndexCount // Not evenly divisible by 3 - expecting triangles.
-	};
-};
+void Destroy(Atlas *atlas);
 
 struct IndexFormat
 {
@@ -117,47 +109,129 @@ struct IndexFormat
 	};
 };
 
+// Input mesh declaration.
 struct MeshDecl
 {
-	uint32_t vertexCount;
-	const void *vertexPositionData;
-	uint32_t vertexPositionStride;
-	const void *vertexNormalData; // optional
-	uint32_t vertexNormalStride; // optional
-	const void *vertexUvData; // optional. The input UVs are provided as a hint to the chart generator.
-	uint32_t vertexUvStride; // optional
-	uint32_t indexCount;
-	const void *indexData;
-	int32_t indexOffset; // optional. Add this offset to all indices.
-	IndexFormat::Enum indexFormat;
+	uint32_t vertexCount = 0;
+	const void *vertexPositionData = nullptr;
+	uint32_t vertexPositionStride = 0;
+	const void *vertexNormalData = nullptr; // optional
+	uint32_t vertexNormalStride = 0; // optional
+	const void *vertexUvData = nullptr; // optional. The input UVs are provided as a hint to the chart generator.
+	uint32_t vertexUvStride = 0; // optional
+	uint32_t indexCount = 0;
+	const void *indexData = nullptr; // optional
+	int32_t indexOffset = 0; // optional. Add this offset to all indices.
+	IndexFormat::Enum indexFormat = IndexFormat::UInt16;
 	
-	// optional. indexCount / 3 in length.
-	// Don't atlas faces set to true. Faces will still exist in the output meshes, Vertex uv will be (0, 0) and Vertex atlasIndex will be -1.
-	const bool *faceIgnoreData;
+	// Optional. indexCount / 3 (triangle count) in length.
+	// Don't atlas faces set to true. Ignored faces still exist in the output meshes, Vertex uv is set to (0, 0) and Vertex atlasIndex to -1.
+	const bool *faceIgnoreData = nullptr;
 
-	MeshDecl()
-	{
-		vertexCount = 0;
-		vertexPositionData = NULL;
-		vertexPositionStride = 0;
-		vertexNormalData = NULL;
-		vertexNormalStride = 0;
-		vertexUvData = NULL;
-		vertexUvStride = 0;
-		indexCount = 0;
-		indexData = NULL;
-		indexOffset = 0;
-		indexFormat = IndexFormat::UInt16;
-		faceIgnoreData = NULL;
-	}
+	// Vertex positions within epsilon distance of each other are considered colocal.
+	float epsilon = 1.192092896e-07F;
 };
 
-AddMeshError::Enum AddMesh(Atlas *atlas, const MeshDecl &meshDecl);
+struct AddMeshError
+{
+	enum Enum
+	{
+		Success, // No error.
+		Error, // Unspecified error.
+		IndexOutOfRange, // An index is >= MeshDecl vertexCount.
+		InvalidIndexCount // Not evenly divisible by 3 - expecting triangles.
+	};
+};
 
+// Add a mesh to the atlas. MeshDecl data is copied, so it can be freed after AddMesh returns.
+AddMeshError::Enum AddMesh(Atlas *atlas, const MeshDecl &meshDecl, uint32_t meshCountHint = 0);
+
+// Wait for AddMesh async processing to finish. ComputeCharts / Generate call this internally.
+void AddMeshJoin(Atlas *atlas);
+
+struct UvMeshDecl
+{
+	uint32_t vertexCount = 0;
+	uint32_t vertexStride = 0;
+	const void *vertexUvData = nullptr;
+	uint32_t indexCount = 0;
+	const void *indexData = nullptr; // optional
+	int32_t indexOffset = 0; // optional. Add this offset to all indices.
+	IndexFormat::Enum indexFormat = IndexFormat::UInt16;
+	const uint32_t *faceMaterialData = nullptr; // Optional. Faces with different materials won't be assigned to the same chart. Must be indexCount / 3 in length.
+	bool rotateCharts = true;
+};
+
+AddMeshError::Enum AddUvMesh(Atlas *atlas, const UvMeshDecl &decl);
+
+struct ChartOptions
+{
+	float maxChartArea = 0.0f; // Don't grow charts to be larger than this. 0 means no limit.
+	float maxBoundaryLength = 0.0f; // Don't grow charts to have a longer boundary than this. 0 means no limit.
+
+	// Weights determine chart growth. Higher weights mean higher cost for that metric.
+	float proxyFitMetricWeight = 2.0f; // Angle between face and average chart normal.
+	float roundnessMetricWeight = 0.01f;
+	float straightnessMetricWeight = 6.0f;
+	float normalSeamMetricWeight = 4.0f; // If > 1000, normal seams are fully respected.
+	float textureSeamMetricWeight = 0.5f;
+
+	float maxThreshold = 2.0f; // If total of all metrics * weights > maxThreshold, don't grow chart. Lower values result in more charts.
+	uint32_t maxIterations = 1; // Number of iterations of the chart growing and seeding phases. Higher values result in better charts.
+};
+
+// Call after all AddMesh calls. Can be called multiple times to recompute charts with different options.
+void ComputeCharts(Atlas *atlas, ChartOptions chartOptions = ChartOptions());
+
+// Custom parameterization function. texcoords initial values are an orthogonal parameterization.
+typedef void (*ParameterizeFunc)(const float *positions, float *texcoords, uint32_t vertexCount, const uint32_t *indices, uint32_t indexCount);
+
+// Call after ComputeCharts. Can be called multiple times to re-parameterize charts with a different ParameterizeFunc.
+void ParameterizeCharts(Atlas *atlas, ParameterizeFunc func = nullptr);
+
+struct PackOptions
+{
+	// Leave space around charts for texels that would be sampled by bilinear filtering.
+	bool bilinear = true;
+
+	// Align charts to 4x4 blocks. Also improves packing speed, since there are fewer possible chart locations to consider.
+	bool blockAlign = false;
+
+	// Slower, but gives the best result. If false, use random chart placement.
+	bool bruteForce = false;
+
+	// Create Atlas::image
+	bool createImage = false;
+
+	// Charts larger than this will be scaled down. 0 means no limit.
+	uint32_t maxChartSize = 0;
+
+	// Number of pixels to pad charts with.
+	uint32_t padding = 0;
+
+	// Unit to texel scale. e.g. a 1x1 quad with texelsPerUnit of 32 will take up approximately 32x32 texels in the atlas.
+	// If 0, an estimated value will be calculated to approximately match the given resolution.
+	// If resolution is also 0, the estimated value will approximately match a 1024x1024 atlas.
+	float texelsPerUnit = 0.0f;
+
+	// If 0, generate a single atlas with texelsPerUnit determining the final resolution.
+	// If not 0, and texelsPerUnit is not 0, generate one or more atlases with that exact resolution.
+	// If not 0, and texelsPerUnit is 0, texelsPerUnit is estimated to approximately match the resolution.
+	uint32_t resolution = 0;
+};
+
+// Call after ParameterizeCharts. Can be called multiple times to re-pack charts with different options.
+void PackCharts(Atlas *atlas, PackOptions packOptions = PackOptions());
+
+// Equivalent to calling ComputeCharts, ParameterizeCharts and PackCharts in sequence. Can be called multiple times to regenerate with different options.
+void Generate(Atlas *atlas, ChartOptions chartOptions = ChartOptions(), ParameterizeFunc paramFunc = nullptr, PackOptions packOptions = PackOptions());
+
+// Progress tracking.
 struct ProgressCategory
 {
 	enum Enum
 	{
+		AddMesh,
 		ComputeCharts,
 		ParameterizeCharts,
 		PackCharts,
@@ -165,95 +239,21 @@ struct ProgressCategory
 	};
 };
 
-typedef void (*ProgressFunc)(ProgressCategory::Enum category, int progress, void *userData);
+// May be called from any thread. Return false to cancel.
+typedef bool (*ProgressFunc)(ProgressCategory::Enum category, int progress, void *userData);
 
-struct ChartOptions
-{
-	float proxyFitMetricWeight;
-	float roundnessMetricWeight;
-	float straightnessMetricWeight;
-	float normalSeamMetricWeight; // If > 1000, normal seams are fully respected.
-	float textureSeamMetricWeight;
-	float maxChartArea; // Don't grow charts to be larger than this. 0 means no limit.
-	float maxBoundaryLength; // Don't grow charts to have a longer boundary than this. 0 means no limit.
-	float maxThreshold;
-	uint32_t growFaceCount;
-	uint32_t maxIterations;
+void SetProgressCallback(Atlas *atlas, ProgressFunc progressFunc = nullptr, void *progressUserData = nullptr);
 
-	ChartOptions()
-	{
-		proxyFitMetricWeight = 2.0f;
-		roundnessMetricWeight = 0.01f;
-		straightnessMetricWeight = 6.0f;
-		normalSeamMetricWeight = 4.0f;
-		textureSeamMetricWeight = 0.5f;
-		maxChartArea = 0.0f;
-		maxBoundaryLength = 0.0f;
-		maxThreshold = 2.0f;
-		growFaceCount = 32;
-		maxIterations = 1;
-	}
-};
-
-typedef void (*ParameterizeFunc)(const float *positions, float *texcoords, uint32_t vertexCount, const uint32_t *indices, uint32_t indexCount, bool isPlanar);
-
-struct PackOptions
-{
-	// The number of attempts to find a suitable random chart location.
-	// 0 is brute force - very slow, but best results. Faster if blockAlign is true;
-	int attempts;
-
-	// Unit to texel scale. e.g. a 1x1 quad with texelsPerUnit of 32 will take up approximately 32x32 texels in the atlas.
-	// If 0, an estimated value will be calculated to try and match the given resolution.
-	// If resolution is also 0, the estimated value will try to match a 1024x1024 atlas.
-	float texelsPerUnit;
-
-	// If 0, generate a single atlas with texelsPerUnit determining the final resolution.
-	// If not 0, generate 1 or more atlases with that exact resolution.
-	uint32_t resolution;
-
-	// Charts larger than this will be scaled down.
-	uint32_t maxChartSize;
-
-	// Align charts to 4x4 blocks. 
-	bool blockAlign;
-
-	// Pack charts with extra padding.
-	bool conservative;
-
-	// Number of pixels to pad. conservative must be true.
-	uint32_t padding;
-
-	PackOptions()
-	{
-		attempts = 4096;
-		texelsPerUnit = 0.0f;
-		resolution = 0;
-		maxChartSize = 1024;
-		blockAlign = false;
-		conservative = false;
-		padding = 0;
-	}
-};
-
-// Equivalent to calling ComputeCharts, ParameterizeCharts and PackCharts in sequence. Can be called multiple times to regenerate with different options.
-void Generate(Atlas *atlas, ChartOptions chartOptions = ChartOptions(), ParameterizeFunc paramFunc = NULL, PackOptions packOptions = PackOptions(), ProgressFunc progressFunc = NULL, void *progressUserData = NULL);
-
-// Call after AddMesh. Can be called multiple times to recompute charts with different options.
-void ComputeCharts(Atlas *atlas, ChartOptions chartOptions = ChartOptions(), ProgressFunc progressFunc = NULL, void *progressUserData = NULL);
-
-// Call after ComputeCharts. Can be called multiple times to re-parameterize charts with a different ParameterizeFunc.
-void ParameterizeCharts(Atlas *atlas, ParameterizeFunc func = NULL, ProgressFunc progressFunc = NULL, void *progressUserData = NULL);
-
-// Call after ParameterizeCharts. Can be called multiple times to re-pack charts with different options.
-void PackCharts(Atlas *atlas, PackOptions packOptions = PackOptions(), ProgressFunc progressFunc = NULL, void *progressUserData = NULL);
-
+// Custom memory allocation.
 typedef void *(*ReallocFunc)(void *, size_t);
-void SetRealloc(ReallocFunc reallocFunc);
+typedef void (*FreeFunc)(void *);
+void SetAlloc(ReallocFunc reallocFunc, FreeFunc freeFunc = nullptr);
 
+// Custom print function.
 typedef int (*PrintFunc)(const char *, ...);
 void SetPrint(PrintFunc print, bool verbose);
 
+// Helper functions for error messages.
 const char *StringForEnum(AddMeshError::Enum error);
 const char *StringForEnum(ProgressCategory::Enum category);
 

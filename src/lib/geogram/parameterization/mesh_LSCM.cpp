@@ -106,7 +106,7 @@ namespace {
 	 * \brief Computes the least squares conformal map and stores it in
 	 *  the texture coordinates of the mesh.
 	 * \details Outline of the algorithm (steps 1,2,3 are not used 
-	 *   in spetral mode):
+	 *   in spectral mode):
 	 *   - 1) Find an initial solution by projecting on a plane
 	 *   - 2) Lock two vertices of the mesh
 	 *   - 3) Copy the initial u,v coordinates to OpenNL

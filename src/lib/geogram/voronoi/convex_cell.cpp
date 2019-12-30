@@ -99,6 +99,7 @@ namespace {
 	void push(ushort val) {
 	    ++index_;
 	    vbw_assert(index_ < capacity_);
+	    (void)capacity_; // To silence a warning.
 	    buffer_[index_] = val;
 	}
 
@@ -531,8 +532,8 @@ namespace VBW {
 		return;
 	    }
 
-	    auto triangle_distance = [this](index_t t, vec4 P) {
-		  Triangle T = get_triangle(t);
+	    auto triangle_distance = [this](index_t t_in, vec4 P_in) {
+		  Triangle T = get_triangle(t_in);
 		  vbw_assert(T.i != VERTEX_AT_INFINITY);
 		  vbw_assert(T.j != VERTEX_AT_INFINITY);
 		  vbw_assert(T.k != VERTEX_AT_INFINITY);		  
@@ -540,10 +541,10 @@ namespace VBW {
 		  vec4 p2 = vertex_plane(T.j);
 		  vec4 p3 = vertex_plane(T.k);
 		  return det4x4(
-		      p1.x, p2.x, p3.x, P.x,
-		      p1.y, p2.y, p3.y, P.y,
-		      p1.z, p2.z, p3.z, P.z,
-		      p1.w, p2.w, p3.w, P.w
+		      p1.x, p2.x, p3.x, P_in.x,
+		      p1.y, p2.y, p3.y, P_in.y,
+		      p1.z, p2.z, p3.z, P_in.z,
+		      p1.w, p2.w, p3.w, P_in.w
 		  );
 	    };
 	

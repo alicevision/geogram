@@ -10,4 +10,4 @@ else()
   target_link_libraries(${APP_NAME} exploragram geogram)
 endif()
 
-set_target_properties(${APP_NAME} PROPERTIES FOLDER "GEOGRAM")
+set_target_properties(${APP_NAME} PROPERTIES FOLDER "GEOGRAM/Examples")

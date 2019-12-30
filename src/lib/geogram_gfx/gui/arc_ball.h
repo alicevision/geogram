@@ -153,6 +153,15 @@ namespace GEO {
 	 * \brief Resets this ArcBall to the default value.
 	 */
         void reset();
+
+        /**
+	 * \brief Tests whether this ArcBall is grabbed.
+	 * \retval true if this ArcBall is grabbed.
+	 * \retval false otherwise.
+	 */
+        bool grabbed() const {
+	    return grabbed_;
+	}
     
     protected:
         /**
