@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -54,7 +54,7 @@ namespace GEO {
     void AttributeStoreObserver::register_me(AttributeStore* store) {
         store->register_observer(this);
     }
-    
+
     void AttributeStoreObserver::unregister_me(AttributeStore* store) {
         store->unregister_observer(this);
     }
@@ -64,8 +64,8 @@ namespace GEO {
     AttributeStoreCreator::~AttributeStoreCreator() {
     }
 
-    /******************************************************************/    
-    
+    /******************************************************************/
+
     std::map<std::string, AttributeStoreCreator_var>
          AttributeStore::type_name_to_creator_;
 
@@ -74,7 +74,7 @@ namespace GEO {
 
     std::map<std::string, std::string>
          AttributeStore::type_name_to_typeid_name_;
-    
+
     AttributeStore::AttributeStore(
         index_t elemsize,
         index_t dim
@@ -84,10 +84,10 @@ namespace GEO {
         cached_base_addr_(nullptr),
         cached_size_(0),
 	cached_capacity_(0),
-        lock_(GEOGRAM_SPINLOCK_INIT)
+        lock_()
     {
     }
-    
+
     void AttributeStore::notify(
         Memory::pointer base_addr, index_t size, index_t dim
     ) {
@@ -104,7 +104,7 @@ namespace GEO {
 	    }
         }
     }
-    
+
     AttributeStore::~AttributeStore() {
 	// Disconnect all the attributes, for the special case where
 	// the AttributeStore is destroyed before the Attributes, can
@@ -120,7 +120,7 @@ namespace GEO {
         geo_assert(observers_.find(observer) == observers_.end());
         observers_.insert(observer);
         observer->notify(cached_base_addr_, cached_size_, dimension_);
-        Process::release_spinlock(lock_);        
+        Process::release_spinlock(lock_);
     }
 
     void AttributeStore::unregister_observer(AttributeStoreObserver* observer) {
@@ -128,7 +128,7 @@ namespace GEO {
 	auto it = observers_.find(observer);
         geo_assert(it != observers_.end());
         observers_.erase(it);
-        Process::release_spinlock(lock_);                
+        Process::release_spinlock(lock_);
     }
 
     void AttributeStore::apply_permutation(
@@ -164,7 +164,7 @@ namespace GEO {
             cached_base_addr_, element_size_ * dimension_ * cached_size_
         );
     }
-    
+
     /*************************************************************************/
 
     AttributesManager::AttributesManager() : size_(0), capacity_(0) {
@@ -173,7 +173,7 @@ namespace GEO {
     AttributesManager::~AttributesManager() {
         clear(false,false);
     }
-    
+
     void AttributesManager::resize(index_t new_size) {
         if(new_size == size_) {
             return;
@@ -193,12 +193,12 @@ namespace GEO {
 	}
         capacity_ = new_capacity;
     }
-    
+
     void AttributesManager::apply_permutation(
         const vector<index_t>& permutation
     ) {
 	for(auto& cur : attributes_) {
-	    cur.second->apply_permutation(permutation);	    
+	    cur.second->apply_permutation(permutation);
 	}
     }
 
@@ -206,11 +206,11 @@ namespace GEO {
         const vector<index_t>& old2new
     ) {
 	for(auto& cur : attributes_) {
-	    cur.second->compress(old2new);	    
+	    cur.second->compress(old2new);
 	}
     }
-    
-    
+
+
     void AttributesManager::bind_attribute_store(
         const std::string& name, AttributeStore* as
     ) {
@@ -228,7 +228,7 @@ namespace GEO {
 	    names.push_back(cur.first);
 	}
     }
-    
+
     AttributeStore* AttributesManager::find_attribute_store(
         const std::string& name
     ) {
@@ -248,7 +248,7 @@ namespace GEO {
         }
         return it->second;
     }
-    
+
 
     void AttributesManager::delete_attribute_store(const std::string& name) {
 	auto it = attributes_.find(name);
@@ -295,7 +295,7 @@ namespace GEO {
 	reserve(rhs.capacity());
         resize(rhs.size());
 	for(auto& cur : rhs.attributes_) {
-            bind_attribute_store(cur.first, cur.second->clone());	    
+            bind_attribute_store(cur.first, cur.second->clone());
 	}
     }
 
@@ -304,8 +304,8 @@ namespace GEO {
 	    cur.second->copy_item(to,from);
 	}
     }
-    
-    /************************************************************************/ 
+
+    /************************************************************************/
 
     index_t ReadOnlyScalarAttributeAdapter::nb_scalar_elements_per_item(
         const AttributeStore* store
@@ -377,21 +377,21 @@ namespace GEO {
 
         if(
             store->element_typeid_name() == typeid(Numeric::int32).name() ||
-            store->element_typeid_name() == typeid(int).name() 
+            store->element_typeid_name() == typeid(int).name()
         ) {
-            return ET_INT32;                
+            return ET_INT32;
         }
 
         if(
             store->element_typeid_name() == typeid(Numeric::float32).name() ||
-            store->element_typeid_name() == typeid(float).name() 
+            store->element_typeid_name() == typeid(float).name()
         ) {
             return ET_FLOAT32;
         }
 
         if(
             store->element_typeid_name() == typeid(Numeric::float64).name() ||
-            store->element_typeid_name() == typeid(double).name() 
+            store->element_typeid_name() == typeid(double).name()
         ) {
             return ET_FLOAT64;
         }
@@ -403,10 +403,10 @@ namespace GEO {
         if(store->element_typeid_name() == typeid(vec3).name()) {
             return ET_VEC3;
         }
-        
+
         return ET_NONE;
     }
-    
+
     void ReadOnlyScalarAttributeAdapter::bind_if_is_defined(
         const AttributesManager& manager, const std::string& name
     ) {
@@ -438,8 +438,8 @@ namespace GEO {
             element_type_ = ET_NONE;
 	    return;
         }
-        
-        register_me(const_cast<AttributeStore*>(store_));                
+
+        register_me(const_cast<AttributeStore*>(store_));
     }
 
     bool ReadOnlyScalarAttributeAdapter::is_defined(
@@ -449,11 +449,11 @@ namespace GEO {
         const AttributeStore* store = manager.find_attribute_store(
             attribute_name
         );
-        
+
         if(store == nullptr) {
             return false;
         }
-        
+
         index_t element_index = attribute_element_index(name);
         if(element_index == index_t(-1)) {
             return false;
@@ -466,11 +466,11 @@ namespace GEO {
         if(element_type(store) == ET_NONE) {
             return false;
         }
-        
+
         return true;
     }
-    
-    /************************************************************************/ 
-    
+
+    /************************************************************************/
+
 }
 

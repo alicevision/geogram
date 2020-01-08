@@ -329,6 +329,7 @@ namespace GEO {
         index_t nb_points = n / dimension_;
         delaunay_->set_vertices(nb_points, x);
         Memory::clear(g, n * sizeof(double));
+
         f = 0.0;
         if(!simplex_func_.is_null()) {
             RVD_->compute_integration_simplex_func_grad(
@@ -360,6 +361,7 @@ namespace GEO {
         geo_argused(x);
         geo_argused(f);
         geo_argused(g);
+
         geo_argused(gnorm);
         cvt_instance_->newiteration();
     }

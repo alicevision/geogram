@@ -47,9 +47,9 @@ with the Department of Energy.
         double d__1/*, d__2, d__3*/;
 
         /* Local variables */
-        static int i__, j, k, nb;
-        static int info;
-        static double alphas;
+        static thread_local int i__, j, k, nb;
+        static thread_local int info;
+        static thread_local double alphas;
 
         /*     ********* */
 
@@ -319,10 +319,10 @@ int dicf_(int *n, int *nnz, double *a, double *diag, int *col_ptr__,
         //double d__1;
 
         /* Local variables */
-        static int i__, j, k, ip, np, iej, iek, mlj, nlj, isj, kth, isk;
-        static double lval;
-        static int newk;
-        static int newiej, newisj;
+        static thread_local int i__, j, k, ip, np, iej, iek, mlj, nlj, isj, kth, isk;
+        static thread_local double lval;
+        static thread_local int newk;
+        static thread_local int newiej, newisj;
 
         /*     ********* */
 
@@ -595,7 +595,7 @@ int dsel2_(int *n, double *x, int *keys, int *k)
         //double d__1, d__2;
 
         /* Local variables */
-        static int i__, l, m, p, u, p1, p2, p3, lc, lp;
+        static thread_local int i__, l, m, p, u, p1, p2, p3, lc, lp;
 
         /*     ********** */
 
@@ -776,7 +776,7 @@ int insort_(int *n, int *keys)
         int i__1;
 
         /* Local variables */
-        static int i__, j, ind;
+        static thread_local int i__, j, ind;
 
         /*     ********** */
 
@@ -826,7 +826,7 @@ int insort_(int *n, int *keys)
 /* Subroutine */
 int ihsort_(int *n, int *keys)
 {
-        static int k, m, x, mid, lheap, rheap;
+        static thread_local int k, m, x, mid, lheap, rheap;
 
         /*     ********** */
 
@@ -936,8 +936,8 @@ int dstrsol_(int *n, double *l, double *ldiag, int *jptr, int *indr,
         int i__1, i__2;
 
         /* Local variables */
-        static int j, k;
-        static double temp;
+        static thread_local int j, k;
+        static thread_local double temp;
 
         /*     ********** */
 

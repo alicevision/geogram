@@ -717,7 +717,7 @@ namespace GEO {
         typedef tbb::spin_mutex spinlock;
 
         /** The initialization value of a spin lock. */
-#       define GEOGRAM_SPINLOCK_INIT
+// #       define GEOGRAM_SPINLOCK_INIT
         /**
          * \brief Loops until \p x is available then reserve it.
          * \param[in] x a spinlock that should be available.
