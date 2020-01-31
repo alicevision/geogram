@@ -147,7 +147,7 @@ namespace GEO {
                 attributes_.reserve(new_capacity);
             }
             nb_ += nb;
-	    attributes_.resize(nb_);
+            attributes_.resize(nb_);
             return result;
         }
 
@@ -160,10 +160,10 @@ namespace GEO {
             ++nb_;
             if(attributes_.capacity() < nb_) {
                 index_t new_capacity =
-		    std::max(index_t(16),attributes_.capacity()*2);
-		attributes_.reserve(new_capacity);
+                    std::max(index_t(16),attributes_.capacity()*2);
+                attributes_.reserve(new_capacity);
             }
-	    attributes_.resize(nb_);
+            attributes_.resize(nb_);
             return result;
         }
 
@@ -786,19 +786,19 @@ namespace GEO {
         bool are_simplices() const {
             return is_simplicial_;
         }
-	
+        
         /**
          * \brief Gets a pointer to the first element for iterating over
          *  the corners of a facet
          * \param[in] f the facet
          * \return a pointer to the first corner of the facet
          */
-	const index_t* corners_begin_ptr(index_t f) const {
-	    geo_debug_assert(!is_simplicial_);
-	    geo_debug_assert(f < nb());
-	    return &facet_ptr_[f];
-	}
-	
+        const index_t* corners_begin_ptr(index_t f) const {
+            geo_debug_assert(!is_simplicial_);
+            geo_debug_assert(f < nb());
+            return &facet_ptr_[f];
+        }
+        
     protected:
         virtual void clear_store(
             bool keep_attributes, bool keep_memory = false
@@ -868,10 +868,10 @@ namespace GEO {
 
         /**
          * \brief Gets a pointer to the the facet index 
-	 *  that a corner is adjacent to
+         *  that a corner is adjacent to
          * \param[in] c the corner
          * \return a pointer to the the facet index 
-	 *  that corner \p is adjacent to.
+         *  that corner \p is adjacent to.
          */
         const index_t* adjacent_facet_ptr(index_t c) const {
             geo_assert(c < nb());
@@ -881,16 +881,16 @@ namespace GEO {
 
         /**
          * \brief Gets a pointer to the the facet index 
-	 *  that a corner is adjacent to
+         *  that a corner is adjacent to
          * \param[in] c the corner
          * \return a pointer to the the facet index 
-	 *  that corner \p is adjacent to.
+         *  that corner \p is adjacent to.
          */
-	index_t* adjacent_facet_ptr(index_t c) {
+        index_t* adjacent_facet_ptr(index_t c) {
             geo_assert(c < nb());
             return &corner_adjacent_facet_[c];
         }
-	
+        
         /**
          * \brief Sets the vertex that a corner is incident to
          * \param[in] c the corner
@@ -1042,22 +1042,22 @@ namespace GEO {
             facet_corners_.set_vertex(corner(f,lv),v);
         }
 
-	/**
-	 * \brief Gets the local index of a vertex in a facet.
-	 * \param[in] f a facet
-	 * \param[in] v a vertex
-	 * \return lv such that vertex(f,lv) == v or NO_VERTE if f is
-	 *  not incident to v
-	 */
-	index_t find_vertex(index_t f, index_t v) const {
-	    for(index_t lv=0; lv<nb_vertices(f); ++lv) {
-		if(vertex(f,lv) == v) {
-		    return lv;
-		}
-	    }
-	    return NO_VERTEX;
-	}
-	
+        /**
+         * \brief Gets the local index of a vertex in a facet.
+         * \param[in] f a facet
+         * \param[in] v a vertex
+         * \return lv such that vertex(f,lv) == v or NO_VERTE if f is
+         *  not incident to v
+         */
+        index_t find_vertex(index_t f, index_t v) const {
+            for(index_t lv=0; lv<nb_vertices(f); ++lv) {
+                if(vertex(f,lv) == v) {
+                    return lv;
+                }
+            }
+            return NO_VERTEX;
+        }
+        
         /**
          * \brief Gets an adjacent facet by facet and local edge index
          * \param[in] f the facet
@@ -1069,22 +1069,22 @@ namespace GEO {
             return facet_corners_.adjacent_facet(corner(f,le));
         }
 
-	/**
-	 * \brief Gets the local index of a facet adjacent to another one.
-	 * \param[in] f a facet
-	 * \param[in] f2 another facet
-	 * \return le such that adjacent(f,le) == f2 or NO_FACET if f and f2
-	 *  are not adjacent.
-	 */
-	index_t find_adjacent(index_t f, index_t f2) const {
-	    for(index_t le=0; le<nb_vertices(f); ++le) {
-		if(adjacent(f,le) == f2) {
-		    return le;
-		}
-	    }
-	    return NO_FACET;
-	}
-	
+        /**
+         * \brief Gets the local index of a facet adjacent to another one.
+         * \param[in] f a facet
+         * \param[in] f2 another facet
+         * \return le such that adjacent(f,le) == f2 or NO_FACET if f and f2
+         *  are not adjacent.
+         */
+        index_t find_adjacent(index_t f, index_t f2) const {
+            for(index_t le=0; le<nb_vertices(f); ++le) {
+                if(adjacent(f,le) == f2) {
+                    return le;
+                }
+            }
+            return NO_FACET;
+        }
+        
         /**
          * \brief Sets an adjacent facet by facet and local edge index
          * \param[in] f the facet
@@ -1336,13 +1336,13 @@ namespace GEO {
          * \brief Indicates that the stored elements are only triangles.
          */
         void is_simplicial() {
-	    if(!is_simplicial_) {
-		is_simplicial_ = true;
-		facet_ptr_.resize(1);
-		facet_ptr_[0] = 0;
-	    }
-	}
-	
+            if(!is_simplicial_) {
+                is_simplicial_ = true;
+                facet_ptr_.resize(1);
+                facet_ptr_[0] = 0;
+            }
+        }
+        
         /**
          * \brief Indicates that the stored elements are no
          *  longer only triangles.
@@ -1364,9 +1364,9 @@ namespace GEO {
         MeshFacetCornersStore& facet_corners_;
         friend class Mesh;
         friend class GeogramIOHandler;
-	friend void GEOGRAM_API tessellate_facets(
-	    Mesh& M, index_t max_nb_vertices
-	);
+        friend void GEOGRAM_API tessellate_facets(
+            Mesh& M, index_t max_nb_vertices
+        );
     };
     
     /*************************************************************************/
@@ -1783,7 +1783,7 @@ namespace GEO {
             geo_assert(f < nb());
             return &adjacent_cell_[f];
         }
-	
+        
         /**
          * \brief Gets a pointer to a cell adjacent to a facet
          * \param[in] f the facet, in 0..nb()-1
@@ -2252,12 +2252,12 @@ namespace GEO {
          *  two triangular facets.
          * \param[in] remove_trivial_slivers if set, this removes the 
          *  slivers that are adjacent to a quadrilateral facet.
-	 * \param[in] verbose_if_OK if set, says OK if no bad connector
-	 *  configuration was detected.
+         * \param[in] verbose_if_OK if set, says OK if no bad connector
+         *  configuration was detected.
          */
         void connect(
-	    bool remove_trivial_slivers = true, bool verbose_if_OK=false
-	);
+            bool remove_trivial_slivers = true, bool verbose_if_OK=false
+        );
 
         /**
          * \brief Replaces the surfacic part of this mesh
@@ -2601,11 +2601,11 @@ namespace GEO {
          */
         Mesh(index_t dimension=3, bool single_precision=false);
 
-	/**
-	 * \brief Mesh destructor.
-	 */
-	virtual ~Mesh();
-	
+        /**
+         * \brief Mesh destructor.
+         */
+        virtual ~Mesh();
+        
         /**
          * \brief Removes all the elements and attributes of
          *  this mesh.
@@ -2657,14 +2657,14 @@ namespace GEO {
         std::string get_scalar_attributes() const;
 
 
-	/**
-	 * \brief Gets the list of all vector attributes.
-	 * \param[in] max_dim if non-zero, only vector attributes of
-	 *  dimension lower than \p max_dim are returned.
-	 * \return a ';'-separated list of all vector attributes.
-	 */
-	std::string get_vector_attributes(index_t max_dim = 0) const;
-	
+        /**
+         * \brief Gets the list of all vector attributes.
+         * \param[in] max_dim if non-zero, only vector attributes of
+         *  dimension lower than \p max_dim are returned.
+         * \return a ';'-separated list of all vector attributes.
+         */
+        std::string get_vector_attributes(index_t max_dim = 0) const;
+        
         /**
          * \brief Gets the number of subelements types.
          * \return the number of subelements types.

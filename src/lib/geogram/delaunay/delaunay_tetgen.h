@@ -76,22 +76,22 @@ namespace GEO {
          */
         DelaunayTetgen(coord_index_t dimension = 3);
 
-	/**
-	 * \copydoc Delaunay::set_vertices()
-	 */
+        /**
+         * \copydoc Delaunay::set_vertices()
+         */
         virtual void set_vertices(
             index_t nb_vertices, const double* vertices
         );
 
-	/**
-	 * \copydoc Delaunay::supports_constraints()
-	 */
+        /**
+         * \copydoc Delaunay::supports_constraints()
+         */
         virtual bool supports_constraints() const;
 
 
-	/**
-	 * \copydoc Delaunay::region()
-	 */
+        /**
+         * \copydoc Delaunay::region()
+         */
         virtual index_t region(index_t t) const;
        
     protected:

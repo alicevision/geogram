@@ -65,58 +65,58 @@ namespace GEO {
      */
     struct Chart {
 
-	/**
-	 * \brief Chart constructor.
-	 * \param[in] mesh_in a reference to a surface mesh.
-	 * \param[in] id_in the id of the chart.
-	 */
+        /**
+         * \brief Chart constructor.
+         * \param[in] mesh_in a reference to a surface mesh.
+         * \param[in] id_in the id of the chart.
+         */
         Chart(Mesh& mesh_in, index_t id_in) :
-	    mesh(mesh_in), id(id_in) {
+            mesh(mesh_in), id(id_in) {
         }
 
-	/**
-	 * \brief Chart copy constructor.
-	 * \param[in] rhs a const reference to the Chart to be copied.
-	 */
+        /**
+         * \brief Chart copy constructor.
+         * \param[in] rhs a const reference to the Chart to be copied.
+         */
         Chart(const Chart& rhs) :
-	    mesh(rhs.mesh), facets(rhs.facets), id(rhs.id) {
-	}
-
-	/**
-	 * \brief Chart affectation.
-	 * \param[in] rhs a const reference to the Chart to be copied.
-	 * \return a reference to this Chart after copy.
-	 * \pre rhs.mesh == mesh
-	 */
-	Chart& operator=(const Chart& rhs) {
-	    if(&rhs != this) {
-		geo_debug_assert(&rhs.mesh == &mesh);
-		facets = rhs.facets;
-		id = rhs.id;
-	    }
-	    return *this;
-	}
+            mesh(rhs.mesh), facets(rhs.facets), id(rhs.id) {
+        }
 
         /**
-	 * \brief A reference to the mesh.
-	 */
-	Mesh& mesh;
+         * \brief Chart affectation.
+         * \param[in] rhs a const reference to the Chart to be copied.
+         * \return a reference to this Chart after copy.
+         * \pre rhs.mesh == mesh
+         */
+        Chart& operator=(const Chart& rhs) {
+            if(&rhs != this) {
+                geo_debug_assert(&rhs.mesh == &mesh);
+                facets = rhs.facets;
+                id = rhs.id;
+            }
+            return *this;
+        }
 
-	/**
-	 * \brief The list of facet indices of this chart.
-	 * \details The mesh is supposed to have an Attribute<index_t>
-	 *  named "chart" attached to the facets, and the list of facets
-	 *  has all the facets f for which chart[f] == id.
-	 */
-	vector<index_t> facets;
+        /**
+         * \brief A reference to the mesh.
+         */
+        Mesh& mesh;
 
-	/**
-	 * \brief The id of this chart.
-	 * \details The mesh is supposed to have an Attribute<index_t>
-	 *  named "chart" attached to the facets, and the list of facets
-	 *  has all the facets f for which chart[f] == id.
-	 */
-	index_t id;
+        /**
+         * \brief The list of facet indices of this chart.
+         * \details The mesh is supposed to have an Attribute<index_t>
+         *  named "chart" attached to the facets, and the list of facets
+         *  has all the facets f for which chart[f] == id.
+         */
+        vector<index_t> facets;
+
+        /**
+         * \brief The id of this chart.
+         * \details The mesh is supposed to have an Attribute<index_t>
+         *  named "chart" attached to the facets, and the list of facets
+         *  has all the facets f for which chart[f] == id.
+         */
+        index_t id;
     };
 
     /**
@@ -129,78 +129,78 @@ namespace GEO {
      * \param[in] verbose if true, display messages and statistics.
      */
     void GEOGRAM_API split_chart_along_principal_axis(
-	Chart& chart, Chart& new_chart_1, Chart& new_chart_2,
-	index_t axis=2,	bool verbose = false
+        Chart& chart, Chart& new_chart_1, Chart& new_chart_2,
+        index_t axis=2, bool verbose = false
     );
 
 
     namespace Geom {
 
-	/**
-	 * \brief Computes the 2D bounding box of a parameterized mesh.
-	 * \param[in] mesh a const reference to a parameterized surface mesh.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \param[out] xmin , ymin , xmax , ymax references to the extremum coordinates
-	 *  of the parameterization.
-	 */
-	void GEOGRAM_API get_mesh_bbox_2d(
-	    const Mesh& mesh, Attribute<double>& tex_coord,
-	    double& xmin, double& ymin,
-	    double& xmax, double& ymax
-	);
+        /**
+         * \brief Computes the 2D bounding box of a parameterized mesh.
+         * \param[in] mesh a const reference to a parameterized surface mesh.
+         * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
+         *  attached to the facet corners.
+         * \param[out] xmin , ymin , xmax , ymax references to the extremum coordinates
+         *  of the parameterization.
+         */
+        void GEOGRAM_API get_mesh_bbox_2d(
+            const Mesh& mesh, Attribute<double>& tex_coord,
+            double& xmin, double& ymin,
+            double& xmax, double& ymax
+        );
 
-	/**
-	 * \brief Computes the 2D bounding box of a parameterized chart.
-	 * \param[in] chart a const reference to a parameterized surface chart.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \param[out] xmin , ymin , xmax , ymax references to the extremum coordinates
-	 *  of the parameterization.
-	 */
-	void GEOGRAM_API get_chart_bbox_2d(
-	    const Chart& chart, Attribute<double>& tex_coord,
-	    double& xmin, double& ymin,
-	    double& xmax, double& ymax
-	);
+        /**
+         * \brief Computes the 2D bounding box of a parameterized chart.
+         * \param[in] chart a const reference to a parameterized surface chart.
+         * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
+         *  attached to the facet corners.
+         * \param[out] xmin , ymin , xmax , ymax references to the extremum coordinates
+         *  of the parameterization.
+         */
+        void GEOGRAM_API get_chart_bbox_2d(
+            const Chart& chart, Attribute<double>& tex_coord,
+            double& xmin, double& ymin,
+            double& xmax, double& ymax
+        );
 
-	/**
-	 * \brief Computes the 2D parameter-space area of a parameterized mesh.
-	 * \param[in] mesh a const reference to a parameterized surface mesh.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \return the area of the parameter space.
-	 */
-	double GEOGRAM_API mesh_area_2d(const Mesh& mesh, Attribute<double>& tex_coord);
+        /**
+         * \brief Computes the 2D parameter-space area of a parameterized mesh.
+         * \param[in] mesh a const reference to a parameterized surface mesh.
+         * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
+         *  attached to the facet corners.
+         * \return the area of the parameter space.
+         */
+        double GEOGRAM_API mesh_area_2d(const Mesh& mesh, Attribute<double>& tex_coord);
 
-	/**
-	 * \brief Computes the 2D parameter-space area of a parameterized chart.
-	 * \param[in] chart a const reference to a parameterized surface chart.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \return the area of the parameter space.
-	 */
-	double GEOGRAM_API chart_area_2d(const Chart& chart, Attribute<double>& tex_coord);
+        /**
+         * \brief Computes the 2D parameter-space area of a parameterized chart.
+         * \param[in] chart a const reference to a parameterized surface chart.
+         * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
+         *  attached to the facet corners.
+         * \return the area of the parameter space.
+         */
+        double GEOGRAM_API chart_area_2d(const Chart& chart, Attribute<double>& tex_coord);
 
-	/**
-	 * \brief Computes the area of a chart.
-	 * \param[in] chart a const reference to a chart.
-	 * \return the area of the chart in 3D.
-	 */
-	double GEOGRAM_API chart_area(const Chart& chart);
+        /**
+         * \brief Computes the area of a chart.
+         * \param[in] chart a const reference to a chart.
+         * \return the area of the chart in 3D.
+         */
+        double GEOGRAM_API chart_area(const Chart& chart);
 
 
-	/**
-	 * \brief Computes the 2D parameter-space area of a facet in a parameterized mesh.
-	 * \param[in] mesh a const reference to the mesh.
-	 * \param[in] f a facet of \p mesh.
-	 * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
-	 *  attached to the facet corners.
-	 * \return the area of the facet in parameter space.
-	 */
-	double GEOGRAM_API mesh_facet_area_2d(
-	    const Mesh& mesh, index_t f, Attribute<double>& tex_coord
-	);
+        /**
+         * \brief Computes the 2D parameter-space area of a facet in a parameterized mesh.
+         * \param[in] mesh a const reference to the mesh.
+         * \param[in] f a facet of \p mesh.
+         * \param[in] tex_coord the texture coordinates as a 2d vector attribute 
+         *  attached to the facet corners.
+         * \return the area of the facet in parameter space.
+         */
+        double GEOGRAM_API mesh_facet_area_2d(
+            const Mesh& mesh, index_t f, Attribute<double>& tex_coord
+        );
     }
 }
 

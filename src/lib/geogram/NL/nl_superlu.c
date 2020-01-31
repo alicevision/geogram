@@ -105,15 +105,15 @@ typedef enum {
 typedef int int_t;
 
 typedef struct {
-    int_t  nnz;	    /* number of nonzeros in the matrix */
+    int_t  nnz;     /* number of nonzeros in the matrix */
     void *nzval;    /* pointer to array of nonzero values, packed by raw */
     int_t  *colind; /* pointer to array of columns indices of the nonzeros */
     int_t  *rowptr; /* pointer to array of beginning of rows in nzval[] 
-		       and colind[]  */
+                       and colind[]  */
                     /* Note:
-		       Zero-based indexing is used;
-		       rowptr[] has nrow+1 entries, the last one pointing
-		       beyond the last row, so that rowptr[nrow] = nnz. */
+                       Zero-based indexing is used;
+                       rowptr[] has nrow+1 entries, the last one pointing
+                       beyond the last row, so that rowptr[nrow] = nnz. */
 } NRformat;
 
 typedef struct {
@@ -210,12 +210,12 @@ typedef struct {
     int     *xsup;    /* supernode and column mapping */
     int     *supno;   
     int     *lsub;    /* compressed L subscripts */
-    int	    *xlsub;
+    int     *xlsub;
     void    *lusup;   /* L supernodes */
     int     *xlusup;
     void    *ucol;    /* U columns */
     int     *usub;
-    int	    *xusub;
+    int     *xusub;
     int     nzlmax;   /* current max size of lsub */
     int     nzumax;   /*    "    "    "      ucol */
     int     nzlumax;  /*    "    "    "     lusup */
@@ -276,7 +276,7 @@ typedef int (*FUNPTR_input_error)(const char *, int *);
 typedef void (*FUNPTR_dgstrf) (superlu_options_t *options, SuperMatrix *A,
         int relax, int panel_size, int *etree, void *work, int lwork,
         int *perm_c, int *perm_r, SuperMatrix *L, SuperMatrix *U,
-    	GlobalLU_t *Glu, /* persistent to facilitate multiple factorizations */
+        GlobalLU_t *Glu, /* persistent to facilitate multiple factorizations */
         SuperLUStat_t *stat, int *info
 );
 
@@ -332,22 +332,22 @@ NLboolean nlExtensionIsInitialized_SUPERLU() {
         SuperLU()->dCreate_Dense_Matrix != NULL &&
         SuperLU()->Destroy_SuperNode_Matrix != NULL &&
         SuperLU()->Destroy_CompCol_Matrix != NULL &&
-        SuperLU()->Destroy_CompCol_Permuted != NULL &&	
+        SuperLU()->Destroy_CompCol_Permuted != NULL &&  
         SuperLU()->Destroy_SuperMatrix_Store != NULL &&
         SuperLU()->dgssv != NULL &&
         SuperLU()->dgstrs != NULL &&
-	SuperLU()->get_perm_c != NULL &&
-	SuperLU()->sp_preorder != NULL &&
-	SuperLU()->sp_ienv != NULL &&
-	SuperLU()->dgstrf != NULL &&
-	SuperLU()->input_error != NULL;
+        SuperLU()->get_perm_c != NULL &&
+        SuperLU()->sp_preorder != NULL &&
+        SuperLU()->sp_ienv != NULL &&
+        SuperLU()->dgstrf != NULL &&
+        SuperLU()->input_error != NULL;
 }
 
 static void nlTerminateExtension_SUPERLU(void) {
     if(SuperLU()->DLL_handle != NULL) {
         nlCloseDLL(SuperLU()->DLL_handle);
         SuperLU()->DLL_handle = NULL;
-	memset(SuperLU(), 0, sizeof(SuperLUContext));
+        memset(SuperLU(), 0, sizeof(SuperLUContext));
     }
 }
 
@@ -376,7 +376,7 @@ static void nlTerminateExtension_SUPERLU(void) {
 NLboolean nlInitExtension_SUPERLU(void) {
     NLenum flags = NL_LINK_NOW | NL_LINK_USE_FALLBACK;
     if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
-	flags |= NL_LINK_QUIET;
+        flags |= NL_LINK_QUIET;
     }
     
     if(SuperLU()->DLL_handle != NULL) {
@@ -473,8 +473,8 @@ typedef struct {
 
 static void nlSuperLUFactorizedMatrixDestroy(NLSuperLUFactorizedMatrix* M) {
     if(nlExtensionIsInitialized_SUPERLU()) {
-	SuperLU()->Destroy_SuperNode_Matrix(&M->L);
-	SuperLU()->Destroy_CompCol_Matrix(&M->U);
+        SuperLU()->Destroy_SuperNode_Matrix(&M->L);
+        SuperLU()->Destroy_CompCol_Matrix(&M->U);
     }
     NL_DELETE_ARRAY(M->perm_r);
     NL_DELETE_ARRAY(M->perm_c);
@@ -542,25 +542,25 @@ static void dgssv_factorize_only(
 
     if ( options->Fact != DOFACT ) *info = -1;
     else if ( A->nrow != A->ncol || A->nrow < 0 ||
-	 (A->Stype != SLU_NC && A->Stype != SLU_NR) ||
-	 A->Dtype != SLU_D || A->Mtype != SLU_GE )
-	*info = -2;
+         (A->Stype != SLU_NC && A->Stype != SLU_NR) ||
+         A->Dtype != SLU_D || A->Mtype != SLU_GE )
+        *info = -2;
     if ( *info != 0 ) {
-	i = -(*info);
-	SuperLU()->input_error("SUPERLU/OpenNL dgssv_factorize_only", &i);
-	return;
+        i = -(*info);
+        SuperLU()->input_error("SUPERLU/OpenNL dgssv_factorize_only", &i);
+        return;
     }
 
     /* Convert A to SLU_NC format when necessary. */
     if ( A->Stype == SLU_NR ) {
-	NRformat *Astore = (NRformat*)A->Store;
-	AA = NL_NEW(SuperMatrix);
-	SuperLU()->dCreate_CompCol_Matrix(
-	    AA, A->ncol, A->nrow, Astore->nnz, 
-	    (double*)Astore->nzval, Astore->colind, Astore->rowptr,
-	    SLU_NC, A->Dtype, A->Mtype
-	);
-	*trans = TRANS;
+        NRformat *Astore = (NRformat*)A->Store;
+        AA = NL_NEW(SuperMatrix);
+        SuperLU()->dCreate_CompCol_Matrix(
+            AA, A->ncol, A->nrow, Astore->nnz, 
+            (double*)Astore->nzval, Astore->colind, Astore->rowptr,
+            SLU_NC, A->Dtype, A->Mtype
+        );
+        *trans = TRANS;
     } else {
         if ( A->Stype == SLU_NC ) AA = A;
     }
@@ -577,7 +577,7 @@ static void dgssv_factorize_only(
      */
     permc_spec = (int)(options->ColPerm);
     if ( permc_spec != MY_PERMC && options->Fact == DOFACT )
-	SuperLU()->get_perm_c(permc_spec, AA, perm_c);
+        SuperLU()->get_perm_c(permc_spec, AA, perm_c);
     
     etree = NL_NEW_ARRAY(int,A->ncol);
     SuperLU()->sp_preorder(options, AA, perm_c, etree, &AC);
@@ -589,8 +589,8 @@ static void dgssv_factorize_only(
     NL_DELETE_ARRAY(etree);
     SuperLU()->Destroy_CompCol_Permuted(&AC);
     if ( A->Stype == SLU_NR ) {
-	SuperLU()->Destroy_SuperMatrix_Store(AA);
-	NL_DELETE(AA);
+        SuperLU()->Destroy_SuperMatrix_Store(AA);
+        NL_DELETE(AA);
     }
 }
 
@@ -652,8 +652,8 @@ NLMatrix nlMatrixFactorize_SUPERLU(
     SuperLU()->StatInit(&stat);
 
     dgssv_factorize_only(
-	  &options, &superM, LU->perm_c, LU->perm_r,
-	  &LU->L, &LU->U, &stat, &info, &LU->trans
+          &options, &superM, LU->perm_c, LU->perm_r,
+          &LU->L, &LU->U, &stat, &info, &LU->trans
     );
 
     SuperLU()->StatFree(&stat);
@@ -669,8 +669,8 @@ NLMatrix nlMatrixFactorize_SUPERLU(
     }
 
     if(info != 0) {
-	NL_DELETE(LU);
-	LU = NULL;
+        NL_DELETE(LU);
+        LU = NULL;
     }
     return (NLMatrix)LU;
 }

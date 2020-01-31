@@ -84,23 +84,23 @@ namespace GEO {
         void GEOGRAM_API terminate();
 
 
-	/**
-	 * \brief Defines the name of the configuration file.
-	 * \param[in] filename the name of the configuration file. Before
-	 *  parsing command line arguments, arguments are set according
-	 *  to this file, loaded from the home directory (or 'My Documents'
-	 *  under Windows). Default is 'geogram.ini'.
-	 */
-	void GEOGRAM_API set_config_file_name(const std::string& filename);
+        /**
+         * \brief Defines the name of the configuration file.
+         * \param[in] filename the name of the configuration file. Before
+         *  parsing command line arguments, arguments are set according
+         *  to this file, loaded from the home directory (or 'My Documents'
+         *  under Windows). Default is 'geogram.ini'.
+         */
+        void GEOGRAM_API set_config_file_name(const std::string& filename);
 
-	/**
-	 * \brief Gets the name of the configuration file.
-	 * \return the name of the configuration file, as
-	 *  specified by set_config_file_name(). User's home directory
-	 *  needs to be prepended to have the complete file path.
-	 */
-	std::string GEOGRAM_API get_config_file_name();
-	
+        /**
+         * \brief Gets the name of the configuration file.
+         * \return the name of the configuration file, as
+         *  specified by set_config_file_name(). User's home directory
+         *  needs to be prepended to have the complete file path.
+         */
+        std::string GEOGRAM_API get_config_file_name();
+        
         /**
          * \brief Command line argument types
          */
@@ -370,26 +370,26 @@ namespace GEO {
             int argc, char** argv
         );
 
-	/**
-	 * \brief Gets the number of arguments of the command line.
-	 * \return the number of arguments plus one.
-	 * \details parse() should be called before.
-	 */
-	int GEOGRAM_API argc();
+        /**
+         * \brief Gets the number of arguments of the command line.
+         * \return the number of arguments plus one.
+         * \details parse() should be called before.
+         */
+        int GEOGRAM_API argc();
 
-	
-	typedef char** charptrptr; // Need to do that else the compiler thinks
-	                           // that GEOGRAM_API qualifies the ptr instead
-	                           // of the function.
-	
-	/**
-	 * \brief Gets the command line arguments.
-	 * \return a pointer to an array of null-terminated strings with
-	 *  the command line arguments. The first one is the program name.
-	 * \details parse() should be called before.
-	 */
-	charptrptr GEOGRAM_API argv();
-	
+        
+        typedef char** charptrptr; // Need to do that else the compiler thinks
+                                   // that GEOGRAM_API qualifies the ptr instead
+                                   // of the function.
+        
+        /**
+         * \brief Gets the command line arguments.
+         * \return a pointer to an array of null-terminated strings with
+         *  the command line arguments. The first one is the program name.
+         * \details parse() should be called before.
+         */
+        charptrptr GEOGRAM_API argv();
+        
         /**
          * \brief Displays program help
          * \details Displays a list of all declared arguments (sorted by

@@ -96,7 +96,7 @@ namespace GEO {
         }
         init_triangulateio(&triangle_in_);
         init_triangulateio(&triangle_out_);
-	
+        
         geo_cite("DBLP:conf/wacg/Shewchuk96");
     }
 

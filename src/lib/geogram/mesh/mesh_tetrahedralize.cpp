@@ -99,8 +99,8 @@ namespace GEO {
         delaunay->set_refine(refine);
         delaunay->set_quality(quality);
         delaunay->set_constraints(&M);
-	delaunay->set_keep_regions(keep_regions);
-	
+        delaunay->set_keep_regions(keep_regions);
+        
         try {
             delaunay->set_vertices(0,nullptr); // No additional vertex
         } catch(const Delaunay::InvalidInput& error_report) {
@@ -137,13 +137,13 @@ namespace GEO {
         
         M.cells.assign_tet_mesh(3, pts, tet2v, true);
 
-	if(keep_regions) {
-	    Attribute<index_t> region(M.cells.attributes(), "region");
-	    FOR(t,M.cells.nb()) {
-		region[t] = delaunay->region(t);
-	    }
-	}
-	
+        if(keep_regions) {
+            Attribute<index_t> region(M.cells.attributes(), "region");
+            FOR(t,M.cells.nb()) {
+                region[t] = delaunay->region(t);
+            }
+        }
+        
         M.cells.connect();
         M.show_stats("TetMeshing");
 

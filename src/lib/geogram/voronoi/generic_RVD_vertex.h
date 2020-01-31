@@ -427,7 +427,7 @@ namespace GEOGen {
             v1_(0),
             v2_(0) {
         }
-	    
+            
         /**
          * \brief Adds a bisector to the symbolic representation.
          */
@@ -1066,7 +1066,7 @@ namespace GEOGen {
 /*
 namespace GEO {
     template <> struct can_be_used_as_attribute<GEOGen::SymbolicVertex> {
-	static constexpr auto value = std::integral_constant<bool,true>();
+        static constexpr auto value = std::integral_constant<bool,true>();
     };
 }
 */    

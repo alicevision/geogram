@@ -56,18 +56,18 @@ namespace GEO {
 
         bool is_nan(float32 x) {
 #ifdef GEO_COMPILER_MSVC
-            return _isnan(x) || !_finite(x);	    
-#else	    
+            return _isnan(x) || !_finite(x);        
+#else       
             return std::isnan(x) || !std::isfinite(x);
-#endif	    
+#endif      
         }
 
         bool is_nan(float64 x) {
 #ifdef GEO_COMPILER_MSVC
-            return _isnan(x) || !_finite(x);	    	    
-#else	    
+            return _isnan(x) || !_finite(x);                
+#else       
             return std::isnan(x) || !std::isfinite(x);
-#endif	    
+#endif      
         }
 
         void random_reset() {

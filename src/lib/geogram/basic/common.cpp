@@ -72,11 +72,11 @@
 namespace GEO {
 
     void initialize(int flags) {
-	static bool initialized = false;
+        static bool initialized = false;
 
-	if(initialized) {
-	    return;
-	}
+        if(initialized) {
+            return;
+        }
 
         // When locale is set to non-us countries,
         // this may cause some problems when reading
@@ -103,7 +103,7 @@ namespace GEO {
         Delaunay::initialize();
 
 #ifndef GEOGRAM_PSM
-	Biblio::initialize();
+        Biblio::initialize();
 #endif
         // atexit(GEO::terminate);
 
@@ -159,7 +159,7 @@ namespace GEO {
         geo_declare_image_serializer<ImageSerializer_pgm>("pgm") ;
 #endif
 
-	initialized = true;
+        initialized = true;
     }
 
     void terminate() {
@@ -176,7 +176,7 @@ namespace GEO {
 
 #ifndef GEOGRAM_PSM
         ImageLibrary::terminate() ;
-	Biblio::terminate();
+        Biblio::terminate();
 #endif
 
         Progress::terminate();

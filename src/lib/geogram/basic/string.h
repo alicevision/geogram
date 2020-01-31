@@ -209,55 +209,55 @@ namespace GEO {
         template <class T>
         inline std::string to_string(const T& value) {
             std::ostringstream out;
-	    // Makes sure that double-precision number are displayed
-	    // with a sufficient number of digits. This is important
-	    // to avoid losing precision when using ASCII files.
-	    out << std::setprecision(17);
+            // Makes sure that double-precision number are displayed
+            // with a sufficient number of digits. This is important
+            // to avoid losing precision when using ASCII files.
+            out << std::setprecision(17);
             out << value;
             return out.str();
         }
 
         /**
          * \brief Converts a typed value to a string for display.
-	 * \details Does not keep all significant digits for floating point
-	 *   numbers.
+         * \details Does not keep all significant digits for floating point
+         *   numbers.
          * \param[in] value the typed value to convert
          * \return a string that contain the stringified form of the value
          */
         template <class T>
         inline std::string to_display_string(const T& value) {
-	    return to_string(value);
-	}
+            return to_string(value);
+        }
 
 
         /**
          * \brief Converts a typed value to a string for display.
-	 * \details Does not keep all significant digits for floating point
-	 *   numbers.
+         * \details Does not keep all significant digits for floating point
+         *   numbers.
          * \param[in] value the typed value to convert
          * \return a string that contain the stringified form of the value
          */
         template <>
         inline std::string to_display_string(const double& value) {
-            std::ostringstream out;	    
+            std::ostringstream out;         
             out << value;
             return out.str();
-	}
+        }
 
         /**
          * \brief Converts a typed value to a string for display.
-	 * \details Does not keep all significant digits for floating point
-	 *   numbers.
+         * \details Does not keep all significant digits for floating point
+         *   numbers.
          * \param[in] value the typed value to convert
          * \return a string that contain the stringified form of the value
          */
         template <>
         inline std::string to_display_string(const float& value) {
-            std::ostringstream out;	    
+            std::ostringstream out;         
             out << value;
             return out.str();
-	}
-	
+        }
+        
         /**
          * \brief Converts a boolean value to a string
          * \param[in] value the boolean value to convert
@@ -572,12 +572,12 @@ namespace GEO {
             return value;
         }
 
-	/**
-	 * \brief Converts a wide char string into an UTF8 string.
-	 * \param[in] in the input null-terminated wide-char string.
-	 * \return the UTF8-encoded string in a std::string.
-	 */
-	std::string GEOGRAM_API wchar_to_UTF8(const wchar_t* in);
+        /**
+         * \brief Converts a wide char string into an UTF8 string.
+         * \param[in] in the input null-terminated wide-char string.
+         * \return the UTF8-encoded string in a std::string.
+         */
+        std::string GEOGRAM_API wchar_to_UTF8(const wchar_t* in);
     }
 }
 

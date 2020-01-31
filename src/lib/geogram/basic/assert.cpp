@@ -97,10 +97,10 @@ namespace GEO {
 
     void geo_breakpoint() {
 #ifdef GEO_COMPILER_MSVC
-	__debugbreak();
+        __debugbreak();
 #else
-	geo_abort();
-#endif	
+        geo_abort();
+#endif  
     }
     
     void geo_assertion_failed(
@@ -113,18 +113,18 @@ namespace GEO {
         os << "Line: " << line;
 
         if(assert_mode_ == ASSERT_THROW) {
-	    if(Logger::instance()->is_quiet()) {
-		std::cerr << os.str()
-			  << std::endl;
-	    }
-	    throw std::runtime_error(os.str());
+            if(Logger::instance()->is_quiet()) {
+                std::cerr << os.str()
+                          << std::endl;
+            }
+            throw std::runtime_error(os.str());
         } else if(assert_mode_ == ASSERT_ABORT) {
             Logger::err("Assert") << os.str() << std::endl;
             geo_abort();
         } else {
             Logger::err("Assert") << os.str() << std::endl;
-	    geo_breakpoint();
-	}
+            geo_breakpoint();
+        }
     }
 
     void geo_range_assertion_failed(

@@ -470,7 +470,7 @@ namespace GEO {
     void MeshFacets::clear(bool keep_attributes, bool keep_memory) {
         facet_corners_.clear_store(keep_attributes, keep_memory);
         clear_store(keep_attributes, keep_memory);
-	is_simplicial();
+        is_simplicial();
     }
     
     void MeshFacets::delete_elements(
@@ -802,7 +802,7 @@ namespace GEO {
         bool steal_args
     ) {
         index_t nb_triangles = triangles.size()/3;
-	is_simplicial();
+        is_simplicial();
         facet_ptr_.clear();
         resize_store(nb_triangles);
         if(steal_args) {
@@ -1473,11 +1473,11 @@ namespace GEO {
             adjacent(adj_c1, adj_lf1) != NO_CELL ||
             adjacent(adj_c2, adj_lf2) != NO_CELL
         ) {
-	    /*
+            /*
             GEO::Logger::warn("Mesh")
                 << "Matching tet facets are not on border (\"thick sliver\")"
                 << std::endl;
-	    */
+            */
             return false;
         }
 
@@ -1668,11 +1668,11 @@ namespace GEO {
                                       << " invalid connector configurations"
                                       << std::endl;
         } else {
-	    if(verbose_if_OK) {
-		GEO::Logger::out("Mesh") << "All connectors are OK"
-					 << std::endl;
-	    }
-	}
+            if(verbose_if_OK) {
+                GEO::Logger::out("Mesh") << "All connectors are OK"
+                                         << std::endl;
+            }
+        }
         if(remove_trivial_slivers && trivial_slivers.size() != 0) {
             GEO::Logger::warn("Mesh") << "Removing "
                                       << trivial_slivers.size()
@@ -1685,14 +1685,14 @@ namespace GEO {
             for(index_t i=0; i<trivial_slivers.size(); ++i) {
                 delete_c[trivial_slivers[i]] = 1;
             }
-	    // We need to remove the previously generated connectors,
-	    // some of them may be wrong if adjacent to a sliver that
-	    // was removed.
-	    for(index_t c=0; c<nb(); ++c) {
-		if(type(c) == MESH_CONNECTOR) {
-		    delete_c[c] = 1;
-		}
-	    }
+            // We need to remove the previously generated connectors,
+            // some of them may be wrong if adjacent to a sliver that
+            // was removed.
+            for(index_t c=0; c<nb(); ++c) {
+                if(type(c) == MESH_CONNECTOR) {
+                    delete_c[c] = 1;
+                }
+            }
             delete_elements(delete_c);
 
             GEO::Logger::warn("Mesh") << "Re-trying to connect cells" << std::endl;
@@ -2158,7 +2158,7 @@ namespace {
     std::string get_vector_attributes_impl(
         const AttributesManager& attributes,
         const std::string& prefix,
-	index_t max_dim = 0
+        index_t max_dim = 0
     ) {
         std::string result;
         vector<std::string> attribute_names;
@@ -2167,30 +2167,30 @@ namespace {
         for(index_t i=0; i<attribute_names.size(); ++i) {
             const AttributeStore* store = attributes.
                 find_attribute_store(attribute_names[i]);
-	    if(store->dimension() >= 2 && (max_dim == 0 || store->dimension() <= max_dim)) {
-		if(result != "") {
-		    result += ";";
-		}
-		result += prefix + "." + attribute_names[i];
-	    }
-	    if(
-		store->elements_type_matches(typeid(vec2).name()) &&
-		(max_dim == 0 || 2 <= max_dim)
-	    ) {
-		if(result != "") {
-		    result += ";";
-		}
-		result += prefix + "." + attribute_names[i];		
-	    }
-	    if(
-		store->elements_type_matches(typeid(vec3).name()) &&
-		(max_dim == 0 || 2 <= max_dim)
-	    ) {
-		if(result != "") {
-		    result += ";";
-		}
-		result += prefix + "." + attribute_names[i];		
-	    }
+            if(store->dimension() >= 2 && (max_dim == 0 || store->dimension() <= max_dim)) {
+                if(result != "") {
+                    result += ";";
+                }
+                result += prefix + "." + attribute_names[i];
+            }
+            if(
+                store->elements_type_matches(typeid(vec2).name()) &&
+                (max_dim == 0 || 2 <= max_dim)
+            ) {
+                if(result != "") {
+                    result += ";";
+                }
+                result += prefix + "." + attribute_names[i];            
+            }
+            if(
+                store->elements_type_matches(typeid(vec3).name()) &&
+                (max_dim == 0 || 2 <= max_dim)
+            ) {
+                if(result != "") {
+                    result += ";";
+                }
+                result += prefix + "." + attribute_names[i];            
+            }
         }
         return result;
     }
@@ -2268,7 +2268,7 @@ namespace GEO {
             )
         );
         strappend(result,get_vector_attributes_impl(
-	      cell_facets.attributes(),"cell_facets",max_dim)
+              cell_facets.attributes(),"cell_facets",max_dim)
         );        
         return result;
     }

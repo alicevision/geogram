@@ -58,18 +58,18 @@
 static NLSparseMatrix* nlGetCurrentSparseMatrix() {
     NLSparseMatrix* result = NULL;
     switch(nlCurrentContext->matrix_mode) {
-	case NL_STIFFNESS_MATRIX: {
-	    nl_assert(nlCurrentContext->M != NULL);	    
-	    nl_assert(nlCurrentContext->M->type == NL_MATRIX_SPARSE_DYNAMIC);
-	    result = (NLSparseMatrix*)(nlCurrentContext->M);
-	} break;
-	case NL_MASS_MATRIX: {
-	    nl_assert(nlCurrentContext->B != NULL);
-	    nl_assert(nlCurrentContext->B->type == NL_MATRIX_SPARSE_DYNAMIC);
-	    result = (NLSparseMatrix*)(nlCurrentContext->B);
-	} break;
-	default:
-	    nl_assert_not_reached;
+        case NL_STIFFNESS_MATRIX: {
+            nl_assert(nlCurrentContext->M != NULL);         
+            nl_assert(nlCurrentContext->M->type == NL_MATRIX_SPARSE_DYNAMIC);
+            result = (NLSparseMatrix*)(nlCurrentContext->M);
+        } break;
+        case NL_MASS_MATRIX: {
+            nl_assert(nlCurrentContext->B != NULL);
+            nl_assert(nlCurrentContext->B->type == NL_MATRIX_SPARSE_DYNAMIC);
+            result = (NLSparseMatrix*)(nlCurrentContext->B);
+        } break;
+        default:
+            nl_assert_not_reached;
     }
     return result;
 }
@@ -79,18 +79,18 @@ static NLSparseMatrix* nlGetCurrentSparseMatrix() {
 static NLCRSMatrix* nlGetCurrentCRSMatrix() {
     NLCRSMatrix* result = NULL;
     switch(nlCurrentContext->matrix_mode) {
-	case NL_STIFFNESS_MATRIX: {
-	    nl_assert(nlCurrentContext->M != NULL);	    
-	    nl_assert(nlCurrentContext->M->type == NL_MATRIX_CRS);
-	    result = (NLCRSMatrix*)(nlCurrentContext->M);
-	} break;
-	case NL_MASS_MATRIX: {
-	    nl_assert(nlCurrentContext->B != NULL);
-	    nl_assert(nlCurrentContext->B->type == NL_MATRIX_CRS);
-	    result = (NLCRSMatrix*)(nlCurrentContext->B);
-	} break;
-	default:
-	    nl_assert_not_reached;
+        case NL_STIFFNESS_MATRIX: {
+            nl_assert(nlCurrentContext->M != NULL);         
+            nl_assert(nlCurrentContext->M->type == NL_MATRIX_CRS);
+            result = (NLCRSMatrix*)(nlCurrentContext->M);
+        } break;
+        case NL_MASS_MATRIX: {
+            nl_assert(nlCurrentContext->B != NULL);
+            nl_assert(nlCurrentContext->B->type == NL_MATRIX_CRS);
+            result = (NLCRSMatrix*)(nlCurrentContext->B);
+        } break;
+        default:
+            nl_assert_not_reached;
     }
     return result;
 }
@@ -103,16 +103,16 @@ NLboolean nlInitExtension(const char* extension) {
     } else if(!strcmp(extension, "CHOLMOD")) {
         return nlInitExtension_CHOLMOD();
     } else if(!strcmp(extension, "ARPACK")) {
-	/* 
-	 * SUPERLU is needed by OpenNL's ARPACK driver
-	 * (factorizes the matrix for the shift-invert spectral
-	 *  transform).
-	 */
-	return nlInitExtension_SUPERLU() && nlInitExtension_ARPACK();
+        /* 
+         * SUPERLU is needed by OpenNL's ARPACK driver
+         * (factorizes the matrix for the shift-invert spectral
+         *  transform).
+         */
+        return nlInitExtension_SUPERLU() && nlInitExtension_ARPACK();
     } else if(!strcmp(extension, "MKL")) {
-	return nlInitExtension_MKL();
+        return nlInitExtension_MKL();
     } else if(!strcmp(extension, "CUDA")) {
-	return nlInitExtension_CUDA();
+        return nlInitExtension_CUDA();
     }
     return NL_FALSE;
 }
@@ -123,16 +123,16 @@ NLboolean nlExtensionIsInitialized(const char* extension) {
     } else if(!strcmp(extension, "CHOLMOD")) {
         return nlExtensionIsInitialized_CHOLMOD();
     } else if(!strcmp(extension, "ARPACK")) {
-	/* 
-	 * SUPERLU is needed by OpenNL's ARPACK driver
-	 * (factorizes the matrix for the shift-invert spectral
-	 *  transform).
-	 */
-	return nlExtensionIsInitialized_SUPERLU() && nlExtensionIsInitialized_ARPACK();
+        /* 
+         * SUPERLU is needed by OpenNL's ARPACK driver
+         * (factorizes the matrix for the shift-invert spectral
+         *  transform).
+         */
+        return nlExtensionIsInitialized_SUPERLU() && nlExtensionIsInitialized_ARPACK();
     } else if(!strcmp(extension, "MKL")) {
-	return nlExtensionIsInitialized_MKL();
+        return nlExtensionIsInitialized_MKL();
     } else if(!strcmp(extension, "CUDA")) {
-	return nlExtensionIsInitialized_CUDA();
+        return nlExtensionIsInitialized_CUDA();
     }
     return NL_FALSE;
 }
@@ -146,18 +146,18 @@ void nlInitialize(int argc, char** argv) {
      * and try to activate the corresponding extensions.
      */
     for(i=1; i<argc; ++i) {
-	ptr = strstr(argv[i],"=true");
-	if(!strncmp(argv[i], "nl:", 3) &&
-	   (strlen(argv[i]) > 3) &&
-	   (ptr != NULL)) {
-	    strncpy(extension, argv[i]+3, (size_t)(ptr-argv[i]-3));
-	    extension[(size_t)(ptr-argv[i]-3)] = '\0';
-	    if(nlInitExtension(extension)) {
-		nl_fprintf(stdout,"OpenNL %s: initialized\n", extension);
-	    } else {
-		nl_fprintf(stderr,"OpenNL %s: could not initialize\n", extension);		
-	    }
-	}
+        ptr = strstr(argv[i],"=true");
+        if(!strncmp(argv[i], "nl:", 3) &&
+           (strlen(argv[i]) > 3) &&
+           (ptr != NULL)) {
+            strncpy(extension, argv[i]+3, (size_t)(ptr-argv[i]-3));
+            extension[(size_t)(ptr-argv[i]-3)] = '\0';
+            if(nlInitExtension(extension)) {
+                nl_fprintf(stdout,"OpenNL %s: initialized\n", extension);
+            } else {
+                nl_fprintf(stderr,"OpenNL %s: could not initialize\n", extension);              
+            }
+        }
     }
 }
 
@@ -194,8 +194,8 @@ void nlSolverParameteri(NLenum pname, NLint param) {
         nlCurrentContext->nb_variables = (NLuint)param;
     } break;
     case NL_NB_SYSTEMS: {
-	nl_assert(param > 0);
-	nlCurrentContext->nb_systems = (NLuint)param;
+        nl_assert(param > 0);
+        nlCurrentContext->nb_systems = (NLuint)param;
     } break;
     case NL_LEAST_SQUARES: {
         nlCurrentContext->least_squares = (NLboolean)param;
@@ -276,7 +276,7 @@ void nlGetIntegerv(NLenum pname, NLint* params) {
         *params = (NLint)(nlCurrentContext->nb_variables);
     } break;
     case NL_NB_SYSTEMS: {
-	*params = (NLint)(nlCurrentContext->nb_systems);
+        *params = (NLint)(nlCurrentContext->nb_systems);
     } break;
     case NL_LEAST_SQUARES: {
         *params = (NLint)(nlCurrentContext->least_squares);
@@ -308,19 +308,19 @@ void nlGetIntegerv(NLenum pname, NLint* params) {
 
 void nlEnable(NLenum pname) {
     switch(pname) {
-	case NL_NORMALIZE_ROWS: {
-	    nl_assert(nlCurrentContext->state != NL_STATE_ROW);
-	    nlCurrentContext->normalize_rows = NL_TRUE;
-	} break;
-	case NL_VERBOSE: {
-	    nlCurrentContext->verbose = NL_TRUE;
-	} break;
-	case NL_VARIABLES_BUFFER: {
-	    nlCurrentContext->user_variable_buffers = NL_TRUE;
-	} break;
-	case NL_NO_VARIABLES_INDIRECTION: {
-	    nlCurrentContext->no_variables_indirection = NL_TRUE;	    
-	} break;
+        case NL_NORMALIZE_ROWS: {
+            nl_assert(nlCurrentContext->state != NL_STATE_ROW);
+            nlCurrentContext->normalize_rows = NL_TRUE;
+        } break;
+        case NL_VERBOSE: {
+            nlCurrentContext->verbose = NL_TRUE;
+        } break;
+        case NL_VARIABLES_BUFFER: {
+            nlCurrentContext->user_variable_buffers = NL_TRUE;
+        } break;
+        case NL_NO_VARIABLES_INDIRECTION: {
+            nlCurrentContext->no_variables_indirection = NL_TRUE;           
+        } break;
     default: {
         nlError("nlEnable","Invalid parameter");        
         nl_assert_not_reached;
@@ -330,45 +330,45 @@ void nlEnable(NLenum pname) {
 
 void nlDisable(NLenum pname) {
     switch(pname) {
-	case NL_NORMALIZE_ROWS: {
-	    nl_assert(nlCurrentContext->state != NL_STATE_ROW);
-	    nlCurrentContext->normalize_rows = NL_FALSE;
-	} break;
-	case NL_VERBOSE: {
-	    nlCurrentContext->verbose = NL_FALSE;
-	} break;
-	case NL_VARIABLES_BUFFER: {
-	    nlCurrentContext->user_variable_buffers = NL_FALSE;
-	} break;
-	case NL_NO_VARIABLES_INDIRECTION: {
-	    nlCurrentContext->no_variables_indirection = NL_FALSE;	    
-	} break;
-	default: {
-	    nlError("nlDisable","Invalid parameter");                
-	    nl_assert_not_reached;
-	}
+        case NL_NORMALIZE_ROWS: {
+            nl_assert(nlCurrentContext->state != NL_STATE_ROW);
+            nlCurrentContext->normalize_rows = NL_FALSE;
+        } break;
+        case NL_VERBOSE: {
+            nlCurrentContext->verbose = NL_FALSE;
+        } break;
+        case NL_VARIABLES_BUFFER: {
+            nlCurrentContext->user_variable_buffers = NL_FALSE;
+        } break;
+        case NL_NO_VARIABLES_INDIRECTION: {
+            nlCurrentContext->no_variables_indirection = NL_FALSE;          
+        } break;
+        default: {
+            nlError("nlDisable","Invalid parameter");                
+            nl_assert_not_reached;
+        }
     }
 }
 
 NLboolean nlIsEnabled(NLenum pname) {
     NLboolean result = NL_FALSE;
     switch(pname) {
-	case NL_NORMALIZE_ROWS: {
-	    result = nlCurrentContext->normalize_rows;
-	} break;
-	case NL_VERBOSE: {
-	    result = nlCurrentContext->verbose;
-	} break;
-	case NL_VARIABLES_BUFFER: {
-	    result = nlCurrentContext->user_variable_buffers;
-	} break;
-	case NL_NO_VARIABLES_INDIRECTION: {
-	    result = nlCurrentContext->no_variables_indirection;	    
-	} break;
-	default: {
-	    nlError("nlIsEnables","Invalid parameter");
-	    nl_assert_not_reached;
-	}
+        case NL_NORMALIZE_ROWS: {
+            result = nlCurrentContext->normalize_rows;
+        } break;
+        case NL_VERBOSE: {
+            result = nlCurrentContext->verbose;
+        } break;
+        case NL_VARIABLES_BUFFER: {
+            result = nlCurrentContext->user_variable_buffers;
+        } break;
+        case NL_NO_VARIABLES_INDIRECTION: {
+            result = nlCurrentContext->no_variables_indirection;            
+        } break;
+        default: {
+            nlError("nlIsEnables","Invalid parameter");
+            nl_assert_not_reached;
+        }
     }
     return result;
 }
@@ -380,21 +380,21 @@ void  nlSetFunction(NLenum pname, NLfunc param) {
     switch(pname) {
     case NL_FUNC_SOLVER:
         nlCurrentContext->solver_func = (NLSolverFunc)(param);
-        nlCurrentContext->solver = NL_SOLVER_USER;	
+        nlCurrentContext->solver = NL_SOLVER_USER;      
         break;
     case NL_FUNC_MATRIX:
-	nlDeleteMatrix(nlCurrentContext->M);
-	nlCurrentContext->M = nlMatrixNewFromFunction(
-	    nlCurrentContext->n, nlCurrentContext->n,
-	    (NLMatrixFunc)param
-	);
+        nlDeleteMatrix(nlCurrentContext->M);
+        nlCurrentContext->M = nlMatrixNewFromFunction(
+            nlCurrentContext->n, nlCurrentContext->n,
+            (NLMatrixFunc)param
+        );
         break;
     case NL_FUNC_PRECONDITIONER:
-	nlDeleteMatrix(nlCurrentContext->P);
-	nlCurrentContext->P = nlMatrixNewFromFunction(
-	    nlCurrentContext->n, nlCurrentContext->n,
-	    (NLMatrixFunc)param
-	);
+        nlDeleteMatrix(nlCurrentContext->P);
+        nlCurrentContext->P = nlMatrixNewFromFunction(
+            nlCurrentContext->n, nlCurrentContext->n,
+            (NLMatrixFunc)param
+        );
         nlCurrentContext->preconditioner = NL_PRECOND_USER;
         break;
     case NL_FUNC_PROGRESS:
@@ -481,14 +481,14 @@ static void nlVariablesToVector() {
     
     nl_assert(nlCurrentContext->x != NULL);
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	for(i=0; i<nlCurrentContext->nb_variables; ++i) {
-	    if(!nlCurrentContext->variable_is_locked[i]) {
-		index = nlCurrentContext->variable_index[i];
-		nl_assert(index < nlCurrentContext->n);		
-		value = NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],i);
-		nlCurrentContext->x[index+k*n] = value;
-	    }
-	}
+        for(i=0; i<nlCurrentContext->nb_variables; ++i) {
+            if(!nlCurrentContext->variable_is_locked[i]) {
+                index = nlCurrentContext->variable_index[i];
+                nl_assert(index < nlCurrentContext->n);         
+                value = NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],i);
+                nlCurrentContext->x[index+k*n] = value;
+            }
+        }
     }
 }
 
@@ -499,14 +499,14 @@ static void nlVectorToVariables() {
 
     nl_assert(nlCurrentContext->x != NULL);
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	for(i=0; i<nlCurrentContext->nb_variables; ++i) {
-	    if(!nlCurrentContext->variable_is_locked[i]) {
-		index = nlCurrentContext->variable_index[i];
-		nl_assert(index < nlCurrentContext->n);
-		value = nlCurrentContext->x[index+k*n];
-		NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],i) = value;
-	    }
-	}
+        for(i=0; i<nlCurrentContext->nb_variables; ++i) {
+            if(!nlCurrentContext->variable_is_locked[i]) {
+                index = nlCurrentContext->variable_index[i];
+                nl_assert(index < nlCurrentContext->n);
+                value = nlCurrentContext->x[index+k*n];
+                NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],i) = value;
+            }
+        }
     }
 }
 
@@ -518,31 +518,31 @@ static void nlBeginSystem() {
     nl_assert(nlCurrentContext->nb_variables > 0);
 
     nlCurrentContext->variable_buffer = NL_NEW_ARRAY(
-	NLBufferBinding, nlCurrentContext->nb_systems
+        NLBufferBinding, nlCurrentContext->nb_systems
     );
     
     if(nlCurrentContext->user_variable_buffers) {
-	nlCurrentContext->variable_value = NULL;
+        nlCurrentContext->variable_value = NULL;
     } else {
-	nlCurrentContext->variable_value = NL_NEW_ARRAY(
-	    NLdouble,
-	    nlCurrentContext->nb_variables * nlCurrentContext->nb_systems
-	);
-	for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	    nlCurrentContext->variable_buffer[k].base_address =
-		nlCurrentContext->variable_value +
-		k * nlCurrentContext->nb_variables;
-	    nlCurrentContext->variable_buffer[k].stride = sizeof(NLdouble);
-	}
+        nlCurrentContext->variable_value = NL_NEW_ARRAY(
+            NLdouble,
+            nlCurrentContext->nb_variables * nlCurrentContext->nb_systems
+        );
+        for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+            nlCurrentContext->variable_buffer[k].base_address =
+                nlCurrentContext->variable_value +
+                k * nlCurrentContext->nb_variables;
+            nlCurrentContext->variable_buffer[k].stride = sizeof(NLdouble);
+        }
     }
 
     if(!nlCurrentContext->no_variables_indirection) {
-	nlCurrentContext->variable_is_locked = NL_NEW_ARRAY(
-	    NLboolean, nlCurrentContext->nb_variables
-	);
-	nlCurrentContext->variable_index = NL_NEW_ARRAY(
-	    NLuint, nlCurrentContext->nb_variables
-	);
+        nlCurrentContext->variable_is_locked = NL_NEW_ARRAY(
+            NLboolean, nlCurrentContext->nb_variables
+        );
+        nlCurrentContext->variable_index = NL_NEW_ARRAY(
+            NLuint, nlCurrentContext->nb_variables
+        );
     }
     nlCurrentContext->has_matrix_pattern = NL_FALSE;
 }
@@ -558,33 +558,33 @@ static void nlInitializeMSystem() {
     if(!nlCurrentContext->no_variables_indirection) {
 
         /* Stores only 1 value per system (rhs of current row). */
-	nlCurrentContext->right_hand_side = NL_NEW_ARRAY(
-	    double, nlCurrentContext->nb_systems
-	);
+        nlCurrentContext->right_hand_side = NL_NEW_ARRAY(
+            double, nlCurrentContext->nb_systems
+        );
 
-	n = 0;
-	for(i=0; i<nlCurrentContext->nb_variables; i++) {
-	    if(!nlCurrentContext->variable_is_locked[i]) {
-		nlCurrentContext->variable_index[i] = n;
-		n++;
-	    } else {
-		nlCurrentContext->variable_index[i] = (NLuint)~0;
-	    }
-	}
-	
-	nlCurrentContext->x = NL_NEW_ARRAY(
-	    NLdouble, n*nlCurrentContext->nb_systems
-	);
+        n = 0;
+        for(i=0; i<nlCurrentContext->nb_variables; i++) {
+            if(!nlCurrentContext->variable_is_locked[i]) {
+                nlCurrentContext->variable_index[i] = n;
+                n++;
+            } else {
+                nlCurrentContext->variable_index[i] = (NLuint)~0;
+            }
+        }
+        
+        nlCurrentContext->x = NL_NEW_ARRAY(
+            NLdouble, n*nlCurrentContext->nb_systems
+        );
 
-	nlCurrentContext->n = n;	
-	nlVariablesToVector();
+        nlCurrentContext->n = n;        
+        nlVariablesToVector();
 
-	nlRowColumnConstruct(&nlCurrentContext->af);
-	nlRowColumnConstruct(&nlCurrentContext->al);
+        nlRowColumnConstruct(&nlCurrentContext->af);
+        nlRowColumnConstruct(&nlCurrentContext->al);
     }
 
     nlCurrentContext->b = NL_NEW_ARRAY(
-	NLdouble, n*nlCurrentContext->nb_systems
+        NLdouble, n*nlCurrentContext->nb_systems
     );
     
     nlCurrentContext->n = n;
@@ -621,13 +621,13 @@ static void nlInitializeMCRSMatrixPattern() {
     NLuint n = nlCurrentContext->n;
     nlCurrentContext->M = (NLMatrix)(NL_NEW(NLCRSMatrix));
     if(nlCurrentContext->symmetric) {
-	nlCRSMatrixConstructPatternSymmetric(
-	    (NLCRSMatrix*)(nlCurrentContext->M), n
-	);
+        nlCRSMatrixConstructPatternSymmetric(
+            (NLCRSMatrix*)(nlCurrentContext->M), n
+        );
     } else {
-	nlCRSMatrixConstructPattern(
-	    (NLCRSMatrix*)(nlCurrentContext->M), n, n
-	);
+        nlCRSMatrixConstructPattern(
+            (NLCRSMatrix*)(nlCurrentContext->M), n, n
+        );
     }
     nlCurrentContext->has_matrix_pattern = NL_TRUE;
 }
@@ -642,20 +642,20 @@ static void nlInitializeMSparseMatrix() {
     }
 
     if(
-	nlCurrentContext->symmetric &&
+        nlCurrentContext->symmetric &&
         nlCurrentContext->preconditioner == NL_PRECOND_SSOR 
     ) {
-	/* 
-	 * For now, only used with SSOR preconditioner, because
-	 * for other modes it is either unsupported (SUPERLU) or
-	 * causes performance loss (non-parallel sparse SpMV)
-	 */
+        /* 
+         * For now, only used with SSOR preconditioner, because
+         * for other modes it is either unsupported (SUPERLU) or
+         * causes performance loss (non-parallel sparse SpMV)
+         */
         storage = (storage | NL_MATRIX_STORE_SYMMETRIC);
     }
 
     nlCurrentContext->M = (NLMatrix)(NL_NEW(NLSparseMatrix));
     nlSparseMatrixConstruct(
-	     (NLSparseMatrix*)(nlCurrentContext->M), n, n, storage
+             (NLSparseMatrix*)(nlCurrentContext->M), n, n, storage
     );
 }
 
@@ -667,8 +667,8 @@ static void nlEndMatrix() {
     nlTransition(NL_STATE_MATRIX, NL_STATE_MATRIX_CONSTRUCTED);    
 
     if(!nlCurrentContext->no_variables_indirection) {
-	nlRowColumnClear(&nlCurrentContext->af);
-	nlRowColumnClear(&nlCurrentContext->al);
+        nlRowColumnClear(&nlCurrentContext->af);
+        nlRowColumnClear(&nlCurrentContext->al);
     }
     
     if(!nlCurrentContext->least_squares) {
@@ -682,18 +682,18 @@ static void nlEndMatrix() {
 
 #ifdef NL_DEBUG
     if(nlCurrentContext->has_matrix_pattern) {
-	M = nlGetCurrentCRSMatrix();
-	for(i=0; i<M->m; ++i) {
-	    for(jj=M->rowptr[i]; jj<M->rowptr[i+1]; ++jj) {
-		/*
-		 * Test that all coefficients were created.
-		 * This assertion test will fail whenever 
-		 * a length has fewer coefficient than specified
-		 * with nlSetRowLength()
-		 */
-		nl_assert(M->colind[jj] != (NLuint)(-1));
-	    }
-	}
+        M = nlGetCurrentCRSMatrix();
+        for(i=0; i<M->m; ++i) {
+            for(jj=M->rowptr[i]; jj<M->rowptr[i+1]; ++jj) {
+                /*
+                 * Test that all coefficients were created.
+                 * This assertion test will fail whenever 
+                 * a length has fewer coefficient than specified
+                 * with nlSetRowLength()
+                 */
+                nl_assert(M->colind[jj] != (NLuint)(-1));
+            }
+        }
     }
 #endif    
 }
@@ -717,7 +717,7 @@ static void nlScaleRow(NLdouble s) {
         al->coeff[i].value *= s;
     }
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	nlCurrentContext->right_hand_side[k] *= s;
+        nlCurrentContext->right_hand_side[k] *= s;
     }
 }
 
@@ -771,35 +771,35 @@ static void nlEndRow() {
                 );
             }
         }
-	for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	    S = -nlCurrentContext->right_hand_side[k];
-	    for(jj=0; jj<nl; ++jj) {
-		j = al->coeff[jj].index;
-		S += al->coeff[jj].value *
-		    NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],j);
-	    }
-	    for(jj=0; jj<nf; jj++) {
-		b[ k*n+af->coeff[jj].index ] -= af->coeff[jj].value * S;
-	    }
-	}
+        for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+            S = -nlCurrentContext->right_hand_side[k];
+            for(jj=0; jj<nl; ++jj) {
+                j = al->coeff[jj].index;
+                S += al->coeff[jj].value *
+                    NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],j);
+            }
+            for(jj=0; jj<nf; jj++) {
+                b[ k*n+af->coeff[jj].index ] -= af->coeff[jj].value * S;
+            }
+        }
     } else {
         for(jj=0; jj<nf; ++jj) {
             nlSparseMatrixAdd(
                 M, current_row, af->coeff[jj].index, af->coeff[jj].value
             );
         }
-	for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	    b[k*n+current_row] = nlCurrentContext->right_hand_side[k];
-	    for(jj=0; jj<nl; ++jj) {
-		j = al->coeff[jj].index;
-		b[k*n+current_row] -= al->coeff[jj].value *
-		    NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],j);
-	    }
-	}
+        for(k=0; k<nlCurrentContext->nb_systems; ++k) {
+            b[k*n+current_row] = nlCurrentContext->right_hand_side[k];
+            for(jj=0; jj<nl; ++jj) {
+                j = al->coeff[jj].index;
+                b[k*n+current_row] -= al->coeff[jj].value *
+                    NL_BUFFER_ITEM(nlCurrentContext->variable_buffer[k],j);
+            }
+        }
     }
     nlCurrentContext->current_row++;
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
-	nlCurrentContext->right_hand_side[k] = 0.0;
+        nlCurrentContext->right_hand_side[k] = 0.0;
     }
     nlCurrentContext->row_scaling = 1.0;
 }
@@ -808,20 +808,20 @@ void nlCoefficient(NLuint index, NLdouble value) {
     nlCheckState(NL_STATE_ROW);
     nl_debug_range_assert(index, 0, nlCurrentContext->nb_variables - 1);
     if(nlCurrentContext->variable_is_locked[index]) {
-	/* 
-	 * Note: in al, indices are NLvariable indices, 
-	 * within [0..nb_variables-1]
-	 */
+        /* 
+         * Note: in al, indices are NLvariable indices, 
+         * within [0..nb_variables-1]
+         */
         nlRowColumnAppend(&(nlCurrentContext->al), index, value);
     } else {
-	/*
-	 * Note: in af, indices are system indices, 
-	 * within [0..n-1]
-	 */
+        /*
+         * Note: in af, indices are system indices, 
+         * within [0..n-1]
+         */
         nlRowColumnAppend(
-	    &(nlCurrentContext->af),
-	    nlCurrentContext->variable_index[index], value
-	);
+            &(nlCurrentContext->af),
+            nlCurrentContext->variable_index[index], value
+        );
     }
 }
 
@@ -829,21 +829,21 @@ void nlAddIJCoefficient(NLuint i, NLuint j, NLdouble value) {
 #ifdef NL_DEBUG
     NLuint kk;
     if(nlCurrentContext->variable_is_locked != NULL) {    
-	for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
-	    nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
-	}
+        for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
+            nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
+        }
     }
 #endif    
     nlCheckState(NL_STATE_MATRIX);
     nl_debug_range_assert(i, 0, nlCurrentContext->nb_variables - 1);
     nl_debug_range_assert(j, 0, nlCurrentContext->nb_variables - 1);
     if(nlCurrentContext->has_matrix_pattern) {
-	nlCRSMatrixAdd(
-	    nlGetCurrentCRSMatrix(), i, j, value
+        nlCRSMatrixAdd(
+            nlGetCurrentCRSMatrix(), i, j, value
         );
     } else {
-	nlSparseMatrixAdd(
-	    nlGetCurrentSparseMatrix(), i, j, value
+        nlSparseMatrixAdd(
+            nlGetCurrentSparseMatrix(), i, j, value
         );
     }
     nlCurrentContext->ij_coefficient_called = NL_TRUE;
@@ -853,9 +853,9 @@ void nlAddIRightHandSide(NLuint i, NLdouble value) {
 #ifdef NL_DEBUG
     NLuint kk;
     if(nlCurrentContext->variable_is_locked != NULL) {        
-	for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
-	    nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
-	}
+        for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
+            nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
+        }
     }
 #endif
     nlCheckState(NL_STATE_MATRIX);
@@ -869,9 +869,9 @@ void nlMultiAddIRightHandSide(NLuint i, NLuint k, NLdouble value) {
 #ifdef NL_DEBUG
     NLuint kk;
     if(nlCurrentContext->variable_is_locked != NULL) {        
-	for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
-	    nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
-	}
+        for(kk=0; kk<nlCurrentContext->nb_variables; ++kk) {
+            nl_debug_assert(!nlCurrentContext->variable_is_locked[kk]);
+        }
     }
 #endif
     nlCheckState(NL_STATE_MATRIX);
@@ -901,19 +901,19 @@ void nlBegin(NLenum prim) {
         nlBeginSystem();
     } break;
     case NL_MATRIX_PATTERN: {
-	nlTransition(NL_STATE_SYSTEM, NL_STATE_MATRIX_PATTERN);
-	nlInitializeMSystem();
-	nlInitializeMCRSMatrixPattern();
+        nlTransition(NL_STATE_SYSTEM, NL_STATE_MATRIX_PATTERN);
+        nlInitializeMSystem();
+        nlInitializeMCRSMatrixPattern();
     } break;
     case NL_MATRIX: {
-	nlTransition(NL_STATE_SYSTEM, NL_STATE_MATRIX);
-	if(
-	    nlCurrentContext->matrix_mode == NL_STIFFNESS_MATRIX &&
-	    nlCurrentContext->M == NULL
-	) {
-	    nlInitializeMSystem();
-	    nlInitializeMSparseMatrix();
-	}
+        nlTransition(NL_STATE_SYSTEM, NL_STATE_MATRIX);
+        if(
+            nlCurrentContext->matrix_mode == NL_STIFFNESS_MATRIX &&
+            nlCurrentContext->M == NULL
+        ) {
+            nlInitializeMSystem();
+            nlInitializeMSparseMatrix();
+        }
     } break;
     case NL_ROW: {
         nlBeginRow();
@@ -933,8 +933,8 @@ void nlEnd(NLenum prim) {
         nlEndMatrix();
     } break;
     case NL_MATRIX_PATTERN: {
-	nlTransition(NL_STATE_MATRIX_PATTERN, NL_STATE_SYSTEM);
-	nlCRSMatrixPatternCompile(nlGetCurrentCRSMatrix());
+        nlTransition(NL_STATE_MATRIX_PATTERN, NL_STATE_SYSTEM);
+        nlCRSMatrixPatternCompile(nlGetCurrentCRSMatrix());
     } break;
     case NL_ROW: {
         nlEndRow();
@@ -956,7 +956,7 @@ NLboolean nlSolve() {
     nlCurrentContext->flops = 0;    
     result = nlCurrentContext->solver_func();
     if(!nlCurrentContext->no_variables_indirection) {
-	nlVectorToVariables();
+        nlVectorToVariables();
     }
     nlCurrentContext->elapsed_time = nlCurrentTime() - nlCurrentContext->start_time;
     nlTransition(NL_STATE_SYSTEM_CONSTRUCTED, NL_STATE_SOLVED);
@@ -987,7 +987,7 @@ void nlBindBuffer(
     nl_assert(buffer == NL_VARIABLES_BUFFER);
     nl_assert(k<nlCurrentContext->nb_systems);
     if(stride == 0) {
-	stride = sizeof(NLdouble);
+        stride = sizeof(NLdouble);
     }
     nlCurrentContext->variable_buffer[k].base_address = addr;
     nlCurrentContext->variable_buffer[k].stride = stride;
@@ -1000,33 +1000,33 @@ void nlMatrixMode(NLenum matrix) {
     NLuint n = 0;
     NLuint i;
     nl_assert(
-	nlCurrentContext->state == NL_STATE_SYSTEM ||
-	nlCurrentContext->state == NL_STATE_MATRIX_CONSTRUCTED
+        nlCurrentContext->state == NL_STATE_SYSTEM ||
+        nlCurrentContext->state == NL_STATE_MATRIX_CONSTRUCTED
     );
     nlCurrentContext->state = NL_STATE_SYSTEM;
     nlCurrentContext->matrix_mode = matrix;
     nlCurrentContext->current_row = 0;
     nlCurrentContext->ij_coefficient_called = NL_FALSE;
     switch(matrix) {
-	case NL_STIFFNESS_MATRIX: {
-	    /* Stiffness matrix is already constructed. */
-	} break ;
-	case NL_MASS_MATRIX: {
-	    if(nlCurrentContext->B == NULL) {
-		for(i=0; i<nlCurrentContext->nb_variables; ++i) {
-		    if(!nlCurrentContext->variable_is_locked[i]) {
-			++n;
-		    }
-		}
-		nlCurrentContext->B = (NLMatrix)(NL_NEW(NLSparseMatrix));
-		nlSparseMatrixConstruct(
-		    (NLSparseMatrix*)(nlCurrentContext->B),
-		    n, n, NL_MATRIX_STORE_ROWS
-		);
-	    }
-	} break ;
-	default:
-	    nl_assert_not_reached;
+        case NL_STIFFNESS_MATRIX: {
+            /* Stiffness matrix is already constructed. */
+        } break ;
+        case NL_MASS_MATRIX: {
+            if(nlCurrentContext->B == NULL) {
+                for(i=0; i<nlCurrentContext->nb_variables; ++i) {
+                    if(!nlCurrentContext->variable_is_locked[i]) {
+                        ++n;
+                    }
+                }
+                nlCurrentContext->B = (NLMatrix)(NL_NEW(NLSparseMatrix));
+                nlSparseMatrixConstruct(
+                    (NLSparseMatrix*)(nlCurrentContext->B),
+                    n, n, NL_MATRIX_STORE_ROWS
+                );
+            }
+        } break ;
+        default:
+            nl_assert_not_reached;
     }
 }
 
@@ -1035,14 +1035,14 @@ void nlEigenSolverParameterd(
     NLenum pname, NLdouble val
 ) {
     switch(pname) {
-	case NL_EIGEN_SHIFT: {
-	    nlCurrentContext->eigen_shift =  val;
-	} break;
-	case NL_EIGEN_THRESHOLD: {
-	    nlSolverParameterd(pname, val);
-	} break;
-	default:
-	    nl_assert_not_reached;
+        case NL_EIGEN_SHIFT: {
+            nlCurrentContext->eigen_shift =  val;
+        } break;
+        case NL_EIGEN_THRESHOLD: {
+            nlSolverParameterd(pname, val);
+        } break;
+        default:
+            nl_assert_not_reached;
     }
 }
 
@@ -1050,38 +1050,38 @@ void nlEigenSolverParameteri(
     NLenum pname, NLint val
 ) {
     switch(pname) {
-	case NL_EIGEN_SOLVER: {
-	    nlCurrentContext->eigen_solver = (NLenum)val;
-	} break;
-	case NL_SYMMETRIC:
-	case NL_NB_VARIABLES:	    
-	case NL_NB_EIGENS:
-	case NL_EIGEN_MAX_ITERATIONS: {
-	    nlSolverParameteri(pname, val);
-	} break;
-	default:
-	    nl_assert_not_reached;
+        case NL_EIGEN_SOLVER: {
+            nlCurrentContext->eigen_solver = (NLenum)val;
+        } break;
+        case NL_SYMMETRIC:
+        case NL_NB_VARIABLES:       
+        case NL_NB_EIGENS:
+        case NL_EIGEN_MAX_ITERATIONS: {
+            nlSolverParameteri(pname, val);
+        } break;
+        default:
+            nl_assert_not_reached;
     }
 }
 
 void nlEigenSolve() {
     if(nlCurrentContext->eigen_value == NULL) {
-	nlCurrentContext->eigen_value = NL_NEW_ARRAY(
-	    NLdouble,nlCurrentContext->nb_systems
-	);
+        nlCurrentContext->eigen_value = NL_NEW_ARRAY(
+            NLdouble,nlCurrentContext->nb_systems
+        );
     }
     
     nlMatrixCompress(&nlCurrentContext->M);
     if(nlCurrentContext->B != NULL) {
-	nlMatrixCompress(&nlCurrentContext->B);
+        nlMatrixCompress(&nlCurrentContext->B);
     }
     
     switch(nlCurrentContext->eigen_solver) {
-	case NL_ARPACK_EXT:
-	    nlEigenSolve_ARPACK();
-	    break;
-	default:
-	    nl_assert_not_reached;
+        case NL_ARPACK_EXT:
+            nlEigenSolve_ARPACK();
+            break;
+        default:
+            nl_assert_not_reached;
     }
 }
 

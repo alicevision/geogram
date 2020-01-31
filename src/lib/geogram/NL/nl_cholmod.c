@@ -285,14 +285,14 @@ static void nlTerminateExtension_CHOLMOD(void) {
         CHOLMOD()->cholmod_finish(&CHOLMOD()->cholmod_common);
         nlCloseDLL(CHOLMOD()->DLL_handle);
         CHOLMOD()->DLL_handle = NULL;
-	memset(CHOLMOD(), 0, sizeof(CHOLMODContext));
+        memset(CHOLMOD(), 0, sizeof(CHOLMODContext));
     }
 }
 
 NLboolean nlInitExtension_CHOLMOD(void) {
     NLenum flags = NL_LINK_NOW | NL_LINK_USE_FALLBACK;
     if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
-	flags |= NL_LINK_QUIET;
+        flags |= NL_LINK_QUIET;
     }
     
     if(CHOLMOD()->DLL_handle != NULL) {
@@ -307,11 +307,11 @@ NLboolean nlInitExtension_CHOLMOD(void) {
      * before.
      */
     if(NLMultMatrixVector_MKL != NULL) {
-	nl_fprintf(
-	    stderr,
-	    "CHOLMOD extension incompatible with MKL (deactivating)"
-	);
-	return NL_FALSE;
+        nl_fprintf(
+            stderr,
+            "CHOLMOD extension incompatible with MKL (deactivating)"
+        );
+        return NL_FALSE;
     }
 
     
@@ -378,7 +378,7 @@ typedef struct {
 
 static void nlCholmodFactorizedMatrixDestroy(NLCholmodFactorizedMatrix* M) {
     if(nlExtensionIsInitialized_CHOLMOD()) {
-	CHOLMOD()->cholmod_free_factor(&M->L, &CHOLMOD()->cholmod_common);
+        CHOLMOD()->cholmod_free_factor(&M->L, &CHOLMOD()->cholmod_common);
     }
 }
 
@@ -396,7 +396,7 @@ static void nlCholmodFactorizedMatrixMult(
 
     memcpy(X->x, x, M->n*sizeof(double));    
     Y = CHOLMOD()->cholmod_solve(
-	CHOLMOD_A, M->L, X, &CHOLMOD()->cholmod_common
+        CHOLMOD_A, M->L, X, &CHOLMOD()->cholmod_common
     );
     memcpy(y, Y->x, M->n*sizeof(double));    
     
@@ -422,11 +422,11 @@ NLMatrix nlMatrixFactorize_CHOLMOD(
     if(M->type == NL_MATRIX_CRS) {
         CRS = (NLCRSMatrix*)M;
     } else if(M->type == NL_MATRIX_SPARSE_DYNAMIC) {
-	/* 
-	 * Note: since we convert once again into symmetric storage,
-	 * we could also directly read the NLSparseMatrix there instead
-	 * of copying once more...
-	 */
+        /* 
+         * Note: since we convert once again into symmetric storage,
+         * we could also directly read the NLSparseMatrix there instead
+         * of copying once more...
+         */
         CRS = (NLCRSMatrix*)nlCRSMatrixNewFromSparseMatrix((NLSparseMatrix*)M);
     }
 
@@ -444,12 +444,12 @@ NLMatrix nlMatrixFactorize_CHOLMOD(
     
     nnz=0;
     for(i=0; i<n; ++i) {
-	for(jj=CRS->rowptr[i]; jj<CRS->rowptr[i+1]; ++jj) {
-	    j=CRS->colind[jj];
-	    if(j <= i) {
-		++nnz;
-	    }
-	}
+        for(jj=CRS->rowptr[i]; jj<CRS->rowptr[i+1]; ++jj) {
+            j=CRS->colind[jj];
+            if(j <= i) {
+                ++nnz;
+            }
+        }
     }
 
     /*
@@ -471,12 +471,12 @@ NLMatrix nlMatrixFactorize_CHOLMOD(
     cur = 0;
     for(i=0; i<n; ++i) {
         rowptr[i] = (int)cur;
-	for(jj=CRS->rowptr[i]; jj<CRS->rowptr[i+1]; ++jj) {
+        for(jj=CRS->rowptr[i]; jj<CRS->rowptr[i+1]; ++jj) {
             j = CRS->colind[jj];
             if(j <= i) {
-		val[cur] = CRS->val[jj];
-		colind[cur] = (int)j;
-		++cur;
+                val[cur] = CRS->val[jj];
+                colind[cur] = (int)j;
+                ++cur;
             }
         }
     }
@@ -486,7 +486,7 @@ NLMatrix nlMatrixFactorize_CHOLMOD(
     LLt->L = CHOLMOD()->cholmod_analyze(cM, &CHOLMOD()->cholmod_common);
     if(!CHOLMOD()->cholmod_factorize(cM, LLt->L, &CHOLMOD()->cholmod_common)) {
         CHOLMOD()->cholmod_free_factor(&LLt->L, &CHOLMOD()->cholmod_common);
-	NL_DELETE(LLt);
+        NL_DELETE(LLt);
     }
     
     CHOLMOD()->cholmod_free_sparse(&cM, &CHOLMOD()->cholmod_common);

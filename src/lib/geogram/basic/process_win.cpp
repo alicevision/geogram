@@ -103,30 +103,30 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::maximum_concurrent_threads() */
-	index_t maximum_concurrent_threads() override {
+        index_t maximum_concurrent_threads() override {
             SYSTEM_INFO sysinfo;
             GetSystemInfo(&sysinfo);
             return sysinfo.dwNumberOfProcessors;
         }
 
         /** \copydoc GEO::ThreadManager::enter_critical_section() */
-	void enter_critical_section() override {
+        void enter_critical_section() override {
             EnterCriticalSection(&lock_);
         }
 
         /** \copydoc GEO::ThreadManager::leave_critical_section() */
-	void leave_critical_section() override {
+        void leave_critical_section() override {
             LeaveCriticalSection(&lock_);
         }
 
     protected:
         /** \brief WindowsThreadManager destructor */
-	~WindowsThreadManager() override {
+        ~WindowsThreadManager() override {
             DeleteCriticalSection(&lock_);
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-	void run_concurrent_threads(
+        void run_concurrent_threads(
             ThreadGroup& threads, index_t max_threads
         ) override {
             // TODO: take max_threads into account
@@ -202,7 +202,7 @@ namespace {
 
     protected:
         /** \brief WindowsThreadPoolManager destructor */
-	~WindowsThreadPoolManager() override {
+        ~WindowsThreadPoolManager() override {
 // It makes it crash on exit when calling these functions
 // with dynamic libs, I do not know why...            
 // TODO: investigate...
@@ -213,7 +213,7 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-	void run_concurrent_threads(
+        void run_concurrent_threads(
             ThreadGroup& threads, index_t max_threads
         ) override {
             // TODO: take max_threads into account
@@ -532,10 +532,10 @@ namespace GEO {
             return true;
 #  endif
 #else
-	   // If compiling for Windows with a compiler different from MSVC, 
-	   // return false, and use OpenMP fallback from process.cpp
-	   return false;
-#endif	   
+           // If compiling for Windows with a compiler different from MSVC, 
+           // return false, and use OpenMP fallback from process.cpp
+           return false;
+#endif     
         }
 
         void os_brute_force_kill() {
@@ -601,12 +601,12 @@ namespace GEO {
 #endif            
             return size_t(info.WorkingSetSize);
 #else
-	   return size_t(0);
-#endif	   
+           return size_t(0);
+#endif     
         }
 
         size_t os_max_used_memory() {
-#ifdef GEO_COMPILER_MSVC	   
+#ifdef GEO_COMPILER_MSVC           
             PROCESS_MEMORY_COUNTERS info;
 #if (PSAPI_VERSION >= 2)
             K32GetProcessMemoryInfo(GetCurrentProcess( ), &info, sizeof(info));            
@@ -615,12 +615,12 @@ namespace GEO {
 #endif            
             return size_t(info.PeakWorkingSetSize);
 #else
-	   return size_t(0);
-#endif	   
+           return size_t(0);
+#endif     
         }
 
         bool os_enable_FPE(bool flag) {
-#ifdef GEO_COMPILER_MSVC	    
+#ifdef GEO_COMPILER_MSVC            
             if(flag) {
                 unsigned int excepts = 0
                     // | _EM_INEXACT // inexact result
@@ -636,13 +636,13 @@ namespace GEO {
             }
             return true;
 #else
-	    geo_argused(flag);
-	    return false;
-#endif	    
+            geo_argused(flag);
+            return false;
+#endif      
         }
 
         bool os_enable_cancel(bool flag) {
-#ifdef GEO_COMPILER_MSVC	    
+#ifdef GEO_COMPILER_MSVC            
             if(flag) {
                 signal(SIGINT, sigint_handler);
             } else {
@@ -650,9 +650,9 @@ namespace GEO {
             }
             return true;
 #else
-	    geo_argused(flag);
-	    return false;
-#endif	    
+            geo_argused(flag);
+            return false;
+#endif      
         }
 
         /**
@@ -662,7 +662,7 @@ namespace GEO {
          * exception handling routines that prevent the application from being
          * blocked by a bad assertion, a runtime check or runtime error dialog.
          */
-#ifdef GEO_COMPILER_MSVC	
+#ifdef GEO_COMPILER_MSVC        
         void os_install_signal_handlers() {
 
             // Install signal handlers
@@ -676,7 +676,7 @@ namespace GEO {
             typedef void (__cdecl * sighandler_t)(int);
             signal(SIGFPE, (sighandler_t) fpe_signal_handler);
 
-            // Install uncaught c++ exception handlers	    
+            // Install uncaught c++ exception handlers      
             std::set_terminate(uncaught_exception_handler);
 
             // Install memory allocation handler
@@ -729,9 +729,9 @@ namespace GEO {
         }
 #else
         void os_install_signal_handlers() {
-	}
-#endif	
-	
+        }
+#endif  
+        
         /**
          * \brief Gets the full path to the current executable.
          */

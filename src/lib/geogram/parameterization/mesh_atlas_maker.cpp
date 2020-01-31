@@ -67,283 +67,283 @@ namespace {
      */
     class AtlasMaker {
     public:
-	
-	AtlasMaker(Mesh& mesh) :
-	    mesh_(mesh),
-	    hard_angles_threshold_(0.0),
-	    chart_(mesh.facets.attributes(),"chart"),
-	    vertex_id_(mesh.vertices.attributes(),"id")	{
-	    tex_coord_.bind_if_is_defined(
-		mesh_.facet_corners.attributes(), "tex_coord"
-	    );
-	    if(tex_coord_.is_bound()) {
-		geo_assert(tex_coord_.dimension() == 2);
-	    } else {
-		tex_coord_.create_vector_attribute(
-		    mesh_.facet_corners.attributes(), "tex_coord", 2
-		);
-	    }
-	    chart_tex_coord_.create_vector_attribute(
-		chart_as_mesh_.vertices.attributes(), "tex_coord", 2
-	    );
-	    for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
-		vertex_id_[v] = NO_VERTEX;
-	    }
-	    chart_parameterizer_ = PARAM_ABF;
-	    verbose_ = false;
-	}
+        
+        AtlasMaker(Mesh& mesh) :
+            mesh_(mesh),
+            hard_angles_threshold_(0.0),
+            chart_(mesh.facets.attributes(),"chart"),
+            vertex_id_(mesh.vertices.attributes(),"id") {
+            tex_coord_.bind_if_is_defined(
+                mesh_.facet_corners.attributes(), "tex_coord"
+            );
+            if(tex_coord_.is_bound()) {
+                geo_assert(tex_coord_.dimension() == 2);
+            } else {
+                tex_coord_.create_vector_attribute(
+                    mesh_.facet_corners.attributes(), "tex_coord", 2
+                );
+            }
+            chart_tex_coord_.create_vector_attribute(
+                chart_as_mesh_.vertices.attributes(), "tex_coord", 2
+            );
+            for(index_t v=0; v<mesh_.vertices.nb(); ++v) {
+                vertex_id_[v] = NO_VERTEX;
+            }
+            chart_parameterizer_ = PARAM_ABF;
+            verbose_ = false;
+        }
 
-	~AtlasMaker() {
-	    // TODO: delete vertex_id_ and chart_
-	    // attributes (no longer needed).
-	    // Keeping them for now (for visual debugging).
-	}
+        ~AtlasMaker() {
+            // TODO: delete vertex_id_ and chart_
+            // attributes (no longer needed).
+            // Keeping them for now (for visual debugging).
+        }
 
-	void set_verbose(bool x) {
-	    verbose_ = x;
-	    validator_.set_verbose(x);
-	}
-	
-	void set_hard_angles_threshold(double x) {
-	    hard_angles_threshold_ = x;
-	}
+        void set_verbose(bool x) {
+            verbose_ = x;
+            validator_.set_verbose(x);
+        }
+        
+        void set_hard_angles_threshold(double x) {
+            hard_angles_threshold_ = x;
+        }
 
-	void set_chart_parameterizer(ChartParameterizer param) {
-	    chart_parameterizer_ = param;
-	}
-	
-	void make_atlas() {
-	    index_t total_f = mesh_.facets.nb();
-	    index_t param_f = 0;
-	    segment_mesh();
-	    for(index_t f=0; f<mesh_.facets.nb(); ++f) {
-		while(chart_[f] >= chart_queue_.size()) {
-		    chart_queue_.push_back(Chart(mesh_, chart_[f]));
-		}
-		chart_queue_[chart_[f]].facets.push_back(f);
-	    }
-	    ProgressTask progress("Atlas",100);
-	    progress.progress(0);
-	    try {
-		while(!chart_queue_.empty()) {
-		    Chart& current_chart = chart_queue_.front();
-		    if(
-			precheck_chart(current_chart) &&
-			parameterize_chart(current_chart) &&
-			postcheck_chart(current_chart)
-		    ) {
-			param_f += current_chart.facets.size();
-			progress.progress(param_f * 100 / total_f);
-		    } else {
-			split_chart(current_chart);
-		    }
-		    chart_queue_.pop_front();
-		}
-	    } catch(...) {
-		Logger::out("Atlas") << "Job canceled" << std::endl;
-	    }
-	}
-	
+        void set_chart_parameterizer(ChartParameterizer param) {
+            chart_parameterizer_ = param;
+        }
+        
+        void make_atlas() {
+            index_t total_f = mesh_.facets.nb();
+            index_t param_f = 0;
+            segment_mesh();
+            for(index_t f=0; f<mesh_.facets.nb(); ++f) {
+                while(chart_[f] >= chart_queue_.size()) {
+                    chart_queue_.push_back(Chart(mesh_, chart_[f]));
+                }
+                chart_queue_[chart_[f]].facets.push_back(f);
+            }
+            ProgressTask progress("Atlas",100);
+            progress.progress(0);
+            try {
+                while(!chart_queue_.empty()) {
+                    Chart& current_chart = chart_queue_.front();
+                    if(
+                        precheck_chart(current_chart) &&
+                        parameterize_chart(current_chart) &&
+                        postcheck_chart(current_chart)
+                    ) {
+                        param_f += current_chart.facets.size();
+                        progress.progress(param_f * 100 / total_f);
+                    } else {
+                        split_chart(current_chart);
+                    }
+                    chart_queue_.pop_front();
+                }
+            } catch(...) {
+                Logger::out("Atlas") << "Job canceled" << std::endl;
+            }
+        }
+        
     protected:
 
-	/* // [BL] temporary code to display current state for 
+        /* // [BL] temporary code to display current state for 
            // fine-tuning, debugging
-	void sanity_check() {
-	    std::cerr << "nb_charts_=" << nb_charts_ << std::endl;
-	    for(std::deque<Chart>::iterator it=chart_queue_.begin();
-		it != chart_queue_.end(); ++it) {
-		std::cerr << "Chart: id=" << it->id
-			  << " nb facets=" << it->facets.size() << std::endl;
-	    }	    
-	    for(std::deque<Chart>::iterator it=chart_queue_.begin();
-		it != chart_queue_.end(); ++it) {
-		Chart& chart = *it;
-		for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		    index_t f = chart.facets[ff];
-		    geo_assert(chart_[f] == chart.id);
-		}
-	    }
+        void sanity_check() {
+            std::cerr << "nb_charts_=" << nb_charts_ << std::endl;
+            for(std::deque<Chart>::iterator it=chart_queue_.begin();
+                it != chart_queue_.end(); ++it) {
+                std::cerr << "Chart: id=" << it->id
+                          << " nb facets=" << it->facets.size() << std::endl;
+            }       
+            for(std::deque<Chart>::iterator it=chart_queue_.begin();
+                it != chart_queue_.end(); ++it) {
+                Chart& chart = *it;
+                for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+                    index_t f = chart.facets[ff];
+                    geo_assert(chart_[f] == chart.id);
+                }
+            }
         } 
         */
-	
-	bool precheck_chart(Chart& chart) {
-	    // TODO: topological tests
-	    geo_argused(chart);
-	    return true;
-	}
+        
+        bool precheck_chart(Chart& chart) {
+            // TODO: topological tests
+            geo_argused(chart);
+            return true;
+        }
 
-	bool postcheck_chart(Chart& chart) {
-	    bool OK = validator_.chart_is_valid(chart);
-	    
-	    // Ignore problems for small charts.
-	    // TODO: check if we can remove that
-	    // (unfortunately, does not seems so...
-//	    if(false)
-	    if(!OK && chart.facets.size() <= 10) {
-		if(verbose_) {
-		    Logger::out("ParamValidator")
-			<< "----> PASS: ignoring small chart, #facets="
-			<< chart.facets.size()
-			<< std::endl;
-		}
-		for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		    index_t f=chart.facets[ff];
-		    for(index_t c=chart.mesh.facets.corners_begin(f);
-			c < chart.mesh.facets.corners_end(f); ++c) {
-			tex_coord_[2*c] = 0.0;
-			tex_coord_[2*c+1] = 0.0;
-		    }
-		}
-		OK = true;
-	    }
-	    return OK;
-	}
-	
-	void split_chart(Chart& chart) {
-	    chart_queue_.push_back(Chart(mesh_, chart.id));
-	    Chart& chart1 = chart_queue_.back();
-	    chart_queue_.push_back(Chart(mesh_, nb_charts_));
-	    Chart& chart2 = chart_queue_.back();
-	    ++nb_charts_;
-	    split_chart_along_principal_axis(chart, chart1, chart2);
-	}
-	
-	bool parameterize_chart(Chart& chart) {
-	    
-	    chart_as_mesh_.clear();
-	    chart_as_mesh_.vertices.set_dimension(3);
-	    
-	    // Assign vertices ids and copy vertices
-	    index_t cur_vertex = 0;
-	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		index_t f = chart.facets[ff];
-		for(index_t c=chart.mesh.facets.corners_begin(f);
-		    c < chart.mesh.facets.corners_end(f); ++c) {
-		    index_t v = chart.mesh.facet_corners.vertex(c);
-		    if(vertex_id_[v] == NO_VERTEX) {
-			chart_as_mesh_.vertices.create_vertex(
-			    mesh_.vertices.point_ptr(v)
-			    );
-			vertex_id_[v] = cur_vertex;
-			++cur_vertex;
-		    }
-		}
-	    }
-	    
-	    // Create facets (and triangulate them)
-	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		index_t f = chart.facets[ff];
-		index_t c1 = chart.mesh.facets.corners_begin(f);
-		index_t v1 = vertex_id_[chart.mesh.facet_corners.vertex(c1)];
-		for(index_t c2 = c1+1;
-		    c2+1 < chart.mesh.facets.corners_end(f); ++c2
-		) {
-		    index_t c3=c2+1;
-		    index_t v2=vertex_id_[chart.mesh.facet_corners.vertex(c2)];
-		    index_t v3=vertex_id_[chart.mesh.facet_corners.vertex(c3)];
-		    geo_assert(v1 < cur_vertex);
-		    geo_assert(v2 < cur_vertex);
-		    geo_assert(v3 < cur_vertex);		    
-		    chart_as_mesh_.facets.create_triangle(v1,v2,v3);
-		}
-	    }
-	    chart_as_mesh_.facets.connect();
+        bool postcheck_chart(Chart& chart) {
+            bool OK = validator_.chart_is_valid(chart);
+            
+            // Ignore problems for small charts.
+            // TODO: check if we can remove that
+            // (unfortunately, does not seems so...
+//          if(false)
+            if(!OK && chart.facets.size() <= 10) {
+                if(verbose_) {
+                    Logger::out("ParamValidator")
+                        << "----> PASS: ignoring small chart, #facets="
+                        << chart.facets.size()
+                        << std::endl;
+                }
+                for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+                    index_t f=chart.facets[ff];
+                    for(index_t c=chart.mesh.facets.corners_begin(f);
+                        c < chart.mesh.facets.corners_end(f); ++c) {
+                        tex_coord_[2*c] = 0.0;
+                        tex_coord_[2*c+1] = 0.0;
+                    }
+                }
+                OK = true;
+            }
+            return OK;
+        }
+        
+        void split_chart(Chart& chart) {
+            chart_queue_.push_back(Chart(mesh_, chart.id));
+            Chart& chart1 = chart_queue_.back();
+            chart_queue_.push_back(Chart(mesh_, nb_charts_));
+            Chart& chart2 = chart_queue_.back();
+            ++nb_charts_;
+            split_chart_along_principal_axis(chart, chart1, chart2);
+        }
+        
+        bool parameterize_chart(Chart& chart) {
+            
+            chart_as_mesh_.clear();
+            chart_as_mesh_.vertices.set_dimension(3);
+            
+            // Assign vertices ids and copy vertices
+            index_t cur_vertex = 0;
+            for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+                index_t f = chart.facets[ff];
+                for(index_t c=chart.mesh.facets.corners_begin(f);
+                    c < chart.mesh.facets.corners_end(f); ++c) {
+                    index_t v = chart.mesh.facet_corners.vertex(c);
+                    if(vertex_id_[v] == NO_VERTEX) {
+                        chart_as_mesh_.vertices.create_vertex(
+                            mesh_.vertices.point_ptr(v)
+                            );
+                        vertex_id_[v] = cur_vertex;
+                        ++cur_vertex;
+                    }
+                }
+            }
+            
+            // Create facets (and triangulate them)
+            for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+                index_t f = chart.facets[ff];
+                index_t c1 = chart.mesh.facets.corners_begin(f);
+                index_t v1 = vertex_id_[chart.mesh.facet_corners.vertex(c1)];
+                for(index_t c2 = c1+1;
+                    c2+1 < chart.mesh.facets.corners_end(f); ++c2
+                ) {
+                    index_t c3=c2+1;
+                    index_t v2=vertex_id_[chart.mesh.facet_corners.vertex(c2)];
+                    index_t v3=vertex_id_[chart.mesh.facet_corners.vertex(c3)];
+                    geo_assert(v1 < cur_vertex);
+                    geo_assert(v2 < cur_vertex);
+                    geo_assert(v3 < cur_vertex);                    
+                    chart_as_mesh_.facets.create_triangle(v1,v2,v3);
+                }
+            }
+            chart_as_mesh_.facets.connect();
 
-	    if(chart_as_mesh_.facets.nb() < 5) {
-		mesh_compute_LSCM(
-		    chart_as_mesh_, "tex_coord", false, "", verbose_
-		);
-	    } else {
-		switch(chart_parameterizer_) {
-		    case PARAM_LSCM:
-			mesh_compute_LSCM(
-			    chart_as_mesh_, "tex_coord", false, "", verbose_
-			);
-			break;
-		    case PARAM_SPECTRAL_LSCM:
-			mesh_compute_LSCM(
-			    chart_as_mesh_, "tex_coord", true, "", verbose_
-			);
-			break;
-		    case PARAM_ABF:
-			mesh_compute_ABF_plus_plus(
-			    chart_as_mesh_, "tex_coord", verbose_
-			);
-			break;
-		}
-	    }
-	    
-	    // Copy tex coords
-	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		index_t f = chart.facets[ff];
-		for(index_t c=chart.mesh.facets.corners_begin(f);
-		    c < chart.mesh.facets.corners_end(f); ++c
-		) {
-		    index_t v = vertex_id_[chart.mesh.facet_corners.vertex(c)];
-			tex_coord_[2*c] = chart_tex_coord_[2*v];
-			tex_coord_[2*c+1] = chart_tex_coord_[2*v+1];
-		}		
-	    }
-	    
-	    // Reset vertex ids
-	    for(index_t ff=0; ff<chart.facets.size(); ++ff) {
-		index_t f = chart.facets[ff];
-		for(index_t c=chart.mesh.facets.corners_begin(f);
-		    c < chart.mesh.facets.corners_end(f); ++c) {
-		    vertex_id_[chart.mesh.facet_corners.vertex(c)] = NO_VERTEX;
-		}
-	    }
-	    
-	    return true;
-	}
+            if(chart_as_mesh_.facets.nb() < 5) {
+                mesh_compute_LSCM(
+                    chart_as_mesh_, "tex_coord", false, "", verbose_
+                );
+            } else {
+                switch(chart_parameterizer_) {
+                    case PARAM_LSCM:
+                        mesh_compute_LSCM(
+                            chart_as_mesh_, "tex_coord", false, "", verbose_
+                        );
+                        break;
+                    case PARAM_SPECTRAL_LSCM:
+                        mesh_compute_LSCM(
+                            chart_as_mesh_, "tex_coord", true, "", verbose_
+                        );
+                        break;
+                    case PARAM_ABF:
+                        mesh_compute_ABF_plus_plus(
+                            chart_as_mesh_, "tex_coord", verbose_
+                        );
+                        break;
+                }
+            }
+            
+            // Copy tex coords
+            for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+                index_t f = chart.facets[ff];
+                for(index_t c=chart.mesh.facets.corners_begin(f);
+                    c < chart.mesh.facets.corners_end(f); ++c
+                ) {
+                    index_t v = vertex_id_[chart.mesh.facet_corners.vertex(c)];
+                        tex_coord_[2*c] = chart_tex_coord_[2*v];
+                        tex_coord_[2*c+1] = chart_tex_coord_[2*v+1];
+                }               
+            }
+            
+            // Reset vertex ids
+            for(index_t ff=0; ff<chart.facets.size(); ++ff) {
+                index_t f = chart.facets[ff];
+                for(index_t c=chart.mesh.facets.corners_begin(f);
+                    c < chart.mesh.facets.corners_end(f); ++c) {
+                    vertex_id_[chart.mesh.facet_corners.vertex(c)] = NO_VERTEX;
+                }
+            }
+            
+            return true;
+        }
 
-	void segment_mesh() {
-	    for(index_t f=0; f<mesh_.facets.nb(); ++f) {
-		chart_[f] = index_t(-1);
-	    }
-	    nb_charts_ = 0;
-	    for(index_t f=0; f<mesh_.facets.nb(); ++f) {
-		std::stack<index_t> S;
-		if(chart_[f] == index_t(-1)) {
-		    chart_[f] = nb_charts_;
-		    S.push(f);
-		    do {
-			index_t cur_f = S.top();
-			S.pop();
-			for(
-			    index_t c=mesh_.facets.corners_begin(cur_f);
-			    c<mesh_.facets.corners_end(cur_f); ++c
-			) {
-			    index_t f2=mesh_.facet_corners.adjacent_facet(c);
-			    if(
-				f2 != NO_FACET &&
-				chart_[f2] != nb_charts_ &&
-				Geom::mesh_unsigned_normal_angle(
-				    mesh_,cur_f,f2) < hard_angles_threshold_
-			    ) {
-				chart_[f2] = nb_charts_;
-				S.push(f2);
-			    }
-			}
-		    } while(!S.empty());
-		    ++nb_charts_;
-		}
-	    }
-	}
-	
+        void segment_mesh() {
+            for(index_t f=0; f<mesh_.facets.nb(); ++f) {
+                chart_[f] = index_t(-1);
+            }
+            nb_charts_ = 0;
+            for(index_t f=0; f<mesh_.facets.nb(); ++f) {
+                std::stack<index_t> S;
+                if(chart_[f] == index_t(-1)) {
+                    chart_[f] = nb_charts_;
+                    S.push(f);
+                    do {
+                        index_t cur_f = S.top();
+                        S.pop();
+                        for(
+                            index_t c=mesh_.facets.corners_begin(cur_f);
+                            c<mesh_.facets.corners_end(cur_f); ++c
+                        ) {
+                            index_t f2=mesh_.facet_corners.adjacent_facet(c);
+                            if(
+                                f2 != NO_FACET &&
+                                chart_[f2] != nb_charts_ &&
+                                Geom::mesh_unsigned_normal_angle(
+                                    mesh_,cur_f,f2) < hard_angles_threshold_
+                            ) {
+                                chart_[f2] = nb_charts_;
+                                S.push(f2);
+                            }
+                        }
+                    } while(!S.empty());
+                    ++nb_charts_;
+                }
+            }
+        }
+        
     private:
-	Mesh& mesh_;
-	ChartParameterizer chart_parameterizer_;
-	ParamValidator validator_;
-	double hard_angles_threshold_;
-	Attribute<index_t> chart_;
-	Attribute<index_t> vertex_id_;
-	Attribute<double> tex_coord_;
-	Mesh chart_as_mesh_;
-	Attribute<double> chart_tex_coord_;
-	std::deque<Chart> chart_queue_;
-	index_t nb_charts_;
-	bool verbose_;
+        Mesh& mesh_;
+        ChartParameterizer chart_parameterizer_;
+        ParamValidator validator_;
+        double hard_angles_threshold_;
+        Attribute<index_t> chart_;
+        Attribute<index_t> vertex_id_;
+        Attribute<double> tex_coord_;
+        Mesh chart_as_mesh_;
+        Attribute<double> chart_tex_coord_;
+        std::deque<Chart> chart_queue_;
+        index_t nb_charts_;
+        bool verbose_;
     };
 
     
@@ -352,16 +352,16 @@ namespace {
 namespace GEO {
 
     void mesh_make_atlas(
-	Mesh& mesh, double hard_angles_threshold, ChartParameterizer param,
-	bool verbose 
+        Mesh& mesh, double hard_angles_threshold, ChartParameterizer param,
+        bool verbose 
     ) {
-	AtlasMaker atlas(mesh);
-	atlas.set_hard_angles_threshold(hard_angles_threshold);
-	atlas.set_chart_parameterizer(param);
-	atlas.set_verbose(verbose);
-	atlas.make_atlas();
-	Packer packer;
-	packer.pack_surface(mesh);
+        AtlasMaker atlas(mesh);
+        atlas.set_hard_angles_threshold(hard_angles_threshold);
+        atlas.set_chart_parameterizer(param);
+        atlas.set_verbose(verbose);
+        atlas.make_atlas();
+        Packer packer;
+        packer.pack_surface(mesh);
     }
     
 }

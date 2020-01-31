@@ -113,14 +113,14 @@ namespace GEO {
      * \param[in] I the intersection element to be printed.
      */
     inline std::ostream& operator<<(
-	std::ostream& out, const TriangleIsect& I
+        std::ostream& out, const TriangleIsect& I
     ) {
-	return (
-	    out << "("
-	    << region_to_string(I.first) << ","
-	    << region_to_string(I.second)
-	    << ")"
-	);
+        return (
+            out << "("
+            << region_to_string(I.first) << ","
+            << region_to_string(I.second)
+            << ")"
+        );
     }
     
     /**
@@ -130,12 +130,12 @@ namespace GEO {
      * \param[in] II the intersections to be printed.
      */
     inline std::ostream& operator<<(
-	std::ostream& out, vector<TriangleIsect>& II
+        std::ostream& out, vector<TriangleIsect>& II
     ) {
-	for(index_t i=0; i<II.size(); ++i) {
-	    out << II[i] << " ";
-	}
-	return out;
+        for(index_t i=0; i<II.size(); ++i) {
+            out << II[i] << " ";
+        }
+        return out;
     }
 }
 

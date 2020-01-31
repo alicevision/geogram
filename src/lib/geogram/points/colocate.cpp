@@ -240,13 +240,13 @@ namespace GEO {
             NN->set_points(nb_points, points, stride);
             old2new.resize(nb_points, index_t(-1));
             Colocate colocate_obj(NN, old2new, tolerance);
-	    
+            
             if(CmdLine::get_arg_bool("sys:multithread")) {
                 parallel_for(
-		    0, nb_points,
-		    [&colocate_obj](index_t i){ colocate_obj.do_it(i); },
-		    1, true
-		);
+                    0, nb_points,
+                    [&colocate_obj](index_t i){ colocate_obj.do_it(i); },
+                    1, true
+                );
             } else {
                 for(index_t i = 0; i < nb_points; i++) {
                     colocate_obj.do_it(i);

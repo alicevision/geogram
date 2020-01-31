@@ -1413,7 +1413,7 @@ static void* host_blas_malloc(
     nl_arg_used(type);
     blas->used_ram[type] += (NLulong)size;
     blas->max_used_ram[type] = MAX(
-	blas->max_used_ram[type],blas->used_ram[type]
+        blas->max_used_ram[type],blas->used_ram[type]
     );
     return malloc(size);
 }
@@ -1481,8 +1481,8 @@ static void host_blas_dgemv(
     static const char *T[3] = { "N", "T", 0 };
     nl_arg_used(blas);
     NL_FORTRAN_WRAP(dgemv)(
-	T[(int)trans],&m,&n,&alpha,(double*)A,&ldA,
-	(double*)x,&incx,&beta,y,&incy
+        T[(int)trans],&m,&n,&alpha,(double*)A,&ldA,
+        (double*)x,&incx,&beta,y,&incy
     );
     /* TODO: update flops */    
 }
@@ -1497,7 +1497,7 @@ static void host_blas_dtpsv(
     static const char *D[2]  = { "U", "N" };
     nl_arg_used(blas);    
     NL_FORTRAN_WRAP(dtpsv)(
-	UL[(int)uplo],T[(int)trans],D[(int)diag],&n,(double*)AP,x,&incx
+        UL[(int)uplo],T[(int)trans],D[(int)diag],&n,(double*)AP,x,&incx
     );
     /* TODO: update flops */
 }
@@ -1506,20 +1506,20 @@ NLBlas_t nlHostBlas() {
     static NLboolean initialized = NL_FALSE;
     static struct NLBlas blas;
     if(!initialized) {
-	memset(&blas, 0, sizeof(blas));
-	blas.has_unified_memory = NL_TRUE;
-	blas.Malloc = host_blas_malloc;
-	blas.Free = host_blas_free;
-	blas.Memcpy = host_blas_memcpy;
-	blas.Dcopy = host_blas_dcopy;
-	blas.Ddot = host_blas_ddot;
-	blas.Dnrm2 = host_blas_dnrm2;
-	blas.Daxpy = host_blas_daxpy;
-	blas.Dscal = host_blas_dscal;
-	blas.Dgemv = host_blas_dgemv;
-	blas.Dtpsv = host_blas_dtpsv;
-	nlBlasResetStats(&blas);
-	initialized = NL_TRUE;
+        memset(&blas, 0, sizeof(blas));
+        blas.has_unified_memory = NL_TRUE;
+        blas.Malloc = host_blas_malloc;
+        blas.Free = host_blas_free;
+        blas.Memcpy = host_blas_memcpy;
+        blas.Dcopy = host_blas_dcopy;
+        blas.Ddot = host_blas_ddot;
+        blas.Dnrm2 = host_blas_dnrm2;
+        blas.Daxpy = host_blas_daxpy;
+        blas.Dscal = host_blas_dscal;
+        blas.Dgemv = host_blas_dgemv;
+        blas.Dtpsv = host_blas_dtpsv;
+        nlBlasResetStats(&blas);
+        initialized = NL_TRUE;
     }
     return &blas;
 }

@@ -621,7 +621,7 @@ NLAPI void NLAPIENTRY nlSparseMatrixAdd(
  */
 NLAPI void NLAPIENTRY nlSparseMatrixAddMatrix(
     NLSparseMatrix* M, double mul, const NLMatrix N
-);	
+);      
     
 /**
  * \brief Zeroes an NLSparseMatrix
@@ -775,10 +775,10 @@ NLAPI NLMatrix NLAPIENTRY nlMatrixFactorize(NLMatrix M, NLenum solver);
  * \param[in] n number of columns
  * \param[in] func a function that implements the matrix x vector product,
  *  and that takes the right hand side and the left hand side as arguments.
- */	     
+ */          
 NLAPI NLMatrix NLAPIENTRY nlMatrixNewFromFunction(
     NLuint m, NLuint n, NLMatrixFunc func
-);	     
+);           
 
 /**
  * \brief Gets the function pointer that implements matrix x vector product.

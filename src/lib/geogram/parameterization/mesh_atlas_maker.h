@@ -57,14 +57,14 @@ namespace GEO {
     class Mesh;
 
     enum ChartParameterizer {
-	PARAM_LSCM, PARAM_SPECTRAL_LSCM, PARAM_ABF
+        PARAM_LSCM, PARAM_SPECTRAL_LSCM, PARAM_ABF
     };
     
     void GEOGRAM_API mesh_make_atlas(
-	Mesh& mesh,
-	double hard_angles_threshold = 45.0,
-	ChartParameterizer=PARAM_ABF,
-	bool verbose = false
+        Mesh& mesh,
+        double hard_angles_threshold = 45.0,
+        ChartParameterizer=PARAM_ABF,
+        bool verbose = false
     );
 }
 

@@ -181,8 +181,8 @@ namespace GEO {
         bool set_current_working_directory(const std::string& path_in) {
             std::string path = path_in;
             if(
-		path.at(path.size() - 1) != '/' &&
-		path.at(path.size() - 1) != '\\') {
+                path.at(path.size() - 1) != '/' &&
+                path.at(path.size() - 1) != '\\') {
                 path += "/";
             }
             return SetCurrentDirectory(path.c_str()) != -1;
@@ -199,8 +199,8 @@ namespace GEO {
         ) {
             WIN32_FILE_ATTRIBUTE_DATA infos;
             if(!GetFileAttributesEx(
-		   path.c_str(), GetFileExInfoStandard, &infos)
-	    ) {
+                   path.c_str(), GetFileExInfoStandard, &infos)
+            ) {
                 return 0;
             }
             return infos.ftLastWriteTime.dwLowDateTime;
@@ -375,7 +375,7 @@ namespace GEO {
             const std::string& path,
             std::vector<std::string>& result, bool recursive
         ) {
-	    // TODO: seems to be bugged, enters infinite recursion...
+            // TODO: seems to be bugged, enters infinite recursion...
             get_directory_entries(path, result);
             if(recursive) {
                 for(size_t i = 0; i < result.size(); i++) {
@@ -424,13 +424,13 @@ namespace GEO {
             FILE* fromf = fopen(from.c_str(), "rb");
             if(fromf == nullptr) {
                 Logger::err("FileSyst")
-		    << "Could not open source file:" << from << std::endl;
+                    << "Could not open source file:" << from << std::endl;
                 return false;
             }
             FILE* tof = fopen(to.c_str(),"wb");
             if(tof == nullptr) {
                 Logger::err("FileSyst")
-		    << "Could not create file:" << to << std::endl;
+                    << "Could not create file:" << to << std::endl;
                 fclose(fromf);
                 return false;
             }

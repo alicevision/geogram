@@ -126,16 +126,16 @@ namespace GEO {
          */
         Delaunay2d(coord_index_t dimension = 2);
 
-	/**
-	 * \copydoc Delaunay::set_vertices()
-	 */
+        /**
+         * \copydoc Delaunay::set_vertices()
+         */
         virtual void set_vertices(
             index_t nb_vertices, const double* vertices
         );
 
-	/**
-	 * \copydoc Delaunay::nearest_vertex()
-	 */
+        /**
+         * \copydoc Delaunay::nearest_vertex()
+         */
         virtual index_t nearest_vertex(const double* p) const;
 
 
@@ -475,10 +475,10 @@ namespace GEO {
         bool triangle_is_virtual(index_t t) const {
             return
             !triangle_is_free(t) && (
-		cell_to_v_store_[3 * t] == VERTEX_AT_INFINITY ||
-		cell_to_v_store_[3 * t + 1] == VERTEX_AT_INFINITY ||
-		cell_to_v_store_[3 * t + 2] == VERTEX_AT_INFINITY
-	    );
+                cell_to_v_store_[3 * t] == VERTEX_AT_INFINITY ||
+                cell_to_v_store_[3 * t + 1] == VERTEX_AT_INFINITY ||
+                cell_to_v_store_[3 * t + 2] == VERTEX_AT_INFINITY
+            );
         }
 
         /**
@@ -696,7 +696,7 @@ namespace GEO {
             geo_debug_assert(t1 < max_t());
             geo_debug_assert(t2 < max_t());
             geo_debug_assert(le1 < 3);
-	    geo_debug_assert(t1 != t2);
+            geo_debug_assert(t1 != t2);
             cell_to_cell_store_[3 * t1 + le1] = signed_index_t(t2);
         }
         
@@ -938,12 +938,12 @@ namespace GEO {
          *  local edge index le (in 0,1,2) and a
          *  local vertex index within the edge (in 0,1).
          */
-	 static char triangle_edge_vertex_[3][2];
+         static char triangle_edge_vertex_[3][2];
 
-	 /**
-	  * \brief Used by find_conflict_zone_iterative()
-	  */
-	 std::stack<index_t> S_;
+         /**
+          * \brief Used by find_conflict_zone_iterative()
+          */
+         std::stack<index_t> S_;
     };
 
     /************************************************************************/

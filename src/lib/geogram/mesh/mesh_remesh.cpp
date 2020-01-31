@@ -72,13 +72,13 @@ namespace GEO {
 
         geo_cite("DBLP:journals/cgf/YanLLSW09");
         geo_cite("DBLP:conf/imr/LevyB12");
-	
+        
         if(dim == 0) {
             dim = coord_index_t(M_in.vertices.dimension());
         }
 
-	geo_argused(dim); // See TODO later.
-	
+        geo_argused(dim); // See TODO later.
+        
         Stopwatch W("Remesh");
 
         CentroidalVoronoiTesselation CVT(&M_in);

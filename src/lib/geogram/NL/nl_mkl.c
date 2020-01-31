@@ -186,18 +186,18 @@ static MKLContext* MKL() {
 
 NLboolean nlExtensionIsInitialized_MKL() {
     if(
-	MKL()->DLL_iomp5 == NULL ||
-	MKL()->DLL_mkl_core == NULL ||
-	MKL()->DLL_mkl_intel_thread == NULL ||
-	MKL()->DLL_mkl_intel_lp64 == NULL ||
-	MKL()->mkl_cspblas_dcsrgemv == NULL ||
-	MKL()->mkl_cspblas_dcsrsymv == NULL ||
-	MKL()->mkl_sparse_d_create_csr == NULL ||
-	MKL()->mkl_sparse_d_mv == NULL ||
-	MKL()->mkl_sparse_destroy == NULL ||
-	MKL()->mkl_sparse_set_mv_hint == NULL ||
-	MKL()->mkl_sparse_set_memory_hint == NULL ||
-	MKL()->mkl_sparse_optimize == NULL
+        MKL()->DLL_iomp5 == NULL ||
+        MKL()->DLL_mkl_core == NULL ||
+        MKL()->DLL_mkl_intel_thread == NULL ||
+        MKL()->DLL_mkl_intel_lp64 == NULL ||
+        MKL()->mkl_cspblas_dcsrgemv == NULL ||
+        MKL()->mkl_cspblas_dcsrsymv == NULL ||
+        MKL()->mkl_sparse_d_create_csr == NULL ||
+        MKL()->mkl_sparse_d_mv == NULL ||
+        MKL()->mkl_sparse_destroy == NULL ||
+        MKL()->mkl_sparse_set_mv_hint == NULL ||
+        MKL()->mkl_sparse_set_memory_hint == NULL ||
+        MKL()->mkl_sparse_optimize == NULL
     ) {
         return NL_FALSE;
     }
@@ -217,8 +217,8 @@ NLboolean nlExtensionIsInitialized_MKL() {
         (                                                    \
             MKL()->name =                                    \
             (FUNPTR_##name)nlFindFunction(                   \
-		   MKL()->DLL_mkl_intel_lp64,#name           \
-	    )					             \
+                   MKL()->DLL_mkl_intel_lp64,#name           \
+            )                                                \
         ) == NULL                                            \
     ) {                                                      \
         nlError("nlInitExtension_MKL","function not found"); \
@@ -227,7 +227,7 @@ NLboolean nlExtensionIsInitialized_MKL() {
 
 static void nlTerminateExtension_MKL(void) {
     if(!nlExtensionIsInitialized_MKL()) {
-	return;
+        return;
     }
     nlCloseDLL(MKL()->DLL_mkl_intel_lp64);
     nlCloseDLL(MKL()->DLL_mkl_intel_thread);
@@ -243,25 +243,25 @@ static void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* 
     NLCRSMatrix* M = (NLCRSMatrix*)(M_in);
     nl_debug_assert(M_in->type == NL_MATRIX_CRS);
     if(M->symmetric_storage) {
-	MKL()->mkl_cspblas_dcsrsymv(
-	    "N", /* No transpose */
-	    &M->m,
-	    M->val,
-	    M->rowptr,
-	    M->colind,
-	    x,
-	    y
-	);
+        MKL()->mkl_cspblas_dcsrsymv(
+            "N", /* No transpose */
+            &M->m,
+            M->val,
+            M->rowptr,
+            M->colind,
+            x,
+            y
+        );
     } else {
-	MKL()->mkl_cspblas_dcsrgemv(
-	    "N", /* No transpose */
-	    &M->m,
-	    M->val,
-	    M->rowptr,
-	    M->colind,
-	    x,
-	    y
-	);
+        MKL()->mkl_cspblas_dcsrgemv(
+            "N", /* No transpose */
+            &M->m,
+            M->val,
+            M->rowptr,
+            M->colind,
+            x,
+            y
+        );
     }
 }
 
@@ -273,7 +273,7 @@ static void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* 
 NLboolean nlInitExtension_MKL(void) {
     NLenum flags = NL_LINK_LAZY | NL_LINK_GLOBAL;
     if(nlCurrentContext == NULL || !nlCurrentContext->verbose) {
-	flags |= NL_LINK_QUIET;
+        flags |= NL_LINK_QUIET;
     }
     
     if(MKL()->DLL_mkl_intel_lp64 != NULL) {
@@ -281,27 +281,27 @@ NLboolean nlInitExtension_MKL(void) {
     }
     
     MKL()->DLL_iomp5 = nlOpenDLL(
-	INTEL_PREFIX LIB_DIR "libiomp5.so",
-	flags
+        INTEL_PREFIX LIB_DIR "libiomp5.so",
+        flags
     );    
     MKL()->DLL_mkl_core = nlOpenDLL(
-	MKL_PREFIX "libmkl_core.so",
-	flags
+        MKL_PREFIX "libmkl_core.so",
+        flags
     );    
     MKL()->DLL_mkl_intel_thread = nlOpenDLL(
-	MKL_PREFIX "libmkl_intel_thread.so",
-	flags
+        MKL_PREFIX "libmkl_intel_thread.so",
+        flags
     );    
     MKL()->DLL_mkl_intel_lp64 = nlOpenDLL(
-	MKL_PREFIX "libmkl_intel_lp64.so",
-	flags
+        MKL_PREFIX "libmkl_intel_lp64.so",
+        flags
     );
     
     if(
-	MKL()->DLL_iomp5 == NULL ||
-	MKL()->DLL_mkl_core == NULL ||
-	MKL()->DLL_mkl_intel_thread == NULL ||
-	MKL()->DLL_mkl_intel_lp64 == NULL
+        MKL()->DLL_iomp5 == NULL ||
+        MKL()->DLL_mkl_core == NULL ||
+        MKL()->DLL_mkl_intel_thread == NULL ||
+        MKL()->DLL_mkl_intel_lp64 == NULL
     ) {
         return NL_FALSE;
     }
@@ -318,7 +318,7 @@ NLboolean nlInitExtension_MKL(void) {
 
     
     if(nlExtensionIsInitialized_MKL()) {
-	NLMultMatrixVector_MKL = NLMultMatrixVector_MKL_impl;
+        NLMultMatrixVector_MKL = NLMultMatrixVector_MKL_impl;
     }
     
     atexit(nlTerminateExtension_MKL);
@@ -355,9 +355,9 @@ static void nlMKLMatrixMult(
     struct matrix_descr descr;
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;
     MKL()->mkl_sparse_d_mv(
-	SPARSE_OPERATION_NON_TRANSPOSE,
-	1.0, M->A, descr,
-	x, 0.0, y
+        SPARSE_OPERATION_NON_TRANSPOSE,
+        1.0, M->A, descr,
+        x, 0.0, y
     );
 }
 
@@ -395,17 +395,17 @@ NLMatrix nlMKLMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
     result->rowptr[M->m] = k;
 
     MKL()->mkl_sparse_d_create_csr(
-	&(result->A), SPARSE_INDEX_BASE_ZERO, M->m, M->n,
-	result->rowptr, result->rowptr+1,
-	result->colind, result->val
+        &(result->A), SPARSE_INDEX_BASE_ZERO, M->m, M->n,
+        result->rowptr, result->rowptr+1,
+        result->colind, result->val
     );
 
     MKL()->mkl_sparse_set_mv_hint(
-	result->A, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000
+        result->A, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000
     );
 
     MKL()->mkl_sparse_set_memory_hint(
-	result->A, SPARSE_MEMORY_AGGRESSIVE
+        result->A, SPARSE_MEMORY_AGGRESSIVE
     );
 
     MKL()->mkl_sparse_optimize(result->A);
@@ -435,17 +435,17 @@ NLMatrix nlMKLMatrixNewFromCRSMatrix(NLCRSMatrix* M) {
     memcpy(result->colind, M->colind, nnz*sizeof(NLuint));
 
     MKL()->mkl_sparse_d_create_csr(
-	&(result->A), SPARSE_INDEX_BASE_ZERO, M->m, M->n,
-	result->rowptr, result->rowptr+1,
-	result->colind, result->val
+        &(result->A), SPARSE_INDEX_BASE_ZERO, M->m, M->n,
+        result->rowptr, result->rowptr+1,
+        result->colind, result->val
     );
 
     MKL()->mkl_sparse_set_mv_hint(
-	result->A, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000
+        result->A, SPARSE_OPERATION_NON_TRANSPOSE, descr, 1000
     );
 
     MKL()->mkl_sparse_set_memory_hint(
-	result->A, SPARSE_MEMORY_AGGRESSIVE
+        result->A, SPARSE_MEMORY_AGGRESSIVE
     );
 
     MKL()->mkl_sparse_optimize(result->A);

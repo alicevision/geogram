@@ -340,17 +340,17 @@ namespace GEO {
 
         // ========================== Initialization from doubles
 
-	/**
-	 * \brief Assigns a number to this expansion.
-	 * \param[in] a the number
-	 * \return the new value of this expansion (\p a)
-	 */
-	expansion& assign(double a) {
-	    set_length(1);
-	    x_[0] = a;
-	    return *this;
-	}
-	
+        /**
+         * \brief Assigns a number to this expansion.
+         * \param[in] a the number
+         * \return the new value of this expansion (\p a)
+         */
+        expansion& assign(double a) {
+            set_length(1);
+            x_[0] = a;
+            return *this;
+        }
+        
         /**
          * \brief Computes the required capacity to store the
          *  sum of two doubles.
@@ -1104,7 +1104,7 @@ namespace GEO {
      *  calling function.
      * \relates GEO::expansion
      */
-#define expansion_create(a)	      \
+#define expansion_create(a)           \
     new_expansion_on_stack(1)->assign(a)
 
     

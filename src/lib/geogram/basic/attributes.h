@@ -79,8 +79,8 @@ namespace GEO {
          * \brief Creates a new uninitialied AttributeStore.
          */
         AttributeStoreObserver() :
-	   base_addr_(nullptr), size_(0), dimension_(0),
-	   disconnected_(false) {
+           base_addr_(nullptr), size_(0), dimension_(0),
+           disconnected_(false) {
         }
 
         /**
@@ -124,37 +124,37 @@ namespace GEO {
             return size_ * dimension_;
         }
 
-	/**
-	 * \brief Registers this observer to an AttributeStore.
-	 * \param[in] store a pointer to the AttributeStore.
-	 */
+        /**
+         * \brief Registers this observer to an AttributeStore.
+         * \param[in] store a pointer to the AttributeStore.
+         */
         void register_me(AttributeStore* store);
 
-	/**
-	 * \brief Unregisters this observer from an AttributeStore.
-	 * \param[in] store a pointer to the AttributeStore.
-	 */
+        /**
+         * \brief Unregisters this observer from an AttributeStore.
+         * \param[in] store a pointer to the AttributeStore.
+         */
         void unregister_me(AttributeStore* store);
 
-	/**
-	 * \brief Disconnects this AttributeStoreObserver from its 
-	 *  AttributeStore.
-	 * \details This function is called whenever the AttributeManager is
-	 *  destroyed before the Attributes (can occur when using Lua scripting
-	 *  with Attribute wrapper objects).
-	 */
-	void disconnect() {
-	    base_addr_ = nullptr;
-	    size_ = 0;
-	    dimension_ = 0;
-	    disconnected_ = true;
-	}
-	
+        /**
+         * \brief Disconnects this AttributeStoreObserver from its 
+         *  AttributeStore.
+         * \details This function is called whenever the AttributeManager is
+         *  destroyed before the Attributes (can occur when using Lua scripting
+         *  with Attribute wrapper objects).
+         */
+        void disconnect() {
+            base_addr_ = nullptr;
+            size_ = 0;
+            dimension_ = 0;
+            disconnected_ = true;
+        }
+        
     protected:
         Memory::pointer base_addr_;
         index_t size_;
         index_t dimension_;
-	bool disconnected_;
+        bool disconnected_;
     };
 
 
@@ -244,15 +244,15 @@ namespace GEO {
             return cached_size_;
         }
 
-	/**
-	 * \brief Gets the capacity.
-	 * \return the number of items that can be stored without
-	 *  a reallocation.
-	 */
-	index_t capacity() const {
-	    return cached_capacity_;
-	}
-	
+        /**
+         * \brief Gets the capacity.
+         * \return the number of items that can be stored without
+         *  a reallocation.
+         */
+        index_t capacity() const {
+            return cached_capacity_;
+        }
+        
         /**
          * \brief Resizes this AttributeStore
          * \param[in] new_size new number of items
@@ -262,10 +262,10 @@ namespace GEO {
         /**
          * \brief Reserves memory.
          * \param[in] new_capacity total number of items to 
-	 *  be stored.
+         *  be stored.
          */
-	virtual void reserve(index_t new_capacity) = 0;
-	
+        virtual void reserve(index_t new_capacity) = 0;
+        
         /**
          * \brief Resizes this AttributeStore to 0.
          * \param[in] keep_memory if true, then memory
@@ -548,7 +548,7 @@ namespace GEO {
         index_t dimension_;        
         Memory::pointer cached_base_addr_;
         index_t cached_size_;
-	index_t cached_capacity_;
+        index_t cached_capacity_;
         std::set<AttributeStoreObserver*> observers_;
         Process::spinlock lock_;
 
@@ -593,19 +593,19 @@ namespace GEO {
             );
         }
 
-	virtual void reserve(index_t new_capacity) {
-	    if(new_capacity > capacity()) {
-		store_.reserve(new_capacity*dimension_);
-		cached_capacity_ = new_capacity;
-		notify(
-		    store_.empty() ? nullptr : Memory::pointer(store_.data()),
-		    size(),
-		    dimension_
-		);
-	    }
-	}
+        virtual void reserve(index_t new_capacity) {
+            if(new_capacity > capacity()) {
+                store_.reserve(new_capacity*dimension_);
+                cached_capacity_ = new_capacity;
+                notify(
+                    store_.empty() ? nullptr : Memory::pointer(store_.data()),
+                    size(),
+                    dimension_
+                );
+            }
+        }
 
-	virtual void clear(bool keep_memory=false) {
+        virtual void clear(bool keep_memory=false) {
             if(keep_memory) {
                 store_.resize(0);
             } else {
@@ -620,7 +620,7 @@ namespace GEO {
                 return;
             }
             vector<T> new_store(size()*dim);
-	    new_store.reserve(capacity()*dim);
+            new_store.reserve(capacity()*dim);
             index_t copy_dim = std::min(dim, dimension());
             for(index_t i = 0; i < size(); ++i) {
                 for(index_t c = 0; c < copy_dim; ++c) {
@@ -705,19 +705,19 @@ namespace GEO {
             AttributeStore::register_attribute_creator(
                 new TypedAttributeStoreCreator<T>, type_name, typeid(T).name()
             );
-	    if(type_name == "bool") {
-		GeoFile::register_ascii_attribute_serializer(
-		    type_name,
-		    read_ascii_attribute<bool>,
-		    write_ascii_attribute<bool>
-		);
-	    } else {
-		GeoFile::register_ascii_attribute_serializer(
-		    type_name,
-		    read_ascii_attribute<T>,
-		    write_ascii_attribute<T>
-		);
-	    }
+            if(type_name == "bool") {
+                GeoFile::register_ascii_attribute_serializer(
+                    type_name,
+                    read_ascii_attribute<bool>,
+                    write_ascii_attribute<bool>
+                );
+            } else {
+                GeoFile::register_ascii_attribute_serializer(
+                    type_name,
+                    read_ascii_attribute<T>,
+                    write_ascii_attribute<T>
+                );
+            }
         }
     };
 
@@ -766,15 +766,15 @@ namespace GEO {
             return size_;
         }
 
-	/**
-	 * \brief Gets the capacity.
-	 * \return the number of items that can be stored without doing
-	 *  a reallocation.
-	 */
-	index_t capacity() const {
-	    return capacity_;
-	}
-	
+        /**
+         * \brief Gets the capacity.
+         * \return the number of items that can be stored without doing
+         *  a reallocation.
+         */
+        index_t capacity() const {
+            return capacity_;
+        }
+        
         /**
          * \brief Resizes all the attributes managed by this
          *  AttributesManager.
@@ -783,14 +783,14 @@ namespace GEO {
          */
         void resize(index_t new_size);
 
-	/**
-	 * \brief Pre-allocates memory for a number of items.
-	 * \details Has effect only if new_capacity is larger 
-	 *  than current capacity.
-	 * \param[in] new_capacity the number of items.
-	 */
-	void reserve(index_t new_capacity);
-	
+        /**
+         * \brief Pre-allocates memory for a number of items.
+         * \details Has effect only if new_capacity is larger 
+         *  than current capacity.
+         * \param[in] new_capacity the number of items.
+         */
+        void reserve(index_t new_capacity);
+        
         /**
          * \brief Clears this AttributesManager
          * \param[in] keep_attributes if true, then all
@@ -931,7 +931,7 @@ namespace GEO {
         
     private:
         index_t size_;
-	index_t capacity_;
+        index_t capacity_;
         std::map<std::string, AttributeStore*> attributes_;
     } ;
 
@@ -984,12 +984,12 @@ namespace GEO {
          */
         void unbind() {
             geo_assert(is_bound());
-	    // If the AttributeManager was destroyed before, do not
-	    // do anything. This can occur in Lua scripting when using
-	    // Attribute wrapper objects.
-	    if(!disconnected_) {
-		unregister_me(store_);
-	    }
+            // If the AttributeManager was destroyed before, do not
+            // do anything. This can occur in Lua scripting when using
+            // Attribute wrapper objects.
+            if(!disconnected_) {
+                unregister_me(store_);
+            }
             manager_ = nullptr;
             store_ = nullptr;
         }
@@ -1178,14 +1178,14 @@ namespace GEO {
             return typed_store->get_vector();
         }
 
-	/**
-	 * \brief Gets the AttributeManager this Attribute is bound to.
-	 * \return a pointer to the attributes manager.
-	 */
-	AttributesManager* manager() const {
-	    return manager_;
-	}
-	
+        /**
+         * \brief Gets the AttributeManager this Attribute is bound to.
+         * \return a pointer to the attributes manager.
+         */
+        AttributesManager* manager() const {
+            return manager_;
+        }
+        
     protected:
         AttributesManager* manager_;
         AttributeStore* store_;
@@ -1203,33 +1203,33 @@ namespace GEO {
     public:
         typedef AttributeBase<T> superclass;
 
-	/**
-	 * \brief Tests at compile time whether type can be used
-	 *  in an Attribute. If not the case generates a compile-time
-	 *  error.
-	 */
-	static void static_test_type() {
-	    // Attributes are only implemented for classes that
-	    // can be copied with memcpy() and read/written to
-	    // files using fread()/fwrite()
+        /**
+         * \brief Tests at compile time whether type can be used
+         *  in an Attribute. If not the case generates a compile-time
+         *  error.
+         */
+        static void static_test_type() {
+            // Attributes are only implemented for classes that
+            // can be copied with memcpy() and read/written to
+            // files using fread()/fwrite()
 #if __GNUG__ && __GNUC__ < 5
-	    static_assert(
-		__has_trivial_copy(T),
-		"Attribute only implemented for types that can be copied with memcpy()"
-	    );
+            static_assert(
+                __has_trivial_copy(T),
+                "Attribute only implemented for types that can be copied with memcpy()"
+            );
 #else
-	    static_assert(
-		std::is_trivially_copyable<T>::value,
-		"Attribute only implemented for types that can be copied with memcpy()"
-	    );
-#endif	    
-	}
-	
+            static_assert(
+                std::is_trivially_copyable<T>::value,
+                "Attribute only implemented for types that can be copied with memcpy()"
+            );
+#endif      
+        }
+        
         /**
          * \brief Creates an uninitialized (unbound) Attribute.
          */
         Attribute() : superclass() {
-	    static_test_type();
+            static_test_type();
         }
         
         /**
@@ -1243,7 +1243,7 @@ namespace GEO {
          */
         Attribute(AttributesManager& manager, const std::string& name) :
             superclass(manager, name) {
-	    static_test_type();
+            static_test_type();
         }
 
         /**

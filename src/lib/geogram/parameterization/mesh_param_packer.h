@@ -72,95 +72,95 @@ namespace GEO {
     class GEOGRAM_API Packer {
     public:
 
-	/**
-	 * \brief Packer constructor.
-	 */
+        /**
+         * \brief Packer constructor.
+         */
         Packer() ;
 
-	/**
-	 * \brief Packs a texture atlas.
-	 * \param[in,out] mesh a surface mesh.
-	 * \details The mesh is supposed to have texture coordinates
-	 *  stored in a 2d vector attribute attached to the facet
-	 *  corners and named "tex_coord".
-	 */
+        /**
+         * \brief Packs a texture atlas.
+         * \param[in,out] mesh a surface mesh.
+         * \details The mesh is supposed to have texture coordinates
+         *  stored in a 2d vector attribute attached to the facet
+         *  corners and named "tex_coord".
+         */
         void pack_surface(Mesh& mesh);
 
-	/**
-	 * \brief Gets the size of the target texture image in
-	 *  pixels.
-	 * \return the size of the target texture image.
-	 */
+        /**
+         * \brief Gets the size of the target texture image in
+         *  pixels.
+         * \return the size of the target texture image.
+         */
         index_t image_size_in_pixels() const {
-	    return image_size_in_pixels_;
-	}
+            return image_size_in_pixels_;
+        }
 
-	/**
-	 * \brief Sets the size of the target texture image in
-	 *  pixels.
-	 * \param[in] size the size of the target texture image.
-	 */
+        /**
+         * \brief Sets the size of the target texture image in
+         *  pixels.
+         * \param[in] size the size of the target texture image.
+         */
         void set_image_size_in_pixels(index_t size) {
             image_size_in_pixels_ = size;
         }
 
-	/**
-	 * \brief Gets the size of the margin (or "gutter") around the charts.
-	 * \details This may be required to avoid undesirable blends due to
-	 *  mip-mapping.
-	 * \return the number of empty pixels to be preserved around each chart.
-	 */
+        /**
+         * \brief Gets the size of the margin (or "gutter") around the charts.
+         * \details This may be required to avoid undesirable blends due to
+         *  mip-mapping.
+         * \return the number of empty pixels to be preserved around each chart.
+         */
         index_t margin_width_in_pixels() const {
-	    return margin_width_in_pixels_;
-	}
+            return margin_width_in_pixels_;
+        }
 
-	/**
-	 * \brief Sets the size of the margin (or "gutter") around the charts.
-	 * \details This may be required to avoid undesirable blends due to
-	 *  mip-mapping.
-	 * \param[in] width the number of empty pixels to be preserved around each chart.
-	 */
+        /**
+         * \brief Sets the size of the margin (or "gutter") around the charts.
+         * \details This may be required to avoid undesirable blends due to
+         *  mip-mapping.
+         * \param[in] width the number of empty pixels to be preserved around each chart.
+         */
         void set_margin_width_in_pixels(index_t width) {
             margin_width_in_pixels_ = width;
         } 
 
       protected:
-	/**
-	 * \brief Packs a set of charts.
-	 * \param[in,out] charts a const reference to a vector with the charts to be packed.
-	 * \details All the charts are supposed to be attached to the same mesh.
-	 *  Texture coordinates are stored in a 2d vector attribute attached to
-	 *  the facet corners of the mesh and called "tex_coord".
-	 */
+        /**
+         * \brief Packs a set of charts.
+         * \param[in,out] charts a const reference to a vector with the charts to be packed.
+         * \details All the charts are supposed to be attached to the same mesh.
+         *  Texture coordinates are stored in a 2d vector attribute attached to
+         *  the facet corners of the mesh and called "tex_coord".
+         */
         void pack_charts(vector<Chart>& charts);
 
-	/**
-	 * \brief Normalizes the parameterization of a chart.
-	 * \param[in,out] chart a reference to the chart to be normalized.
-	 * \details This rescales texture coordinates in such a way that the
-	 *  chart has the same area in 3D and in texture space. This also applies
-	 *  a rotation to the texture coordinates such that the area of the bounding
-	 *  rectangle is minimized. Texture coordinates are stored in a 2d vector 
-	 *  attribute attached to the facet corners of the mesh and called "tex_coord".
-	 */
+        /**
+         * \brief Normalizes the parameterization of a chart.
+         * \param[in,out] chart a reference to the chart to be normalized.
+         * \details This rescales texture coordinates in such a way that the
+         *  chart has the same area in 3D and in texture space. This also applies
+         *  a rotation to the texture coordinates such that the area of the bounding
+         *  rectangle is minimized. Texture coordinates are stored in a 2d vector 
+         *  attribute attached to the facet corners of the mesh and called "tex_coord".
+         */
         void normalize_chart(Chart& chart);
 
       private:
         double total_area_3d_ ;
         index_t image_size_in_pixels_ ;
         index_t margin_width_in_pixels_ ;
-	Attribute<double> tex_coord_;
-	Attribute<index_t> chart_attr_;
-	
+        Attribute<double> tex_coord_;
+        Attribute<index_t> chart_attr_;
+        
       private:
-	/**
-	 * \brief Forbids copy.
-	 */
+        /**
+         * \brief Forbids copy.
+         */
         Packer(const Packer& rhs) ;
 
-	/**
-	 * \brief Forbids copy.
-	 */
+        /**
+         * \brief Forbids copy.
+         */
         Packer& operator=(const Packer& rhs) ;
     } ;
   

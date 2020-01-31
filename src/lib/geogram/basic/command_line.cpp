@@ -264,42 +264,42 @@ namespace {
      * \param[in] argv array of command line arguments passed to main()
      */
     void parse_config_file(int argc, char** argv) {
-	geo_assert(argc >= 1);
-	std::string program_name = String::to_uppercase(FileSystem::base_name(argv[0]));
-	static bool init = false;
-	if(init) {
-	    return;
-	}
-	init = true;
-	Logger::out("config") << "Configuration file name:" << config_file_name
-			      << std::endl;
-	Logger::out("config") << "Home directory:" << FileSystem::home_directory()
-			      << std::endl;
-	std::string config_filename = FileSystem::home_directory() + "/" + config_file_name;
-	std::string section = "*";
-	if(FileSystem::is_file(config_filename)) {
-	    Logger::out("config") << "Using configuration file:"
-				       << config_filename
-				       << std::endl;
-	    std::ifstream in(config_filename.c_str());
-	    std::string line;
-	    while(std::getline(in,line)) {
-		if(line.length() >= 3 && line[0] == '[' && line[line.length()-1] == ']') {
-		    section = String::to_uppercase(line.substr(1,line.length()-2));
-		} else if(section == program_name || section == "*") {
-		    size_t pos = line.find("=");
-		    if(pos != std::string::npos) {
-			std::string argname = line.substr(0,pos);
-			std::string argval  = line.substr(pos+1,line.length()-pos-1);
-			if(CmdLine::arg_is_declared(argname)) {
-			    CmdLine::set_arg(argname, argval);
-			} else {
-			    Logger::warn("config") << argname << "=" << argval << " ignored" << std::endl;
-			}
-		    }
-		}
-	    }
-	}
+        geo_assert(argc >= 1);
+        std::string program_name = String::to_uppercase(FileSystem::base_name(argv[0]));
+        static bool init = false;
+        if(init) {
+            return;
+        }
+        init = true;
+        Logger::out("config") << "Configuration file name:" << config_file_name
+                              << std::endl;
+        Logger::out("config") << "Home directory:" << FileSystem::home_directory()
+                              << std::endl;
+        std::string config_filename = FileSystem::home_directory() + "/" + config_file_name;
+        std::string section = "*";
+        if(FileSystem::is_file(config_filename)) {
+            Logger::out("config") << "Using configuration file:"
+                                       << config_filename
+                                       << std::endl;
+            std::ifstream in(config_filename.c_str());
+            std::string line;
+            while(std::getline(in,line)) {
+                if(line.length() >= 3 && line[0] == '[' && line[line.length()-1] == ']') {
+                    section = String::to_uppercase(line.substr(1,line.length()-2));
+                } else if(section == program_name || section == "*") {
+                    size_t pos = line.find("=");
+                    if(pos != std::string::npos) {
+                        std::string argname = line.substr(0,pos);
+                        std::string argval  = line.substr(pos+1,line.length()-pos-1);
+                        if(CmdLine::arg_is_declared(argname)) {
+                            CmdLine::set_arg(argname, argval);
+                        } else {
+                            Logger::warn("config") << argname << "=" << argval << " ignored" << std::endl;
+                        }
+                    }
+                }
+            }
+        }
     }
     
     /**
@@ -317,11 +317,11 @@ namespace {
     bool parse_internal(
         int argc, char** argv, std::vector<std::string>& unparsed_args
     ) {
-	geo_argc = argc;
-	geo_argv = argv;
-	
-	parse_config_file(argc, argv);
-	
+        geo_argc = argc;
+        geo_argv = argv;
+        
+        parse_config_file(argc, argv);
+        
         bool ok = true;
         desc_->argv0 = argv[0];
         unparsed_args.clear();
@@ -399,18 +399,18 @@ namespace {
      *  point arguments.
      */
     std::string get_display_arg(const std::string& arg_name) {
-	CmdLine::ArgType arg_type = get_arg_type(arg_name);
-	std::string result;
-	if(arg_type == CmdLine::ARG_DOUBLE) {
-	    double x = CmdLine::get_arg_double(arg_name);
-	    result = String::to_display_string(x);
-	} else if(arg_type == CmdLine::ARG_PERCENT) {
-	    double x = CmdLine::get_arg_percent(arg_name, 100.0);
-	    result = String::to_display_string(x) + "%";
-	} else {
-	    result = CmdLine::get_arg(arg_name);
-	}
-	return result;
+        CmdLine::ArgType arg_type = get_arg_type(arg_name);
+        std::string result;
+        if(arg_type == CmdLine::ARG_DOUBLE) {
+            double x = CmdLine::get_arg_double(arg_name);
+            result = String::to_display_string(x);
+        } else if(arg_type == CmdLine::ARG_PERCENT) {
+            double x = CmdLine::get_arg_percent(arg_name, 100.0);
+            result = String::to_display_string(x) + "%";
+        } else {
+            result = CmdLine::get_arg(arg_name);
+        }
+        return result;
     }
     
     /**
@@ -526,22 +526,22 @@ namespace GEO {
             desc_ = nullptr;
         }
 
-	int argc() {
-	    return geo_argc;
-	}
+        int argc() {
+            return geo_argc;
+        }
 
-	char** argv() {
-	    return geo_argv;
-	}
+        char** argv() {
+            return geo_argv;
+        }
 
-	void set_config_file_name(const std::string& filename) {
-	    config_file_name = filename;
-	}
+        void set_config_file_name(const std::string& filename) {
+            config_file_name = filename;
+        }
 
-	std::string get_config_file_name() {
-	    return config_file_name;
-	}
-	
+        std::string get_config_file_name() {
+            return config_file_name;
+        }
+        
         bool parse(
             int argc, char** argv, std::vector<std::string>& unparsed_args,
             const std::string& additional_arg_specs
@@ -636,16 +636,16 @@ namespace GEO {
             }
 
 #ifndef GEOGRAM_PSM
-	    nlPrintfFuncs(geogram_printf, geogram_fprintf);	    
-	    nlInitialize(argc, argv);
+            nlPrintfFuncs(geogram_printf, geogram_fprintf);         
+            nlInitialize(argc, argv);
 #endif
-	    if(
-		CmdLine::arg_is_declared("nl:CUDA") &&
-		CmdLine::get_arg_bool("nl:CUDA")
-	    ) {
-		geo_cite("DBLP:journals/paapp/BuatoisCL09");
-	    }
-	    
+            if(
+                CmdLine::arg_is_declared("nl:CUDA") &&
+                CmdLine::get_arg_bool("nl:CUDA")
+            ) {
+                geo_cite("DBLP:journals/paapp/BuatoisCL09");
+            }
+            
             return true;
         }
 

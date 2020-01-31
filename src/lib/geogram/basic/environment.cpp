@@ -128,7 +128,7 @@ namespace GEO {
     void VariableObserverList::add_observer(
         VariableObserver* observer
     ) {
-	auto it = std::find(observers_.begin(), observers_.end(), observer);
+        auto it = std::find(observers_.begin(), observers_.end(), observer);
         geo_assert(it == observers_.end());
         observers_.push_back(observer);
     }

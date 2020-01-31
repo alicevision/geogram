@@ -53,47 +53,47 @@ namespace GEO {
 
     namespace Biblio {
 
-	/**
-	 * \brief Initializes the bibliography system.
-	 */
-	inline void GEOGRAM_API initialize() { }
+        /**
+         * \brief Initializes the bibliography system.
+         */
+        inline void GEOGRAM_API initialize() { }
 
-	/**
-	 * \brief Terminates the bibliography system.
-	 */
-	inline void GEOGRAM_API terminate() { }
+        /**
+         * \brief Terminates the bibliography system.
+         */
+        inline void GEOGRAM_API terminate() { }
 
-	/**
-	 * \brief Registers a set of bibliographic references.
-	 * \param[in] bib_refs a string with the bibliographic references,
-	 *  in Bibtex format.
-	 */
-	inline void GEOGRAM_API register_references(const char* bib_refs) { geo_argused(bib_refs); }
+        /**
+         * \brief Registers a set of bibliographic references.
+         * \param[in] bib_refs a string with the bibliographic references,
+         *  in Bibtex format.
+         */
+        inline void GEOGRAM_API register_references(const char* bib_refs) { geo_argused(bib_refs); }
 
-	/**
-	 * \brief Cites a bibliographic reference.
-	 * \details Client code should not use this function and should use
-	 *  the geo_cite() macro instead.
-	 * \param[in] ref the citation key.
-	 * \param[in] file the source filename from which the citation key is
-	 *  cited.
-	 * \param[in] line the source line number.
-	 * \param[in] function the name of the function from which the citation
-	 *  key is cited.
-	 * \param[in] info more information about the context of the citation.
-	 */
-	// void GEOGRAM_API cite(
-	//     const char* ref,
-	//     const char* file, int line,
-	//     const char* function,
-	//     const char* info = nullptr
-	// );
+        /**
+         * \brief Cites a bibliographic reference.
+         * \details Client code should not use this function and should use
+         *  the geo_cite() macro instead.
+         * \param[in] ref the citation key.
+         * \param[in] file the source filename from which the citation key is
+         *  cited.
+         * \param[in] line the source line number.
+         * \param[in] function the name of the function from which the citation
+         *  key is cited.
+         * \param[in] info more information about the context of the citation.
+         */
+        // void GEOGRAM_API cite(
+        //     const char* ref,
+        //     const char* file, int line,
+        //     const char* function,
+        //     const char* info = nullptr
+        // );
 
-	/**
-	 * \brief Resets all citations.
-	 */
-	inline void GEOGRAM_API reset_citations() { }
-	}
+        /**
+         * \brief Resets all citations.
+         */
+        inline void GEOGRAM_API reset_citations() { }
+        }
 
 /**
  * \brief Cites a reference.

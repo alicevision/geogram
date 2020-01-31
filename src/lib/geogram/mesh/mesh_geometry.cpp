@@ -81,33 +81,33 @@ namespace GEO {
     namespace Geom {
 
         vec3 mesh_facet_normal(const Mesh& M, index_t f) {
-	    vec3 result(0.0, 0.0, 0.0);
-	    index_t c1 = M.facets.corners_begin(f);
-	    index_t v1 = M.facet_corners.vertex(c1);
-	    const vec3& p1 = mesh_vertex(M, v1);
-	    for(index_t c2=c1+1; c2<M.facets.corners_end(f); ++c2) {
-		index_t c3 = M.facets.next_corner_around_facet(f,c2);
-		index_t v2 = M.facet_corners.vertex(c2);
-		index_t v3 = M.facet_corners.vertex(c3);
-		const vec3& p2 = mesh_vertex(M, v2);
-		const vec3& p3 = mesh_vertex(M, v3);
-		result += cross(p2 - p1, p3 - p1);
-	    }
-	    return result;
-	}
+            vec3 result(0.0, 0.0, 0.0);
+            index_t c1 = M.facets.corners_begin(f);
+            index_t v1 = M.facet_corners.vertex(c1);
+            const vec3& p1 = mesh_vertex(M, v1);
+            for(index_t c2=c1+1; c2<M.facets.corners_end(f); ++c2) {
+                index_t c3 = M.facets.next_corner_around_facet(f,c2);
+                index_t v2 = M.facet_corners.vertex(c2);
+                index_t v3 = M.facet_corners.vertex(c3);
+                const vec3& p2 = mesh_vertex(M, v2);
+                const vec3& p3 = mesh_vertex(M, v3);
+                result += cross(p2 - p1, p3 - p1);
+            }
+            return result;
+        }
 
-	double mesh_unsigned_normal_angle(const Mesh& M, index_t f1, index_t f2) {
+        double mesh_unsigned_normal_angle(const Mesh& M, index_t f1, index_t f2) {
             vec3 n1 = mesh_facet_normal(M,f1);
             vec3 n2 = mesh_facet_normal(M,f2);
-	    double l = length(n1)*length(n2);
+            double l = length(n1)*length(n2);
             double cos_angle = (l > 1e-30) ? dot(n1, n2)/l : 1.0;
             // Numerical precision problem may occur, and generate
             // normalized dot products that are outside the valid
             // range of acos.
             geo_clamp(cos_angle, -1.0, 1.0);
             return acos(cos_angle);
-	}
-	
+        }
+        
         double mesh_normal_angle(const Mesh& M, index_t c) {
             geo_debug_assert(M.facets.are_simplices());
             index_t f1 = c/3;
@@ -115,7 +115,7 @@ namespace GEO {
             geo_debug_assert(f2 != NO_FACET);
             vec3 n1 = mesh_facet_normal(M,f1);
             vec3 n2 = mesh_facet_normal(M,f2);
-	    double l = length(n1)*length(n2);
+            double l = length(n1)*length(n2);
             double sign = 1.0;
             if(dot(cross(n1,n2),mesh_corner_vector(M,c)) > 0.0) {
                 sign = -1.0;
@@ -344,60 +344,60 @@ namespace GEO {
             return ::fabs(Geom::tetra_signed_volume(p0,p1,p2,p3));
         }
 
-	//   Arbitrary cells are decomposed into tetrahedra, with one
-	// vertex in the center of the cell, and one vertex in the
-	// center of each face. This ensures that two adjacent cells
-	// are not overlapping (if simply triangulating the faces,
-	// there would be tiny overlaps / tiny gaps that would introduce
-	// errors in the total volume of the mesh).
-	//
-	//  Note that the center point may fall outside the cell in some
-	// degenerate configurations. It is not a problem since we compute
-	// signed tetrahedra volumes, in such a way that overlapping volumes
-	// will cancel-out in such a configuration.
-	//  Therefore, we could take an arbitrary point as the enter point,
-	// including the origin, but taking the center probably makes computations
-	// more stable, by cancelling the translations.
+        //   Arbitrary cells are decomposed into tetrahedra, with one
+        // vertex in the center of the cell, and one vertex in the
+        // center of each face. This ensures that two adjacent cells
+        // are not overlapping (if simply triangulating the faces,
+        // there would be tiny overlaps / tiny gaps that would introduce
+        // errors in the total volume of the mesh).
+        //
+        //  Note that the center point may fall outside the cell in some
+        // degenerate configurations. It is not a problem since we compute
+        // signed tetrahedra volumes, in such a way that overlapping volumes
+        // will cancel-out in such a configuration.
+        //  Therefore, we could take an arbitrary point as the enter point,
+        // including the origin, but taking the center probably makes computations
+        // more stable, by cancelling the translations.
         
         double result = 0.0;
         double center[3];
-	index_t nbcv = M.cells.nb_vertices(c);
-	center[0] = center[1] = center[2] = 0.0;
-	for(index_t lv=0; lv<nbcv; ++lv) {
-	    const double* p = M.vertices.point_ptr(M.cells.vertex(c,lv));
-	    center[0] += p[0];
-	    center[1] += p[1];
-	    center[2] += p[2];
-	}
-	center[0] /= double(nbcv);
-	center[1] /= double(nbcv);
-	center[2] /= double(nbcv);
+        index_t nbcv = M.cells.nb_vertices(c);
+        center[0] = center[1] = center[2] = 0.0;
+        for(index_t lv=0; lv<nbcv; ++lv) {
+            const double* p = M.vertices.point_ptr(M.cells.vertex(c,lv));
+            center[0] += p[0];
+            center[1] += p[1];
+            center[2] += p[2];
+        }
+        center[0] /= double(nbcv);
+        center[1] /= double(nbcv);
+        center[2] /= double(nbcv);
         for(index_t lf=0; lf<M.cells.nb_facets(c); ++lf) {
-	    index_t nbcfv = M.cells.facet_nb_vertices(c,lf);
-	    if(nbcfv == 3) {
-		const double* p1 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,0));
-		const double* p2 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,1));
-		const double* p3 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,2));
-		result += Geom::tetra_signed_volume(center, p1, p2, p3);
-	    } else {
-		double facet_center[3];
-		facet_center[0] = facet_center[1] = facet_center[2] = 0.0;
-		for(index_t lfv=0; lfv<nbcfv; ++lfv) {
-		    const double* p = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv));
-		    facet_center[0] += p[0];
-		    facet_center[1] += p[1];
-		    facet_center[2] += p[2];
-		}
-		facet_center[0] /= double(nbcfv);
-		facet_center[1] /= double(nbcfv);
-		facet_center[2] /= double(nbcfv);
-		for(index_t lfv1=0; lfv1<nbcfv; ++lfv1) {
-		    index_t lfv2 = (lfv1 + 1) % nbcfv;
-		    const double* p1 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv1));
-		    const double* p2 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv2));
-		    result += Geom::tetra_signed_volume(center, facet_center, p1, p2);
-		}
-	    }
+            index_t nbcfv = M.cells.facet_nb_vertices(c,lf);
+            if(nbcfv == 3) {
+                const double* p1 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,0));
+                const double* p2 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,1));
+                const double* p3 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,2));
+                result += Geom::tetra_signed_volume(center, p1, p2, p3);
+            } else {
+                double facet_center[3];
+                facet_center[0] = facet_center[1] = facet_center[2] = 0.0;
+                for(index_t lfv=0; lfv<nbcfv; ++lfv) {
+                    const double* p = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv));
+                    facet_center[0] += p[0];
+                    facet_center[1] += p[1];
+                    facet_center[2] += p[2];
+                }
+                facet_center[0] /= double(nbcfv);
+                facet_center[1] /= double(nbcfv);
+                facet_center[2] /= double(nbcfv);
+                for(index_t lfv1=0; lfv1<nbcfv; ++lfv1) {
+                    index_t lfv2 = (lfv1 + 1) % nbcfv;
+                    const double* p1 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv1));
+                    const double* p2 = M.vertices.point_ptr(M.cells.facet_vertex(c,lf,lfv2));
+                    result += Geom::tetra_signed_volume(center, facet_center, p1, p2);
+                }
+            }
         }
         return ::fabs(result);
     }

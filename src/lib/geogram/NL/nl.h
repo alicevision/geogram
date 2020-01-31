@@ -984,7 +984,7 @@ typedef void* NLContext;
  * \see nlMultiGetVariable()
  */
     NLAPI void NLAPIENTRY nlMultiSetVariable(
-	NLuint i, NLuint k, NLdouble value
+        NLuint i, NLuint k, NLdouble value
     );
     
 /**
@@ -1189,7 +1189,7 @@ typedef void* NLContext;
  * \param[in] value value to be added to the component
  */    
     NLAPI void NLAPIENTRY nlMultiAddIRightHandSide(
-	NLuint i, NLuint k, NLdouble value
+        NLuint i, NLuint k, NLdouble value
     );
     
 /**
@@ -1316,7 +1316,7 @@ typedef void* NLContext;
  * \param[in] stride number of bytes between two consecutive elements.
  */
     NLAPI void NLAPIENTRY nlBindBuffer(
-	NLenum buffer, NLuint k, void* addr, NLuint stride
+        NLenum buffer, NLuint k, void* addr, NLuint stride
     );
 
     
@@ -1387,7 +1387,7 @@ NLAPI void NLAPIENTRY nlMatrixMode(NLenum matrix);
  *   one of NL_EIGEN_SHIFT, NL_EIGEN_THRESHOLD.
  */
     NLAPI void NLAPIENTRY nlEigenSolverParameterd(
-	NLenum pname, NLdouble val
+        NLenum pname, NLdouble val
     );
 
 /**
@@ -1397,7 +1397,7 @@ NLAPI void NLAPIENTRY nlMatrixMode(NLenum matrix);
  *   NL_EIGEN_MAX_ITERATIONS, NL_SYMMETRIC.
  */
     NLAPI void NLAPIENTRY nlEigenSolverParameteri(
-	NLenum pname, NLint val
+        NLenum pname, NLint val
     );
 
 /**

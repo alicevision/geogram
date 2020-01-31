@@ -112,13 +112,13 @@ namespace GEO {
 
         /**
          * \brief Creates a basic_bindex from two integers and 
-	 *  keeps their order.
+         *  keeps their order.
          * \details The integers are not sorted.
          * \param[in] i first integer
          * \param[in] j second integer
          * \param[in] order argument of type #KeepOrderType used to select the
          *  right constructor. Use \c basic_bindex::#KEEP_ORDER 
-	 *  for this argument.
+         *  for this argument.
          */
         basic_bindex(
             IndexType i,
@@ -166,7 +166,7 @@ namespace GEO {
          * \param[in] rhs the basic_bindex to compare this basic_bindex with.
          * \return true if one of the indices in \p rhs differs from
          *  the index in this basic_bindex at the same position, 
-	 *  false otherwise.
+         *  false otherwise.
          */
         bool operator!= (const basic_bindex<IndexType>& rhs) const {
             return
@@ -177,7 +177,7 @@ namespace GEO {
         /**
          * \brief Constructs a basic_bindex from another one.
          * \param[in] rhs the basic_bindex this basic_bindex 
-	 *  should be copied from
+         *  should be copied from
          */
         basic_bindex(const basic_bindex<IndexType>& rhs) {
             indices[0] = rhs.indices[0];
@@ -187,12 +187,12 @@ namespace GEO {
         /**
          * \brief Assigns a basic_bindex to this one.
          * \param[in] rhs the basic_bindex this basic_bindex 
-	 *  should be assigned from
+         *  should be assigned from
          * \return a reference to this basic_bindex
          */
         basic_bindex<IndexType>& operator= (
-	    const basic_bindex<IndexType>& rhs
-	) {
+            const basic_bindex<IndexType>& rhs
+        ) {
             indices[0] = rhs.indices[0];
             indices[1] = rhs.indices[1];
             return *this;
@@ -234,7 +234,7 @@ namespace GEO {
      */
     template <class IndexType>
     inline std::ostream& operator<< (
-	std::ostream& out, const basic_bindex<IndexType>& B
+        std::ostream& out, const basic_bindex<IndexType>& B
     ) {
         return out << B.indices[0] << " " << B.indices[1];
     }
@@ -286,19 +286,19 @@ namespace GEO {
             indices[0] = i;
             indices[1] = j;
             indices[2] = k;
-	    GEO::sort_3(indices);
+            GEO::sort_3(indices);
         }
 
         /**
          * \brief Creates a basic_trindex from three integers and 
-	 *  keeps their order.
+         *  keeps their order.
          * \details The integers are not sorted.
          * \param[in] i first integer
          * \param[in] j second integer
          * \param[in] k third integer
          * \param[in] order argument of type #KeepOrderType used to select the
          *  right constructor. Use \c basic_trindex::#KEEP_ORDER 
-	 *  for this argument.
+         *  for this argument.
          */
         basic_trindex(
             IndexType i,
@@ -348,7 +348,7 @@ namespace GEO {
          * \param[in] rhs the basic_trindex to compare this basic_trindex with.
          * \return true if one of the indices in \p rhs differs from
          *  the index in this basic_trindex at the same position, 
-	 *  false otherwise.
+         *  false otherwise.
          */
         bool operator!= (const basic_trindex<IndexType>& rhs) const {
             return
@@ -360,7 +360,7 @@ namespace GEO {
         /**
          * \brief Constructs a basic_trindex from another one.
          * \param[in] rhs the basic_trindex this basic_trindex 
-	 *  should be copied from
+         *  should be copied from
          */
         basic_trindex(const basic_trindex<IndexType>& rhs) {
             indices[0] = rhs.indices[0];
@@ -371,12 +371,12 @@ namespace GEO {
         /**
          * \brief Assigns a basic_trindex to this one.
          * \param[in] rhs the basic_trindex this basic_trindex should 
-	 *  be assigned from
+         *  be assigned from
          * \return a reference to this basic_trindex
          */
         basic_trindex<IndexType>& operator= (
-	    const basic_trindex<IndexType>& rhs
-	) {
+            const basic_trindex<IndexType>& rhs
+        ) {
             indices[0] = rhs.indices[0];
             indices[1] = rhs.indices[1];
             indices[2] = rhs.indices[2];
@@ -385,7 +385,7 @@ namespace GEO {
 
         /**
          * \brief Tests whether a basic_trindex has the same orientation 
-	 *  as a triple of integers.
+         *  as a triple of integers.
          * \details Two basic_trindex have the same orientation if one of them
          *  is a circular permutation of the other one.
          * \param[in] t the basic_trindex
@@ -415,9 +415,9 @@ namespace GEO {
          *  of the indices in \p t1, false otherwise.
          */
         static bool same_orientation(
-	    const basic_trindex<IndexType>& t1,
-	    const basic_trindex<IndexType>& t2
-	) {
+            const basic_trindex<IndexType>& t1,
+            const basic_trindex<IndexType>& t2
+        ) {
             return same_orientation(
                 t1, t2.indices[0], t2.indices[1], t2.indices[2]
             );
@@ -460,8 +460,8 @@ namespace GEO {
      * \relates basic_trindex
      */
     template <class IndexType>
-	inline std::ostream& operator<< (
-	    std::ostream& out, const basic_trindex<IndexType>& T
+        inline std::ostream& operator<< (
+            std::ostream& out, const basic_trindex<IndexType>& T
     ) {
         return out
             << T.indices[0] << " " << T.indices[1] << " " << T.indices[2];
@@ -485,8 +485,8 @@ namespace GEO {
 
         /**
          * \brief This type is used to overload basic_quadindex 
-	 *  constructors with versions that keep the order of the 
-	 *  stored indices.
+         *  constructors with versions that keep the order of the 
+         *  stored indices.
          */
         enum KeepOrderType {
             /** Value to pass to basic_quadindex ordered constructor */
@@ -517,12 +517,12 @@ namespace GEO {
             indices[1] = j;
             indices[2] = k;
             indices[3] = l;
-	    GEO::sort_4(indices);
+            GEO::sort_4(indices);
         }
 
         /**
          * \brief Creates a basic_quadindex from four integers and 
-	 *  keeps their order.
+         *  keeps their order.
          * \details The integers are not sorted.
          * \param[in] i first integer
          * \param[in] j second integer
@@ -530,7 +530,7 @@ namespace GEO {
          * \param[in] l fourth integer
          * \param[in] order argument of type #KeepOrderType used to select the
          *  right constructor. Use \c basic_quadindex::#KEEP_ORDER for 
-	 *  this argument.
+         *  this argument.
          */
         basic_quadindex(
             IndexType i,
@@ -549,7 +549,7 @@ namespace GEO {
         /**
          * \brief Compares two basic_quadindex.
          * \param[in] rhs the basic_quadindex to compares this 
-	 *  basic_quadindex with.
+         *  basic_quadindex with.
          * \return true if \p rhs is smaller than this basic_quadindex according
          *  to the lexicographic order, false otherwise.
          */
@@ -568,7 +568,7 @@ namespace GEO {
         /**
          * \brief Compares two basic_quadindex.
          * \param[in] rhs the basic_quadindex to compare this 
-	 *  basic_quadindex with.
+         *  basic_quadindex with.
          * \return true of all indices of this basic_quadindex correspond to
          *  the indices in \p rhs at the same positions, false otherwise.
          */
@@ -583,10 +583,10 @@ namespace GEO {
         /**
          * \brief Compares two basic_quadindex.
          * \param[in] rhs the basic_quadindex to compare this 
-	 *  basic_quadindex with.
+         *  basic_quadindex with.
          * \return true if one of the indices in \p rhs differs from
          *  the index in this basic_quadindex at the same position, 
-	 *  false otherwise.
+         *  false otherwise.
          */
         bool operator!= (const basic_quadindex<IndexType>& rhs) const {
             return
@@ -599,7 +599,7 @@ namespace GEO {
         /**
          * \brief Constructs a basic_quadindex from another one.
          * \param[in] rhs the basic_quadindex this basic_quadindex 
-	 *  should be copied from
+         *  should be copied from
          */
         basic_quadindex(const basic_quadindex<IndexType>& rhs) {
             indices[0] = rhs.indices[0];
@@ -611,12 +611,12 @@ namespace GEO {
         /**
          * \brief Assigns a basic_quadindex to this one.
          * \param[in] rhs the basic_quadindex this basic_quadindex 
-	 *  should be assigned from
+         *  should be assigned from
          * \return a reference to this basic_quadindex
          */
         basic_quadindex<IndexType>& operator= (
-	    const basic_quadindex<IndexType>& rhs
-	) {
+            const basic_quadindex<IndexType>& rhs
+        ) {
             indices[0] = rhs.indices[0];
             indices[1] = rhs.indices[1];
             indices[2] = rhs.indices[2];

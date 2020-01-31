@@ -63,18 +63,18 @@ namespace GEO {
     }
 
     void NearestNeighborSearch::get_nearest_neighbors(
-	index_t nb_neighbors,
-	const double* query_point,
-	index_t* neighbors,
-	double* neighbors_sq_dist,
-	KeepInitialValues
+        index_t nb_neighbors,
+        const double* query_point,
+        index_t* neighbors,
+        double* neighbors_sq_dist,
+        KeepInitialValues
     ) const {
-	get_nearest_neighbors(
-	    nb_neighbors,
-	    query_point,
-	    neighbors,
-	    neighbors_sq_dist
-	);
+        get_nearest_neighbors(
+            nb_neighbors,
+            query_point,
+            neighbors,
+            neighbors_sq_dist
+        );
     }
     
     void NearestNeighborSearch::get_nearest_neighbors(
@@ -133,7 +133,7 @@ namespace GEO {
         geo_register_NearestNeighborSearch_creator(
             AdaptiveKdTree, "CNN"
         );
-	
+        
         std::string name = name_in;
         if(name == "default") {
             name = CmdLine::get_arg("algo:nn_search");

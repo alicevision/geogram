@@ -162,7 +162,7 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::enter_critical_section() */
-	void enter_critical_section() override {
+        void enter_critical_section() override {
 #if defined(GEO_OS_RASPBERRY)
             lock_mutex_arm32(&mutex_);
 #elif defined(GEO_OS_ANDROID)
@@ -173,7 +173,7 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::leave_critical_section() */
-	void leave_critical_section() override {
+        void leave_critical_section() override {
 #if defined(GEO_OS_RASPBERRY)
             unlock_mutex_arm32(&mutex_);
 #elif defined(GEO_OS_ANDROID)
@@ -185,7 +185,7 @@ namespace {
 
     protected:
         /** \brief PThreadManager destructor */
-	~PThreadManager() override {
+        ~PThreadManager() override {
             pthread_attr_destroy(&attr_);
 #ifndef GEO_OS_ANDROID
             pthread_mutex_destroy(&mutex_);
@@ -210,7 +210,7 @@ namespace {
         }
 
         /** \copydoc GEO::ThreadManager::run_concurrent_threads() */
-	void run_concurrent_threads (
+        void run_concurrent_threads (
             ThreadGroup& threads, index_t max_threads
         ) override {
             // TODO: take max_threads into account
@@ -389,7 +389,7 @@ namespace GEO {
             geo_assert(nb_cores > 0);
             return index_t(nb_cores);
 #elif defined GEO_OS_EMSCRIPTEN
-	    return 1;
+            return 1;
 #else
             return index_t(sysconf(_SC_NPROCESSORS_ONLN));
 #endif

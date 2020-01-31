@@ -148,19 +148,19 @@ namespace {
     class TerminalProgressClient : public ProgressClient {
     public:
         /** \copydoc GEO::ProgressClient::begin() */
-	void begin() override {
+        void begin() override {
             const ProgressTask* task = Progress::current_task();
             CmdLine::ui_progress(task->task_name(), 0, 0);
         }
 
         /** \copydoc GEO::ProgressClient::progress(index_t,index_t) */
-	void progress(index_t step, index_t percent) override {
+        void progress(index_t step, index_t percent) override {
             const ProgressTask* task = Progress::current_task();
             CmdLine::ui_progress(task->task_name(), step, percent);
         }
 
         /** \copydoc GEO::ProgressClient::end(bool) */
-	void end(bool canceled) override {
+        void end(bool canceled) override {
             const ProgressTask* task = Progress::current_task();
             double elapsed = SystemStopwatch::now() - task->start_time();
             if(canceled) {
@@ -174,7 +174,7 @@ namespace {
 
     protected:
         /** \brief TerminalProgressClient destructor */
-	~TerminalProgressClient() override {
+        ~TerminalProgressClient() override {
         }
     };
 }
@@ -279,7 +279,7 @@ namespace GEO {
 
     void ProgressTask::next() {
         step_++;
-	step_ = std::min(step_, max_steps_);
+        step_ = std::min(step_, max_steps_);
         update();
     }
 

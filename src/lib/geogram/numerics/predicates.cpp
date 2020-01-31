@@ -97,33 +97,33 @@ namespace {
     class LexicoCompare {
     public:
 
-	/**
-	 * \brief LexicoCompare constructor.
-	 * \param[in] dim dimension of the points to compare.
-	 */
-	LexicoCompare(index_t dim) : dim_(dim) {
-	}
+        /**
+         * \brief LexicoCompare constructor.
+         * \param[in] dim dimension of the points to compare.
+         */
+        LexicoCompare(index_t dim) : dim_(dim) {
+        }
 
-	/**
-	 * \brief Compares two points with respect to the lexicographic
-	 *  order.
-	 * \param[in] x , y pointers to the coordinates of the two points.
-	 * \retval true if x is strictly before y in the lexicographic order.
-	 * \retval false otherwise.
-	 */
-	bool operator()(const double* x, const double* y) const {
-	    for(index_t i=0; i<dim_-1; ++i) {
-		if(x[i] < y[i]) {
-		    return true;
-		}
-		if(x[i] > y[i]) {
-		    return false;
-		}
-	    }
-	    return (x[dim_-1] < y[dim_-1]);
-	}
+        /**
+         * \brief Compares two points with respect to the lexicographic
+         *  order.
+         * \param[in] x , y pointers to the coordinates of the two points.
+         * \retval true if x is strictly before y in the lexicographic order.
+         * \retval false otherwise.
+         */
+        bool operator()(const double* x, const double* y) const {
+            for(index_t i=0; i<dim_-1; ++i) {
+                if(x[i] < y[i]) {
+                    return true;
+                }
+                if(x[i] > y[i]) {
+                    return false;
+                }
+            }
+            return (x[dim_-1] < y[dim_-1]);
+        }
     private:
-	index_t dim_;
+        index_t dim_;
     };
 
     /**
@@ -134,19 +134,19 @@ namespace {
      * \retval false otherwise.
      */
     bool lexico_compare_3d(const double* x, const double* y) {
-	if(x[0] < y[0]) {
-	    return true;
-	}
-	if(x[0] > y[0]) {
-	    return false;
-	}
-	if(x[1] < y[1]) {
-	    return true;
-	}
-	if(x[1] > y[1]) {
-	    return false;
-	}
-	return x[2] < y[2];
+        if(x[0] < y[0]) {
+            return true;
+        }
+        if(x[0] > y[0]) {
+            return false;
+        }
+        if(x[1] < y[1]) {
+            return true;
+        }
+        if(x[1] > y[1]) {
+            return false;
+        }
+        return x[2] < y[2];
     }
 
     /**
@@ -160,15 +160,15 @@ namespace {
      * \param[in] dim the dimension of the points.
      */
     void SOS_sort(const double** begin, const double** end, index_t dim) {
-	if(SOS_mode_ == PCK::SOS_ADDRESS) {
-	    std::sort(begin, end);
-	} else {
-	    if(dim == 3) {
-		std::sort(begin, end, lexico_compare_3d);
-	    } else {
-		std::sort(begin, end, LexicoCompare(dim));
-	    }
-	}
+        if(SOS_mode_ == PCK::SOS_ADDRESS) {
+            std::sort(begin, end);
+        } else {
+            if(dim == 3) {
+                std::sort(begin, end, lexico_compare_3d);
+            } else {
+                std::sort(begin, end, LexicoCompare(dim));
+            }
+        }
     }
 
     /**
@@ -178,19 +178,19 @@ namespace {
      */
     inline double max4(double x1, double x2, double x3, double x4) {
 #ifdef __SSE2__
-	double result;
-	__m128d X1 =_mm_load_sd(&x1);
-	__m128d X2 =_mm_load_sd(&x2);
-	__m128d X3 =_mm_load_sd(&x3);
-	__m128d X4 =_mm_load_sd(&x4);
-	X1 = _mm_max_sd(X1,X2);
-	X3 = _mm_max_sd(X3,X4);
-	X1 = _mm_max_sd(X1,X3);
-	_mm_store_sd(&result, X1);
-	return result;
-#else	
-	return std::max(std::max(x1,x2),std::max(x3,x4));
-#endif	
+        double result;
+        __m128d X1 =_mm_load_sd(&x1);
+        __m128d X2 =_mm_load_sd(&x2);
+        __m128d X3 =_mm_load_sd(&x3);
+        __m128d X4 =_mm_load_sd(&x4);
+        X1 = _mm_max_sd(X1,X2);
+        X3 = _mm_max_sd(X3,X4);
+        X1 = _mm_max_sd(X1,X3);
+        _mm_store_sd(&result, X1);
+        return result;
+#else   
+        return std::max(std::max(x1,x2),std::max(x3,x4));
+#endif  
     }
 
 
@@ -201,22 +201,22 @@ namespace {
      * \param[out] M the maximum
      */
     inline void get_minmax3(
-	double& m, double& M, double x1, double x2, double x3
+        double& m, double& M, double x1, double x2, double x3
     ) {
 #ifdef __SSE2__
-	__m128d X1 =_mm_load_sd(&x1);
-	__m128d X2 =_mm_load_sd(&x2);
-	__m128d X3 =_mm_load_sd(&x3);
-	__m128d MIN12 = _mm_min_sd(X1,X2);
-	__m128d MAX12 = _mm_max_sd(X1,X2);
-	X1 = _mm_min_sd(MIN12, X3);
-	X3 = _mm_max_sd(MAX12, X3);
-	_mm_store_sd(&m, X1);
-	_mm_store_sd(&M, X3);
-#else	
-	m = std::min(std::min(x1,x2), x3);
-	M = std::max(std::max(x1,x2), x3);
-#endif	
+        __m128d X1 =_mm_load_sd(&x1);
+        __m128d X2 =_mm_load_sd(&x2);
+        __m128d X3 =_mm_load_sd(&x3);
+        __m128d MIN12 = _mm_min_sd(X1,X2);
+        __m128d MAX12 = _mm_max_sd(X1,X2);
+        X1 = _mm_min_sd(MIN12, X3);
+        X3 = _mm_max_sd(MAX12, X3);
+        _mm_store_sd(&m, X1);
+        _mm_store_sd(&M, X3);
+#else   
+        m = std::min(std::min(x1,x2), x3);
+        M = std::max(std::max(x1,x2), x3);
+#endif  
     }
 
 #ifdef __AVX2__
@@ -230,9 +230,9 @@ namespace {
      * \return an AVX2 register with the four determinants
      */
     inline __m256d avx2_vecdet(__m256d A, __m256d B, __m256d C, __m256d D) {
-	__m256d AD = _mm256_mul_pd(A,D);
-	__m256d BC = _mm256_mul_pd(B,C);
-	return _mm256_sub_pd(AD,BC);
+        __m256d AD = _mm256_mul_pd(A,D);
+        __m256d BC = _mm256_mul_pd(B,C);
+        return _mm256_sub_pd(AD,BC);
     }
 
     /**
@@ -243,45 +243,45 @@ namespace {
      * \return the determinant of the matrix.
      */
     inline double avx2_det4x4(
-	__m256d C11,
-	__m256d C12,
-	__m256d C13,
-	__m256d C14
+        __m256d C11,
+        __m256d C12,
+        __m256d C13,
+        __m256d C14
     ) {
-	// We develop w.r.t. the first column and
-	// compute the 4 minors simultaneously.
-	
-	__m256d C41 = _mm256_permute4x64_pd(C11, _MM_SHUFFLE(2,1,0,3)); 
-	
-	__m256d C22 = _mm256_permute4x64_pd(C12, _MM_SHUFFLE(0,3,2,1)); 
-	__m256d C32 = _mm256_permute4x64_pd(C12, _MM_SHUFFLE(1,0,3,2)); 
+        // We develop w.r.t. the first column and
+        // compute the 4 minors simultaneously.
+        
+        __m256d C41 = _mm256_permute4x64_pd(C11, _MM_SHUFFLE(2,1,0,3)); 
+        
+        __m256d C22 = _mm256_permute4x64_pd(C12, _MM_SHUFFLE(0,3,2,1)); 
+        __m256d C32 = _mm256_permute4x64_pd(C12, _MM_SHUFFLE(1,0,3,2)); 
 
-	__m256d C23 = _mm256_permute4x64_pd(C13, _MM_SHUFFLE(0,3,2,1)); 
-	__m256d C33 = _mm256_permute4x64_pd(C13, _MM_SHUFFLE(1,0,3,2)); 
+        __m256d C23 = _mm256_permute4x64_pd(C13, _MM_SHUFFLE(0,3,2,1)); 
+        __m256d C33 = _mm256_permute4x64_pd(C13, _MM_SHUFFLE(1,0,3,2)); 
 
         __m256d C24 = _mm256_permute4x64_pd(C14, _MM_SHUFFLE(0,3,2,1)); 
         __m256d C34 = _mm256_permute4x64_pd(C14, _MM_SHUFFLE(1,0,3,2)); 
-	
-	__m256d M1 = _mm256_mul_pd(C12,avx2_vecdet(C23,C24,C33,C34));	
-	__m256d M2 = _mm256_mul_pd(C22,avx2_vecdet(C13,C14,C33,C34));
-	__m256d M3 = _mm256_mul_pd(C32,avx2_vecdet(C13,C14,C23,C24));
+        
+        __m256d M1 = _mm256_mul_pd(C12,avx2_vecdet(C23,C24,C33,C34));   
+        __m256d M2 = _mm256_mul_pd(C22,avx2_vecdet(C13,C14,C33,C34));
+        __m256d M3 = _mm256_mul_pd(C32,avx2_vecdet(C13,C14,C23,C24));
 
-	// compute the 4 3x3 minors simulateously by
-	// assembling the 3*4 2x2 minors
-	__m256d M = _mm256_add_pd(_mm256_sub_pd(M1,M2),M3);
+        // compute the 4 3x3 minors simulateously by
+        // assembling the 3*4 2x2 minors
+        __m256d M = _mm256_add_pd(_mm256_sub_pd(M1,M2),M3);
 
-	// multiply the 4 3x3 minors by the 4 coefficients of the
-	// first column (permutted so that a41 comes first).
-	M = _mm256_mul_pd(M, C41);
+        // multiply the 4 3x3 minors by the 4 coefficients of the
+        // first column (permutted so that a41 comes first).
+        M = _mm256_mul_pd(M, C41);
 
-	// Compute -m0 +m1 -m2 +m3
-	M = _mm256_permute4x64_pd(M, _MM_SHUFFLE(2,0,3,1)); 
-	__m128d M_a = _mm256_extractf128_pd(M, 0);
-	__m128d M_b = _mm256_extractf128_pd(M, 1);
-	__m128d Mab = _mm_sub_pd(M_a,M_b);
-	double m[2];
-	_mm_store_pd(m, Mab);
-	return m[0]+m[1];
+        // Compute -m0 +m1 -m2 +m3
+        M = _mm256_permute4x64_pd(M, _MM_SHUFFLE(2,0,3,1)); 
+        __m128d M_a = _mm256_extractf128_pd(M, 0);
+        __m128d M_b = _mm256_extractf128_pd(M, 1);
+        __m128d Mab = _mm_sub_pd(M_a,M_b);
+        double m[2];
+        _mm_store_pd(m, Mab);
+        return m[0]+m[1];
     }
 
     /**
@@ -306,68 +306,68 @@ namespace {
         const double* r, const double* s, const double* t
     ) {
 
-	// Mask to load just three doubles from the points.
-	__m256i XYZonly = _mm256_set_epi64x(
-	    0,~__int64_t(0),~__int64_t(0),~__int64_t(0)
-	);
-	__m256d P = _mm256_maskload_pd(p, XYZonly);
-	__m256d Q = _mm256_maskload_pd(q, XYZonly);
-	__m256d R = _mm256_maskload_pd(r, XYZonly);
-	__m256d S = _mm256_maskload_pd(s, XYZonly);
-	__m256d T = _mm256_maskload_pd(t, XYZonly);	
-	
-	__m256d PT = _mm256_sub_pd(P,T);
-	__m256d QT = _mm256_sub_pd(Q,T);
-	__m256d RT = _mm256_sub_pd(R,T);
-	__m256d ST = _mm256_sub_pd(S,T);			
+        // Mask to load just three doubles from the points.
+        __m256i XYZonly = _mm256_set_epi64x(
+            0,~__int64_t(0),~__int64_t(0),~__int64_t(0)
+        );
+        __m256d P = _mm256_maskload_pd(p, XYZonly);
+        __m256d Q = _mm256_maskload_pd(q, XYZonly);
+        __m256d R = _mm256_maskload_pd(r, XYZonly);
+        __m256d S = _mm256_maskload_pd(s, XYZonly);
+        __m256d T = _mm256_maskload_pd(t, XYZonly);     
+        
+        __m256d PT = _mm256_sub_pd(P,T);
+        __m256d QT = _mm256_sub_pd(Q,T);
+        __m256d RT = _mm256_sub_pd(R,T);
+        __m256d ST = _mm256_sub_pd(S,T);                        
 
-	// Absolute values by masking sign bit.
-	__m256d sign_mask = _mm256_set1_pd(-0.);
-	__m256d absPT     = _mm256_andnot_pd(PT, sign_mask);
-	__m256d absQT     = _mm256_andnot_pd(QT, sign_mask);
-	__m256d absRT     = _mm256_andnot_pd(RT, sign_mask);
-	__m256d absST     = _mm256_andnot_pd(ST, sign_mask);	
-	__m256d maxXYZ    = _mm256_max_pd(
-	    _mm256_max_pd(absPT, absQT), _mm256_max_pd(absRT, absST)
-	);
+        // Absolute values by masking sign bit.
+        __m256d sign_mask = _mm256_set1_pd(-0.);
+        __m256d absPT     = _mm256_andnot_pd(PT, sign_mask);
+        __m256d absQT     = _mm256_andnot_pd(QT, sign_mask);
+        __m256d absRT     = _mm256_andnot_pd(RT, sign_mask);
+        __m256d absST     = _mm256_andnot_pd(ST, sign_mask);    
+        __m256d maxXYZ    = _mm256_max_pd(
+            _mm256_max_pd(absPT, absQT), _mm256_max_pd(absRT, absST)
+        );
 
-	// Separating maxX, maxY, maxZ in three different registers
-	__m128d maxX = _mm256_extractf128_pd(maxXYZ,0);
-	__m128d maxZ = _mm256_extractf128_pd(maxXYZ,1);
-	__m128d maxY = _mm_shuffle_pd(maxX, maxX, 1);
-	__m128d max_max = _mm_max_pd(maxX, _mm_max_pd(maxY, maxZ));
+        // Separating maxX, maxY, maxZ in three different registers
+        __m128d maxX = _mm256_extractf128_pd(maxXYZ,0);
+        __m128d maxZ = _mm256_extractf128_pd(maxXYZ,1);
+        __m128d maxY = _mm_shuffle_pd(maxX, maxX, 1);
+        __m128d max_max = _mm_max_pd(maxX, _mm_max_pd(maxY, maxZ));
 
-	// Computing dynamic filter
-	__m128d eps     = _mm_set1_pd(1.2466136531027298e-13);
-	        eps     = _mm_mul_pd(eps, _mm_mul_pd(maxX, _mm_mul_pd(maxY, maxZ)));
-		eps     = _mm_mul_pd(eps, _mm_mul_pd(max_max, max_max));
-	
-	// Transpose [PT, QT, RT, ST] -> X,Y,Z (last column is 0, ignored)
-	__m256d tmp0 = _mm256_shuffle_pd(PT, QT, 0x0);		
-	__m256d tmp2 = _mm256_shuffle_pd(PT, QT, 0xF);		
-	__m256d tmp1 = _mm256_shuffle_pd(RT, ST, 0x0);		
-	__m256d tmp3 = _mm256_shuffle_pd(RT, ST, 0xF);		
-	__m256d X  = _mm256_permute2f128_pd(tmp0, tmp1, 0x20);
-	__m256d Y  = _mm256_permute2f128_pd(tmp2, tmp3, 0x20);
-	__m256d Z  = _mm256_permute2f128_pd(tmp0, tmp1, 0x31);
+        // Computing dynamic filter
+        __m128d eps     = _mm_set1_pd(1.2466136531027298e-13);
+                eps     = _mm_mul_pd(eps, _mm_mul_pd(maxX, _mm_mul_pd(maxY, maxZ)));
+                eps     = _mm_mul_pd(eps, _mm_mul_pd(max_max, max_max));
+        
+        // Transpose [PT, QT, RT, ST] -> X,Y,Z (last column is 0, ignored)
+        __m256d tmp0 = _mm256_shuffle_pd(PT, QT, 0x0);          
+        __m256d tmp2 = _mm256_shuffle_pd(PT, QT, 0xF);          
+        __m256d tmp1 = _mm256_shuffle_pd(RT, ST, 0x0);          
+        __m256d tmp3 = _mm256_shuffle_pd(RT, ST, 0xF);          
+        __m256d X  = _mm256_permute2f128_pd(tmp0, tmp1, 0x20);
+        __m256d Y  = _mm256_permute2f128_pd(tmp2, tmp3, 0x20);
+        __m256d Z  = _mm256_permute2f128_pd(tmp0, tmp1, 0x31);
 
-	// Compute first column with squared lengths of vectors
-	__m256d X2 = _mm256_mul_pd(X,X);
-	__m256d Y2 = _mm256_mul_pd(Y,Y);
-	__m256d Z2 = _mm256_mul_pd(Z,Z);
-	__m256d L2 = _mm256_add_pd(_mm256_add_pd(X2,Y2),Z2);
+        // Compute first column with squared lengths of vectors
+        __m256d X2 = _mm256_mul_pd(X,X);
+        __m256d Y2 = _mm256_mul_pd(Y,Y);
+        __m256d Z2 = _mm256_mul_pd(Z,Z);
+        __m256d L2 = _mm256_add_pd(_mm256_add_pd(X2,Y2),Z2);
 
-	double det = avx2_det4x4(L2,X,Y,Z);
+        double det = avx2_det4x4(L2,X,Y,Z);
 
-	double epsval;
-	_mm_store_pd1(&epsval, eps);
-	
-	// Note: inverted as compared to CGAL
-	//   CGAL: in_sphere_3d (called side_of_oriented_sphere())
-	//      positive side is outside the sphere.
-	//   PCK: in_sphere_3d : positive side is inside the sphere
+        double epsval;
+        _mm_store_pd1(&epsval, eps);
+        
+        // Note: inverted as compared to CGAL
+        //   CGAL: in_sphere_3d (called side_of_oriented_sphere())
+        //      positive side is outside the sphere.
+        //   PCK: in_sphere_3d : positive side is inside the sphere
 
-	return (det > epsval) * -1 + (det < -epsval);
+        return (det > epsval) * -1 + (det < -epsval);
     }
     
 #endif
@@ -430,15 +430,15 @@ namespace {
         double artz = ::fabs(rtz);
         double astz = ::fabs(stz);
 
-	maxx = max4(maxx, aqtx, artx, astx);
-	maxy = max4(maxy, aqty, arty, asty);
-	maxz = max4(maxz, aqtz, artz, astz);
-	
+        maxx = max4(maxx, aqtx, artx, astx);
+        maxy = max4(maxy, aqty, arty, asty);
+        maxz = max4(maxz, aqtz, artz, astz);
+        
         double eps = 1.2466136531027298e-13 * maxx * maxy * maxz;
 
-	double min_max;
-	double max_max;
-	get_minmax3(min_max, max_max, maxx, maxy, maxz);
+        double min_max;
+        double max_max;
+        get_minmax3(min_max, max_max, maxx, maxy, maxz);
 
         double det = det4x4(
                         ptx,pty,ptz,pt2,
@@ -660,9 +660,9 @@ namespace {
             p_sort[0] = p0;
             p_sort[1] = p1;
             p_sort[2] = p2;
-	    
+            
             SOS_sort(p_sort, p_sort + 3, dim);
-	    
+            
             for(index_t i = 0; i < 3; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1 = expansion_diff(Delta, a21);
@@ -975,7 +975,7 @@ namespace {
             p_sort[2] = p2;
             p_sort[3] = p3;
 
-	    SOS_sort(p_sort, p_sort + 4, 3);
+            SOS_sort(p_sort, p_sort + 4, 3);
             for(index_t i = 0; i < 4; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1_0 = expansion_sum(b01, b02);
@@ -1610,7 +1610,7 @@ namespace {
             p_sort[3] = p3;
             p_sort[4] = p4;
 
-	    SOS_sort(p_sort, p_sort + 5, 3);
+            SOS_sort(p_sort, p_sort + 5, 3);
             for(index_t i = 0; i < 5; ++i) {
                 if(p_sort[i] == p0) {
                     const expansion& z1 = expansion_diff(Delta2, Delta1);
@@ -1650,7 +1650,7 @@ namespace {
 
     Sign side3h_2d_exact_SOS(
         const double* p0, const double* p1,
-	const double* p2, const double* p3, 
+        const double* p2, const double* p3, 
         double h0, double h1, double h2, double h3,
         bool sos = true
     ) {
@@ -1717,7 +1717,7 @@ namespace {
                         return Sign(-Delta3_sign * Delta2_sign);
                     }
                 } else if(p_sort[i] == p3) {
-		    return NEGATIVE;
+                    return NEGATIVE;
                 } 
             }
         }
@@ -1734,26 +1734,26 @@ namespace {
      * \return the sign of the determinant of the matrix.
      */
     Sign det_3d_exact(
-	const double* p0, const double* p1, const double* p2
+        const double* p0, const double* p1, const double* p2
     ) {
-	const expansion& p0_0 = expansion_create(p0[0]);
-	const expansion& p0_1 = expansion_create(p0[1]);
-	const expansion& p0_2 = expansion_create(p0[2]);
-	
-	const expansion& p1_0 = expansion_create(p1[0]);
-	const expansion& p1_1 = expansion_create(p1[1]);
-	const expansion& p1_2 = expansion_create(p1[2]);
+        const expansion& p0_0 = expansion_create(p0[0]);
+        const expansion& p0_1 = expansion_create(p0[1]);
+        const expansion& p0_2 = expansion_create(p0[2]);
+        
+        const expansion& p1_0 = expansion_create(p1[0]);
+        const expansion& p1_1 = expansion_create(p1[1]);
+        const expansion& p1_2 = expansion_create(p1[2]);
 
-	const expansion& p2_0 = expansion_create(p2[0]);
-	const expansion& p2_1 = expansion_create(p2[1]);
-	const expansion& p2_2 = expansion_create(p2[2]);	
-	
-	const expansion& Delta = expansion_det3x3(
-	    p0_0, p0_1, p0_2,
-	    p1_0, p1_1, p1_2,
-	    p2_0, p2_1, p2_2
-	);
-	return Delta.sign();
+        const expansion& p2_0 = expansion_create(p2[0]);
+        const expansion& p2_1 = expansion_create(p2[1]);
+        const expansion& p2_2 = expansion_create(p2[2]);        
+        
+        const expansion& Delta = expansion_det3x3(
+            p0_0, p0_1, p0_2,
+            p1_0, p1_1, p1_2,
+            p2_0, p2_1, p2_2
+        );
+        return Delta.sign();
     }
     
 
@@ -1765,25 +1765,25 @@ namespace {
      * \retval false otherwise.
      */
     bool aligned_3d_exact(
-	const double* p0, const double* p1, const double* p2
+        const double* p0, const double* p1, const double* p2
     ) {
-	const expansion& U_0 = expansion_diff(p1[0],p0[0]);
-	const expansion& U_1 = expansion_diff(p1[1],p0[1]);
-	const expansion& U_2 = expansion_diff(p1[2],p0[2]);
-	
-	const expansion& V_0 = expansion_diff(p2[0],p0[0]);
-	const expansion& V_1 = expansion_diff(p2[1],p0[1]);
-	const expansion& V_2 = expansion_diff(p2[2],p0[2]);
+        const expansion& U_0 = expansion_diff(p1[0],p0[0]);
+        const expansion& U_1 = expansion_diff(p1[1],p0[1]);
+        const expansion& U_2 = expansion_diff(p1[2],p0[2]);
+        
+        const expansion& V_0 = expansion_diff(p2[0],p0[0]);
+        const expansion& V_1 = expansion_diff(p2[1],p0[1]);
+        const expansion& V_2 = expansion_diff(p2[2],p0[2]);
 
-	const expansion& N_0 = expansion_det2x2(U_1, V_1, U_2, V_2);
-	const expansion& N_1 = expansion_det2x2(U_2, V_2, U_0, V_0);
-	const expansion& N_2 = expansion_det2x2(U_0, V_0, U_1, V_1);
+        const expansion& N_0 = expansion_det2x2(U_1, V_1, U_2, V_2);
+        const expansion& N_1 = expansion_det2x2(U_2, V_2, U_0, V_0);
+        const expansion& N_2 = expansion_det2x2(U_0, V_0, U_1, V_1);
 
-	return(
-	    N_0.sign() == 0 &&
-	    N_1.sign() == 0 &&
-	    N_2.sign() == 0
-	);
+        return(
+            N_0.sign() == 0 &&
+            N_1.sign() == 0 &&
+            N_2.sign() == 0
+        );
     }
     
     /**
@@ -1794,23 +1794,23 @@ namespace {
      *  p0p1 and p0p2.
      */
     Sign dot_3d_exact(
-	const double* p0, const double* p1, const double* p2
+        const double* p0, const double* p1, const double* p2
     ) {
-	const expansion& U_0 = expansion_diff(p1[0],p0[0]);
-	const expansion& U_1 = expansion_diff(p1[1],p0[1]);
-	const expansion& U_2 = expansion_diff(p1[2],p0[2]);
-	
-	const expansion& V_0 = expansion_diff(p2[0],p0[0]);
-	const expansion& V_1 = expansion_diff(p2[1],p0[1]);
-	const expansion& V_2 = expansion_diff(p2[2],p0[2]);
+        const expansion& U_0 = expansion_diff(p1[0],p0[0]);
+        const expansion& U_1 = expansion_diff(p1[1],p0[1]);
+        const expansion& U_2 = expansion_diff(p1[2],p0[2]);
+        
+        const expansion& V_0 = expansion_diff(p2[0],p0[0]);
+        const expansion& V_1 = expansion_diff(p2[1],p0[1]);
+        const expansion& V_2 = expansion_diff(p2[2],p0[2]);
 
-	const expansion& UV_0 = expansion_product(U_0, V_0);
-	const expansion& UV_1 = expansion_product(U_1, V_1);
-	const expansion& UV_2 = expansion_product(U_2, V_2);
+        const expansion& UV_0 = expansion_product(U_0, V_0);
+        const expansion& UV_1 = expansion_product(U_1, V_1);
+        const expansion& UV_2 = expansion_product(U_2, V_2);
 
-	const expansion& Delta = expansion_sum3(UV_0, UV_1, UV_2);
+        const expansion& Delta = expansion_sum3(UV_0, UV_1, UV_2);
 
-	return Delta.sign();
+        return Delta.sign();
     }
     
     // ================================ statistics ========================
@@ -1927,15 +1927,15 @@ namespace GEO {
 
     namespace PCK {
 
-	void set_SOS_mode(SOSMode m) {
-	    SOS_mode_ = m;
-	}
+        void set_SOS_mode(SOSMode m) {
+            SOS_mode_ = m;
+        }
 
-	SOSMode get_SOS_mode() {
-	    return SOS_mode_;
-	}
+        SOSMode get_SOS_mode() {
+            return SOS_mode_;
+        }
 
-	
+        
         Sign side1_SOS(
             const double* p0, const double* p1,
             const double* q0,
@@ -2005,7 +2005,7 @@ namespace GEO {
             const double* p2, const double* p3,
             double h0, double h1, double h2, double h3,            
             const double* q0, const double* q1, const double* q2,
-	    bool SOS
+            bool SOS
         ) {
             Sign result = Sign(side3h_3d_filter(p0, p1, p2, p3, h0, h1, h2, h3, q0, q1, q2));
             if(SOS && result == ZERO) {
@@ -2096,10 +2096,10 @@ namespace GEO {
             // This specialized filter supposes that orient_3d(p0,p1,p2,p3) > 0
 
 #ifdef __AVX2__
-	    Sign result = Sign(in_sphere_3d_filter_avx2(p0, p1, p2, p3, p4));
-#else	    
+            Sign result = Sign(in_sphere_3d_filter_avx2(p0, p1, p2, p3, p4));
+#else       
             Sign result = Sign(in_sphere_3d_filter_optim(p0, p1, p2, p3, p4));
-#endif	    
+#endif      
             if(result == 0) {
                 result = side4_3d_exact_SOS(p0, p1, p2, p3, p4);
             }
@@ -2123,13 +2123,13 @@ namespace GEO {
             // Therefore:
             // in_circle_2d(p0,p1,p2,p3) = -side3_2d(p0,p1,p2,p3)
 
-	    // TODO: implement specialized filter like the one used
-	    // by "in-sphere".
-	    Sign s = Sign(-side3_2d_filter(p0, p1, p2, p3, p0, p1, p2));
-	    if(s != ZERO) {
-		return s;
-	    }
-	    return Sign(-side3_exact_SOS(p0, p1, p2, p3, p0, p1, p2, 2));
+            // TODO: implement specialized filter like the one used
+            // by "in-sphere".
+            Sign s = Sign(-side3_2d_filter(p0, p1, p2, p3, p0, p1, p2));
+            if(s != ZERO) {
+                return s;
+            }
+            return Sign(-side3_exact_SOS(p0, p1, p2, p3, p0, p1, p2, 2));
         }
 
         Sign GEOGRAM_API in_circle_3d_SOS(
@@ -2155,7 +2155,7 @@ namespace GEO {
             const double* p0, const double* p1, const double* p2,
             const double* p3,
             double h0, double h1, double h2, double h3,
-	    bool SOS
+            bool SOS
         ) {
             // in_circle_3dlifted is simply implemented using side3_3dlifted.
             // Both predicates are equivalent through duality
@@ -2181,7 +2181,7 @@ namespace GEO {
             const double* p0, const double* p1,
             const double* p2, const double* p3, 
             double h0, double h1, double h2, double h3
-	) {
+        ) {
             Sign result = Sign(
                 side3_2dlifted_2d_filter(
                     p0, p1, p2, p3, h0, h1, h2, h3
@@ -2194,10 +2194,10 @@ namespace GEO {
             }
             // orient_3d() is opposite to side3h()
             // (like in_sphere() that is opposite to side3())
-	    return result;
-	}
+            return result;
+        }
 
-	
+        
         Sign orient_3d(
             const double* p0, const double* p1,
             const double* p2, const double* p3
@@ -2254,125 +2254,125 @@ namespace GEO {
             return Sign(-result);
         }
 
-	Sign det_3d(
-	    const double* p0, const double* p1, const double* p2
-	) {
-	    Sign result = Sign(
-		det_3d_filter(p0, p1, p2)
-	    );
-	    if(result == 0) {
-		result = det_3d_exact(p0, p1, p2);
-	    }
-	    return result;
-	}
+        Sign det_3d(
+            const double* p0, const double* p1, const double* p2
+        ) {
+            Sign result = Sign(
+                det_3d_filter(p0, p1, p2)
+            );
+            if(result == 0) {
+                result = det_3d_exact(p0, p1, p2);
+            }
+            return result;
+        }
 
 
-	Sign det_4d(
-	    const double* p0, const double* p1, const double* p2, const double* p3
-	) {
-	    Sign result = Sign(
-		det_4d_filter(p0, p1, p2, p3)
-	    );
-	    
-	    if(result == 0) {
-		const expansion& p0_0 = expansion_create(p0[0]);
-		const expansion& p0_1 = expansion_create(p0[1]);
-		const expansion& p0_2 = expansion_create(p0[2]);
-		const expansion& p0_3 = expansion_create(p0[3]);		
-		
-		const expansion& p1_0 = expansion_create(p1[0]);
-		const expansion& p1_1 = expansion_create(p1[1]);
-		const expansion& p1_2 = expansion_create(p1[2]);
-		const expansion& p1_3 = expansion_create(p1[3]);		
-		
-		const expansion& p2_0 = expansion_create(p2[0]);
-		const expansion& p2_1 = expansion_create(p2[1]);
-		const expansion& p2_2 = expansion_create(p2[2]);
-		const expansion& p2_3 = expansion_create(p2[3]);
+        Sign det_4d(
+            const double* p0, const double* p1, const double* p2, const double* p3
+        ) {
+            Sign result = Sign(
+                det_4d_filter(p0, p1, p2, p3)
+            );
+            
+            if(result == 0) {
+                const expansion& p0_0 = expansion_create(p0[0]);
+                const expansion& p0_1 = expansion_create(p0[1]);
+                const expansion& p0_2 = expansion_create(p0[2]);
+                const expansion& p0_3 = expansion_create(p0[3]);                
+                
+                const expansion& p1_0 = expansion_create(p1[0]);
+                const expansion& p1_1 = expansion_create(p1[1]);
+                const expansion& p1_2 = expansion_create(p1[2]);
+                const expansion& p1_3 = expansion_create(p1[3]);                
+                
+                const expansion& p2_0 = expansion_create(p2[0]);
+                const expansion& p2_1 = expansion_create(p2[1]);
+                const expansion& p2_2 = expansion_create(p2[2]);
+                const expansion& p2_3 = expansion_create(p2[3]);
 
-		const expansion& p3_0 = expansion_create(p3[0]);
-		const expansion& p3_1 = expansion_create(p3[1]);
-		const expansion& p3_2 = expansion_create(p3[2]);
-		const expansion& p3_3 = expansion_create(p3[3]);			
+                const expansion& p3_0 = expansion_create(p3[0]);
+                const expansion& p3_1 = expansion_create(p3[1]);
+                const expansion& p3_2 = expansion_create(p3[2]);
+                const expansion& p3_3 = expansion_create(p3[3]);                        
 
-		result = sign_of_expansion_determinant(
-		    p0_0, p0_1, p0_2, p0_3,
-		    p1_0, p1_1, p1_2, p1_3,
-		    p2_0, p2_1, p2_2, p2_3,
-		    p3_0, p3_1, p3_2, p3_3		    
-		);
-	    }
-	    return result;
-	}
+                result = sign_of_expansion_determinant(
+                    p0_0, p0_1, p0_2, p0_3,
+                    p1_0, p1_1, p1_2, p1_3,
+                    p2_0, p2_1, p2_2, p2_3,
+                    p3_0, p3_1, p3_2, p3_3                  
+                );
+            }
+            return result;
+        }
 
-	
-	bool aligned_3d(
-	    const double* p0, const double* p1, const double* p2
-	) {
-	    /*
-	    Sign result = Sign(
-		aligned_3d_filter(p0,p1,p2)
-	    );
-	    if(result != 0) {
-		return false;
-	    }
-	    */
-	    return aligned_3d_exact(p0, p1, p2);
-	}
-	
-	Sign dot_3d(
-	    const double* p0, const double* p1, const double* p2
-	) {
-	    Sign result = Sign(
-		det_3d_filter(p0, p1, p2)
-	    );
-	    if(result == 0) {
-		result = dot_3d_exact(p0, p1, p2);
-	    }
-	    return result;
-	}
+        
+        bool aligned_3d(
+            const double* p0, const double* p1, const double* p2
+        ) {
+            /*
+            Sign result = Sign(
+                aligned_3d_filter(p0,p1,p2)
+            );
+            if(result != 0) {
+                return false;
+            }
+            */
+            return aligned_3d_exact(p0, p1, p2);
+        }
+        
+        Sign dot_3d(
+            const double* p0, const double* p1, const double* p2
+        ) {
+            Sign result = Sign(
+                det_3d_filter(p0, p1, p2)
+            );
+            if(result == 0) {
+                result = dot_3d_exact(p0, p1, p2);
+            }
+            return result;
+        }
 
-	bool points_are_identical_2d(
-	    const double* p1,
-	    const double* p2
-	) {
-	    return
-		(p1[0] == p2[0]) &&
-		(p1[1] == p2[1]) 
-	    ;
-	}
+        bool points_are_identical_2d(
+            const double* p1,
+            const double* p2
+        ) {
+            return
+                (p1[0] == p2[0]) &&
+                (p1[1] == p2[1]) 
+            ;
+        }
 
-	bool points_are_identical_3d(
-	    const double* p1,
-	    const double* p2
-	) {
-	    return
-		(p1[0] == p2[0]) &&
-		(p1[1] == p2[1]) &&
-		(p1[2] == p2[2])
-	    ;
-	}
+        bool points_are_identical_3d(
+            const double* p1,
+            const double* p2
+        ) {
+            return
+                (p1[0] == p2[0]) &&
+                (p1[1] == p2[1]) &&
+                (p1[2] == p2[2])
+            ;
+        }
 
-	bool points_are_colinear_3d(
-	    const double* p1,
-	    const double* p2,
-	    const double* p3
-	) {
-	    // Colinearity is tested by using four coplanarity
-	    // tests with four points that are not coplanar.
-	    // TODO: use PCK::aligned_3d() instead (to be tested)	
-	    static const double q000[3] = {0.0, 0.0, 0.0};
-	    static const double q001[3] = {0.0, 0.0, 1.0};
-	    static const double q010[3] = {0.0, 1.0, 0.0};
-	    static const double q100[3] = {1.0, 0.0, 0.0};
-	    return
-		PCK::orient_3d(p1, p2, p3, q000) == ZERO &&
-		PCK::orient_3d(p1, p2, p3, q001) == ZERO &&
-		PCK::orient_3d(p1, p2, p3, q010) == ZERO &&
-		PCK::orient_3d(p1, p2, p3, q100) == ZERO
-	    ;
-	}
-	
+        bool points_are_colinear_3d(
+            const double* p1,
+            const double* p2,
+            const double* p3
+        ) {
+            // Colinearity is tested by using four coplanarity
+            // tests with four points that are not coplanar.
+            // TODO: use PCK::aligned_3d() instead (to be tested)       
+            static const double q000[3] = {0.0, 0.0, 0.0};
+            static const double q001[3] = {0.0, 0.0, 1.0};
+            static const double q010[3] = {0.0, 1.0, 0.0};
+            static const double q100[3] = {1.0, 0.0, 0.0};
+            return
+                PCK::orient_3d(p1, p2, p3, q000) == ZERO &&
+                PCK::orient_3d(p1, p2, p3, q001) == ZERO &&
+                PCK::orient_3d(p1, p2, p3, q010) == ZERO &&
+                PCK::orient_3d(p1, p2, p3, q100) == ZERO
+            ;
+        }
+        
         void initialize() {
             expansion::initialize();
         }

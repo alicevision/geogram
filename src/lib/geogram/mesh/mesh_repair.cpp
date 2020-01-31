@@ -775,7 +775,7 @@ namespace {
                 }
             }
         }
-	geo_argused(nb_plus);
+        geo_argused(nb_plus);
         if(nb_minus != 0) {
             M.facets.flip(f);
         }
@@ -1143,14 +1143,14 @@ namespace GEO {
             repair_split_non_manifold_vertices(M);
 
         }
-	
+        
         if((mode & MESH_REPAIR_QUIET) == 0) {
-	    if(
-		M.vertices.nb() != nb_vertices_in ||
-		M.facets.nb() != nb_facets_in
-	    ) {
-		M.show_stats("Validate");
-	    }
+            if(
+                M.vertices.nb() != nb_vertices_in ||
+                M.facets.nb() != nb_facets_in
+            ) {
+                M.show_stats("Validate");
+            }
         }
     }
 

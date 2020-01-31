@@ -290,20 +290,20 @@ namespace {
         N.y = ::fabs(N.y);
         N.z = ::fabs(N.z);
 
-	// Particular case: the triangle is degenerate and has
-	// zero area. 
-	if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-	    N = (p2 - p1);
-	    if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-		N = (p3 - p1);
-	    }
-	    if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-		N = vec3(0.0, 0.0, 1.0);
-	    } else {
-		N = Geom::perpendicular(N);
-	    }
-	}
-	
+        // Particular case: the triangle is degenerate and has
+        // zero area. 
+        if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+            N = (p2 - p1);
+            if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+                N = (p3 - p1);
+            }
+            if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+                N = vec3(0.0, 0.0, 1.0);
+            } else {
+                N = Geom::perpendicular(N);
+            }
+        }
+        
         if((N.x > N.y) && (N.x > N.z)) {
             return 0;
         }
@@ -322,19 +322,19 @@ namespace {
     coord_index_t dominant_axis(
         const vec3& p1, const vec3& p2, const vec3& p3, const vec3& p4
     ) {
-	vec3 N = Geom::triangle_normal(p1,p2,p3);
-	if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-	    N = Geom::triangle_normal(p1,p3,p4);
-	}
-	if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-	    N = Geom::triangle_normal(p4,p1,p2);	    
-	}
-	if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-	    N = Geom::triangle_normal(p4,p2,p3);	    
-	}
-	if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
-	    N.z = 1.0; // TODO something smarter
-	}
+        vec3 N = Geom::triangle_normal(p1,p2,p3);
+        if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+            N = Geom::triangle_normal(p1,p3,p4);
+        }
+        if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+            N = Geom::triangle_normal(p4,p1,p2);            
+        }
+        if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+            N = Geom::triangle_normal(p4,p2,p3);            
+        }
+        if(N.x == 0.0 && N.y == 0.0 && N.z == 0.0) {
+            N.z = 1.0; // TODO something smarter
+        }
         N.x = ::fabs(N.x);
         N.y = ::fabs(N.y);
         N.z = ::fabs(N.z);
@@ -373,18 +373,18 @@ namespace {
      * \retval 0 if the three vertices of the triangle coincide.
      */
     index_t triangle_dim(
-	const vec3& p1, const vec3& p2, const vec3& p3
+        const vec3& p1, const vec3& p2, const vec3& p3
     ) {
-	if(!PCK::aligned_3d(p1.data(), p2.data(), p3.data())) {
-	    return 2;
-	}
-	if(
-	    points_are_identical(p1.data(), p2.data()) &&
-	    points_are_identical(p2.data(), p3.data())
-	) {
-	    return 0;
-	}
-	return 1;
+        if(!PCK::aligned_3d(p1.data(), p2.data(), p3.data())) {
+            return 2;
+        }
+        if(
+            points_are_identical(p1.data(), p2.data()) &&
+            points_are_identical(p2.data(), p3.data())
+        ) {
+            return 0;
+        }
+        return 1;
     }
     
     /**
@@ -403,7 +403,7 @@ namespace {
      * \pre p0 , q0 , q1 , q2 are in the same 3d plane.
      */
     bool PT2(
-	coord_index_t dom_axis,
+        coord_index_t dom_axis,
         const vec3& p0, TriangleRegion P,
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& out, bool swp
@@ -499,8 +499,8 @@ namespace {
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& out, bool swp
     ) {
-	coord_index_t dom_axis = dominant_axis(q0,q1,q2);
-	return PT2(dom_axis, p0, P, q0, q1, q2, out, swp);
+        coord_index_t dom_axis = dominant_axis(q0,q1,q2);
+        return PT2(dom_axis, p0, P, q0, q1, q2, out, swp);
     }
     
     /**
@@ -516,24 +516,24 @@ namespace {
      *  it comes from, should be one of (T_RGN_E0, T_RGN_E1, T_RGN_E2)
      */
     bool EE2_strict(
-	coord_index_t dom_axis,
+        coord_index_t dom_axis,
         const vec3& p0, const vec3& p1, TriangleRegion E1,
         const vec3& q0, const vec3& q1, TriangleRegion E2,
         vector<TriangleIsect>& out, bool swp
     ) {
-	geo_debug_assert(region_dim(E1) == 1);
-	geo_debug_assert(region_dim(E2) == 1);
+        geo_debug_assert(region_dim(E1) == 1);
+        geo_debug_assert(region_dim(E2) == 1);
 
         Sign s0 = orient2d_3d(p0, q0, q1, dom_axis);
         Sign s1 = orient2d_3d(p1, q0, q1, dom_axis);
         Sign s2 = orient2d_3d(q0, p0, p1, dom_axis);
-        Sign s3 = orient2d_3d(q1, p0, p1, dom_axis);	
+        Sign s3 = orient2d_3d(q1, p0, p1, dom_axis);    
 
-	bool result = (s0*s1 == -1 && s2*s3 == -1);
-	if(result) {
-	    add_intersection(out, E1, E2, swp);
-	}
-	return result;
+        bool result = (s0*s1 == -1 && s2*s3 == -1);
+        if(result) {
+            add_intersection(out, E1, E2, swp);
+        }
+        return result;
     }
     
     /**
@@ -561,7 +561,7 @@ namespace {
         geo_debug_assert(region_dim(E) == 1);
 
         coord_index_t dom_axis = dominant_axis(q0, q1, q2);
-	
+        
         TriangleRegion P0_rgn = T_RGN_T;
         TriangleRegion P1_rgn = T_RGN_T;
         switch(E) {
@@ -584,17 +584,17 @@ namespace {
                 geo_assert_not_reached;
         }
 
-	bool p0t = PT2(dom_axis, p0, P0_rgn, q0, q1, q2, out, swp);
-	bool p1t = PT2(dom_axis, p1, P1_rgn, q0, q1, q2, out, swp);
-	
+        bool p0t = PT2(dom_axis, p0, P0_rgn, q0, q1, q2, out, swp);
+        bool p1t = PT2(dom_axis, p1, P1_rgn, q0, q1, q2, out, swp);
+        
         if( p0t && p1t) {
             return true;
         }
 
-	bool ee0 = EE2_strict(dom_axis, p0, p1, E, q1, q2, T_RGN_E0, out, swp);
-	bool ee1 = EE2_strict(dom_axis, p0, p1, E, q2, q0, T_RGN_E1, out, swp);
-	bool ee2 = EE2_strict(dom_axis, p0, p1, E, q0, q1, T_RGN_E2, out, swp);
-	
+        bool ee0 = EE2_strict(dom_axis, p0, p1, E, q1, q2, T_RGN_E0, out, swp);
+        bool ee1 = EE2_strict(dom_axis, p0, p1, E, q2, q0, T_RGN_E1, out, swp);
+        bool ee2 = EE2_strict(dom_axis, p0, p1, E, q0, q1, T_RGN_E2, out, swp);
+        
         return (ee0 || ee1 || ee2) ;
     }
 
@@ -614,17 +614,17 @@ namespace {
      * \retval false otherwise
      */
     bool PE3(
-	const vec3& p0, TriangleRegion P, const vec3& q0, const vec3& q1, TriangleRegion E,
+        const vec3& p0, TriangleRegion P, const vec3& q0, const vec3& q1, TriangleRegion E,
         vector<TriangleIsect>& out, bool swp
     ) {
-	if(
-	    PCK::aligned_3d(p0.data(), q0.data(), q1.data()) &&
-	    PCK::dot_3d(p0.data(), q0.data(), q1.data()) < 0
-	) {
-	    add_intersection(out, P, E, swp);
-	    return true;
-	}
-	return false;
+        if(
+            PCK::aligned_3d(p0.data(), q0.data(), q1.data()) &&
+            PCK::dot_3d(p0.data(), q0.data(), q1.data()) < 0
+        ) {
+            add_intersection(out, P, E, swp);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -643,30 +643,30 @@ namespace {
      * \retval false otherwise
      */
     bool EE3_strict(
-	const vec3& p0, const vec3& p1, TriangleRegion E1,
-	const vec3& q0, const vec3& q1, TriangleRegion E2,
+        const vec3& p0, const vec3& p1, TriangleRegion E1,
+        const vec3& q0, const vec3& q1, TriangleRegion E2,
         vector<TriangleIsect>& out, bool swp
     ) {
-	// If the two segments are not in the same plane, then there is
-	// no intersection.
-	if(
-	    PCK::orient_3d(p0.data(), p1.data(), q0.data(), q1.data()) != 0
-	) {
-	    return false;
-	}
-
-	// If the two segments are aligned, then there is no strict
-	// intersection.
-	if(
-	    (PCK::aligned_3d(p0.data(), q0.data(), q1.data())) &&
-	    (PCK::aligned_3d(p1.data(), q0.data(), q1.data()))
+        // If the two segments are not in the same plane, then there is
+        // no intersection.
+        if(
+            PCK::orient_3d(p0.data(), p1.data(), q0.data(), q1.data()) != 0
         ) {
-	    return false;
-	}
-	
-	// Compute dominant axis and test for intersection in 2D.
-	coord_index_t dom_axis = dominant_axis(p0, p1, q0, q1);
-	return EE2_strict(dom_axis, p0, p1, E1, q0, q1, E2, out, swp);
+            return false;
+        }
+
+        // If the two segments are aligned, then there is no strict
+        // intersection.
+        if(
+            (PCK::aligned_3d(p0.data(), q0.data(), q1.data())) &&
+            (PCK::aligned_3d(p1.data(), q0.data(), q1.data()))
+        ) {
+            return false;
+        }
+        
+        // Compute dominant axis and test for intersection in 2D.
+        coord_index_t dom_axis = dominant_axis(p0, p1, q0, q1);
+        return EE2_strict(dom_axis, p0, p1, E1, q0, q1, E2, out, swp);
     }
 
     
@@ -794,30 +794,30 @@ namespace {
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     ) {
-	// Brute force for now: test all point-triangle and
-	// edge-edge intersections.
-	
-	coord_index_t dom_axis = dominant_axis(q0, q1, q2);
+        // Brute force for now: test all point-triangle and
+        // edge-edge intersections.
+        
+        coord_index_t dom_axis = dominant_axis(q0, q1, q2);
 
-	PT2(dom_axis, p0, T_RGN_P0, q0, q1, q2, result, false);
-	PT2(dom_axis, p1, T_RGN_P1, q0, q1, q2, result, false);
-	PT2(dom_axis, p2, T_RGN_P2, q0, q1, q2, result, false);
+        PT2(dom_axis, p0, T_RGN_P0, q0, q1, q2, result, false);
+        PT2(dom_axis, p1, T_RGN_P1, q0, q1, q2, result, false);
+        PT2(dom_axis, p2, T_RGN_P2, q0, q1, q2, result, false);
 
-	PT2(dom_axis, q0, T_RGN_P0, p0, p1, p2, result, true);
-	PT2(dom_axis, q1, T_RGN_P1, p0, p1, p2, result, true);
-	PT2(dom_axis, q2, T_RGN_P2, p0, p1, p2, result, true);	
+        PT2(dom_axis, q0, T_RGN_P0, p0, p1, p2, result, true);
+        PT2(dom_axis, q1, T_RGN_P1, p0, p1, p2, result, true);
+        PT2(dom_axis, q2, T_RGN_P2, p0, p1, p2, result, true);  
 
-	EE2_strict(dom_axis, p1, p2, T_RGN_E0, q1, q2, T_RGN_E0, result, false);
-	EE2_strict(dom_axis, p2, p0, T_RGN_E1, q1, q2, T_RGN_E0, result, false);
-	EE2_strict(dom_axis, p0, p1, T_RGN_E2, q1, q2, T_RGN_E0, result, false);
+        EE2_strict(dom_axis, p1, p2, T_RGN_E0, q1, q2, T_RGN_E0, result, false);
+        EE2_strict(dom_axis, p2, p0, T_RGN_E1, q1, q2, T_RGN_E0, result, false);
+        EE2_strict(dom_axis, p0, p1, T_RGN_E2, q1, q2, T_RGN_E0, result, false);
 
-	EE2_strict(dom_axis, p1, p2, T_RGN_E0, q2, q0, T_RGN_E1, result, false);
-	EE2_strict(dom_axis, p2, p0, T_RGN_E1, q2, q0, T_RGN_E1, result, false);
-	EE2_strict(dom_axis, p0, p1, T_RGN_E2, q2, q0, T_RGN_E1, result, false);
-	
-	EE2_strict(dom_axis, p1, p2, T_RGN_E0, q0, q1, T_RGN_E2, result, false);
-	EE2_strict(dom_axis, p2, p0, T_RGN_E1, q0, q1, T_RGN_E2, result, false);
-	EE2_strict(dom_axis, p0, p1, T_RGN_E2, q0, q1, T_RGN_E2, result, false);
+        EE2_strict(dom_axis, p1, p2, T_RGN_E0, q2, q0, T_RGN_E1, result, false);
+        EE2_strict(dom_axis, p2, p0, T_RGN_E1, q2, q0, T_RGN_E1, result, false);
+        EE2_strict(dom_axis, p0, p1, T_RGN_E2, q2, q0, T_RGN_E1, result, false);
+        
+        EE2_strict(dom_axis, p1, p2, T_RGN_E0, q0, q1, T_RGN_E2, result, false);
+        EE2_strict(dom_axis, p2, p0, T_RGN_E1, q0, q1, T_RGN_E2, result, false);
+        EE2_strict(dom_axis, p0, p1, T_RGN_E2, q0, q1, T_RGN_E2, result, false);
     }
 
 
@@ -840,153 +840,153 @@ namespace {
      *  - or duplicated triangles.
      */
     bool triangles_intersections_degenerate(
-	index_t dim1, index_t dim2,
+        index_t dim1, index_t dim2,
         const vec3& p0, const vec3& p1, const vec3& p2,
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     ) {
-	result.resize(0);
-	geo_debug_assert(dim1 != 2 || dim2 != 2);
-	const vec3 *pp0=nullptr, *pp1=nullptr, *pp2=nullptr;
-	const vec3 *qq0=nullptr, *qq1=nullptr, *qq2=nullptr;
-	bool swp = false;
-	if(dim1 < dim2) {
-	    pp0 = &p0; pp1 = &p1; pp2 = &p2;
-	    qq0 = &q0; qq1 = &q1; qq2 = &q2;
-	} else {
-	    std::swap(dim1, dim2);
-	    swp = true;
-	    pp0 = &q0; pp1 = &q1; pp2 = &q2;
-	    qq0 = &p0; qq1 = &p1; qq2 = &p2;
-	}
-	if(dim1 == 0 && dim2 == 0) {
-	    if(points_are_identical(p0.data(), q0.data())) {
-		add_intersection(result, T_RGN_P0, T_RGN_P0, false);
-	    }
-	} else if(dim1 == 0 && dim2 == 1) {
+        result.resize(0);
+        geo_debug_assert(dim1 != 2 || dim2 != 2);
+        const vec3 *pp0=nullptr, *pp1=nullptr, *pp2=nullptr;
+        const vec3 *qq0=nullptr, *qq1=nullptr, *qq2=nullptr;
+        bool swp = false;
+        if(dim1 < dim2) {
+            pp0 = &p0; pp1 = &p1; pp2 = &p2;
+            qq0 = &q0; qq1 = &q1; qq2 = &q2;
+        } else {
+            std::swap(dim1, dim2);
+            swp = true;
+            pp0 = &q0; pp1 = &q1; pp2 = &q2;
+            qq0 = &p0; qq1 = &p1; qq2 = &p2;
+        }
+        if(dim1 == 0 && dim2 == 0) {
+            if(points_are_identical(p0.data(), q0.data())) {
+                add_intersection(result, T_RGN_P0, T_RGN_P0, false);
+            }
+        } else if(dim1 == 0 && dim2 == 1) {
 
-	    if(!points_are_identical(pp0->data(), qq2->data())) {	    
-		PE3(*pp0, T_RGN_P0, *qq0, *qq1, T_RGN_E2, result, swp);
-	    }
-	    if(!points_are_identical(pp0->data(), qq0->data())) {	    	    
-		PE3(*pp0, T_RGN_P0, *qq1, *qq2, T_RGN_E0, result, swp);
-	    }
-	    if(!points_are_identical(pp0->data(), qq1->data())) {	    	    
-		PE3(*pp0, T_RGN_P0, *qq2, *qq0, T_RGN_E1, result, swp);
-	    }
-	} else if(dim1 == 0 && dim2 == 2) {
-	    if(PCK::orient_3d(*pp0, *qq0, *qq1, *qq2) == 0) {
-		coord_index_t dom_axis = dominant_axis(
-		    *qq0, *qq1, *qq2
-		);
-		PT2(
-		    dom_axis, *pp0, T_RGN_P0, *qq0, *qq1, *qq2,
-		    result, swp
-		    );
-	    }
-	} else if(dim1 == 1 && dim2 == 1) {
+            if(!points_are_identical(pp0->data(), qq2->data())) {           
+                PE3(*pp0, T_RGN_P0, *qq0, *qq1, T_RGN_E2, result, swp);
+            }
+            if(!points_are_identical(pp0->data(), qq0->data())) {                   
+                PE3(*pp0, T_RGN_P0, *qq1, *qq2, T_RGN_E0, result, swp);
+            }
+            if(!points_are_identical(pp0->data(), qq1->data())) {                   
+                PE3(*pp0, T_RGN_P0, *qq2, *qq0, T_RGN_E1, result, swp);
+            }
+        } else if(dim1 == 0 && dim2 == 2) {
+            if(PCK::orient_3d(*pp0, *qq0, *qq1, *qq2) == 0) {
+                coord_index_t dom_axis = dominant_axis(
+                    *qq0, *qq1, *qq2
+                );
+                PT2(
+                    dom_axis, *pp0, T_RGN_P0, *qq0, *qq1, *qq2,
+                    result, swp
+                    );
+            }
+        } else if(dim1 == 1 && dim2 == 1) {
 
 
-	    if(!points_are_identical(pp0->data(), qq0->data())) {
-		PE3(*pp0, T_RGN_P0, *qq1, *qq2, T_RGN_E0, result, swp);
-	    }
+            if(!points_are_identical(pp0->data(), qq0->data())) {
+                PE3(*pp0, T_RGN_P0, *qq1, *qq2, T_RGN_E0, result, swp);
+            }
 
-	    if(!points_are_identical(pp0->data(), qq1->data())) {
-		PE3(*pp0, T_RGN_P0, *qq2, *qq0, T_RGN_E1, result, swp);
-	    }
+            if(!points_are_identical(pp0->data(), qq1->data())) {
+                PE3(*pp0, T_RGN_P0, *qq2, *qq0, T_RGN_E1, result, swp);
+            }
 
-	    if(!points_are_identical(pp0->data(), qq2->data())) {
-		PE3(*pp0, T_RGN_P0, *qq0, *qq1, T_RGN_E2, result, swp);
-	    }
+            if(!points_are_identical(pp0->data(), qq2->data())) {
+                PE3(*pp0, T_RGN_P0, *qq0, *qq1, T_RGN_E2, result, swp);
+            }
 
-	    if(!points_are_identical(pp1->data(), qq0->data())) {
-		PE3(*pp1, T_RGN_P1, *qq1, *qq2, T_RGN_E0, result, swp);
-	    }
+            if(!points_are_identical(pp1->data(), qq0->data())) {
+                PE3(*pp1, T_RGN_P1, *qq1, *qq2, T_RGN_E0, result, swp);
+            }
 
-	    if(!points_are_identical(pp1->data(), qq1->data())) {
-		PE3(*pp1, T_RGN_P1, *qq2, *qq0, T_RGN_E1, result, swp);
-	    }
+            if(!points_are_identical(pp1->data(), qq1->data())) {
+                PE3(*pp1, T_RGN_P1, *qq2, *qq0, T_RGN_E1, result, swp);
+            }
 
-	    if(!points_are_identical(pp1->data(), qq2->data())) {
-		PE3(*pp1, T_RGN_P1, *qq0, *qq1, T_RGN_E2, result, swp);
-	    }
-	    
-	    if(!points_are_identical(pp2->data(), qq0->data())) {
-		PE3(*pp2, T_RGN_P1, *qq1, *qq2, T_RGN_E0, result, swp);
-	    }
+            if(!points_are_identical(pp1->data(), qq2->data())) {
+                PE3(*pp1, T_RGN_P1, *qq0, *qq1, T_RGN_E2, result, swp);
+            }
+            
+            if(!points_are_identical(pp2->data(), qq0->data())) {
+                PE3(*pp2, T_RGN_P1, *qq1, *qq2, T_RGN_E0, result, swp);
+            }
 
-	    if(!points_are_identical(pp2->data(), qq1->data())) {
-		PE3(*pp2, T_RGN_P1, *qq2, *qq0, T_RGN_E1, result, swp);
-	    }
+            if(!points_are_identical(pp2->data(), qq1->data())) {
+                PE3(*pp2, T_RGN_P1, *qq2, *qq0, T_RGN_E1, result, swp);
+            }
 
-	    if(!points_are_identical(pp2->data(), qq2->data())) {
-		PE3(*pp2, T_RGN_P1, *qq0, *qq1, T_RGN_E2, result, swp);
-	    }
-	    
-	    EE3_strict(*pp0, *pp1, T_RGN_E2, *qq0, *qq1, T_RGN_E2, result, swp);
-	    EE3_strict(*pp0, *pp1, T_RGN_E2, *qq1, *qq2, T_RGN_E0, result, swp);
-	    EE3_strict(*pp0, *pp1, T_RGN_E2, *qq2, *qq0, T_RGN_E1, result, swp);
+            if(!points_are_identical(pp2->data(), qq2->data())) {
+                PE3(*pp2, T_RGN_P1, *qq0, *qq1, T_RGN_E2, result, swp);
+            }
+            
+            EE3_strict(*pp0, *pp1, T_RGN_E2, *qq0, *qq1, T_RGN_E2, result, swp);
+            EE3_strict(*pp0, *pp1, T_RGN_E2, *qq1, *qq2, T_RGN_E0, result, swp);
+            EE3_strict(*pp0, *pp1, T_RGN_E2, *qq2, *qq0, T_RGN_E1, result, swp);
 
-	    EE3_strict(*pp1, *pp2, T_RGN_E0, *qq0, *qq1, T_RGN_E2, result, swp);
-	    EE3_strict(*pp1, *pp2, T_RGN_E0, *qq1, *qq2, T_RGN_E0, result, swp);
-	    EE3_strict(*pp1, *pp2, T_RGN_E0, *qq2, *qq0, T_RGN_E1, result, swp);	    
+            EE3_strict(*pp1, *pp2, T_RGN_E0, *qq0, *qq1, T_RGN_E2, result, swp);
+            EE3_strict(*pp1, *pp2, T_RGN_E0, *qq1, *qq2, T_RGN_E0, result, swp);
+            EE3_strict(*pp1, *pp2, T_RGN_E0, *qq2, *qq0, T_RGN_E1, result, swp);            
 
-	    EE3_strict(*pp2, *pp0, T_RGN_E1, *qq0, *qq1, T_RGN_E2, result, swp);
-	    EE3_strict(*pp2, *pp0, T_RGN_E1, *qq1, *qq2, T_RGN_E0, result, swp);
-	    EE3_strict(*pp2, *pp0, T_RGN_E1, *qq2, *qq0, T_RGN_E1, result, swp);	    
-	} else if(dim1 == 1 && dim2 == 2) {
-	    Sign s1 = PCK::orient_3d(*pp0, *qq0, *qq1, *qq2);
-	    Sign s2 = PCK::orient_3d(*pp1, *qq0, *qq1, *qq2);
-	    Sign s3 = PCK::orient_3d(*pp2, *qq0, *qq1, *qq2);
-	    if((s1 == 0) && (s2 == 0) && (s3 == 0)) {
-		ET2(
-		    *pp0, *pp1, T_RGN_E2, *qq0, *qq1, *qq2,
-		    result, swp
-		);
-		ET2(
-		    *pp1, *pp2, T_RGN_E0, *qq0, *qq1, *qq2,
-		    result, swp
-		);
-		ET2(
-		    *pp2, *pp0, T_RGN_E1, *qq0, *qq1, *qq2,
-		    result, swp
-		);
-	    } else {
-		if(s1 != s2) {
-		    stradET3(
-			*pp0, *pp1, T_RGN_E2, *qq0, *qq1, *qq2,
-			result, swp
-		    );
-		}
-		if(s2 != s3) {
-		    stradET3(
-			*pp1, *pp2, T_RGN_E0, *qq0, *qq1, *qq2,
-			result, swp
-		    );
-		}
-		if(s3 != s1) {
-		    stradET3(
-			*pp2, *pp0, T_RGN_E1, *qq0, *qq1, *qq2,
-			result, swp
-		    );
-		}
-	    }
-	}
-	
-	coord_index_t max_dim = 0;
-	
-	//   The same intersection can appear several times,
-	// remove the duplicates
-	sort_unique(result);
-	
-	//   Determine whether there is a strict intersection, i.e.
-	// at least one of the objects that determine intersection
-	// vertices is of dimension >= 1.
-	for(index_t i = 0; i < result.size(); i++) {
-	    max_dim = std::max(max_dim, region_dim(result[i].first));
-	    max_dim = std::max(max_dim, region_dim(result[i].second));
-	}
-	return (max_dim > 0);
+            EE3_strict(*pp2, *pp0, T_RGN_E1, *qq0, *qq1, T_RGN_E2, result, swp);
+            EE3_strict(*pp2, *pp0, T_RGN_E1, *qq1, *qq2, T_RGN_E0, result, swp);
+            EE3_strict(*pp2, *pp0, T_RGN_E1, *qq2, *qq0, T_RGN_E1, result, swp);            
+        } else if(dim1 == 1 && dim2 == 2) {
+            Sign s1 = PCK::orient_3d(*pp0, *qq0, *qq1, *qq2);
+            Sign s2 = PCK::orient_3d(*pp1, *qq0, *qq1, *qq2);
+            Sign s3 = PCK::orient_3d(*pp2, *qq0, *qq1, *qq2);
+            if((s1 == 0) && (s2 == 0) && (s3 == 0)) {
+                ET2(
+                    *pp0, *pp1, T_RGN_E2, *qq0, *qq1, *qq2,
+                    result, swp
+                );
+                ET2(
+                    *pp1, *pp2, T_RGN_E0, *qq0, *qq1, *qq2,
+                    result, swp
+                );
+                ET2(
+                    *pp2, *pp0, T_RGN_E1, *qq0, *qq1, *qq2,
+                    result, swp
+                );
+            } else {
+                if(s1 != s2) {
+                    stradET3(
+                        *pp0, *pp1, T_RGN_E2, *qq0, *qq1, *qq2,
+                        result, swp
+                    );
+                }
+                if(s2 != s3) {
+                    stradET3(
+                        *pp1, *pp2, T_RGN_E0, *qq0, *qq1, *qq2,
+                        result, swp
+                    );
+                }
+                if(s3 != s1) {
+                    stradET3(
+                        *pp2, *pp0, T_RGN_E1, *qq0, *qq1, *qq2,
+                        result, swp
+                    );
+                }
+            }
+        }
+        
+        coord_index_t max_dim = 0;
+        
+        //   The same intersection can appear several times,
+        // remove the duplicates
+        sort_unique(result);
+        
+        //   Determine whether there is a strict intersection, i.e.
+        // at least one of the objects that determine intersection
+        // vertices is of dimension >= 1.
+        for(index_t i = 0; i < result.size(); i++) {
+            max_dim = std::max(max_dim, region_dim(result[i].first));
+            max_dim = std::max(max_dim, region_dim(result[i].second));
+        }
+        return (max_dim > 0);
     }
 
 
@@ -997,11 +997,11 @@ namespace {
 namespace GEO {
 
     std::string region_to_string(TriangleRegion rgn) {
-	const char* strs[] = {
-	    "P0", "P1", "P2", "E0", "E1", "E2", "T"
-	};
-	geo_assert(int(rgn) < 7);
-	return strs[int(rgn)];
+        const char* strs[] = {
+            "P0", "P1", "P2", "E0", "E1", "E2", "T"
+        };
+        geo_assert(int(rgn) < 7);
+        return strs[int(rgn)];
     }
     
     bool triangles_intersections(
@@ -1009,24 +1009,24 @@ namespace GEO {
         const vec3& q0, const vec3& q1, const vec3& q2,
         vector<TriangleIsect>& result
     ) {
-	result.resize(0);	
+        result.resize(0);       
         {
-	    index_t dim1 = triangle_dim(p0,p1,p2);
-	    index_t dim2 = triangle_dim(q0,q1,q2);
-	    if(dim1 != 2 || dim2 != 2) {
-		return triangles_intersections_degenerate(
-		    dim1, dim2,
-		    p0, p1, p2,
-		    q0, q1, q2,
-		    result
-		);
-	    }
-	} 
-	
-	switch(
-	    triangle_intersect_supporting_plane(
-		p0, p1, p2, q0, q1, q2, result, false
-	    )
+            index_t dim1 = triangle_dim(p0,p1,p2);
+            index_t dim2 = triangle_dim(q0,q1,q2);
+            if(dim1 != 2 || dim2 != 2) {
+                return triangles_intersections_degenerate(
+                    dim1, dim2,
+                    p0, p1, p2,
+                    q0, q1, q2,
+                    result
+                );
+            }
+        } 
+        
+        switch(
+            triangle_intersect_supporting_plane(
+                p0, p1, p2, q0, q1, q2, result, false
+            )
         ) {
             case STRADDLES:
                 triangle_intersect_supporting_plane(
@@ -1034,34 +1034,34 @@ namespace GEO {
                 );
                 break;
             case PLANAR:  
-		TT2(
+                TT2(
                     p0, p1, p2, q0, q1, q2, result
-		); 
-		break;
+                ); 
+                break;
             case NO_ISECT:
             case TANGENT:
                 break;
         }
         coord_index_t max_dim = 0;
 
-	//   The same intersection can appear several times,
-	// remove the duplicates
-	sort_unique(result);
+        //   The same intersection can appear several times,
+        // remove the duplicates
+        sort_unique(result);
 
-	//   Determine whether there is a strict intersection, i.e.
-	// at least one of the objects that determine intersection
-	// vertices is of dimension >= 1.
+        //   Determine whether there is a strict intersection, i.e.
+        // at least one of the objects that determine intersection
+        // vertices is of dimension >= 1.
         for(index_t i = 0; i < result.size(); i++) {
             max_dim = std::max(max_dim, region_dim(result[i].first));
             max_dim = std::max(max_dim, region_dim(result[i].second));
         }
         bool has_isect = (max_dim > 0);
-	/*
-	if(has_isect) {
-	    std::cout << result << std::endl;
-	}
-	*/
-	return has_isect;
+        /*
+        if(has_isect) {
+            std::cout << result << std::endl;
+        }
+        */
+        return has_isect;
     }
 }
 

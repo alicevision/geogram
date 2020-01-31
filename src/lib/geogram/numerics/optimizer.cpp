@@ -67,7 +67,7 @@ namespace GEO {
 
     Optimizer* Optimizer::create(const std::string& name) {
 
-#ifdef GEOGRAM_WITH_HLBFGS	
+#ifdef GEOGRAM_WITH_HLBFGS      
         geo_register_Optimizer_creator(HLBFGSOptimizer, "default");
         geo_register_Optimizer_creator(HLBFGSOptimizer, "HLBFGS");
         geo_register_Optimizer_creator(HLBFGS_M1QN3Optimizer, "HM1QN3");

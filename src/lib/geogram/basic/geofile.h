@@ -476,7 +476,7 @@ namespace GEO {
          *  no such attribute set.
          */
         AttributeSetInfo* find_attribute_set(const std::string& name) {
-	    auto it = attribute_sets_.find(name);
+            auto it = attribute_sets_.find(name);
             if(it == attribute_sets_.end()) {
                 return nullptr;
             }
@@ -492,7 +492,7 @@ namespace GEO {
         const AttributeSetInfo* find_attribute_set(
             const std::string& name
         ) const {
-	    auto it = attribute_sets_.find(name);
+            auto it = attribute_sets_.find(name);
             if(it == attribute_sets_.end()) {
                 return nullptr;
             }

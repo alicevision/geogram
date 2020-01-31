@@ -359,7 +359,7 @@ namespace GEO {
 
         /**
          * \brief Initializes GeogramLib
-	 * \param[in] flags the flags passed to GEO::initialize()
+         * \param[in] flags the flags passed to GEO::initialize()
          * \details This function must be called once before using
          * any functionality of GeogramLib.
          */
@@ -601,8 +601,8 @@ namespace GEO {
      *  core (default is 1).
      */
      void GEOGRAM_API parallel_for_slice(
-	 index_t from, index_t to, std::function<void(index_t, index_t)> func,
-	 index_t threads_per_core = 1
+         index_t from, index_t to, std::function<void(index_t, index_t)> func,
+         index_t threads_per_core = 1
      );
 
      /**
@@ -612,8 +612,8 @@ namespace GEO {
       * \param[in] f1 , f2 functions to be called in parallel.
       */
      void GEOGRAM_API parallel(
-	 std::function<void()> f1,
-	 std::function<void()> f2	 
+         std::function<void()> f1,
+         std::function<void()> f2        
      );
 
      /**
@@ -623,10 +623,10 @@ namespace GEO {
       * \param[in] f1 , f2 , f3 , f4 functions to be called in parallel.
       */
      void GEOGRAM_API parallel(
-	 std::function<void()> f1,
-	 std::function<void()> f2,
-	 std::function<void()> f3,
-	 std::function<void()> f4	 
+         std::function<void()> f1,
+         std::function<void()> f2,
+         std::function<void()> f3,
+         std::function<void()> f4        
      );
 
      /**
@@ -637,14 +637,14 @@ namespace GEO {
       *  to be called in parallel.
       */
      void GEOGRAM_API parallel(
-	 std::function<void()> f1,
-	 std::function<void()> f2,
-	 std::function<void()> f3,
-	 std::function<void()> f4,
-	 std::function<void()> f5,
-	 std::function<void()> f6,
-	 std::function<void()> f7,
-	 std::function<void()> f8	 
+         std::function<void()> f1,
+         std::function<void()> f2,
+         std::function<void()> f3,
+         std::function<void()> f4,
+         std::function<void()> f5,
+         std::function<void()> f6,
+         std::function<void()> f7,
+         std::function<void()> f8        
      );
      
 }
