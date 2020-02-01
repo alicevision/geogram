@@ -59,6 +59,10 @@
 #include <geogram/basic/argused.h>
 #include <geogram/basic/algorithm.h>
 #include <geogram/bibliography/bibliography.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_sort.h>
+#include <cmath>
+#include <cassert>
 
 /*
  * There are three levels of implementation:
@@ -69,6 +73,8 @@
  *
  * Warning: there are approx. 1000 lines of boring code ahead.
  */
+
+#define MAKE_KEY(x) std::make_pair(std::abs(x), std::signbit(x))
 
 namespace {
 
@@ -563,10 +569,14 @@ namespace {
                 const GenRestrictedVoronoiDiagram& RVD,
                 double& f,
                 double* g,
+                tbb::concurrent_vector<double> * master_f,
+                tbb::concurrent_vector<std::pair<index_t, double>> * master_g,
                 LOCKS& locks
             ) :
                 f_(f),
                 g_(g),
+                master_f_(master_f),
+                master_g_(master_g),
                 locks_(locks),
                 RVD_(RVD) {
             }
@@ -599,18 +609,29 @@ namespace {
                     cur_f += u2 * (u0 + u1 + u2);
                 }
 
-                f_ += t_area * cur_f / 6.0;
+                if (master_f_) {
+                    master_f_->push_back(t_area * cur_f / 6.0);
+                    for(index_t c = 0; c < DIM; c++) {
+                        double Gc = (1.0 / 3.0) * (p1[c] + p2[c] + p3[c]);
+                        double val = (2.0 * t_area) * (p0[c] - Gc);
+                        master_g_->emplace_back(v * DIM + c, val);
+                    }
+                } else {
+                    f_ += t_area * cur_f / 6.0;
 
-                locks_.acquire_spinlock(v);
-                for(index_t c = 0; c < DIM; c++) {
-                    double Gc = (1.0 / 3.0) * (p1[c] + p2[c] + p3[c]);
-                    g_[DIM * v + c] += (2.0 * t_area) * (p0[c] - Gc);
+                    locks_.acquire_spinlock(v);
+                    for(index_t c = 0; c < DIM; c++) {
+                        double Gc = (1.0 / 3.0) * (p1[c] + p2[c] + p3[c]);
+                        g_[DIM * v + c] += (2.0 * t_area) * (p0[c] - Gc);
+                    }
+                    locks_.release_spinlock(v);
                 }
-                locks_.release_spinlock(v);
             }
 
             double& f_;
             double* g_;
+            tbb::concurrent_vector<double> * master_f_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
             LOCKS& locks_;
             const GenRestrictedVoronoiDiagram& RVD_;
         };
@@ -643,10 +664,14 @@ namespace {
                 const GenRestrictedVoronoiDiagram& RVD,
                 double& f,
                 double* g,
+                tbb::concurrent_vector<double> * master_f,
+                tbb::concurrent_vector<std::pair<index_t, double>> * master_g,
                 LOCKS& locks
             ) :
                 f_(f),
                 g_(g),
+                master_f_(master_f),
+                master_g_(master_g),
                 locks_(locks),
                 RVD_(RVD) {
             }
@@ -708,23 +733,39 @@ namespace {
                 cur_f += (alpha[2] + rho[1]) * dotprod_21;  // 2 1
                 cur_f += (alpha[2] + rho[2]) * dotprod_22;  // 2 2
 
-                f_ += t_area * cur_f / 30.0;
-                double* g_out = g_ + v * DIM;
-                locks_.acquire_spinlock(v);
-                for(index_t c = 0; c < DIM; c++) {
-                    g_out[c] += (t_area / 6.0) * (
-                        4.0 * Sp * p0[c] - (
-                            alpha[0] * p1[c] +
-                            alpha[1] * p2[c] +
-                            alpha[2] * p3[c]
-                        )
-                    );
+                if (master_f_) {
+                    master_f_->push_back(t_area * cur_f / 30.0);
+                    for(index_t c = 0; c < DIM; c++) {
+                        double val = (t_area / 6.0) * (
+                            4.0 * Sp * p0[c] - (
+                                alpha[0] * p1[c] +
+                                alpha[1] * p2[c] +
+                                alpha[2] * p3[c]
+                            )
+                        );
+                        master_g_->emplace_back(v * DIM + c, val);
+                    }
+                } else {
+                    f_ += t_area * cur_f / 30.0;
+                    double* g_out = g_ + v * DIM;
+                    locks_.acquire_spinlock(v);
+                    for(index_t c = 0; c < DIM; c++) {
+                        g_out[c] += (t_area / 6.0) * (
+                            4.0 * Sp * p0[c] - (
+                                alpha[0] * p1[c] +
+                                alpha[1] * p2[c] +
+                                alpha[2] * p3[c]
+                            )
+                        );
+                    }
+                    locks_.release_spinlock(v);
                 }
-                locks_.release_spinlock(v);
             }
 
             double& f_;
             double* g_;
+            tbb::concurrent_vector<double> * master_f_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
             LOCKS& locks_;
             const GenRestrictedVoronoiDiagram& RVD_;
         };
@@ -736,13 +777,13 @@ namespace {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCVTFuncGradWeighted<Process::SpinLockArray>(
-                                RVD_, f, g, master_->spinlocks_
+                                RVD_, f, g, master_f_, master_g_, master_->spinlocks_
                             )
                         );
                     } else {
                         RVD_.for_each_triangle(
                             ComputeCVTFuncGrad<Process::SpinLockArray>(
-                                RVD_, f, g, master_->spinlocks_
+                                RVD_, f, g, master_f_, master_g_, master_->spinlocks_
                             )
                         );
                     }
@@ -751,13 +792,13 @@ namespace {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCVTFuncGradWeighted<NoLocks>(
-                                RVD_, f, g, nolocks
+                                RVD_, f, g, master_f_, master_g_, nolocks
                             )
                         );
                     } else {
                         RVD_.for_each_triangle(
                             ComputeCVTFuncGrad<NoLocks>(
-                                RVD_, f, g, nolocks
+                                RVD_, f, g, master_f_, master_g_, nolocks
                             )
                         );
                     }
@@ -768,13 +809,34 @@ namespace {
                 spinlocks_.resize(delaunay_->nb_vertices());
                 for(index_t t = 0; t < nb_parts(); t++) {
                     part(t).funcval_ = 0.0;
+                    part(t).master_f_ = &accu_f_;
+                    part(t).master_g_ = &accu_g_;
                 }
+                accu_f_.clear();
+                accu_f_.reserve(mesh_->facets.nb());
+                accu_g_.clear();
+                accu_g_.reserve(DIM * mesh_->facets.nb());
                 parallel_for(
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
-                for(index_t t = 0; t < nb_parts(); t++) {
-                    f += part(t).funcval_;
+                // sort accu_f_ and accu_g_ by abs value, then sum elements
+                tbb::parallel_sort(accu_f_.begin(), accu_f_.end(), [](double x, double y) {
+                    return MAKE_KEY(x) < MAKE_KEY(y);
+                });
+                tbb::parallel_sort(accu_g_.begin(), accu_g_.end(), [](
+                    const std::pair<index_t, double> &x,
+                    const std::pair<index_t, double> &y
+                    )
+                {
+                    return std::make_pair(x.first, MAKE_KEY(x.second))
+                         < std::make_pair(y.first, MAKE_KEY(y.second));
+                });
+                for (double x : accu_f_) {
+                    f += x;
+                }
+                for (const auto &kv : accu_g_) {
+                    g[kv.first] += kv.second;
                 }
             }
         }
@@ -811,10 +873,14 @@ namespace {
                 const GenRestrictedVoronoiDiagram& RVD,
                 double& f,
                 double* g,
+                tbb::concurrent_vector<double> * master_f,
+                tbb::concurrent_vector<std::pair<index_t, double>> * master_g,
                 LOCKS& locks
             ) :
                 f_(f),
                 g_(g),
+                master_f_(master_f),
+                master_g_(master_g),
                 locks_(locks),
                 RVD_(RVD) {
             }
@@ -861,22 +927,37 @@ namespace {
                     fi += (Uc * Vc + Vc * Wc + Wc * Uc);
                 }
                 fi *= (mi / 10.0);
-                f_ += fi;
 
-                // gi = 2*mi(p0 - 1/4(p0 + p1 + p2 + p3))
-                double* g_out = g_ + v * DIM;
-                locks_.acquire_spinlock(v);
-                for(coord_index_t c = 0; c < DIM; ++c) {
-                    g_out[c] += 2.0 * mi * (
-                        0.75 * p0[c]
-                        - 0.25 * p1[c] - 0.25 * p2[c] - 0.25 * p3[c]
-                    );
+                if (master_f_) {
+                    master_f_->push_back(fi);
+                    // gi = 2*mi(p0 - 1/4(p0 + p1 + p2 + p3))
+                    for(coord_index_t c = 0; c < DIM; ++c) {
+                        double val = 2.0 * mi * (
+                            0.75 * p0[c]
+                            - 0.25 * p1[c] - 0.25 * p2[c] - 0.25 * p3[c]
+                        );
+                        master_g_->emplace_back(v * DIM + c, val);
+                    }
+                } else {
+                    f_ += fi;
+
+                    // gi = 2*mi(p0 - 1/4(p0 + p1 + p2 + p3))
+                    double* g_out = g_ + v * DIM;
+                    locks_.acquire_spinlock(v);
+                    for(coord_index_t c = 0; c < DIM; ++c) {
+                        g_out[c] += 2.0 * mi * (
+                            0.75 * p0[c]
+                            - 0.25 * p1[c] - 0.25 * p2[c] - 0.25 * p3[c]
+                        );
+                    }
+                    locks_.release_spinlock(v);
                 }
-                locks_.release_spinlock(v);
             }
 
             double& f_;
             double* g_;
+            tbb::concurrent_vector<double> * master_f_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
             LOCKS& locks_;
             const GenRestrictedVoronoiDiagram& RVD_;
         };
@@ -887,14 +968,14 @@ namespace {
                 if(master_ != nullptr) {
                     RVD_.for_each_volumetric_integration_simplex(
                         ComputeCVTFuncGradVolumetric<Process::SpinLockArray>(
-                            RVD_, f, g, master_->spinlocks_
+                            RVD_, f, g, master_f_, master_g_, master_->spinlocks_
                         )
                     );
                 } else {
                     NoLocks nolocks;
                     RVD_.for_each_volumetric_integration_simplex(
                         ComputeCVTFuncGradVolumetric<NoLocks>(
-                            RVD_, f, g, nolocks
+                            RVD_, f, g, master_f_, master_g_, nolocks
                         )
                     );
                 }
@@ -904,13 +985,34 @@ namespace {
                 spinlocks_.resize(delaunay_->nb_vertices());
                 for(index_t t = 0; t < nb_parts(); t++) {
                     part(t).funcval_ = 0.0;
+                    part(t).master_f_ = &accu_f_;
+                    part(t).master_g_ = &accu_g_;
                 }
+                accu_f_.clear();
+                accu_f_.reserve(mesh_->facets.nb());
+                accu_g_.clear();
+                accu_g_.reserve(DIM * mesh_->facets.nb());
                 parallel_for(
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
-                for(index_t t = 0; t < nb_parts(); t++) {
-                    f += part(t).funcval_;
+                // sort accu_f_ and accu_g_ by abs value, then sum elements
+                tbb::parallel_sort(accu_f_.begin(), accu_f_.end(), [](double x, double y) {
+                    return MAKE_KEY(x) < MAKE_KEY(y);
+                });
+                tbb::parallel_sort(accu_g_.begin(), accu_g_.end(), [](
+                    const std::pair<index_t, double> &x,
+                    const std::pair<index_t, double> &y
+                    )
+                {
+                    return std::make_pair(x.first, MAKE_KEY(x.second))
+                         < std::make_pair(y.first, MAKE_KEY(y.second));
+                });
+                for (double x : accu_f_) {
+                    f += x;
+                }
+                for (const auto &kv : accu_g_) {
+                    g[kv.first] += kv.second;
                 }
             }
         }
@@ -1642,6 +1744,7 @@ namespace {
                 } break;
                 case MT_INT_SMPLX:
                 {
+                    assert(false); // not deterministic for now
                     T.compute_integration_simplex_func_grad(
                         T.funcval_, arg_vectors_, simplex_func_
                     );
@@ -2515,9 +2618,14 @@ namespace {
         double* arg_vectors_;
         double* arg_scalars_;
 
+        tbb::concurrent_vector<double> accu_f_;
+        tbb::concurrent_vector<std::pair<index_t, double>> accu_g_;
+
         // Variables for 'slaves' in multithreading mode
         thisclass* master_;
         double funcval_;  // Newton mode: function value
+        tbb::concurrent_vector<double> * master_f_ = nullptr;
+        tbb::concurrent_vector<std::pair<index_t, double>> * master_g_ = nullptr;
 
     protected:
         /**
