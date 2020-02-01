@@ -275,10 +275,14 @@ namespace {
             ComputeCentroids(
                 double* mg,
                 double* m,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_g,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_m,
                 LOCKS& locks
             ) :
                 mg_(mg),
                 m_(m),
+                master_g_(master_g),
+                master_m_(master_m),
                 locks_(locks) {
             }
 
@@ -297,19 +301,29 @@ namespace {
             ) const {
                 double cur_m = Geom::triangle_area(p1, p2, p3, DIM);
                 double s = cur_m / 3.0;
-                locks_.acquire_spinlock(v);
-                m_[v] += cur_m;
-                double* cur_mg_out = mg_ + v * DIM;
-                for(coord_index_t coord = 0; coord < DIM; coord++) {
-                    cur_mg_out[coord] +=
-                        s * (p1[coord] + p2[coord] + p3[coord]);
+                if (master_m_) {
+                    master_m_->emplace_back(v, cur_m);
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        double val = s * (p1[coord] + p2[coord] + p3[coord]);
+                        master_g_->emplace_back(v * DIM + coord, val);
+                    }
+                } else {
+                    locks_.acquire_spinlock(v);
+                    m_[v] += cur_m;
+                    double* cur_mg_out = mg_ + v * DIM;
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        cur_mg_out[coord] +=
+                            s * (p1[coord] + p2[coord] + p3[coord]);
+                    }
+                    locks_.release_spinlock(v);
                 }
-                locks_.release_spinlock(v);
             }
 
         private:
             double* mg_;
             double* m_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_m_;
             LOCKS& locks_;
         };
 
@@ -338,10 +352,14 @@ namespace {
             ComputeCentroidsWeighted(
                 double* mg,
                 double* m,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_g,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_m,
                 LOCKS& locks
             ) :
                 mg_(mg),
                 m_(m),
+                master_g_(master_g),
+                master_m_(master_m),
                 locks_(locks) {
             }
 
@@ -365,18 +383,27 @@ namespace {
                     v1.weight(), v2.weight(), v3.weight(),
                     cur_Vg, cur_m, DIM
                 );
-                locks_.acquire_spinlock(v);
-                m_[v] += cur_m;
-                double* cur_mg_out = mg_ + v * DIM;
-                for(coord_index_t coord = 0; coord < DIM; coord++) {
-                    cur_mg_out[coord] += cur_Vg[coord];
+                if (master_m_) {
+                    master_m_->emplace_back(v, cur_m);
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        master_g_->emplace_back(v * DIM + coord, cur_Vg[coord]);
+                    }
+                } else {
+                    locks_.acquire_spinlock(v);
+                    m_[v] += cur_m;
+                    double* cur_mg_out = mg_ + v * DIM;
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        cur_mg_out[coord] += cur_Vg[coord];
+                    }
+                    locks_.release_spinlock(v);
                 }
-                locks_.release_spinlock(v);
             }
 
         private:
             double* mg_;
             double* m_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_m_;
             LOCKS& locks_;
         };
 
@@ -387,13 +414,13 @@ namespace {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCentroidsWeighted<Process::SpinLockArray>(
-                                mg, m, master_->spinlocks_
+                                mg, m, master_g_, master_m_, master_->spinlocks_
                             )
                         );
                     } else {
                         RVD_.for_each_triangle(
                             ComputeCentroids<Process::SpinLockArray>(
-                                mg, m, master_->spinlocks_
+                                mg, m, master_g_, master_m_, master_->spinlocks_
                             )
                         );
                     }
@@ -402,12 +429,12 @@ namespace {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCentroidsWeighted<NoLocks>(
-                                mg, m, nolocks
+                                mg, m, master_g_, master_m_, nolocks
                             )
                         );
                     } else {
                         RVD_.for_each_triangle(
-                            ComputeCentroids<NoLocks>(mg, m, nolocks)
+                            ComputeCentroids<NoLocks>(mg, m, master_g_, master_m_, nolocks)
                         );
                     }
                 }
@@ -415,11 +442,41 @@ namespace {
                 thread_mode_ = MT_LLOYD;
                 arg_vectors_ = mg;
                 arg_scalars_ = m;
-                spinlocks_.resize(delaunay_->nb_vertices());
+                for(index_t t = 0; t < nb_parts(); t++) {
+                    part(t).master_m_ = &accu_m_;
+                    part(t).master_g_ = &accu_g_;
+                }
+                accu_m_.clear();
+                accu_m_.reserve(mesh_->facets.nb());
+                accu_g_.clear();
+                accu_g_.reserve(DIM * mesh_->facets.nb());
                 parallel_for(
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
+                // sort accu_m_ and accu_g_ by abs value, then sum elements
+                tbb::parallel_sort(accu_m_.begin(), accu_m_.end(), [](
+                    const std::pair<index_t, double> &x,
+                    const std::pair<index_t, double> &y
+                    )
+                {
+                    return std::make_pair(x.first, MAKE_KEY(x.second))
+                         < std::make_pair(y.first, MAKE_KEY(y.second));
+                });
+                tbb::parallel_sort(accu_g_.begin(), accu_g_.end(), [](
+                    const std::pair<index_t, double> &x,
+                    const std::pair<index_t, double> &y
+                    )
+                {
+                    return std::make_pair(x.first, MAKE_KEY(x.second))
+                         < std::make_pair(y.first, MAKE_KEY(y.second));
+                });
+                for (const auto &kv : accu_m_) {
+                    m[kv.first] += kv.second;
+                }
+                for (const auto &kv : accu_g_) {
+                    mg[kv.first] += kv.second;
+                }
             }
         }
 
@@ -444,19 +501,20 @@ namespace {
              * \brief Constructs a ComputeCentroidsVolumetric.
              * \param[out] mg where to store the centroids
              * \param[out] m where to store the masses
-             * \param[in] delaunay the Delaunay triangulation
              * \param[in] locks the array of locks
              *  (or NoLocks in single thread mode)
              */
             ComputeCentroidsVolumetric(
                 double* mg,
                 double* m,
-                const Delaunay* delaunay,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_g,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_m,
                 LOCKS& locks
             ) :
                 mg_(mg),
                 m_(m),
-                delaunay_(delaunay),
+                master_g_(master_g),
+                master_m_(master_m),
                 locks_(locks) {
             }
 
@@ -491,21 +549,30 @@ namespace {
                     p0, p1, p2, p3
                 );
                 double s = cur_m / 4.0;
-                locks_.acquire_spinlock(v);
-                m_[v] += cur_m;
-                double* cur_mg_out = mg_ + v * DIM;
-                for(coord_index_t coord = 0; coord < DIM; coord++) {
-                    cur_mg_out[coord] += s * (
-                        p0[coord] + p1[coord] + p2[coord] + p3[coord]
-                    );
+                if (master_m_) {
+                    master_m_->emplace_back(v, cur_m);
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        double val = s * (p0[coord] + p1[coord] + p2[coord] + p3[coord]);
+                        master_g_->emplace_back(v * DIM + coord, val);
+                    }
+                } else {
+                    locks_.acquire_spinlock(v);
+                    m_[v] += cur_m;
+                    double* cur_mg_out = mg_ + v * DIM;
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        cur_mg_out[coord] += s * (
+                            p0[coord] + p1[coord] + p2[coord] + p3[coord]
+                        );
+                    }
+                    locks_.release_spinlock(v);
                 }
-                locks_.release_spinlock(v);
             }
 
         private:
             double* mg_;
             double* m_;
-            const Delaunay* delaunay_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_m_;
             LOCKS& locks_;
         };
 
@@ -515,14 +582,14 @@ namespace {
                 if(master_ != nullptr) {
                     RVD_.for_each_tetrahedron(
                         ComputeCentroidsVolumetric<Process::SpinLockArray>(
-                            mg, m, RVD_.delaunay(), master_->spinlocks_
+                            mg, m, master_g_, master_m_, master_->spinlocks_
                         )
                     );
                 } else {
                     NoLocks nolocks;
                     RVD_.for_each_tetrahedron(
                         ComputeCentroidsVolumetric<NoLocks>(
-                            mg, m, RVD_.delaunay(), nolocks
+                            mg, m, master_g_, master_m_, nolocks
                         )
                     );
                 }
@@ -530,11 +597,41 @@ namespace {
                 thread_mode_ = MT_LLOYD;
                 arg_vectors_ = mg;
                 arg_scalars_ = m;
-                spinlocks_.resize(delaunay_->nb_vertices());
+                for(index_t t = 0; t < nb_parts(); t++) {
+                    part(t).master_m_ = &accu_m_;
+                    part(t).master_g_ = &accu_g_;
+                }
+                accu_m_.clear();
+                accu_m_.reserve(mesh_->facets.nb());
+                accu_g_.clear();
+                accu_g_.reserve(DIM * mesh_->facets.nb());
                 parallel_for(
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
+                // sort accu_m_ and accu_g_ by abs value, then sum elements
+                tbb::parallel_sort(accu_m_.begin(), accu_m_.end(), [](
+                    const std::pair<index_t, double> &x,
+                    const std::pair<index_t, double> &y
+                    )
+                {
+                    return std::make_pair(x.first, MAKE_KEY(x.second))
+                         < std::make_pair(y.first, MAKE_KEY(y.second));
+                });
+                tbb::parallel_sort(accu_g_.begin(), accu_g_.end(), [](
+                    const std::pair<index_t, double> &x,
+                    const std::pair<index_t, double> &y
+                    )
+                {
+                    return std::make_pair(x.first, MAKE_KEY(x.second))
+                         < std::make_pair(y.first, MAKE_KEY(y.second));
+                });
+                for (const auto &kv : accu_m_) {
+                    m[kv.first] += kv.second;
+                }
+                for (const auto &kv : accu_g_) {
+                    mg[kv.first] += kv.second;
+                }
             }
         }
 
@@ -806,7 +903,6 @@ namespace {
             } else {
                 thread_mode_ = MT_NEWTON;
                 arg_vectors_ = g;
-                spinlocks_.resize(delaunay_->nb_vertices());
                 for(index_t t = 0; t < nb_parts(); t++) {
                     part(t).funcval_ = 0.0;
                     part(t).master_f_ = &accu_f_;
@@ -982,7 +1078,6 @@ namespace {
             } else {
                 thread_mode_ = MT_NEWTON;
                 arg_vectors_ = g;
-                spinlocks_.resize(delaunay_->nb_vertices());
                 for(index_t t = 0; t < nb_parts(); t++) {
                     part(t).funcval_ = 0.0;
                     part(t).master_f_ = &accu_f_;
@@ -2620,12 +2715,14 @@ namespace {
 
         tbb::concurrent_vector<double> accu_f_;
         tbb::concurrent_vector<std::pair<index_t, double>> accu_g_;
+        tbb::concurrent_vector<std::pair<index_t, double>> accu_m_;
 
         // Variables for 'slaves' in multithreading mode
         thisclass* master_;
         double funcval_;  // Newton mode: function value
         tbb::concurrent_vector<double> * master_f_ = nullptr;
         tbb::concurrent_vector<std::pair<index_t, double>> * master_g_ = nullptr;
+        tbb::concurrent_vector<std::pair<index_t, double>> * master_m_ = nullptr;
 
     protected:
         /**
