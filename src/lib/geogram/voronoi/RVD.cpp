@@ -447,7 +447,7 @@ namespace {
                     part(t).master_g_ = &accu_g_;
                 }
                 accu_m_.clear();
-                accu_m_.reserve(mesh_->facets.nb());
+                accu_m_.reserve(3 * mesh_->facets.nb());
                 accu_g_.clear();
                 accu_g_.reserve(DIM * mesh_->facets.nb());
                 parallel_for(
@@ -602,9 +602,9 @@ namespace {
                     part(t).master_g_ = &accu_g_;
                 }
                 accu_m_.clear();
-                accu_m_.reserve(mesh_->facets.nb());
+                accu_m_.reserve(mesh_->cells.nb());
                 accu_g_.clear();
-                accu_g_.reserve(DIM * mesh_->facets.nb());
+                accu_g_.reserve(DIM * mesh_->cells.nb());
                 parallel_for(
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
@@ -1084,9 +1084,9 @@ namespace {
                     part(t).master_g_ = &accu_g_;
                 }
                 accu_f_.clear();
-                accu_f_.reserve(mesh_->facets.nb());
+                accu_f_.reserve(mesh_->cells.nb());
                 accu_g_.clear();
-                accu_g_.reserve(DIM * mesh_->facets.nb());
+                accu_g_.reserve(DIM * mesh_->cells.nb());
                 parallel_for(
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
