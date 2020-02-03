@@ -2585,7 +2585,9 @@ namespace {
             }
             index_t nb_parts_in = Process::maximum_concurrent_threads();
             if(nb_parts() != nb_parts_in) {
-                if(nb_parts_in == 1) {
+                if(false && nb_parts_in == 1) {
+                    // Codepath disabled to ensure deterministic results independently of the number of
+                    // threads used.
                     delete_threads();
                 } else {
                     vector<index_t> facet_ptr;
