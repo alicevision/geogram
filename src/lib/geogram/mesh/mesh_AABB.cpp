@@ -63,139 +63,6 @@ namespace {
     using namespace GEO;
 
     /**
-     * \brief Computes the axis-aligned bounding box of a mesh facet.
-     * \param[in] M the mesh
-     * \param[out] B the bounding box of the facet
-     * \param[in] f the index of the facet in mesh \p M
-     */
-    void get_facet_bbox(
-        const Mesh& M, Box& B, index_t f
-    ) {
-        index_t c = M.facets.corners_begin(f);
-        const double* p = M.vertices.point_ptr(M.facet_corners.vertex(c));
-        for(coord_index_t coord = 0; coord < 3; ++coord) {
-            B.xyz_min[coord] = p[coord];
-            B.xyz_max[coord] = p[coord];
-        }
-        for(++c; c < M.facets.corners_end(f); ++c) {
-            p = M.vertices.point_ptr(M.facet_corners.vertex(c));
-            for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
-            }
-        }
-    }
-
-
-    /**
-     * \brief Computes the axis-aligned bounding box of a mesh tetrahedron.
-     * \param[in] M the mesh
-     * \param[out] B the bounding box of the facet
-     * \param[in] t the index of the tetrahedron in mesh \p M
-     */
-    void get_tet_bbox(
-        const Mesh& M, Box& B, index_t t
-    ) {
-        const double* p = M.vertices.point_ptr(M.cells.vertex(t,0));
-        for(coord_index_t coord = 0; coord < 3; ++coord) {
-            B.xyz_min[coord] = p[coord];
-            B.xyz_max[coord] = p[coord];
-        }
-        for(index_t lv=1; lv<4; ++lv) {
-            p = M.vertices.point_ptr(M.cells.vertex(t,lv));
-            for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
-            }
-        }
-    }
-
-    /**
-     * \brief Computes the axis-aligned bounding box of a mesh cell
-     * \param[in] M the mesh
-     * \param[out] B the bounding box of the facet
-     * \param[in] c the index of the cell in mesh \p M
-     */
-    void get_cell_bbox(
-        const Mesh& M, Box& B, index_t c
-    ) {
-        const double* p = M.vertices.point_ptr(M.cells.vertex(c,0));
-        for(coord_index_t coord = 0; coord < 3; ++coord) {
-            B.xyz_min[coord] = p[coord];
-            B.xyz_max[coord] = p[coord];
-        }
-        for(index_t lv=1; lv<M.cells.nb_vertices(c); ++lv) {
-            p = M.vertices.point_ptr(M.cells.vertex(c,lv));
-            for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
-            }
-        }
-    }
-    
-    /**
-     * \brief Computes the maximum node index in a subtree
-     * \param[in] node_index node index of the root of the subtree
-     * \param[in] b first facet index in the subtree
-     * \param[in] e one position past the last facet index in the subtree
-     * \return the maximum node index in the subtree rooted at \p node_index
-     */
-    index_t max_node_index(index_t node_index, index_t b, index_t e) {
-        geo_debug_assert(e > b);
-        if(b + 1 == e) {
-            return node_index;
-        }
-        index_t m = b + (e - b) / 2;
-        index_t childl = 2 * node_index;
-        index_t childr = 2 * node_index + 1;
-        return std::max(
-            max_node_index(childl, b, m),
-            max_node_index(childr, m, e)
-        );
-    }
-
-    /**
-     * \brief Computes the hierarchy of bounding boxes recursively.
-     * \details This function is generic and can be used to compute
-     *  a bbox hierarchy of arbitrary elements.
-     * \param[in] M the mesh
-     * \param[in] bboxes the array of bounding boxes
-     * \param[in] node_index the index of the root of the subtree
-     * \param[in] b first element index in the subtree
-     * \param[in] e one position past the last element index in the subtree
-     * \param[in] get_bbox a function that computes the bbox of an element
-     * \tparam GET_BBOX a function (or a functor) with the following arguments:
-     *  - mesh: a const reference to the mesh
-     *  - box: a reference where the computed bounding box of the element 
-     *   will be stored
-     *  - element: the index of the element
-     */
-    template <class GET_BBOX>
-    void init_bboxes_recursive(
-        const Mesh& M, vector<Box>& bboxes,
-        index_t node_index,
-        index_t b, index_t e,
-        const GET_BBOX& get_bbox
-    ) {
-        geo_debug_assert(node_index < bboxes.size());
-        geo_debug_assert(b != e);
-        if(b + 1 == e) {
-            get_bbox(M, bboxes[node_index], b);
-            return;
-        }
-        index_t m = b + (e - b) / 2;
-        index_t childl = 2 * node_index;
-        index_t childr = 2 * node_index + 1;
-        geo_debug_assert(childl < bboxes.size());
-        geo_debug_assert(childr < bboxes.size());
-        init_bboxes_recursive(M, bboxes, childl, b, m, get_bbox);
-        init_bboxes_recursive(M, bboxes, childr, m, e, get_bbox);
-        geo_debug_assert(childl < bboxes.size());
-        geo_debug_assert(childr < bboxes.size());
-        bbox_union(bboxes[node_index], bboxes[childl], bboxes[childr]);
-    }
-
-    /**
      * \brief Finds the nearest point in a mesh facet from a query point.
      * \param[in] M the mesh
      * \param[in] p the query point
@@ -225,10 +92,12 @@ namespace {
 	    index_t c1 = M.facets.corners_begin(f);
 	    const vec3& p1 = Geom::mesh_vertex(M, M.facet_corners.vertex(c1));
 	    for(index_t c2 = c1+1; c2+1<M.facets.corners_end(f); ++c2) {
-		const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c2));
+		const vec3& p2 =
+		    Geom::mesh_vertex(M, M.facet_corners.vertex(c2));
 		index_t c3 = c2+1;
-		const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c3));
-		double lambda1, lambda2, lambda3;  // barycentric coords, not used.
+		const vec3& p3 =
+		    Geom::mesh_vertex(M, M.facet_corners.vertex(c3));
+		double lambda1, lambda2, lambda3;  // barycentric coords,unused.
 		vec3 cur_nearest_p;
 		double cur_squared_dist = Geom::point_triangle_squared_distance(
 		    p, p1, p2, p3, cur_nearest_p, lambda1, lambda2, lambda3
@@ -563,7 +432,7 @@ namespace {
 
 namespace GEO {
 
-    MeshFacetsAABB::MeshFacetsAABB() : mesh_(nullptr) {
+    MeshFacetsAABB::MeshFacetsAABB() {
     }
     
     MeshFacetsAABB::MeshFacetsAABB(
@@ -579,16 +448,30 @@ namespace GEO {
         if(reorder) {
             mesh_reorder(*mesh_, MESH_ORDER_MORTON);
         }
-        bboxes_.resize(
-            max_node_index(
-                1, 0, mesh_->facets.nb()
-            ) + 1 // <-- this is because size == max_index + 1 !!!
-        );
-        init_bboxes_recursive(
-            *mesh_, bboxes_, 1, 0, mesh_->facets.nb(), get_facet_bbox
+	AABB::initialize(
+	    mesh_->facets.nb(),
+	    [this](Box& B, index_t f) {
+		// Get facet bbox
+		index_t c = mesh_->facets.corners_begin(f);
+		const double* p = mesh_->vertices.point_ptr(
+		    mesh_->facet_corners.vertex(c)
+		);
+		for(coord_index_t coord = 0; coord < 3; ++coord) {
+		    B.xyz_min[coord] = p[coord];
+		    B.xyz_max[coord] = p[coord];
+		}
+		for(++c; c < mesh_->facets.corners_end(f); ++c) {
+		    p = mesh_->vertices.point_ptr(
+			mesh_->facet_corners.vertex(c)
+		    );
+		    for(coord_index_t coord = 0; coord < 3; ++coord) {
+			B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
+			B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
+		    }
+		}
+	    }
         );
     }
-
     
     void MeshFacetsAABB::get_nearest_facet_hint(
         const vec3& p,
@@ -692,17 +575,22 @@ namespace GEO {
     }
 
 
-    bool MeshFacetsAABB::segment_intersection(const vec3& q1, const vec3& q2) const {
+    bool MeshFacetsAABB::segment_intersection(
+	const vec3& q1, const vec3& q2
+    ) const {
 	vec3 dirinv(
 	    1.0/(q2.x-q1.x),
 	    1.0/(q2.y-q1.y),
 	    1.0/(q2.z-q1.z)
 	);
-	return segment_intersection_recursive(q1, q2, dirinv, 1, 0, mesh_->facets.nb());
+	return segment_intersection_recursive(
+	    q1, q2, dirinv, 1, 0, mesh_->facets.nb()
+	);
     }
 
     bool MeshFacetsAABB::segment_intersection_recursive(
-	const vec3& q1, const vec3& q2, const vec3& dirinv, index_t n, index_t b, index_t e
+	const vec3& q1, const vec3& q2,
+	const vec3& dirinv, index_t n, index_t b, index_t e
     ) const {
 	if(!segment_box_intersection(q1, dirinv, bboxes_[n])) {
 	    return false;
@@ -736,7 +624,8 @@ namespace GEO {
     }
     
     void MeshFacetsAABB::segment_nearest_intersection_recursive(
-	const vec3& q1, const vec3& q2, const vec3& dirinv, index_t n, index_t b, index_t e,
+	const vec3& q1, const vec3& q2,
+	const vec3& dirinv, index_t n, index_t b, index_t e,
 	double& t, index_t& f
     ) const {
 	if(!segment_box_intersection(q1, dirinv, bboxes_[n])) {
@@ -749,14 +638,18 @@ namespace GEO {
         index_t m = b + (e - b) / 2;
         index_t childl = 2 * n;
         index_t childr = 2 * n + 1;
-	segment_nearest_intersection_recursive(q1, q2, dirinv, childl, b, m, t, f);
-	segment_nearest_intersection_recursive(q1, q2, dirinv, childr, m, e, t, f);
+	segment_nearest_intersection_recursive(
+	    q1, q2, dirinv, childl, b, m, t, f
+	);
+	segment_nearest_intersection_recursive(
+	    q1, q2, dirinv, childr, m, e, t, f
+	);
     }
     
     
 /****************************************************************************/
 
-    MeshCellsAABB::MeshCellsAABB() : mesh_(nullptr) {
+    MeshCellsAABB::MeshCellsAABB() {
     }
     
     MeshCellsAABB::MeshCellsAABB(Mesh& M, bool reorder) {
@@ -768,18 +661,59 @@ namespace GEO {
         if(reorder) {
             mesh_reorder(*mesh_, MESH_ORDER_MORTON);
         }
-        bboxes_.resize(
-            max_node_index(
-                1, 0, mesh_->cells.nb()
-            ) + 1 // <-- this is because size == max_index + 1 !!!
-        );
         if(mesh_->cells.are_simplices()) {
-            init_bboxes_recursive(
-                *mesh_, bboxes_, 1, 0, mesh_->cells.nb(), get_tet_bbox
+	    AABB::initialize(
+		mesh_->cells.nb(),
+		[this](Box& B, index_t t) {
+		    // Get tet bbox
+		    const double* p = mesh_->vertices.point_ptr(
+			mesh_->cells.vertex(t,0)
+		    );
+		    for(coord_index_t coord = 0; coord < 3; ++coord) {
+			B.xyz_min[coord] = p[coord];
+			B.xyz_max[coord] = p[coord];
+		    }
+		    for(index_t lv=1; lv<4; ++lv) {
+			p = mesh_->vertices.point_ptr(
+			    mesh_->cells.vertex(t,lv)
+			);
+			for(coord_index_t coord = 0; coord < 3; ++coord) {
+			    B.xyz_min[coord] = std::min(
+				B.xyz_min[coord], p[coord]
+			    );
+			    B.xyz_max[coord] = std::max(
+				B.xyz_max[coord], p[coord]
+			    );
+			}
+		    }
+		}
             );
         } else {
-            init_bboxes_recursive(
-                *mesh_, bboxes_, 1, 0, mesh_->cells.nb(), get_cell_bbox
+	    AABB::initialize(
+		mesh_->cells.nb(),
+		[this](Box& B, index_t c) {
+		    // Get cell bbox
+		    const double* p = mesh_->vertices.point_ptr(
+			mesh_->cells.vertex(c,0)
+		    );
+		    for(coord_index_t coord = 0; coord < 3; ++coord) {
+			B.xyz_min[coord] = p[coord];
+			B.xyz_max[coord] = p[coord];
+		    }
+		    for(index_t lv=1; lv<mesh_->cells.nb_vertices(c); ++lv) {
+			p = mesh_->vertices.point_ptr(
+			    mesh_->cells.vertex(c,lv)
+			);
+			for(coord_index_t coord = 0; coord < 3; ++coord) {
+			    B.xyz_min[coord] = std::min(
+				B.xyz_min[coord], p[coord]
+			    );
+			    B.xyz_max[coord] = std::max(
+				B.xyz_max[coord], p[coord]
+			    );
+			}
+		    }
+		}
             );
         }
     }

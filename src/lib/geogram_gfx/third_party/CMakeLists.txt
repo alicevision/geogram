@@ -17,7 +17,6 @@ endif()
 
 aux_source_directories(SOURCES "Source Files"            .)
 aux_source_directories(SOURCES "Source Files\\glad"      glad)
-aux_source_directories(SOURCES "Source Files\\quicktext" quicktext)
 aux_source_directories(SOURCES "Source Files\\ImGui"     ImGui)
 aux_source_directories(SOURCES "Source Files\\ImGuiColorTextEdit" ImGuiColorTextEdit )
 

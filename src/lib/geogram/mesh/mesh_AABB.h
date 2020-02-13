@@ -58,12 +58,303 @@
 
 namespace GEO {
 
+
+    /**
+     * \brief Base class for Axis Aligned Bounding Box trees.
+     */
+    class GEOGRAM_API AABB {
+
+      protected:
+
+      /**
+       * \brief Initializes this AABB.
+       * \param[in] nb number of items.
+       * \param[in] get_bbox a function(Box&, index_t) that computes the Box
+       *  associated with a given index, in [0..nb-1].
+       */
+      void initialize(index_t nb, std::function<void(Box&, index_t)> get_bbox) {
+	  nb_ = nb;
+	  bboxes_.resize(max_node_index(1, 0, nb) + 1);
+	  // +1 because size == max_index + 1 !!!
+	  init_bboxes_recursive(1, 0, nb_, get_bbox);
+      }
+
+      
+      /**
+       * \brief Computes all the elements that have a bbox that
+       *  intersects a given bbox in a sub-tree of the AABB tree.
+       *
+       * Note that the tree structure is completely implicit,
+       *  therefore the bounds of the (continuous) facet indices
+       *  sequences that correspond to the elements contained
+       *  in the two nodes are sent as well as the node indices.
+       *
+       * \param[in] action a function that takes as argument
+       *  an index_t (cell index) invoked for all cells that 
+       *  has a bounding box that overlaps \p box.
+       * \param[in] box the query box
+       * \param[in] node index of the first node of the AABB tree
+       * \param[in] b index of the first facet in \p node
+       * \param[in] e one position past the index of the last
+       *  facet in \p node
+       */
+      void bbox_intersect_recursive(
+	  std::function<void(index_t)> action, const Box& box,
+	  index_t node, index_t b, index_t e
+      ) const {
+	  geo_debug_assert(e != b);
+	  
+	  // Prune sub-tree that does not have intersection
+	  if(!bboxes_overlap(box, bboxes_[node])) {
+	      return;
+	  }
+	  
+	  // Leaf case
+	  if(e == b+1) {
+	      action(b);
+	      return;
+	  }
+	  
+	  // Recursion
+	  index_t m = b + (e - b) / 2;
+	  index_t node_l = 2 * node;
+	  index_t node_r = 2 * node + 1;
+	  
+	  bbox_intersect_recursive(action, box, node_l, b, m);
+	  bbox_intersect_recursive(action, box, node_r, m, e);
+      }
+      
+      /**
+       * \brief Computes all the pairs of intersecting elements
+       *  for two sub-trees of the AABB tree.
+       *
+       * Note that the tree structure is completely implicit,
+       *  therefore the bounds of the (continuous) facet indices
+       *  sequences that correspond to the elementss contained
+       *  in the two nodes are sent as well as the node indices.
+       *
+       * \param[in] action a function taking as arguments two 
+       *  index_t's, invoked of all pairs of elements that have 
+       *  overlapping bounding boxes.
+       * \param[in] node1 index of the first node of the AABB tree
+       * \param[in] b1 index of the first facet in \p node1
+       * \param[in] e1 one position past the index of the last
+       *  facet in \p node1
+       * \param[in] node2 index of the second node of the AABB tree
+       * \param[in] b2 index of the first facet in \p node2
+       * \param[in] e2 one position past the index of the second
+       *  facet in \p node2
+       */
+      void self_intersect_recursive(
+	  std::function<void(index_t,index_t)> action,
+	  index_t node1, index_t b1, index_t e1,
+	  index_t node2, index_t b2, index_t e2
+      ) const {
+	  geo_debug_assert(e1 != b1);
+	  geo_debug_assert(e2 != b2);
+	  
+	  // Since we are intersecting the AABBTree with *itself*,
+	  // we can prune half of the cases by skipping the test
+	  // whenever node2's facet index interval is greated than
+	  // node1's facet index interval.
+	  if(e2 <= b1) {
+	      return;
+	  }
+
+	  // The acceleration is here:
+	  if(!bboxes_overlap(bboxes_[node1], bboxes_[node2])) {
+	      return;
+	  }
+
+	  // Simple case: leaf - leaf intersection.
+	  if(b1 + 1 == e1 && b2 + 1 == e2) {
+	      action(b1, b2);
+	      return;
+	  }
+
+	  // If node2 has more elements than node1, then
+	  //   intersect node2's two children with node1
+	  // else
+	  //   intersect node1's two children with node2
+	  if(e2 - b2 > e1 - b1) {
+	      index_t m2 = b2 + (e2 - b2) / 2;
+	      index_t node2_l = 2 * node2;
+	      index_t node2_r = 2 * node2 + 1;
+	      self_intersect_recursive(action, node1, b1, e1, node2_l, b2, m2);
+	      self_intersect_recursive(action, node1, b1, e1, node2_r, m2, e2);
+	  } else {
+	      index_t m1 = b1 + (e1 - b1) / 2;
+	      index_t node1_l = 2 * node1;
+	      index_t node1_r = 2 * node1 + 1;
+	      self_intersect_recursive(action, node1_l, b1, m1, node2, b2, e2);
+	      self_intersect_recursive(action, node1_r, m1, e1, node2, b2, e2);
+	  }
+      }
+      
+
+      /**
+       * \brief Computes all the pairs of intersecting elements
+       *  for two sub-trees of two AABB trees.
+       *
+       * Note that the tree structure is completely implicit,
+       *  therefore the bounds of the (continuous) facet indices
+       *  sequences that correspond to the elementss contained
+       *  in the two nodes are sent as well as the node indices.
+       *
+       * \param[in] action a function taking as arguments two 
+       *  index_t's, invoked of all pairs of elements that have 
+       *  overlapping bounding boxes.
+       * \param[in] node1 index of the first node of the AABB tree
+       * \param[in] b1 index of the first facet in \p node1
+       * \param[in] e1 one position past the index of the last
+       *  facet in \p node1
+       * \param[in] other the second AABB tree
+       * \param[in] node2 index of the second node of the second AABB tree
+       * \param[in] b2 index of the first facet in \p node2
+       * \param[in] e2 one position past the index of the second
+       *  facet in \p node2
+       */
+      void other_intersect_recursive(
+	  std::function<void(index_t,index_t)> action,
+	  index_t node1, index_t b1, index_t e1,
+	  const AABB* other,
+	  index_t node2, index_t b2, index_t e2
+      ) const {
+	  geo_debug_assert(e1 != b1);
+	  geo_debug_assert(e2 != b2);
+	  
+	  // The acceleration is here:
+	  if(!bboxes_overlap(bboxes_[node1], other->bboxes_[node2])) {
+	      return;
+	  }
+
+	  // Simple case: leaf - leaf intersection.
+	  if(b1 + 1 == e1 && b2 + 1 == e2) {
+	      action(b1, b2);
+	      return;
+	  }
+
+	  // If node2 has more elements than node1, then
+	  //   intersect node2's two children with node1
+	  // else
+	  //   intersect node1's two children with node2
+	  if(e2 - b2 > e1 - b1) {
+	      index_t m2 = b2 + (e2 - b2) / 2;
+	      index_t node2_l = 2 * node2;
+	      index_t node2_r = 2 * node2 + 1;
+	      other_intersect_recursive(
+		  action, node1, b1, e1, other, node2_l, b2, m2
+	      );
+	      other_intersect_recursive(
+		  action, node1, b1, e1, other, node2_r, m2, e2
+	      );
+	  } else {
+	      index_t m1 = b1 + (e1 - b1) / 2;
+	      index_t node1_l = 2 * node1;
+	      index_t node1_r = 2 * node1 + 1;
+	      other_intersect_recursive(
+		  action, node1_l, b1, m1, other, node2, b2, e2
+	      );
+	      other_intersect_recursive(
+		  action, node1_r, m1, e1, other, node2, b2, e2
+	      );
+	  }
+      }
+
+      
+      /**
+       * \brief Computes the maximum node index in a subtree
+       * \param[in] node_index node index of the root of the subtree
+       * \param[in] b first facet index in the subtree
+       * \param[in] e one position past the last facet index in the subtree
+       * \return the maximum node index in the subtree rooted at \p node_index
+       */
+      static index_t max_node_index(index_t node_index, index_t b, index_t e) {
+	  geo_debug_assert(e > b);
+	  if(b + 1 == e) {
+	      return node_index;
+	  }
+	  index_t m = b + (e - b) / 2;
+	  index_t childl = 2 * node_index;
+	  index_t childr = 2 * node_index + 1;
+	  return std::max(
+	      max_node_index(childl, b, m),
+	      max_node_index(childr, m, e)
+	  );
+      }
+
+      /**
+       * \brief Computes the hierarchy of bounding boxes recursively.
+       * \details This function is generic and can be used to compute
+       *  a bbox hierarchy of arbitrary elements.
+       * \param[in] node_index the index of the root of the subtree
+       * \param[in] b first element index in the subtree
+       * \param[in] e one position past the last element index in the subtree
+       * \param[in] get_bbox a function that takes a Box3d& and an index_t,
+       *  that computes the bbox of an element.
+       */
+      void init_bboxes_recursive(
+	  index_t node_index,
+	  index_t b, index_t e,
+	  std::function<void(Box&, index_t)> get_bbox
+      ) {
+        geo_debug_assert(node_index < bboxes_.size());
+        geo_debug_assert(b != e);
+        if(b + 1 == e) {
+            get_bbox(bboxes_[node_index], b);
+            return;
+        }
+        index_t m = b + (e - b) / 2;
+        index_t childl = 2 * node_index;
+        index_t childr = 2 * node_index + 1;
+        geo_debug_assert(childl < bboxes_.size());
+        geo_debug_assert(childr < bboxes_.size());
+        init_bboxes_recursive(childl, b, m, get_bbox);
+        init_bboxes_recursive(childr, m, e, get_bbox);
+        geo_debug_assert(childl < bboxes_.size());
+        geo_debug_assert(childr < bboxes_.size());
+        bbox_union(bboxes_[node_index], bboxes_[childl], bboxes_[childr]);
+    }
+      
+    protected:
+      index_t nb_;
+      vector<Box> bboxes_;
+    };
+
+    /**************************************************************/
+    
+    /**
+     * \brief Base class for Axis Aligned Bounding Box trees 
+     *  of Mesh cells.
+     */
+    class GEOGRAM_API MeshAABB : public AABB {
+      public:
+        /**
+	 * \brief MeshAABB constructor.
+	 */
+         MeshAABB() : mesh_(nullptr) {
+	 }
+    
+        /**
+	 * \brief Gets the mesh.
+	 * \return a const reference to the mesh.
+	 */
+	const Mesh* mesh() const {
+	    return mesh_;
+	}
+	
+      protected:
+	Mesh* mesh_;
+    };
+
+    /**************************************************************/
+    
     /**
      * \brief Axis Aligned Bounding Box tree of mesh facets.
      * \details Used to quickly compute facet intersection and
      *  to locate the nearest facet from 3d query points.
      */
-    class GEOGRAM_API MeshFacetsAABB {
+    class GEOGRAM_API MeshFacetsAABB : public MeshAABB {
     public:
     
         /**
@@ -97,53 +388,32 @@ namespace GEO {
          */
         MeshFacetsAABB(Mesh& M, bool reorder = true);
 
-
-	/**
-	 * \brief Gets the mesh.
-	 * \return a const reference to the mesh.
-	 */
-         const Mesh* mesh() const {
-	    return mesh_;
-	}
-	
         /**
          * \brief Computes all the pairs of intersecting facets.
-         * \param[in] action ACTION::operator(index_t,index_t) is
-         *  invoked of all pairs of facets that have overlapping
+         * \param[in] action a function that takes two index_t's 
+	 *  and that is invoked of all pairs of facets that have overlapping
          *  bounding boxes. triangles_intersection() needs to be
          *  called to detect the actual intersections.
-         * \tparam ACTION user action class, that needs to define
-         * operator(index_t,index_t), where the two indices are
-         * the indices each pair of triangles that have intersecting
-         * bounding boxes.
          */
-        template <class ACTION>
         void compute_facet_bbox_intersections(
-            ACTION& action
+	    std::function<void(index_t, index_t)> action
         ) const {
-            intersect_recursive(
+            self_intersect_recursive(
                 action,
                 1, 0, mesh_->facets.nb(),
                 1, 0, mesh_->facets.nb()
             );
         }
 
-
         /**
          * \brief Computes all the intersections between a given
          *  box and the bounding boxes of all the facets.
-         * \param[in] action ACTION::operator(index_t) is
+         * \param[in] action a function that takes an index_t that is
          *  invoked for all facets that have a bounding
          *  box that intersects \p box_in.
-         * \tparam ACTION user action class, that needs to define
-         * operator(index_t), where the parameter is the index
-         * of the triangle that has its bounding box intersecting 
-         * \p box_in.
          */
-        template< class ACTION >
         void compute_bbox_facet_bbox_intersections(
-            const Box& box_in,
-            ACTION& action
+            const Box& box_in, std::function<void(index_t)> action
         ) const {
             bbox_intersect_recursive(
                 action, box_in, 1, 0, mesh_->facets.nb()
@@ -247,8 +517,8 @@ namespace GEO {
 	 * \param[out] t if there was an intersection, it is t*q2 + (1-t)*q1
 	 * \param[out] f the intersected nearest facet or index_t(-1) if there
 	 *  was no intersection.
-	 * \retval true if there exists at least an intersection between [q1 , q2]
-	 *  and a facet of the mesh.
+	 * \retval true if there exists at least an intersection 
+	 *  between [q1 , q2] and a facet of the mesh.
 	 * \retval false otherwise.
 	 */
 	bool segment_nearest_intersection(
@@ -258,119 +528,6 @@ namespace GEO {
 	
     protected:
 
-
-        /**
-         * \brief Computes all the facets that have a bbox that
-         *  intersects a given bbox in a sub-tree of the AABB tree.
-         *
-         * Note that the tree structure is completely implicit,
-         *  therefore the bounds of the (continuous) facet indices
-         *  sequences that correspond to the facets contained
-         *  in the two nodes are sent as well as the node indices.
-         *
-         * \param[in] action ACTION::operator(index_t) is
-         *  invoked for all facet that has a bounding box that
-         *  overlaps \p box.
-         * \param[in] node index of the first node of the AABB tree
-         * \param[in] b index of the first facet in \p node
-         * \param[in] e one position past the index of the last
-         *  facet in \p node
-         */
-        template <class ACTION>
-        void bbox_intersect_recursive(
-            ACTION& action,
-            const Box& box,
-            index_t node, index_t b, index_t e
-        ) const {
-            geo_debug_assert(e != b);
-
-            // Prune sub-tree that does not have intersection
-            if(!bboxes_overlap(box, bboxes_[node])) {
-                return;
-            }
-
-            // Leaf case
-            if(e == b+1) {
-                action(b);
-                return;
-            }
-
-            // Recursion
-            index_t m = b + (e - b) / 2;
-            index_t node_l = 2 * node;
-            index_t node_r = 2 * node + 1;
-
-            bbox_intersect_recursive(action, box, node_l, b, m);
-            bbox_intersect_recursive(action, box, node_r, m, e);
-        }
-        
-        /**
-         * \brief Computes all the pairs of intersecting facets
-         *  for two sub-trees of the AABB tree.
-         *
-         * Note that the tree structure is completely implicit,
-         *  therefore the bounds of the (continuous) facet indices
-         *  sequences that correspond to the facets contained
-         *  in the two nodes are sent as well as the node indices.
-         *
-         * \param[in] action ACTION::operator(index_t,index_t) is
-         *  invoked of all pairs of facets that have overlapping
-         *  bounding boxes.
-         * \param[in] node1 index of the first node of the AABB tree
-         * \param[in] b1 index of the first facet in \p node1
-         * \param[in] e1 one position past the index of the last
-         *  facet in \p node1
-         * \param[in] node2 index of the second node of the AABB tree
-         * \param[in] b2 index of the first facet in \p node2
-         * \param[in] e2 one position past the index of the second
-         *  facet in \p node2
-         */
-        template <class ACTION>
-        void intersect_recursive(
-            ACTION& action,
-            index_t node1, index_t b1, index_t e1,
-            index_t node2, index_t b2, index_t e2
-        ) const {
-            geo_debug_assert(e1 != b1);
-            geo_debug_assert(e2 != b2);
-
-            // Since we are intersecting the AABBTree with *itself*,
-            // we can prune half of the cases by skipping the test
-            // whenever node2's facet index interval is greated than
-            // node1's facet index interval.
-            if(e2 <= b1) {
-                return;
-            }
-
-            // The acceleration is here:
-            if(!bboxes_overlap(bboxes_[node1], bboxes_[node2])) {
-                return;
-            }
-
-            // Simple case: leaf - leaf intersection.
-            if(b1 + 1 == e1 && b2 + 1 == e2) {
-                action(b1, b2);
-                return;
-            }
-
-            // If node2 has more facets than node1, then
-            //   intersect node2's two children with node1
-            // else
-            //   intersect node1's two children with node2
-            if(e2 - b2 > e1 - b1) {
-                index_t m2 = b2 + (e2 - b2) / 2;
-                index_t node2_l = 2 * node2;
-                index_t node2_r = 2 * node2 + 1;
-                intersect_recursive(action, node1, b1, e1, node2_l, b2, m2);
-                intersect_recursive(action, node1, b1, e1, node2_r, m2, e2);
-            } else {
-                index_t m1 = b1 + (e1 - b1) / 2;
-                index_t node1_l = 2 * node1;
-                index_t node1_r = 2 * node1 + 1;
-                intersect_recursive(action, node1_l, b1, m1, node2, b2, e2);
-                intersect_recursive(action, node1_r, m1, e1, node2, b2, e2);
-            }
-        }
 
         /**
          * \brief Computes a reasonable initialization for
@@ -417,7 +574,8 @@ namespace GEO {
          * \brief The recursive function used by the implementation
          *  of segment_intersection()
 	 * \param[in] q1 , q2 the segment
-	 * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+	 * \param[in] dirinv 
+	 *              precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
          * \param[in] n index of the current node in the AABB tree
          * \param[in] b index of the first facet in the subtree under node \p n
          * \param[in] e one position past the index of the last facet in the
@@ -434,7 +592,8 @@ namespace GEO {
          * \brief The recursive function used by the implementation
          *  of segment_nearest_intersection()
 	 * \param[in] q1 , q2 the segment
-	 * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+	 * \param[in] dirinv 
+	 *               precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
          * \param[in] n index of the current node in the AABB tree
          * \param[in] b index of the first facet in the subtree under node \p n
          * \param[in] e one position past the index of the last facet in the
@@ -448,11 +607,6 @@ namespace GEO {
 	    index_t n, index_t b, index_t e,
 	    double& t, index_t& f
 	) const;
-
-	
-    protected:
-        vector<Box> bboxes_;
-        Mesh* mesh_;
     };
 
     /***********************************************************************/
@@ -462,7 +616,7 @@ namespace GEO {
      * \details Used to quickly find the tetrahedron that contains
      *  a given 3d point.
      */
-    class GEOGRAM_API MeshCellsAABB {
+    class GEOGRAM_API MeshCellsAABB : public MeshAABB {
     public:
 
         /**
@@ -498,14 +652,6 @@ namespace GEO {
          */
         void initialize(Mesh& M, bool reorder = true);
     
-	/**
-	 * \brief Gets the mesh.
-	 * \return a const reference to the mesh.
-	 */
-	const Mesh* mesh() const {
-	    return mesh_;
-	}
-	
         /**
          * \brief Finds the index of a tetrahedron that contains a query point
          * \param[in] p a const reference to the query point
@@ -518,28 +664,6 @@ namespace GEO {
             geo_debug_assert(mesh_->cells.are_simplices());
             return containing_tet_recursive(
                 p, 1, 0, mesh_->cells.nb()
-            );
-        }
-
-
-        /**
-         * \brief Computes all the intersections between a given
-         *  box and the bounding boxes of all the cells.
-         * \param[in] action ACTION::operator(index_t) is
-         *  invoked for all cells that have a bounding
-         *  box that intersects \p box_in.
-         * \tparam ACTION user action class, that needs to define
-         * operator(index_t), where the parameter is the index
-         * of the cell that has its bounding box intersecting 
-         * \p box_in.
-         */
-        template< class ACTION >
-        void compute_bbox_cell_bbox_intersections(
-            const Box& box_in,
-            ACTION& action
-        ) const {
-            bbox_intersect_recursive(
-                action, box_in, 1, 0, mesh_->cells.nb()
             );
         }
 
@@ -562,118 +686,59 @@ namespace GEO {
         /**
          * \brief Finds all the cells such that their bounding
          *  box contain a point.
-         * \param[in] action ACTION::operator(index_t) is
-         *  invoked for all cells that have a bounding
+         * \param[in] action a function that takes an index_t
+	 *  that is invoked for all cells that have a bounding
          *  box that contains \p p.
-         * \tparam ACTION user action class, that needs to define
-         * operator(index_t), where the parameter is the index
-         * of the cell that has its bounding box containing
-         * \p p.
          */
-        template< class ACTION >
-        void containing_boxes(
-            const vec3& p,
-            ACTION& action
+	void containing_boxes(
+	    const vec3& p, std::function<void(index_t)> action
         ) const {
-            containing_boxes_recursive(
+            containing_bboxes_recursive(
                 action, p, 1, 0, mesh_->cells.nb()
             );
         }
-        
+
+        /**
+         * \brief Computes all the pairs of intersecting cells.
+         * \param[in] action is a function that takes two index_t's,
+         *  invoked of all pairs of cells that have overlapping
+         *  bounding boxes. Further processing is necessary to
+	 *  detect actual cell intersections.
+         */
+        void compute_cell_bbox_intersections(
+            std::function<void(index_t, index_t)> action
+        ) const {
+            self_intersect_recursive(
+                action,
+                1, 0, mesh_->cells.nb(),
+                1, 0, mesh_->cells.nb()
+            );
+        }
+
+        /**
+         * \brief Computes all the pairs of intersecting cells between this
+	 *  AABB and another one.
+         * \param[in] action is a function that takes two index_t's,
+         *  invoked of all pairs of cells that have overlapping
+         *  bounding boxes. Further processing is necessary to
+	 *  detect actual cell intersections.
+	 * \param[in] other the other AABB.
+         */
+        void compute_other_cell_bbox_intersections(
+	    MeshCellsAABB* other,
+            std::function<void(index_t, index_t)> action
+        ) const {
+            other_intersect_recursive(
+                action,
+                1, 0, mesh_->cells.nb(),
+		other,
+                1, 0, other->mesh_->cells.nb()
+            );
+        }
+	
+	
     protected:
 
-        /**
-         * \brief Computes all the cells that have a bbox that
-         *  intersects a given bbox in a sub-tree of the AABB tree.
-         *
-         * Note that the tree structure is completely implicit,
-         *  therefore the bounds of the (continuous) facet indices
-         *  sequences that correspond to the facets contained
-         *  in the two nodes are sent as well as the node indices.
-         *
-         * \param[in] action ACTION::operator(index_t) is
-         *  invoked for all cells that has a bounding box that
-         *  overlaps \p box.
-         * \param[in] box the query box
-         * \param[in] node index of the first node of the AABB tree
-         * \param[in] b index of the first facet in \p node
-         * \param[in] e one position past the index of the last
-         *  facet in \p node
-         */
-        template <class ACTION>
-        void bbox_intersect_recursive(
-            ACTION& action,
-            const Box& box,
-            index_t node, index_t b, index_t e
-        ) const {
-            geo_debug_assert(e != b);
-
-            // Prune sub-tree that does not have intersection
-            if(!bboxes_overlap(box, bboxes_[node])) {
-                return;
-            }
-
-            // Leaf case
-            if(e == b+1) {
-                action(b);
-                return;
-            }
-
-            // Recursion
-            index_t m = b + (e - b) / 2;
-            index_t node_l = 2 * node;
-            index_t node_r = 2 * node + 1;
-
-            bbox_intersect_recursive(action, box, node_l, b, m);
-            bbox_intersect_recursive(action, box, node_r, m, e);
-        }
-
-        /**
-         * \brief Computes all the cells that have a bbox that
-         *  intersects a given bbox in a sub-tree of the AABB tree.
-         *
-         * Note that the tree structure is completely implicit,
-         *  therefore the bounds of the (continuous) facet indices
-         *  sequences that correspond to the facets contained
-         *  in the two nodes are sent as well as the node indices.
-         *
-         * \param[in] action a function that takes as argument
-	 *  an index_t (cell index) invoked for all cells that 
-	 *  has a bounding box that overlaps \p box.
-         * \param[in] box the query box
-         * \param[in] node index of the first node of the AABB tree
-         * \param[in] b index of the first facet in \p node
-         * \param[in] e one position past the index of the last
-         *  facet in \p node
-         */
-        void bbox_intersect_recursive(
-            std::function<void(index_t)> action,
-            const Box& box,
-            index_t node, index_t b, index_t e
-        ) const {
-            geo_debug_assert(e != b);
-
-            // Prune sub-tree that does not have intersection
-            if(!bboxes_overlap(box, bboxes_[node])) {
-                return;
-            }
-
-            // Leaf case
-            if(e == b+1) {
-                action(b);
-                return;
-            }
-
-            // Recursion
-            index_t m = b + (e - b) / 2;
-            index_t node_l = 2 * node;
-            index_t node_r = 2 * node + 1;
-
-            bbox_intersect_recursive(action, box, node_l, b, m);
-            bbox_intersect_recursive(action, box, node_r, m, e);
-        }
-    
-        
         /**
          * \brief The recursive function used by the implementation
          *  of containing_tet().
@@ -700,7 +765,7 @@ namespace GEO {
          *  sequences that correspond to the facets contained
          *  in the two nodes are sent as well as the node indices.
          *
-         * \param[in] action ACTION::operator(index_t) is
+         * \param[in] action a function that takes an index_t that is
          *  invoked for all cells that has a bounding box that
          *  contains \p p.
          * \param[in] p a const reference to the query point
@@ -709,9 +774,8 @@ namespace GEO {
          * \param[in] e one position past the index of the last
          *  facet in \p node
          */
-        template <class ACTION>
         void containing_bboxes_recursive(
-            ACTION& action,
+	    std::function<void(index_t)> action,
             const vec3& p,
             index_t node, index_t b, index_t e
         ) const {
@@ -733,12 +797,9 @@ namespace GEO {
             index_t node_l = 2 * node;
             index_t node_r = 2 * node + 1;
 
-            containing_bbox_recursive(action, p, node_l, b, m);
-            containing_bbox_recursive(action, p, node_r, m, e);
+            containing_bboxes_recursive(action, p, node_l, b, m);
+            containing_bboxes_recursive(action, p, node_r, m, e);
         }
-        
-        vector<Box> bboxes_;
-        Mesh* mesh_;
     };
     
 }

@@ -4,7 +4,7 @@
     The code in this file was almost entirely taken
     (with slight adaptations) from the source code of
     "evert", a program written by Nathaniel Thurston.
-    evert's source code can be down loaded from
+    evert's source code can be downloaded from
         http://www.geom.umn.edu/docs/outreach/oi/software.html
         http://www.geom.uiuc.edu/docs/outreach/oi/software.html
 

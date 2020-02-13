@@ -3757,7 +3757,7 @@ namespace GEO {
 	    
 	// Determine the periodic instances of the vertex to be created
 	// ************************************************************
-	//   - Find all the inresected boundary faces
+	//   - Find all the intersected boundary faces
 	//   - The instances to create correspond to all the possible
 	//     sums of translation vectors associated with the
 	//     intersected boundary faces

@@ -74,6 +74,11 @@ namespace GEO {
          */
         FullScreenEffectImpl();
 
+	/**
+	 * \brief FullScreenEffectImpl destructor.
+	 */
+	~FullScreenEffectImpl() override;
+	
 
         /**
          * \brief Gets the minimum required GLSL version needed

@@ -315,7 +315,10 @@ namespace GEO {
 	    ) {
 		for(index_t f=0; f<4; ++f) {
 		    signed_index_t n = (tetgen_out_.neighborlist[t*4+f]);
-		    if(n == -1 || tetgen_out_.tetrahedronattributelist[n] == 0.0) {
+		    if(
+		       n == -1 ||
+		       tetgen_out_.tetrahedronattributelist[n] == 0.0
+		    ) {
 			good_regions.insert(
 			    tetgen_out_.tetrahedronattributelist[t]
 			);

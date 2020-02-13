@@ -58,13 +58,43 @@ namespace GEO {
     class Mesh;
 
     /**
-     * \brief Attempts to make a mesh conformal by
-     *  removing intersecting facets and
-     *  re-triangulating the holes.
+     * \brief Computes the union of two surface meshes.
+     * \details A and B need to be two closed surface
+     *  mesh without intersections.
+     * \note This is work in progress, the function is
+     *  not robust yet. 
+     * \param[in] A , B the two operands.
+     * \param[out] result the computed mesh.
      */
-    void GEOGRAM_API mesh_remove_intersections(
-        Mesh& M, index_t max_iter = 3
-    );
+    void GEOGRAM_API mesh_union(Mesh& result, Mesh& A, Mesh& B);
+
+    /**
+     * \brief Computes the intersection of two surface meshes.
+     * \details A and B need to be two closed surface
+     *  mesh without intersections.
+     * \note This is work in progress, the function is
+     *  not robust yet. 
+     * \param[in] A , B the two operands.
+     * \param[out] result the computed mesh.
+     */
+    void GEOGRAM_API mesh_intersection(Mesh& result, Mesh& A, Mesh& B);
+
+    /**
+     * \brief Computes the difference of two surface meshes.
+     * \details A and B need to be two closed surface
+     *  mesh without intersections.
+     * \note This is work in progress, the function is
+     *  not robust yet. 
+     * \param[in] A , B the two operands.
+     * \param[out] result the computed mesh.
+     */
+    void GEOGRAM_API mesh_difference(Mesh& result, Mesh& A, Mesh& B);
+    
+    /**
+     * \brief Attempts to make a surface mesh conformal by
+     *  removing intersecting facets and re-triangulating the holes.
+     */
+    void GEOGRAM_API mesh_remove_intersections(Mesh& M, index_t max_iter = 3);
 }
 
 #endif

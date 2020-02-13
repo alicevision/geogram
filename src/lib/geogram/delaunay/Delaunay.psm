@@ -29,6 +29,7 @@ HEADERS="../api/defs.h \
 ../basic/command_line_args.h \
 ../voronoi/convex_cell.h \
 delaunay.h \
+delaunay_2d.h \
 periodic.h \
 periodic_delaunay_3d.h \
 "
@@ -76,7 +77,6 @@ SOURCES="../basic/memory.h \
 ../numerics/predicates/dot_compare_3d.h \
 ../numerics/predicates/det_compare_4d.h \
 ../numerics/predicates.cpp \
-delaunay_2d.h \
 cavity.h \
 delaunay_3d.h \
 parallel_delaunay_3d.h \

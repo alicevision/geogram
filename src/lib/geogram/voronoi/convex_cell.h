@@ -287,10 +287,10 @@ namespace VBW {
      * \see TriangleWithFlags.
      */
     enum {
-	CONFLICT_MASK  = 32768, /**< \brief The mask for conflict triangles.  */
-	MARKED_MASK    = 16384, /**< \brief The mask for marked triangles.    */	
-	END_OF_LIST    = 16383, /**< \brief Constant to indicate end of list. */
-	VERTEX_AT_INFINITY = 0  /**< \brief Vertex at infinity.               */
+	CONFLICT_MASK  = 32768, /**< \brief The mask for conflict triangles. */
+	MARKED_MASK    = 16384, /**< \brief The mask for marked triangles.   */	
+	END_OF_LIST    = 16383, /**< \brief Constant to indicate end of list.*/
+	VERTEX_AT_INFINITY = 0  /**< \brief Vertex at infinity.              */
     };
 
 
@@ -411,8 +411,7 @@ namespace VBW {
     /**
      * \brief Computes the intersection between a set of halfplanes using
      *  Bowyer-Watson algorithm.
-     * \details Implementation does not use exact predicates, and does not
-     *  climb from a random vertex. Do not use with a large number of planes.
+     * \details Do not use with a large number of planes.
      */
     class GEOGRAM_API ConvexCell {
       public:
@@ -559,6 +558,22 @@ namespace VBW {
 	) const;
 
 #endif      
+
+        /**
+         * \brief Calls a user-defined function for each vertex of a Voronoi
+	 *  facet.
+	 * \details One needs to call compute_geometry() before calling this
+	 *  function.
+	 * \param[in] v the index of the (dual) Voronoi Facet, that is a
+	 *  (primal) vertex, in [0..nb_v()-1]
+	 * \param[in] vertex a function that takes an index_t as an argument,
+	 *  with the index of the triangle that corresponds to the current
+	 *  Voronoi vertex.
+	 */
+        void for_each_Voronoi_vertex(
+	    index_t v,
+	    std::function<void(index_t)> vertex
+        );
       
 	/**
 	 * \brief Clips this convex cell by a new plane.
@@ -582,6 +597,30 @@ namespace VBW {
 	void clip_by_plane(vec4 P, global_index_t j);
 
 
+	/**
+	 * \brief Clips this convex cell by a new plane, using a user-defined
+	 *  geometric predicate.
+	 * \details It is useful to be able to have a user-defined geometric
+	 *  predicates when the vertices have a symbolic representation, stored
+	 *  in the global indices associated with the plane. It is used by
+	 *  the robust mesh boolean operations.
+	 *  The positive side of the plane equation corresponds to
+	 *  what is kept. In other words, the normal vector P.x, P.y, P.z 
+	 *  points towards the interior of this ConvexCell.
+	 *  If global indices are stored, then j is stored as the global index
+	 *  of the plane equation.
+	 * \param[in] P the plane equation.
+	 * \param[in] P_global_index the global index of the plane.
+	 * \param[in] triangle_conflict_predicate a function that takes as
+	 *  arguments a local triangle index and local vertex (plane eqn)
+	 *  index, and that returns true if the triangle is in conflict with
+	 *  the vertex.
+	 */
+        void clip_by_plane(
+	    vec4 P, global_index_t P_global_index,
+	    std::function<bool(ushort,ushort)> triangle_conflict_predicate
+	);
+      
 	/**
 	 * \brief Clips this convex cell by a new plane and stores
 	 *  the corresponding global index in the newly created vertex.

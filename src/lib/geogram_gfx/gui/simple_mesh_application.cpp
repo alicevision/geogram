@@ -69,6 +69,7 @@ namespace GEO {
         show_vertices_selection_ = true;
         vertices_size_ = 1.0f;
 	vertices_color_ = vec4f(0.0f, 1.0f, 0.0f, 1.0f);
+	vertices_transparency_ = 0.0f;
 	
         show_surface_ = true;
         show_surface_sides_ = false;
@@ -238,6 +239,7 @@ namespace GEO {
         if(show_vertices_) {
             ImGui::Checkbox("selection", &show_vertices_selection_);            
             ImGui::SliderFloat("sz.", &vertices_size_, 0.1f, 5.0f, "%.1f");
+	    ImGui::InputFloat("trsp.", &vertices_transparency_, 0.0f, 1.0f, "%.3f");
         }
 
         if(mesh_.facets.nb() != 0) {
@@ -341,11 +343,23 @@ namespace GEO {
         }
         
         if(show_vertices_) {
+	    if(vertices_transparency_ != 0.0f) {
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	    }
             mesh_gfx_.set_points_color(
-		vertices_color_.x, vertices_color_.y, vertices_color_.z
+		vertices_color_.x, vertices_color_.y, vertices_color_.z,
+		1.0f - vertices_transparency_
 	    );
             mesh_gfx_.set_points_size(vertices_size_);
             mesh_gfx_.draw_vertices();
+
+	    if(vertices_transparency_ != 0.0f) {	    
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+	    }
         }
 
         if(show_vertices_selection_) {

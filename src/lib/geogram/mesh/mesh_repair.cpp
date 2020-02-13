@@ -71,6 +71,10 @@ namespace {
     void repair_colocate_vertices(Mesh& M, double colocate_epsilon) {
         vector<index_t> old2new;
 
+	if(M.vertices.nb() == 0) {
+	    return;
+	}
+	
         index_t nb_new_vertices = 0;
         if(colocate_epsilon == 0.0) {
             nb_new_vertices = Geom::colocate_by_lexico_sort(

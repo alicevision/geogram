@@ -262,7 +262,8 @@ namespace GEO {
         bool show_vertices_selection_;
         float vertices_size_;
 	vec4f vertices_color_;
-
+	float vertices_transparency_;
+	
         bool show_surface_;
         bool show_surface_sides_;        
         bool show_mesh_;

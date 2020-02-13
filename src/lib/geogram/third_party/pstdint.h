@@ -917,3 +917,16 @@ int main () {
 }
 
 #endif
+
+/* [Bruno Levy] Sat 14 Dec 2019 11:22:49 AM CET */
+#ifdef __ANDROID__ 
+#if defined(__aarch64__) 
+#undef PRINTF_INT64_MODIFIER
+#define PRINTF_INT64_MODIFIER "l"
+#endif
+#endif
+
+#if defined(__EMSCRIPTEN__) || defined(__MINGW32__)
+#undef PRINTF_INT64_MODIFIER
+#define PRINTF_INT64_MODIFIER "ll"
+#endif

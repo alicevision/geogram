@@ -604,8 +604,8 @@ namespace {
 		L, "'imgui.GetMousePos()' invalid number of arguments"
 	    );
 	}
-	lua_pushnumber(L,ImGui::GetIO().MousePos.x);
-	lua_pushnumber(L,ImGui::GetIO().MousePos.y);	
+	lua_pushnumber(L,double(ImGui::GetIO().MousePos.x));
+	lua_pushnumber(L,double(ImGui::GetIO().MousePos.y));	
 	return 2;
     }
     
@@ -922,29 +922,64 @@ void init_lua_imgui(lua_State* L) {
     lState = L;
     LoadImguiBindings();
 
-    lua_pushinteger(L, ImGuiExtFileDialogFlags_Load);
-    lua_setglobal(L,"ImGuiExtFileDialogFlags_Load");
+    DECLARE_IMGUI_CONSTANT(ImGuiExtFileDialogFlags_Load);
+    DECLARE_IMGUI_CONSTANT(ImGuiExtFileDialogFlags_Save);
+    DECLARE_IMGUI_CONSTANT(ImGuiCond_Always);
+    DECLARE_IMGUI_CONSTANT(ImGuiCond_Once);
+    DECLARE_IMGUI_CONSTANT(ImGuiCond_FirstUseEver);
+    DECLARE_IMGUI_CONSTANT(ImGuiCond_Appearing);
+    DECLARE_IMGUI_CONSTANT(ImGuiSelectableFlags_AllowDoubleClick);
 
-    lua_pushinteger(L, ImGuiExtFileDialogFlags_Save);
-    lua_setglobal(L,"ImGuiExtFileDialogFlags_Save");
-
-    lua_pushinteger(L, ImGuiCond_Always);
-    lua_setglobal(L,"ImGuiCond_Always");
-
-    lua_pushinteger(L, ImGuiCond_Once);
-    lua_setglobal(L,"ImGuiCond_Once");
-
-    lua_pushinteger(L, ImGuiCond_FirstUseEver);
-    lua_setglobal(L,"ImGuiCond_FirstUseEver");
-    
-    lua_pushinteger(L, ImGuiCond_Appearing);
-    lua_setglobal(L,"ImGuiCond_Appearing");
-
-    lua_pushinteger(L, ImGuiSelectableFlags_AllowDoubleClick);
-    lua_setglobal(L, "ImGuiSelectableFlags_AllowDoubleClick");    
-
-    lua_pushinteger(L, ImGuiCol_Button);
-    lua_setglobal(L, "ImGuiCol_Button");    
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_Text);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TextDisabled);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_WindowBg);              
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ChildBg);               
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_PopupBg);               
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_Border);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_BorderShadow);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_FrameBg);               
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_FrameBgHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_FrameBgActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TitleBg);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TitleBgActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TitleBgCollapsed);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_MenuBarBg);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ScrollbarBg);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ScrollbarGrab);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ScrollbarGrabHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ScrollbarGrabActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_CheckMark);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_SliderGrab);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_SliderGrabActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_Button);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ButtonHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ButtonActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_Header);                
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_HeaderHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_HeaderActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_Separator);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_SeparatorHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_SeparatorActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ResizeGrip);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ResizeGripHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ResizeGripActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_Tab);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TabHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TabActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TabUnfocused);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TabUnfocusedActive);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_DockingPreview);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_DockingEmptyBg);        
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_PlotLines);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_PlotLinesHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_PlotHistogram);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_PlotHistogramHovered);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_TextSelectedBg);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_DragDropTarget);
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_NavHighlight);          
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_NavWindowingHighlight); 
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_NavWindowingDimBg);     
+    DECLARE_IMGUI_CONSTANT(ImGuiCol_ModalWindowDimBg);      
     
     lua_getglobal(L, "imgui");
 

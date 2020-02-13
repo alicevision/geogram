@@ -122,6 +122,7 @@ namespace GEO {
                     cur += 3;
                 }
             }
+	    return false;
         }
 
         vector<double> pts(delaunay->nb_vertices() * 3);

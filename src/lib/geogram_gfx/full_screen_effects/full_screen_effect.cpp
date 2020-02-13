@@ -84,6 +84,9 @@ namespace GEO {
         ES_profile_(false) {
     }
 
+    FullScreenEffectImpl::~FullScreenEffectImpl() {
+    }
+    
     double FullScreenEffectImpl::required_GLSL_version() const {
         return 1.0;
     }

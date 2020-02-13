@@ -60,7 +60,7 @@
 
 namespace {
     using namespace VBW;
-    
+
     /**
      * \brief a class for a stack of ushorts allocated on the stack.
      * \details Used by clip_by_plane_fast() internally. I do not want
@@ -337,7 +337,8 @@ namespace VBW {
 	    if(borders_only &&
 	       has_vglobal() &&
 	       v_global_index(v) != global_index_t(-1) &&
-	       v_global_index(v) != global_index_t(-2) // This one for fluid free bndry
+	       v_global_index(v) != global_index_t(-2)
+                // inde_t(-2) is for fluid free bndry
 	    ) {
 		continue;
 	    }
@@ -356,6 +357,21 @@ namespace VBW {
 	return nt;
     }
 
+    void ConvexCell::for_each_Voronoi_vertex(
+	index_t v,
+	std::function<void(index_t)> vertex
+    ) {
+	geo_debug_assert(!geometry_dirty_);
+	if(v2t_[v] != END_OF_LIST) {
+	    index_t t = index_t(v2t_[v]);
+	    do {
+		vertex(t);
+		index_t lv = triangle_find_vertex(t,v);		   
+		t = triangle_adjacent(t, (lv + 1)%3);
+	    } while(t != v2t_[v]);
+	}
+    }
+    
 #if !defined(STANDALONE_CONVEX_CELL) && !defined(GEOGRAM_PSM)
     
     void ConvexCell::append_to_mesh(
@@ -403,7 +419,8 @@ namespace VBW {
 	    if(borders_only &&
 	       has_vglobal() &&
 	       v_global_index(v) != global_index_t(-1) &&
-	       v_global_index(v) != global_index_t(-2) // This one for fluid free bndry
+	       v_global_index(v) != global_index_t(-2) // This one for
+	                                               // fluid free bndry
 	    ) {
 		continue;
 	    }
@@ -478,6 +495,9 @@ namespace VBW {
 	//   - the code is simpler.
 	//   - and more importantly, we got no more than a few tenths of
 	//     vertices.
+	// The 'climbing from a random triangle' strategy is implemented
+	// in clip_by_plane_fast(). We keep both implementations for now,
+	// until we make sure than one is more efficient than the other one.
 
         index_t t = first_valid_;
         first_valid_ = END_OF_LIST;
@@ -501,6 +521,81 @@ namespace VBW {
 	triangulate_conflict_zone(lv, conflict_head, conflict_tail);
     }
 
+    // This version of clip_by_plane(), with a user-defined predicate,
+    // is duplicated from the standard version above. May be fixed by
+    // moving it to the header file (to have faster invokation of the
+    // predicate) and make the default version call it with PCK, but
+    // I do not want to do that because:
+    //    - will make the header more heavy, longer compilation time
+    //    - not sure about the impact on performance
+    //    - the function is short, not a big drama to duplicate it...
+    void ConvexCell::clip_by_plane(
+	vec4 eqn, index_t global_index,
+	std::function<bool(ushort,ushort)> triangle_conflict_predicate
+    ) {
+	geometry_dirty_ = true;
+
+	index_t lv = nb_v_;	
+	if(lv == max_v()) {
+	    grow_v();
+	}
+	plane_eqn_[lv] = eqn;
+	vbw_assert(lv < max_v());
+	++nb_v_;
+
+	// Note: it is unlikely that this function is used without
+	// global indices (because without global indices, it would
+	// mean we are only using geometry, then we should use the
+	// default predicate), so we could probably make it mandatory
+	// to have global indices here.
+	if(has_vglobal_) {
+	    vglobal_[nb_v()-1] = global_index;
+	}
+
+	
+	// Step 1: Find conflict zone and link conflicted triangles
+	// (to recycle them in free list).
+
+	index_t conflict_head = END_OF_LIST;
+	index_t conflict_tail = END_OF_LIST;
+
+        // Classify triangles, compute conflict list and valid list.
+	// Note: This could be done by climbing from a random triangle,
+	// but here we prefer complete linear scan for several reasons:
+	//   - it is more robust to numerical errors (here we are not
+	//     using exact predicates).
+	//   - the code is simpler.
+	//   - and more importantly, we got no more than a few tenths of
+	//     vertices.
+	// The 'climbing from a random triangle' strategy is implemented
+	// in clip_by_plane_fast(). We keep both implementations for now,
+	// until we make sure than one is more efficient than the other one
+	// (and clip_by_plane_fast() does not have a version with the user-
+	// defined predicate for now).
+
+        index_t t = first_valid_;
+        first_valid_ = END_OF_LIST;
+        while(t != END_OF_LIST) { 
+	    TriangleWithFlags T = get_triangle_and_flags(t);
+	    if(triangle_conflict_predicate(ushort(t), ushort(nb_v()-1))) {
+		set_triangle_flags(
+		    t, ushort(conflict_head) | ushort(CONFLICT_MASK)
+		);
+		conflict_head = t;
+		if(conflict_tail == END_OF_LIST) {
+		    conflict_tail = t;
+		}
+	    } else {
+		set_triangle_flags(t, ushort(first_valid_));
+		first_valid_ = t;
+	    }
+	    t = index_t(T.flags);
+	}
+	
+	triangulate_conflict_zone(lv, conflict_head, conflict_tail);
+    }
+
+    
     void ConvexCell::clip_by_plane_fast(vec4 P, global_index_t j) {
 	vbw_assert(has_vglobal_);
 	clip_by_plane_fast(P);
@@ -867,6 +962,7 @@ namespace VBW {
 	}
 	
         // Get the plane equations associated with each vertex of t
+
 	vec4 pi1 = vertex_plane(T.i);
 	vec4 pi2 = vertex_plane(T.j);
 	vec4 pi3 = vertex_plane(T.k);

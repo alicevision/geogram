@@ -47,8 +47,12 @@
 
 /*
  * FORTRAN local variables are static
+ *   normally. Here we declare them
+ *   on the stack, because it is
+ *   more multithread-friendly.
  */
-#define local static
+
+#define local
 
 /*
  Many warnings about const double* converted to
@@ -148,7 +152,7 @@ static int NL_FORTRAN_WRAP(lsame)(const char *ca, const char *cb)
     int ret_val;
     
     /* Local variables */
-    int inta, intb, zcode;
+    local int inta, intb, zcode;
 
     ret_val = *(unsigned char *)ca == *(unsigned char *)cb;
     if (ret_val) {
