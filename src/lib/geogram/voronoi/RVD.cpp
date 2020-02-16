@@ -59,8 +59,12 @@
 #include <geogram/basic/argused.h>
 #include <geogram/basic/algorithm.h>
 #include <geogram/bibliography/bibliography.h>
+
+#include <geogram/basic/disable_warnings.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/parallel_sort.h>
+#include <geogram/basic/enable_warnings.h>
+
 #include <cmath>
 #include <cassert>
 
@@ -483,7 +487,7 @@ namespace {
         /********************************************************************/
 
         /**
-         * \brief Implementation class for surfacic Lloyd relaxation.
+         * \brief Implementation class for volumetric Lloyd relaxation.
          * \details To be used as a template argument
          *    to RVD::for_each_volumetric_integration_simplex().
          * This version ignores the weights.
@@ -576,22 +580,133 @@ namespace {
             LOCKS& locks_;
         };
 
+
+        /**
+         * \brief Implementation class for volumetric Lloyd relaxation.
+         * \details To be used as a template
+         *    argument to RVD::for_each_triangle().
+         * This version takes the weights into account.
+         *
+         * Computes for each RVD cell:
+         * - mg[v] (v's Voronoi cell's total area times centroid)
+         * - m[v]  (v's total area)
+         * \tparam LOCKS locking policy
+         *   (can be one of Process::SpinLockArray, NoLocks)
+         */
+        template <class LOCKS>
+        class ComputeCentroidsVolumicWeighted {
+        public:
+            /**
+             * \brief Constructs a ComputeCentroidsWeighted.
+             * \param[out] mg where to store the centroids
+             * \param[out] m where to store the masses
+             * \param[in] locks the array of locks
+             *  (or NoLocks in single thread mode)
+             */
+            ComputeCentroidsVolumicWeighted(
+                double* mg,
+                double* m,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_g,
+                tbb::concurrent_vector<std::pair<index_t, double>>* master_m,
+                LOCKS& locks
+            ) :
+                mg_(mg),
+                m_(m),
+                master_g_(master_g),
+                master_m_(master_m),
+                locks_(locks) {
+            }
+
+            /**
+             * \brief The callback called for each integration simplex.
+             * \param[in] v index of current center vertex
+             * \param[in] v_adj (unused here) is the index of the Voronoi cell
+             *  adjacent to t accros facet (\p v1, \p v2, \p v3) or
+             *  -1 if it does not exists
+             *  \param[in] t (unused here) is the index of the current
+             *   tetrahedron
+             *  \param[in] t_adj (unused here) is the index of the
+             *   tetrahedron adjacent to t accros facet (\p v1, \p v2, \p v3)
+             *   or -1 if it does not exists
+             * \param[in] p0 first vertex of current integration simplex
+             * \param[in] p1 second vertex of current integration simplex
+             * \param[in] p2 third vertex of current integration simplex
+             * \param[in] p3 fourth vertex of current integration simplex
+             */
+            void operator() (
+                index_t v, signed_index_t v_adj,
+                index_t t, signed_index_t t_adj,
+                const Vertex& v1,
+                const Vertex& v2,
+                const Vertex& v3,
+                const Vertex& v4
+            ) const {
+                geo_argused(v_adj);
+                geo_argused(t);
+                geo_argused(t_adj);
+                double cur_m;
+                double cur_Vg[DIM];
+                Geom::tetra_centroid(
+                    v1.point(), v2.point(), v3.point(), v4.point(),
+                    v1.weight(), v2.weight(), v3.weight(), v4.weight(),
+                    cur_Vg, cur_m, DIM
+                );
+                if (master_m_) {
+                    master_m_->emplace_back(v, cur_m);
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        master_g_->emplace_back(v * DIM + coord, cur_Vg[coord]);
+                    }
+                } else {
+                    locks_.acquire_spinlock(v);
+                    m_[v] += cur_m;
+                    double* cur_mg_out = mg_ + v * DIM;
+                    for(coord_index_t coord = 0; coord < DIM; coord++) {
+                        cur_mg_out[coord] += cur_Vg[coord];
+                    }
+                    locks_.release_spinlock(v);
+                }
+            }
+
+        private:
+            double* mg_;
+            double* m_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_g_;
+            tbb::concurrent_vector<std::pair<index_t, double>> * master_m_;
+            LOCKS& locks_;
+        };
+
         void compute_centroids_in_volume(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
                 if(master_ != nullptr) {
-                    RVD_.for_each_tetrahedron(
-                        ComputeCentroidsVolumetric<Process::SpinLockArray>(
-                            mg, m, master_g_, master_m_, master_->spinlocks_
-                        )
-                    );
+                    if(has_weights_) {
+                        RVD_.for_each_tetrahedron(
+                            ComputeCentroidsVolumicWeighted<Process::SpinLockArray>(
+                                mg, m, master_g_, master_m_, master_->spinlocks_
+                            )
+                        );
+                    } else {
+                        RVD_.for_each_tetrahedron(
+                            ComputeCentroidsVolumetric<Process::SpinLockArray>(
+                                mg, m, master_g_, master_m_, master_->spinlocks_
+                            )
+                        );
+                    }
                 } else {
-                    NoLocks nolocks;
-                    RVD_.for_each_tetrahedron(
-                        ComputeCentroidsVolumetric<NoLocks>(
-                            mg, m, master_g_, master_m_, nolocks
-                        )
-                    );
+                    NoLocks nolocks;;
+                    if(has_weights_) {
+                        RVD_.for_each_tetrahedron(
+                            ComputeCentroidsVolumicWeighted<NoLocks>(
+                                mg, m, master_g_, master_m_, nolocks
+                            )
+                        );
+                    } else {
+                        RVD_.for_each_tetrahedron(
+                            ComputeCentroidsVolumetric<NoLocks>(
+                                mg, m, master_g_, master_m_, nolocks
+                            )
+                        );
+                    }
                 }
             } else {
                 thread_mode_ = MT_LLOYD;

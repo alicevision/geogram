@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -58,6 +58,13 @@
 namespace GEO {
 
     namespace Geom {
+
+        /* Forward declaration */
+        double tetra_volume_from_edge_lengths(
+            double u, double U,
+            double v, double V,
+            double w, double W
+        );
 
         /**
          * \brief Computes the squared distance between two nd points.
@@ -202,6 +209,86 @@ namespace GEO {
             }
         }
 
+        /**
+         * \brief Computes the volume of a nd tetrahedron
+         * \details Uses Heron formula (that computes the area
+         *  from the lengths of the four edges).
+         * \param[in] p1 a pointer to the coordinates of the
+         *  first vertex of the tetrahedron
+         * \param[in] p2 a pointer to the coordinates of the
+         *  second vertex of the tetrahedron
+         * \param[in] p3 a pointer to the coordinates of the
+         *  third vertex of the tetrahedron
+         * \param[in] p4 a pointer to the coordinates of the
+         *  fourth vertex of the tetrahedron
+         * \param[in] dim dimension of the points
+         * \tparam COORD_T the numeric type that represents the coordinates
+         *  of the points
+         * \return the area of tetrahedron ( \p p1, \p p2, \p p3, \p p4)
+         */
+        template <class COORD_T>
+        inline double tetra_volume(
+            const COORD_T* p1,
+            const COORD_T* p2,
+            const COORD_T* p3,
+            const COORD_T* p4,
+            coord_index_t dim
+        ) {
+            double U = distance(p1, p2, dim);
+            double u = distance(p3, p4, dim);
+            double V = distance(p2, p3, dim);
+            double v = distance(p1, p4, dim);
+            double W = distance(p3, p1, dim);
+            double w = distance(p2, p4, dim);
+            return tetra_volume_from_edge_lengths(u, U, v, V, w, W);
+        }
+
+        /**
+         * \brief Computes the centroid of a 3d tetrahedron with weighted points.
+         * \details The integrated weight varies linearly in the tetrahedron.
+         * \param[in] p a pointer to the coordinates of the
+         *  first vertex of the tetrahedron
+         * \param[in] q a pointer to the coordinates of the
+         *  second vertex of the tetrahedron
+         * \param[in] r a pointer to the coordinates of the
+         *  third vertex of the tetrahedron
+         * \param[in] s a pointer to the coordinates of the
+         *  fourth vertex of the tetrahedron
+         * \param[in] a the weight associated with vertex \p p
+         * \param[in] b the weight associated with vertex \p q
+         * \param[in] c the weight associated with vertex \p r
+         * \param[in] d the weight associated with vertex \p s
+         * \param[out] Vg the total weight times the centroid (
+         *  a pointer to a caller-allocated array of dim COORD_T%s)
+         * \param[out] V the total weight
+         * \param[in] dim the dimension of the vertices
+         * \tparam COORD_T the numeric type that represents the coordinates
+         *  of the points
+         */
+        template <class COORD_T>
+        inline void tetra_centroid(
+            const COORD_T* p,
+            const COORD_T* q,
+            const COORD_T* r,
+            const COORD_T* s,
+            COORD_T a, COORD_T b, COORD_T c, COORD_T d,
+            double* Vg,
+            double& V,
+            coord_index_t dim
+        ) {
+            double abcd = a + b + c + d;
+            double volume = Geom::tetra_volume(p, q, r, s, dim);
+            V = volume / 4.0 * abcd;
+            double wp = a + abcd;
+            double wq = b + abcd;
+            double wr = c + abcd;
+            double ws = d + abcd;
+            double t = volume / 20.0;
+            for(coord_index_t i = 0; i < dim; i++) {
+                Vg[i] = t * (wp * p[i] + wq * q[i] + wr * r[i] + ws * s[i]);
+            }
+        }
+
         /********************************************************************/
 
         /**
@@ -330,6 +417,39 @@ namespace GEO {
         }
 
         /**
+         * \brief Computes the centroid of a nd tetrahedron with weighted points.
+         * \details The integrated weight varies linearly in the tetrahedron.
+         * \param[in] p first vertex of the tetrahedron
+         * \param[in] q second vertex of the tetrahedron
+         * \param[in] r third vertex of the tetrahedron
+         * \param[in] s fourth vertex of the tetrahedron
+         * \param[in] a the weight associated with vertex \p p
+         * \param[in] b the weight associated with vertex \p q
+         * \param[in] c the weight associated with vertex \p r
+         * \param[in] s the weight associated with vertex \p s
+         * \param[out] Vg the total weight times the centroid
+         * \param[out] V the total weight
+         * \tparam VEC the class used to represent the vertices
+         *  of the tetrahedron
+         */
+        template <class VEC>
+        inline void tetra_centroid(
+            const VEC& p, const VEC& q, const VEC& r, const VEC& s,
+            double a, double b, double c, double d,
+            VEC& Vg, double& V
+        ) {
+            double abcd = a + b + c + d;
+            double volume = Geom::tetra_volume(p, q, r, s);
+            V = volume / 4.0 * abcd;
+            double wp = a + abcd;
+            double wq = b + abcd;
+            double wr = c + abcd;
+            double ws = d + abcd;
+            double t = volume / 20.0;
+            Vg = t * (wp * p + wq * q + wr * r + ws * s);
+        }
+
+        /**
          * \brief Generates a random point in a nd triangle.
          * \details Uses Greg Turk's second method
          *  (see article in Graphic Gems).
@@ -426,13 +546,13 @@ namespace GEO {
                 lambda0 = 0.0;
                 lambda1 = 1.0;
                 return distance2(point, V1);
-            } 
+            }
             lambda1 = t / l2;
             lambda0 = 1.0-lambda1;
             closest_point = lambda0 * V0 + lambda1 * V1;
             return distance2(point, closest_point);
         }
-        
+
 
         /**
          * \brief Computes the point closest to a given point in a nd segment
@@ -456,7 +576,7 @@ namespace GEO {
                 point, V0, V1, closest_point, lambda0, lambda1
             );
         }
-        
+
         /**
          * \brief Computes the point closest to a given point in a nd triangle
          * \details See
@@ -529,7 +649,7 @@ namespace GEO {
                 }
                 return result;
             }
-            
+
             if(s + t <= det) {
                 if(s < 0.0) {
                     if(t < 0.0) {   // region 4

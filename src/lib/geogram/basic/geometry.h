@@ -13,7 +13,7 @@
  *  * Neither the name of the ALICE Project-Team nor the names of its
  *  contributors may be used to endorse or promote products derived from this
  *  software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,9 +36,9 @@
  *     http://www.loria.fr/~levy
  *
  *     ALICE Project
- *     LORIA, INRIA Lorraine, 
+ *     LORIA, INRIA Lorraine,
  *     Campus Scientifique, BP 239
- *     54506 VANDOEUVRE LES NANCY CEDEX 
+ *     54506 VANDOEUVRE LES NANCY CEDEX
  *     FRANCE
  *
  */
@@ -97,7 +97,7 @@ namespace GEO {
      */
     typedef vecng<4, Numeric::float32> vec4f;
 
-   
+
     /**
      * \brief Represents points and vectors in 2d with
      *  integer coordinates.
@@ -118,8 +118,8 @@ namespace GEO {
      * \details Syntax is (mostly) compatible with GLSL.
      */
     typedef vecng<4, Numeric::int32> vec4i;
-   
-   
+
+
     /**
      * \brief Represents a 2x2 matrix.
      * \details Syntax is (mostly) compatible with GLSL.
@@ -295,17 +295,17 @@ namespace GEO {
             double Ux = p2[0] - p1[0];
             double Uy = p2[1] - p1[1];
             double Uz = p2[2] - p1[2];
-            
+
             double Vx = p3[0] - p1[0];
             double Vy = p3[1] - p1[1];
             double Vz = p3[2] - p1[2];
-            
+
             double Nx = Uy*Vz - Uz*Vy;
             double Ny = Uz*Vx - Ux*Vz;
             double Nz = Ux*Vy - Uy*Vx;
             return 0.5 * ::sqrt(Nx*Nx+Ny*Ny+Nz*Nz);
         }
-        
+
         /**
          * \brief Computes the area of a 3d triangle
          * \param[in] p1 , p2 , p3 the three vertices of the triangle
@@ -334,7 +334,7 @@ namespace GEO {
             double d = p3[1]-p1[1];
             return 0.5*(a*d-b*c);
         }
-        
+
         /**
          * \brief Computes the area of a 2d triangle
          * \param[in] p1 first vertex of the triangle
@@ -374,7 +374,7 @@ namespace GEO {
         ) {
             return ::fabs(triangle_signed_area_2d(p1,p2,p3));
         }
-        
+
         /**
          * \brief Computes the center of the circumscribed circle of
          *   a 2d triangle.
@@ -515,6 +515,38 @@ namespace GEO {
         }
 
         /**
+         * \brief Computes the centroid of a 3d tetrahedron with weighted points.
+         * \details The integrated weight varies linearly in the tetrahedron.
+         * \param[in] p first vertex of the tetrahedron
+         * \param[in] q second vertex of the tetrahedron
+         * \param[in] r third vertex of the tetrahedron
+         * \param[in] s fourth vertex of the tetrahedron
+         * \param[in] a the weight associated with vertex \p p
+         * \param[in] b the weight associated with vertex \p q
+         * \param[in] c the weight associated with vertex \p r
+         * \param[in] d the weight associated with vertex \p s
+         * \param[out] Vg the total weight times the centroid
+         * \param[out] V the total weight
+         */
+        inline void tetra_centroid(
+            const vec3& p, const vec3& q, const vec3& r, const vec3& s,
+            double a, double b, double c, double d,
+            vec3& Vg, double& V
+        ) {
+            double abcd = a + b + c + d;
+            double volume = Geom::tetra_volume(p, q, r, s);
+            V = volume / 4.0 * abcd;
+            double wp = a + abcd;
+            double wq = b + abcd;
+            double wr = c + abcd;
+            double ws = d + abcd;
+            double t = volume / 20.0;
+            Vg.x = t * (wp * p.x + wq * q.x + wr * r.x + ws * s.x);
+            Vg.y = t * (wp * p.y + wq * q.y + wr * r.y + ws * s.y);
+            Vg.z = t * (wp * p.z + wq * q.z + wr * r.z + ws * s.z);
+        }
+
+        /**
          * \brief Computes the mass of a 3d triangle with weighted points.
          * \details The integrated weight varies linearly in the triangle.
          * \param[in] p first vertex of the triangle
@@ -538,7 +570,7 @@ namespace GEO {
         /**
          * \brief Generates a random point in a 3d triangle.
          * \details Uses Greg Turk's second method.
-         *  Reference: Greg Turk, Generating Random Points 
+         *  Reference: Greg Turk, Generating Random Points
          *  in Triangles, Graphics Gems, p. 24-28, code: p. 649-650.
          * \param[in] p1 first vertex of the triangle
          * \param[in] p2 second vertex of the triangle
@@ -717,10 +749,10 @@ namespace GEO {
                 result[i] += v[j] * m(j,i) ;
             }
         }
-        
+
         return vecng<3,FT>(
             result[0], result[1], result[2]
-        ) ; 
+        ) ;
     }
 
     /**
@@ -744,7 +776,7 @@ namespace GEO {
     ){
         index_t i,j ;
         FT result[4] ;
-        
+
         for(i=0; i<4; i++) {
             result[i] = 0 ;
         }
@@ -754,12 +786,12 @@ namespace GEO {
             }
             result[i] += m(3,i);
         }
-    
+
         return vecng<3,FT>(
             result[0] / result[3],
             result[1] / result[3],
-            result[2] / result[3] 
-        ) ; 
+            result[2] / result[3]
+        ) ;
     }
 
     /**
@@ -778,18 +810,18 @@ namespace GEO {
     ) {
         index_t i,j ;
         FT res[4] = {FT(0), FT(0), FT(0), FT(0)};
-        
+
         for(i=0; i<4; i++) {
             for(j=0; j<4; j++) {
                 res[i] += v[j] * m(j,i) ;
             }
         }
-    
-        return vecng<4,FT>(res[0], res[1], res[2], res[3]) ; 
+
+        return vecng<4,FT>(res[0], res[1], res[2], res[3]) ;
     }
 
     /******************************************************************/
-    
+
     /**
      * \brief Creates a translation matrix from a vector.
      * \details The translation matrix is in homogeneous coordinates,
@@ -806,7 +838,7 @@ namespace GEO {
         result(3,2) = T.z;
         return result;
     }
-    
+
     /**
      * \brief Creates a scaling matrix.
      * \details The scaling matrix is in homogeneous coordinates,
@@ -820,12 +852,12 @@ namespace GEO {
         result.load_identity();
         result(0,0) = s;
         result(1,1) = s;
-        result(2,2) = s;        
+        result(2,2) = s;
         return result;
     }
-    
-    /******************************************************************/    
-    
+
+    /******************************************************************/
+
 }
 
 #endif
