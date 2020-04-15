@@ -50,6 +50,8 @@
 #include <geogram/bibliography/bibliography.h>
 #include <geogram/basic/memory.h>
 
+#include <geogram/NL/nl.h>
+
 // Uses OpenNL internal data structures and routines
 // (NLSparseMatrix and associated functions).
 extern "C" {
@@ -161,15 +163,15 @@ namespace {
 
 	    // ------- Jacobian -------------
 	    nlSparseMatrixConstruct(
-		&J2_, 2*nint_, nalpha_, NL_MATRIX_STORE_COLUMNS
+		&J2_, NLuint(2*nint_), NLuint(nalpha_), NL_MATRIX_STORE_COLUMNS
 	    );
 
 	    // ------- ABF++ ----------------
 	    nlSparseMatrixConstruct(
-		&J_star_, 2*nint_, nf_, NL_MATRIX_STORE_COLUMNS
+		&J_star_, NLuint(2*nint_), NLuint(nf_), NL_MATRIX_STORE_COLUMNS
 	    );
 	    nlSparseMatrixConstruct(
-		&M_, 2*nint_, 2*nint_, NL_MATRIX_STORE_ROWS
+		&M_, NLuint(2*nint_), NLuint(2*nint_), NL_MATRIX_STORE_ROWS
 	    );
 	}
 
@@ -375,7 +377,9 @@ namespace {
 		for(NLuint ii=0; ii<Cj.size; ++ii) {
 		    const NLCoeff& c = Cj.coeff[ii] ;
 		    nlSparseMatrixAdd(
-			&J_star_,c.index, c_to_f(j), c.value * Delta_inv_[j]
+			&J_star_,
+			NLuint(c.index), NLuint(c_to_f(j)),
+			c.value * Delta_inv_[j]
 		    );
 		}
 	    }
@@ -491,7 +495,7 @@ namespace {
 		}
 		index_t c = v_to_c_[v];
 		do {
-		    nlSparseMatrixAdd(&J2_, i, c, 1.0);
+		    nlSparseMatrixAdd(&J2_, NLuint(i), NLuint(c), 1.0);
 		    c = next_c_around_v_[c];
 		} while(c != NO_CORNER);
 		i++ ;
@@ -512,12 +516,12 @@ namespace {
 		    index_t f = c_to_f(c);
 		    index_t next_c = mesh_.facets.next_corner_around_facet(f,c);
 		    nlSparseMatrixAdd(
-			&J2_, i, next_c,
+			&J2_, NLuint(i), NLuint(next_c),
 			prod_next_sin * cos(alpha_[next_c])/sin(alpha_[next_c])
 		    );
 		    index_t prev_c = mesh_.facets.prev_corner_around_facet(f,c);
 		    nlSparseMatrixAdd(
-			&J2_, i, prev_c,
+			&J2_, NLuint(i), NLuint(prev_c),
 		       -prod_prev_sin * cos(alpha_[prev_c])/sin(alpha_[prev_c])
 		    );
 		    c = next_c_around_v_[c];
@@ -542,7 +546,7 @@ namespace {
 		}
 	    }
 	    for(index_t f=0; f < nf_; ++f) {
-		b2_[f] += M_PI * (mesh_.facets.nb_vertices(f)-2);
+		b2_[f] += M_PI * double(mesh_.facets.nb_vertices(f)-2);
 		for(index_t c: mesh_.facets.corners(f)) {
 		    b2_[f] -= alpha_[c];
 		}
@@ -718,8 +722,8 @@ namespace {
 		    for(NLuint ii2=0; ii2<Cj.size; ii2++) {
 			nlSparseMatrixAdd(
 			    &M,
-			    Cj.coeff[ii1].index,
-			    Cj.coeff[ii2].index,
+			    NLuint(Cj.coeff[ii1].index),
+			    NLuint(Cj.coeff[ii2].index),
 			    Cj.coeff[ii1].value * Cj.coeff[ii2].value * D[j]
 			);
 		    }
@@ -742,8 +746,8 @@ namespace {
 		    for(NLuint ii2=0; ii2<Cj.size; ii2++) {
 			nlSparseMatrixAdd(
 			    &M,
-			    Cj.coeff[ii1].index,
-			    Cj.coeff[ii2].index,
+			    NLuint(Cj.coeff[ii1].index),
+			    NLuint(Cj.coeff[ii2].index),
 			    -Cj.coeff[ii1].value * Cj.coeff[ii2].value * D[j]
 			);
 		    }

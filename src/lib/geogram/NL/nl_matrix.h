@@ -263,6 +263,18 @@ NLAPI void NLAPIENTRY nlRowColumnSort(NLRowColumn* c);
 /* Compressed Row Storage */
 
 /**
+ * \brief Type for internal indices.
+ * \details Matrix dimension is limited to 4G x 4G. Number of non-zero entries
+ *  is limited to 2^32 (4G) in standard mode, and to 2^64 in GARGANTUA mode.
+ */
+#ifdef GARGANTUA
+    typedef NLulong NLuint_big;
+#else
+    typedef NLuint NLuint_big;
+#endif
+    
+    
+/**
  * \brief A compact self-contained storage for 
  *  sparse matrices.
  * \details Unlike with NLSparseMatrix, it is not possible
@@ -305,7 +317,7 @@ typedef struct {
     /**
      * \brief row pointers, size = m+1 
      */    
-    NLuint* rowptr;
+    NLuint_big* rowptr;
 
     /**
      * \brief column indices, size = NNZ 
@@ -341,7 +353,7 @@ typedef struct {
  * \relates NLCRSMatrix
  */
 NLAPI void NLAPIENTRY nlCRSMatrixConstruct(
-    NLCRSMatrix* M, NLuint m, NLuint n, NLuint nnz, NLuint nslices
+    NLCRSMatrix* M, NLuint m, NLuint n, NLuint_big nnz, NLuint nslices
 );
 
 /**
@@ -352,7 +364,7 @@ NLAPI void NLAPIENTRY nlCRSMatrixConstruct(
  * \relates NLCRSMatrix
  */
 NLAPI void NLAPIENTRY nlCRSMatrixConstructSymmetric(
-    NLCRSMatrix* M, NLuint n, NLuint nnz
+    NLCRSMatrix* M, NLuint n, NLuint_big nnz
 );
 
 
@@ -363,9 +375,6 @@ NLAPI void NLAPIENTRY nlCRSMatrixConstructSymmetric(
  * \param[in,out] M pointer to an uninitialized NLCRSMatrix
  * \param[in] m number of rows
  * \param[in] n number of columns
- * \param[in] nnz number of non-zero coefficientsz
- * \param[in] nslices number of slices, used by parallel spMv
- *  (typically, nslices = number of cores)
  * \relates NLCRSMatrix
  */
 NLAPI void NLAPIENTRY nlCRSMatrixConstructPattern(
@@ -448,7 +457,7 @@ NLAPI NLboolean NLAPIENTRY nlCRSMatrixSave(
  * \return the number of non-zero coefficients in \p M
  * \relates NLCRSMatrix
  */
-NLAPI NLuint NLAPIENTRY nlCRSMatrixNNZ(NLCRSMatrix* M);
+NLAPI NLuint_big NLAPIENTRY nlCRSMatrixNNZ(NLCRSMatrix* M);
     
 /******************************************************************************/
 /* SparseMatrix data structure */
@@ -646,7 +655,7 @@ NLAPI void NLAPIENTRY nlSparseMatrixClear( NLSparseMatrix* M);
  * \return the number of non-zero coefficients in \p M
  * \relates NLSparseMatrix
  */
-NLAPI NLuint NLAPIENTRY nlSparseMatrixNNZ( NLSparseMatrix* M);
+NLAPI NLuint_big NLAPIENTRY nlSparseMatrixNNZ( NLSparseMatrix* M);
 
 /**
  * \brief Sorts the coefficients in an NLSParseMatrix
@@ -744,7 +753,7 @@ NLAPI void NLAPIENTRY nlMatrixCompress(NLMatrix* M);
  *  else it returns m*n
  * \return the number of non-zero entries in \p M
  */
-NLAPI NLuint NLAPIENTRY nlMatrixNNZ(NLMatrix M);
+NLAPI NLuint_big NLAPIENTRY nlMatrixNNZ(NLMatrix M);
 
 /**
  * \brief Factorizes a matrix.

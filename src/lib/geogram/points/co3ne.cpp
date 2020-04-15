@@ -1347,7 +1347,7 @@ namespace {
              *  starting from this vertex
              * \param[in] x the index of the adjacent Voronoi seed
              */
-            void set_adjacent_seed(int x) {
+            void set_adjacent_seed(signed_index_t x) {
                 adjacent_seed_ = x;
             }
 

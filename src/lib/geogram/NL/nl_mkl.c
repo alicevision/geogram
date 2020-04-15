@@ -239,7 +239,15 @@ static void nlTerminateExtension_MKL(void) {
 
 NLMultMatrixVectorFunc NLMultMatrixVector_MKL = NULL;
 
-static void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* y) {
+static void NLMultMatrixVector_MKL_impl(
+    NLMatrix M_in, const double* x, double* y
+) {
+#ifdef GARGANTUA
+    nl_arg_used(M_in);
+    nl_arg_used(x);
+    nl_arg_used(y);
+    nl_assert_not_reached; /* Not implemented yet ! */
+#else    
     NLCRSMatrix* M = (NLCRSMatrix*)(M_in);
     nl_debug_assert(M_in->type == NL_MATRIX_CRS);
     if(M->symmetric_storage) {
@@ -263,6 +271,7 @@ static void NLMultMatrixVector_MKL_impl(NLMatrix M_in, const double* x, double* 
 	    y
 	);
     }
+#endif    
 }
 
 
@@ -362,7 +371,7 @@ static void nlMKLMatrixMult(
 }
 
 NLMatrix nlMKLMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
-    NLuint nnz = nlSparseMatrixNNZ(M);
+    NLuint_big nnz = nlSparseMatrixNNZ(M);
     NLuint i,ij,k; 
     NLMKLMatrix* result = NL_NEW(NLMKLMatrix);
     struct matrix_descr descr;
@@ -414,7 +423,7 @@ NLMatrix nlMKLMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
 }
 
 NLMatrix nlMKLMatrixNewFromCRSMatrix(NLCRSMatrix* M) {
-    NLuint nnz = nlCRSMatrixNNZ(M);
+    NLuint_big nnz = nlCRSMatrixNNZ(M);
     NLMKLMatrix* result = NL_NEW(NLMKLMatrix);
     struct matrix_descr descr;
     descr.type = SPARSE_MATRIX_TYPE_GENERAL;

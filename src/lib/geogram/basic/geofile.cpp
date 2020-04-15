@@ -279,7 +279,7 @@ namespace GEO {
         index_t len=read_int();
         result.resize(len);
         if(len != 0) {
-            int check = gzread(file_, &result[0], len);
+            int check = gzread(file_, &result[0], (unsigned int)(len));
             if(index_t(check) != len) {
                 throw GeoFileException("Could not read string data from file");
             }
@@ -303,7 +303,7 @@ namespace GEO {
         index_t len = index_t(str.length());
         write_int(len);
         if(len != 0) {
-            int check = gzwrite(file_, &str[0], len);
+            int check = gzwrite(file_, &str[0], (unsigned int)(len));
             if(index_t(check) != len) {
                 throw GeoFileException("Could not write string data to file");
             }
@@ -570,7 +570,7 @@ namespace GEO {
             size_t(current_attribute_->element_size) *
             size_t(current_attribute_->dimension) *
             size_t(current_attribute_set_->nb_items);
-        int check = gzread(file_, addr, index_t(size));
+        int check = gzread(file_, addr, (unsigned int)(size));
         if(size_t(check) != size) {
             throw GeoFileException(
                 "Could not read attribute " + current_attribute_->name +
@@ -722,7 +722,7 @@ namespace GEO {
                 throw GeoFileException("Could not write attribute data");                
             }
         } else {
-            int check = gzwrite(file_, data, index_t(data_size));
+            int check = gzwrite(file_, data, (unsigned int)(data_size));
             if(size_t(check) != data_size) {
                 throw GeoFileException("Could not write attribute data");
             }

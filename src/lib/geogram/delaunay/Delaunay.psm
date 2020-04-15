@@ -32,6 +32,8 @@ delaunay.h \
 delaunay_2d.h \
 periodic.h \
 periodic_delaunay_3d.h \
+../points/nn_search.h \
+../points/kd_tree.h \
 "
 
 SOURCES="../basic/memory.h \
@@ -87,7 +89,9 @@ parallel_delaunay_3d.cpp \
 ../voronoi/convex_cell.cpp \
 periodic.cpp \
 periodic_delaunay_3d.cpp \
-../basic/common.cpp
+../points/nn_search.cpp \
+../points/kd_tree.cpp \
+../basic/common.cpp \
 "
 
 DOC="http://alice.loria.fr/software/geogram/doc/html/classGEO_1_1Delaunay.html"

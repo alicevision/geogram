@@ -252,7 +252,7 @@ namespace GEO {
 	    // the mesh, to avoid copying data.
 	    nlBindBuffer(
 		NL_VARIABLES_BUFFER,
-		eigen, 
+		NLuint(eigen), 
 		&eigen_vector[0] + eigen, // base address for eigenvector
 		NLuint(sizeof(double)*nb_eigens) // number of bytes between two
 		// consecutive components in current eigenvector

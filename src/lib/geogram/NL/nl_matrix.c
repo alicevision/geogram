@@ -165,6 +165,12 @@ static void nlCRSMatrixDestroy(NLCRSMatrix* M) {
 
 
 NLboolean nlCRSMatrixSave(NLCRSMatrix* M, const char* filename) {
+#ifdef GARGANTUA
+    nl_arg_used(M);
+    nl_arg_used(filename);
+    nl_assert_not_reached; /* not implemented yet ! */
+    return NL_FALSE;
+#else    
     NLuint nnz = M->rowptr[M->m];
     FILE* f = fopen(filename, "rb");
     if(f == NULL) {
@@ -181,9 +187,16 @@ NLboolean nlCRSMatrixSave(NLCRSMatrix* M, const char* filename) {
     fwrite(M->val, sizeof(double), nnz, f);
     
     return NL_TRUE;
+#endif    
 }
 
 NLboolean nlCRSMatrixLoad(NLCRSMatrix* M, const char* filename) {
+#ifdef GARGANTUA
+    nl_arg_used(M);
+    nl_arg_used(filename);
+    nl_assert_not_reached; /* not implemented yet ! */
+    return NL_FALSE;    
+#else    
     NLuint nnz = 0;
     FILE* f = fopen(filename, "rb");
     NLboolean truncated = NL_FALSE;
@@ -229,16 +242,18 @@ NLboolean nlCRSMatrixLoad(NLCRSMatrix* M, const char* filename) {
 
     fclose(f);
     return NL_TRUE;
+#endif    
 }
 
-NLuint nlCRSMatrixNNZ(NLCRSMatrix* M) {
+NLuint_big nlCRSMatrixNNZ(NLCRSMatrix* M) {
     return M->rowptr[M->m];
 }
 
 static void nlCRSMatrixMultSlice(
     NLCRSMatrix* M, const double* x, double* y, NLuint Ibegin, NLuint Iend
 ) {
-    NLuint i,j;
+    NLuint i;
+    NLuint_big j;
     for(i=Ibegin; i<Iend; ++i) {
         double sum=0.0;
         for(j=M->rowptr[i]; j<M->rowptr[i+1]; ++j) {
@@ -260,7 +275,8 @@ static void nlCRSMatrixMult(
 ) {
     int slice;
     int nslices = (int)(M->nslices);
-    NLuint i,j,jj;
+    NLuint i,j;
+    NLuint_big jj;
     NLdouble a;
     
     if(M->symmetric_storage) {
@@ -294,7 +310,7 @@ static void nlCRSMatrixMult(
 }
 
 void nlCRSMatrixConstruct(
-    NLCRSMatrix* M, NLuint m, NLuint n, NLuint nnz, NLuint nslices
+    NLCRSMatrix* M, NLuint m, NLuint n, NLuint_big nnz, NLuint nslices
 ) {
     M->m = m;
     M->n = n;
@@ -307,14 +323,14 @@ void nlCRSMatrixConstruct(
     }
     M->nslices = nslices;
     M->val = NL_NEW_ARRAY(double, nnz);
-    M->rowptr = NL_NEW_ARRAY(NLuint, m+1);
+    M->rowptr = NL_NEW_ARRAY(NLuint_big, m+1);
     M->colind = NL_NEW_ARRAY(NLuint, nnz);
     M->sliceptr = NL_NEW_ARRAY(NLuint, nslices+1);
     M->symmetric_storage = NL_FALSE;
 }
 
 void nlCRSMatrixConstructSymmetric(
-    NLCRSMatrix* M, NLuint n, NLuint nnz
+    NLCRSMatrix* M, NLuint n, NLuint_big nnz
 ) {
     M->m = n;
     M->n = n;
@@ -323,7 +339,7 @@ void nlCRSMatrixConstructSymmetric(
     M->mult_func = (NLMultMatrixVectorFunc)nlCRSMatrixMult;
     M->nslices = 0;
     M->val = NL_NEW_ARRAY(double, nnz);
-    M->rowptr = NL_NEW_ARRAY(NLuint, n+1);
+    M->rowptr = NL_NEW_ARRAY(NLuint_big, n+1);
     M->colind = NL_NEW_ARRAY(NLuint, nnz);
     M->sliceptr = NULL;
     M->symmetric_storage = NL_TRUE;
@@ -344,7 +360,7 @@ void nlCRSMatrixConstructPattern(
     }
     M->nslices = 0;
     M->val = NULL;
-    M->rowptr = NL_NEW_ARRAY(NLuint, m+1);
+    M->rowptr = NL_NEW_ARRAY(NLuint_big, m+1);
     M->colind = NULL;
     M->sliceptr = NULL;
     M->symmetric_storage = NL_FALSE;
@@ -360,7 +376,7 @@ void nlCRSMatrixConstructPatternSymmetric(
     M->mult_func = (NLMultMatrixVectorFunc)nlCRSMatrixMult;
     M->nslices = 0;
     M->val = NULL;
-    M->rowptr = NL_NEW_ARRAY(NLuint, n+1);
+    M->rowptr = NL_NEW_ARRAY(NLuint_big, n+1);
     M->colind = NULL;
     M->sliceptr = NULL;
     M->symmetric_storage = NL_TRUE;
@@ -375,14 +391,15 @@ void nlCRSMatrixPatternSetRowLength(
     nl_assert(M->colind == NULL);
     nl_assert(M->val == NULL);
     /* Store row length in rowptr */
-    M->rowptr[i+1] = n;
+    M->rowptr[i+1] = (NLuint_big)(n); 
 }
 
 void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS);
 
 void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS) {
-    NLuint slice_size = CRS->rowptr[CRS->m] / CRS->nslices;
-    NLuint slice, cur_bound, cur_NNZ, cur_row;    
+    NLuint_big slice_size = CRS->rowptr[CRS->m] / (NLuint_big)(CRS->nslices);
+    NLuint slice, cur_row;
+    NLuint_big cur_bound, cur_NNZ;
     /* Create "slices" to be used by parallel sparse matrix vector product */
     if(CRS->sliceptr != NULL) {
 	cur_bound = slice_size;
@@ -404,7 +421,8 @@ void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS) {
 void nlCRSMatrixPatternCompile(NLCRSMatrix* M) {
     NLuint nslices = 8; /* TODO get number of cores */
     NLuint i;
-    NLuint nnz,k;
+    NLuint_big nnz;
+    NLuint k;
     /* Test that matrix is in 'pattern' state */
     nl_assert(M->colind == NULL);
     nl_assert(M->val == NULL);
@@ -425,7 +443,7 @@ void nlCRSMatrixPatternCompile(NLCRSMatrix* M) {
 void nlCRSMatrixAdd(
     NLCRSMatrix* M, NLuint i, NLuint j, NLdouble value
 ) {
-    NLuint jj;    
+    NLuint_big jj;    
     /* Test that matrix is in 'compiled' state */
     nl_assert(M->colind != NULL);
     nl_assert(M->val != NULL);
@@ -536,7 +554,8 @@ static void nlSparseMatrixAddSparseMatrix(
 static void nlSparseMatrixAddCRSMatrix(
     NLSparseMatrix* M, double mul, const NLCRSMatrix* N    
 ) {
-    NLuint i,jj;
+    NLuint i;
+    NLuint_big jj;
     nl_assert(M->m == N->m);
     nl_assert(M->n == N->n);
     for(i=0; i<M->m; ++i) {
@@ -598,16 +617,16 @@ void nlSparseMatrixClear( NLSparseMatrix* M) {
 }
 
 /* Returns the number of non-zero coefficients */
-NLuint nlSparseMatrixNNZ( NLSparseMatrix* M) {
-    NLuint nnz = 0;
+NLuint_big nlSparseMatrixNNZ( NLSparseMatrix* M) {
+    NLuint_big nnz = 0;
     NLuint i;
     if(M->storage & NL_MATRIX_STORE_ROWS) {
         for(i = 0; i<M->m; i++) {
-            nnz += M->row[i].size;
+            nnz += (NLuint_big)(M->row[i].size);
         }
     } else if (M->storage & NL_MATRIX_STORE_COLUMNS) {
         for(i = 0; i<M->n; i++) {
-            nnz += M->column[i].size;
+            nnz += (NLuint_big)(M->column[i].size);
         }
     } else {
         nl_assert_not_reached;
@@ -900,7 +919,7 @@ void nlSparseMatrixAddColumn( NLSparseMatrix* M) {
 /*****************************************************************/
 
 NLMatrix nlCRSMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
-    NLuint nnz = nlSparseMatrixNNZ(M);
+    NLuint_big nnz = nlSparseMatrixNNZ(M);
     NLuint nslices = 8; /* TODO: get number of cores */
     NLuint i,ij,k; 
     NLCRSMatrix* CRS = NL_NEW(NLCRSMatrix);
@@ -933,7 +952,7 @@ NLMatrix nlCRSMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
 }
 
 NLMatrix nlCRSMatrixNewFromSparseMatrixSymmetric(NLSparseMatrix* M) {
-    NLuint nnz;
+    NLuint_big nnz;
     NLuint i,j,jj,k;
     NLCRSMatrix* CRS = NL_NEW(NLCRSMatrix);
     
@@ -1007,13 +1026,13 @@ void nlMatrixCompress(NLMatrix* M) {
     *M = result;
 }
 
-NLuint nlMatrixNNZ(NLMatrix M) {
+NLuint_big nlMatrixNNZ(NLMatrix M) {
     if(M->type == NL_MATRIX_SPARSE_DYNAMIC) {
 	return nlSparseMatrixNNZ((NLSparseMatrix*)M);
     } else if(M->type == NL_MATRIX_CRS) {
 	return nlCRSMatrixNNZ((NLCRSMatrix*)M);	
     }
-    return M->m * M->n;
+    return (NLuint_big)(M->m) * (NLuint_big)(M->n);
 }
 
 NLMatrix nlMatrixFactorize(NLMatrix M, NLenum solver) {

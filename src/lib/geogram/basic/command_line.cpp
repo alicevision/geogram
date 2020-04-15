@@ -430,6 +430,11 @@ namespace {
 	    result = String::to_display_string(x) + "%";
 	} else {
 	    result = CmdLine::get_arg(arg_name);
+	    if(result.length() > ui_terminal_width()/2) {
+                // TODO: fix display long lines in terminal
+		// (that trigger infinite loop for now)
+		result = "...";
+	    }
 	}
 	return result;
     }
@@ -504,7 +509,7 @@ namespace {
             lines.push_back(line);
 
             max_left_width = std::max(
-                index_t(line.name.length() + line.value.length()),
+		index_t(line.name.length() + line.value.length()),
                 max_left_width
             );
         }
@@ -1126,11 +1131,10 @@ namespace GEO {
                     ui_out() << "| ";
                     ui_pad(' ', wrap);
                     ui_out() << cur.substr(0, newline);
-                    ui_pad(' ', maxL - newline);
+                    ui_pad(' ', sub(maxL,newline));
                     ui_out() << " |" << std::endl;
                     cur = cur.substr(newline + 1);
-                }
-                else if(cur.length() > maxL) {
+                } else if(cur.length() > maxL) {
                     // The line length runs past the right border
                     // We cut the string just before the border
                     ui_pad(' ', ui_left_margin);
@@ -1139,26 +1143,24 @@ namespace GEO {
                     ui_out() << cur.substr(0, maxL);
                     ui_out() << " |" << std::endl;
                     cur = cur.substr(maxL);
-                }
-                else if(cur.length() != 0) {
+                } else if(cur.length() != 0) {
                     // Print the remaining portion of the string
                     // and pad with spaces
                     ui_pad(' ', ui_left_margin);
                     ui_out() << "| ";
                     ui_pad(' ', wrap);
                     ui_out() << cur;
-                    ui_pad(' ', maxL - cur.length());
+                    ui_pad(' ', sub(maxL,cur.length()));
                     ui_out() << " |";
                     break;
-                }
-                else {
+                } else {
                     // No more chars to print
                     break;
                 }
 
                 if(wrap == 0) {
                     wrap = wrap_margin;
-                    maxL -= wrap_margin;
+                    maxL = sub(maxL,wrap_margin);
                 }
             }
         }

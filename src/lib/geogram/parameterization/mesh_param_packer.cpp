@@ -193,20 +193,20 @@ namespace {
 		}
 	    }
 	    
-	    mesh_decl_.vertexCount = cur_xatlas_vertex;
+	    mesh_decl_.vertexCount = uint32_t(cur_xatlas_vertex);
 	    mesh_decl_.vertexPositionData = xyz_.data();
 	    mesh_decl_.vertexPositionStride = sizeof(float)*3;
 	    mesh_decl_.vertexUvData = uv_.data();
 	    mesh_decl_.vertexUvStride = sizeof(float)*2;
-	    mesh_decl_.indexCount = triangles_.size();
+	    mesh_decl_.indexCount = uint32_t(triangles_.size());
 	    mesh_decl_.indexData = triangles_.data();
 	    mesh_decl_.indexOffset = 0;
 	    mesh_decl_.indexFormat = xatlas::IndexFormat::UInt32;
 
-	    uv_mesh_decl_.vertexCount = cur_xatlas_vertex;
+	    uv_mesh_decl_.vertexCount = uint32_t(cur_xatlas_vertex);
 	    uv_mesh_decl_.vertexStride = sizeof(float)*2;
 	    uv_mesh_decl_.vertexUvData = uv_.data();
-	    uv_mesh_decl_.indexCount = triangles_.size();
+	    uv_mesh_decl_.indexCount = uint32_t(triangles_.size());
 	    uv_mesh_decl_.indexData = triangles_.data();
 	    uv_mesh_decl_.indexOffset = 0;
 	    uv_mesh_decl_.indexFormat = xatlas::IndexFormat::UInt32;
@@ -547,7 +547,8 @@ namespace GEO {
 			continue;
 		    }
 		    
-		    index_t c2 = chart_->mesh.facets.next_corner_around_facet(f,c1);
+		    index_t c2 =
+			chart_->mesh.facets.next_corner_around_facet(f,c1);
 		    vec2 p1(tex_coord[2*c1], tex_coord[2*c1+1]);
 		    vec2 p2(tex_coord[2*c2], tex_coord[2*c2+1]);
 
@@ -559,8 +560,8 @@ namespace GEO {
 			std::swap(p1,p2);
 		    }
 
-		    p1.x -= margin_width_in_pixels * step;
-		    p2.x += margin_width_in_pixels * step;
+		    p1.x -= double(margin_width_in_pixels) * step;
+		    p2.x += double(margin_width_in_pixels) * step;
 		    
 		    double a = (p2.y - p1.y) / (p2.x - p1.x);
 		    for(double x = p1.x; x<p2.x; x+=step) {
@@ -818,8 +819,8 @@ namespace GEO {
                 area += data_[numrect].area();
             }
             double margin = 
-                (::sqrt(area) / image_size_in_pixels_) * 
-                margin_width_in_pixels_;
+                (::sqrt(area) / double(image_size_in_pixels_)) * 
+                double(margin_width_in_pixels_);
             add_margin(margin); 
 
             // find a first solution

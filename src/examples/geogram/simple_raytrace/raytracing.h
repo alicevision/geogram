@@ -97,41 +97,6 @@ namespace GEO {
 	);
     }
 
-    /**
-     * \brief A Ray of the raytracer.
-     * \details A Ray knows its origin and direction. 
-     *  In addition it has a level, keeping track of the
-     *  number of bounces.
-     */
-    struct Ray {
-	/**
-	 * \brief Ray default constructor.
-	 */
-	Ray() : level(0) {}
-
-
-	/**
-	 * \brief Ray constructor.
-	 * \param[in] origin_in the origin of the ray
-	 * \param[in] direction_in the direction of the ray,
-	 *  does not need to be normalized. For light rays it
-	 *  connects the point to the light source.
-	 * \param[in] level_in 0 for primary rays, else number of
-	 *  bounces.
-	 */
-	Ray(
-	    const vec3& origin_in,
-	    const vec3& direction_in,
-	    index_t level_in = 0
-	) : origin(origin_in),
-	    direction(direction_in),
-	    level(level_in) {
-	}
-	vec3 origin;
-	vec3 direction;
-	index_t level;
-    };
-
     /*******************************************************************/
 
     /**
@@ -935,19 +900,18 @@ namespace GEO {
 	 * \param[in] R the ray to be launched.
 	 * \return the computed color.
 	 */
-	vec3 raytrace(const Ray& R) const {
+	vec3 raytrace(const Ray& R, index_t level=0) const {
 	    Intersection I;
 	    get_nearest_intersection(R,I);
 	    if(I.object != nullptr) {
 		compute_lighting(I);
-		if(I.material.reflective() && R.level < 3) {
+		if(I.material.reflective() && level < 3) {
 		    vec3 D = R.direction;
 		    Ray Reflected(
 			I.position,
-			D - 2.0*dot(D, I.normal)*I.normal,
-			R.level + 1
+			D - 2.0*dot(D, I.normal)*I.normal
 		    );
-		    vec3 Kreflect = raytrace(Reflected);
+		    vec3 Kreflect = raytrace(Reflected,level+1);
 		    I.K += mul(I.material.Kr, Kreflect);
 		}
 	    }

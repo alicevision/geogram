@@ -63,8 +63,8 @@ namespace GEO {
     class GEOGRAM_API KdTree : public NearestNeighborSearch {
     public:
         /**
-         * \brief Creates a new BalancedKdTree.
-         * \param[in] dim dimension of the points
+         * \brief KdTree constructor.
+         * \param[in] dim dimension of the points.
          */
 	KdTree(coord_index_t dim);
 

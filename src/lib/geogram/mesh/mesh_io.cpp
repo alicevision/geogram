@@ -256,7 +256,8 @@ namespace GEO {
                             // In .obj files, 
                             // negative vertex index means
                             // nb_vertices - vertex index
-                            int s_vertex_index = in.field_as_int(i);
+			    GEO::signed_index_t
+				s_vertex_index = in.field_as_int(i);
                             index_t vertex_index = 0;
                             if(s_vertex_index < 0) {
                                 vertex_index = index_t(
@@ -2456,7 +2457,7 @@ namespace GEO {
             out.write_opaque_data(header, 80);
             Numeric::uint32 nb_triangles = 0;
             for(index_t f = 0; f < M.facets.nb(); ++f) {
-                nb_triangles += (M.facets.nb_vertices(f) - 2);
+                nb_triangles += Numeric::uint32((M.facets.nb_vertices(f) - 2));
             }
             out << nb_triangles;
             for(index_t f = 0; f < M.facets.nb(); ++f) {

@@ -499,22 +499,27 @@ int main(int argc, char** argv) {
             RestrictedVoronoiDiagram_var RVD = RestrictedVoronoiDiagram::create(
                 delaunay, &M_in
             );
-            delaunay->set_vertices(
-                points_in.vertices.nb(), points_in.vertices.point_ptr(0)
-            );
+	    {
+		Stopwatch W("Delaunay");
+		delaunay->set_vertices(
+		    points_in.vertices.nb(), points_in.vertices.point_ptr(0)
+		);
+	    }
 
             RVD->set_volumetric(volumetric);
 	    
             if(CmdLine::get_arg_bool("RVD")) {
                 Logger::div("Restricted Voronoi Diagram");
-
-		if(CmdLine::get_arg_bool("RVD_cells")) {
-		    compute_RVD_cells(RVD, M_out);
-		} else {
-		    RVD->compute_RVD(M_out, 0, cell_borders, integ_smplx);
-		    if(integ_smplx && volumetric) {
-			M_out.cells.connect();
-			M_out.cells.compute_borders();
+		{
+		    Stopwatch W("RVD");
+		    if(CmdLine::get_arg_bool("RVD_cells")) {
+			compute_RVD_cells(RVD, M_out);
+		    } else {
+			RVD->compute_RVD(M_out, 0, cell_borders, integ_smplx);
+			if(integ_smplx && volumetric) {
+			    M_out.cells.connect();
+			    M_out.cells.compute_borders();
+			}
 		    }
 		}
                 Logger::div("Result");

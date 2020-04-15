@@ -268,9 +268,14 @@ typedef unsigned short  NLushort;
 typedef unsigned int    NLuint;  
 
 /**
+ * \brief A 8-bytes signed integer.
+ */
+typedef long            NLlong;   
+    
+/**
  * \brief A 8-bytes unsigned integer.
  */
-typedef unsigned long   NLulong; 
+typedef unsigned long   NLulong;   
 
 /**
  * \brief Size of an object, 4-bytes signed integer.
@@ -844,6 +849,14 @@ typedef void* NLContext;
  */
     NLAPI void NLAPIENTRY nlGetIntegerv(NLenum pname, NLint* params);
 
+/**
+ * \brief Gets the value of a 64 bits integer parameter
+ * \param[in] pname the symbolic name of the parameter
+ * \param[out] params a pointer to the obtained parameter value
+ */
+    NLAPI void NLAPIENTRY nlGetIntegervL(NLenum pname, NLlong* params);
+
+    
 /**
  * \brief Sets a boolean parameter to NL_TRUE
  * \param[in] pname the symbolic name of the parameter
@@ -1444,5 +1457,8 @@ NLAPI void NLAPIENTRY nlMatrixMode(NLenum matrix);
 #endif
 
 #include "nl_ext.h"
+#include "nl_64.h"
 
+/*************************************************************************/
+    
 #endif

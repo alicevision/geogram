@@ -603,8 +603,8 @@ namespace GEO {
 	    const double solver_scale = 1e3;
 	    
 	    nlBegin(NL_SYSTEM);
-	    nlLockVariable(0);
-	    nlSetVariable(0,locked_value);
+	    nlLockVariable(0u);
+	    nlSetVariable(0u,locked_value);
 	    nlBegin(NL_MATRIX);
 	    for(index_t f: mesh->facets) {
 

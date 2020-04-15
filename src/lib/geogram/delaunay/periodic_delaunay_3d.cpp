@@ -82,21 +82,21 @@ namespace {
      * \details The function is thread-safe, and uses one seed
      *  per thread.
      */
-    index_t thread_safe_random_(index_t choices_in) {
-        signed_index_t choices = signed_index_t(choices_in);
+    GEO::index_t thread_safe_random_(GEO::index_t choices_in) {
+	GEO::signed_index_t choices = signed_index_t(choices_in);
         static thread_local long int randomseed = 1l ;
         if (choices >= 714025l) {
             long int newrandom = (randomseed * 1366l + 150889l) % 714025l;
             randomseed = (newrandom * 1366l + 150889l) % 714025l;
             newrandom = newrandom * (choices / 714025l) + randomseed;
             if (newrandom >= choices) {
-                return index_t(newrandom - choices);
+                return GEO::index_t(newrandom - choices);
             } else {
-                return index_t(newrandom);
+                return GEO::index_t(newrandom);
             }
         } else {
             randomseed = (randomseed * 1366l + 150889l) % 714025l;
-            return index_t(randomseed % choices);
+            return GEO::index_t(randomseed % choices);
         }
     }
 
@@ -106,10 +106,10 @@ namespace {
      * \details The function is thread-safe, and uses one seed
      *  per thread.
      */
-    index_t thread_safe_random_4_() {
+    GEO::index_t thread_safe_random_4_() {
         static thread_local long int randomseed = 1l ;
         randomseed = (randomseed * 1366l + 150889l) % 714025l;
-        return index_t(randomseed % 4);
+        return GEO::index_t(randomseed % 4);
     }
 
     /**
@@ -118,22 +118,19 @@ namespace {
      * \return the number of ones in the binary representation
      *  of the integer.
      */
-    inline index_t pop_count(index_t x) {
-	static_assert(
-	    sizeof(index_t) == 4, "Only supported with 32 bit indices"
-	);
+    inline VBW::index_t pop_count(Numeric::uint32 x) {
 #if defined(GEO_COMPILER_GCC_FAMILY)
-	return index_t(__builtin_popcount(x));
+	return GEO::index_t(Numeric::uint32(__builtin_popcount(x)));
 #elif defined(GEO_COMPILER_MSVC)
-	return index_t(__popcnt(x));
+	return GEO::index_t(__popcnt(x));
 #else
 	int result = 0;
 	for(int b=0; b<32; ++b) {
 	    result += ((x & 1) != 0);
 	    x >>= 1;
 	}
-	return index_t(result);
-#endif	
+	return GEO::index_t(result);
+#endif
     }
 }
 
@@ -1257,12 +1254,57 @@ namespace GEO {
 
 	    // Periodic mode.
 	    // Note: in periodic mode, SOS mode is lexicographic.	    
-	    double V[5][4];	    
-	    get_lifted_vertex(i,V[0]);
-	    get_lifted_vertex(j,V[1]);
-	    get_lifted_vertex(k,V[2]);
-	    get_lifted_vertex(l,V[3]);
-	    get_lifted_vertex(m,V[4]);
+	    double V[5][4];
+
+	    /*
+	      The code below is an inlined version of:
+	      (gains a little bit)
+	      get_lifted_vertex(i,V[0]);
+	      get_lifted_vertex(j,V[1]);
+	      get_lifted_vertex(k,V[2]);
+	      get_lifted_vertex(l,V[3]);
+	      get_lifted_vertex(m,V[4]);
+	    */
+	    
+	    index_t ii = periodic_vertex_instance(i);
+	    index_t ij = periodic_vertex_instance(j);
+	    index_t ik = periodic_vertex_instance(k);
+	    index_t il = periodic_vertex_instance(l);	    
+	    index_t im = periodic_vertex_instance(m);
+	    
+	    i = periodic_vertex_real(i);
+	    j = periodic_vertex_real(j);
+	    k = periodic_vertex_real(k);
+	    l = periodic_vertex_real(l);
+	    m = periodic_vertex_real(m);
+	    
+	    V[0][0] = vertices_[3*i  ] + double(translation[ii][0]) * period_;
+	    V[0][1] = vertices_[3*i+1] + double(translation[ii][1]) * period_;
+	    V[0][2] = vertices_[3*i+2] + double(translation[ii][2]) * period_;
+	    V[1][0] = vertices_[3*j  ] + double(translation[ij][0]) * period_;
+	    V[1][1] = vertices_[3*j+1] + double(translation[ij][1]) * period_;
+	    V[1][2] = vertices_[3*j+2] + double(translation[ij][2]) * period_;
+	    V[2][0] = vertices_[3*k  ] + double(translation[ik][0]) * period_;
+	    V[2][1] = vertices_[3*k+1] + double(translation[ik][1]) * period_;
+	    V[2][2] = vertices_[3*k+2] + double(translation[ik][2]) * period_;
+	    V[3][0] = vertices_[3*l  ] + double(translation[il][0]) * period_;
+	    V[3][1] = vertices_[3*l+1] + double(translation[il][1]) * period_;
+	    V[3][2] = vertices_[3*l+2] + double(translation[il][2]) * period_;
+	    V[4][0] = vertices_[3*m  ] + double(translation[im][0]) * period_;
+	    V[4][1] = vertices_[3*m+1] + double(translation[im][1]) * period_;
+	    V[4][2] = vertices_[3*m+2] + double(translation[im][2]) * period_;
+
+	    // Beware the parentheses, they are necessary to ensure that computations
+	    //               |                               give always the same result.
+	    //               |________________________________________________________________________
+	    //                                  |                                                     |
+	    //                                  v                                                     v 
+	    V[0][3] = -non_periodic_weight(i) + (geo_sqr(V[0][0]) + geo_sqr(V[0][1]) + geo_sqr(V[0][2]));
+	    V[1][3] = -non_periodic_weight(j) + (geo_sqr(V[1][0]) + geo_sqr(V[1][1]) + geo_sqr(V[1][2]));
+	    V[2][3] = -non_periodic_weight(k) + (geo_sqr(V[2][0]) + geo_sqr(V[2][1]) + geo_sqr(V[2][2]));
+	    V[3][3] = -non_periodic_weight(l) + (geo_sqr(V[3][0]) + geo_sqr(V[3][1]) + geo_sqr(V[3][2]));	    
+	    V[4][3] = -non_periodic_weight(m) + (geo_sqr(V[4][0]) + geo_sqr(V[4][1]) + geo_sqr(V[4][2]));	    
+
 	    return PCK::orient_3dlifted_SOS(
 		V[0],    V[1],    V[2],    V[3],    V[4],
 		V[0][3], V[1][3], V[2][3], V[3][3], V[4][3]
@@ -3846,7 +3888,7 @@ namespace GEO {
 		int VXLAT[3][3];
 		bool vertex_on_boundary = false;
 		for(index_t lv=0; lv<3; ++lv) {
-		    index_t pp = C.triangle_v_local_index(t,lv);
+		    index_t pp = C.triangle_v_local_index(t,VBW::index_t(lv));
 		    if(pp < cube_offset) {
 			// Not a boundary face -> translation is zero.
 			VXLAT[lv][0] = 0;
@@ -4023,7 +4065,7 @@ namespace GEO {
 	    // vertex_instances_ is used to implement v2t_ for virtual
 	    // vertices, we cannot modify it here, so we create a copy
 	    // that we will modify.
-	    vector<index_t> vertex_instances = vertex_instances_;
+	    vector<Numeric::uint32> vertex_instances = vertex_instances_;
 	    for(index_t v=0; v<nb_vertices_non_periodic_; ++v) {
 		
 		for(index_t instance=1; instance<27; ++instance) {
@@ -4100,7 +4142,9 @@ namespace GEO {
 	    ) {
 		for(index_t lv=0; lv<3; ++lv) {
 		    // Make sure there is no vertex at infinity
-		    geo_debug_assert(C.triangle_v_local_index(t,lv) != 0);
+		    geo_debug_assert(
+			C.triangle_v_local_index(t,VBW::index_t(lv)) != 0
+		    );
 		}
 	    }
 #endif	    

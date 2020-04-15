@@ -111,6 +111,14 @@ namespace GEO {
         }
 
         /**
+	 * \brief Gets the number of references that point to this object.
+	 * \return the number of references.
+	 */
+        int nb_refs() const {
+	    return nb_refs_;
+	}
+    
+        /**
          * \brief Increments the reference count
          * \details This calls ref() on object \p counted if it is not null.
          * \param[in] counted reference object to reference.

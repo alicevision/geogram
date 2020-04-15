@@ -309,21 +309,21 @@ namespace GEO {
     };
 
     /**
-     * \brief lua_to specialization for index_t.
+     * \brief lua_to specialization for Numeric::uint32.
      */
-    template<> class lua_to<index_t> {
+    template<> class lua_to<Numeric::uint32> {
       public:
 	lua_to(lua_State* L, int idx) {
-	    x_ = index_t(lua_tointeger(L,idx));
+	    x_ = Numeric::uint32(lua_tointeger(L,idx));
 	}
 	static bool can_convert(lua_State* L, int idx) {
 	    return lua_check_type(L, idx, my_lua_ispositiveinteger);
 	}
-	operator index_t() const {
+	operator Numeric::uint32() const {
 	    return x_;
 	}
       private:
-	index_t x_;
+	Numeric::uint32 x_;
     };
 
     /**
@@ -344,6 +344,7 @@ namespace GEO {
 	Numeric::uint64 x_;
     };
 
+    
     /**
      * \brief lua_to specialization for Numeric::int64.
      */
@@ -494,10 +495,11 @@ namespace GEO {
 	lua_pushinteger(L,lua_Integer(x));
     }
 
+
     /**
-     * \brief Specialization of lua_push() for index_t.
+     * \brief Specialization of lua_push() for Numeric::uint32.
      */
-    template<> inline void lua_push(lua_State* L, index_t x) {
+    template<> inline void lua_push(lua_State* L, Numeric::uint32 x) {
 	lua_pushinteger(L,lua_Integer(x));
     }
 
@@ -507,7 +509,7 @@ namespace GEO {
     template<> inline void lua_push(lua_State* L, Numeric::uint64 x) {
 	lua_pushinteger(L,lua_Integer(x));
     }
-
+    
     /**
      * \brief Specialization of lua_push() for Numeric::int64.
      */

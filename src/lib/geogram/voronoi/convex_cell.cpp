@@ -258,10 +258,10 @@ namespace VBW {
 
     void ConvexCell::init_with_tet(
 	vec4 P0, vec4 P1, vec4 P2, vec4 P3,
-	index_t P0_global_index,
-	index_t P1_global_index,
-	index_t P2_global_index,
-	index_t P3_global_index	    
+	global_index_t P0_global_index,
+	global_index_t P1_global_index,
+	global_index_t P2_global_index,
+	global_index_t P3_global_index	    
     ) {
 	geo_debug_assert(has_vglobal_);
 	init_with_tet(P0, P1, P2, P3);
@@ -287,7 +287,8 @@ namespace VBW {
     
     
     index_t ConvexCell::save(
-	std::ostream& out, index_t v_offset, double shrink, bool borders_only
+	std::ostream& out, global_index_t v_offset,
+	double shrink, bool borders_only
     ) const {
 
 	vec3 g = make_vec3(0.0, 0.0, 0.0);
@@ -379,7 +380,7 @@ namespace VBW {
 	GEO::Attribute<GEO::index_t>* facet_attr
     ) const {
 
-	index_t v_offset = mesh->vertices.nb();
+	global_index_t v_offset = mesh->vertices.nb();
 	
 	vec3 g = make_vec3(0.0, 0.0, 0.0);
 	if(shrink != 0.0) {
@@ -424,7 +425,7 @@ namespace VBW {
 	    ) {
 		continue;
 	    }
-	    std::vector<index_t> facet_vertices;
+	    std::vector<global_index_t> facet_vertices;
 	    if(v2t[v] != index_t(-1)) {
 		index_t t = v2t[v];
 		do {
@@ -436,7 +437,7 @@ namespace VBW {
 	    if(facet_vertices.size() < 3) {
 		continue;
 	    }
-	    index_t f = mesh->facets.create_polygon(
+	    global_index_t f = mesh->facets.create_polygon(
 		GEO::index_t(facet_vertices.size())
 	    );
 	    for(index_t i=0; i<facet_vertices.size(); ++i) {
@@ -530,7 +531,7 @@ namespace VBW {
     //    - not sure about the impact on performance
     //    - the function is short, not a big drama to duplicate it...
     void ConvexCell::clip_by_plane(
-	vec4 eqn, index_t global_index,
+	vec4 eqn, global_index_t global_index,
 	std::function<bool(ushort,ushort)> triangle_conflict_predicate
     ) {
 	geometry_dirty_ = true;

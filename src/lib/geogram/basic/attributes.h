@@ -1251,7 +1251,7 @@ namespace GEO {
          * \param [in] i index of the element
          * \return a modifiable reference to the \p i%th element
          */
-        T& operator[](unsigned int i) {
+        T& operator[](index_t i) {
             geo_debug_assert(i < superclass::nb_elements());
             return ((T*)(void*)superclass::base_addr_)[i];
         }
@@ -1261,7 +1261,7 @@ namespace GEO {
          * \param [in] i index of the element
          * \return a const reference to the \p i%th element
          */
-        const T& operator[](unsigned int i) const {
+        const T& operator[](index_t i) const {
             geo_debug_assert(i < superclass::nb_elements());
             return ((const T*)(void*)superclass::base_addr_)[i];
         }
@@ -1482,7 +1482,7 @@ namespace GEO {
          * \param [in] i index of the element
          * \return a modifiable reference to the \p i%th element
          */
-        Numeric::uint8& element(unsigned int i) {
+        Numeric::uint8& element(index_t i) {
             geo_debug_assert(i < superclass::nb_elements());
             return ((Numeric::uint8*)superclass::base_addr_)[i];
         }
@@ -1492,7 +1492,7 @@ namespace GEO {
          * \param [in] i index of the element
          * \return a const reference to the \p i%th element
          */
-        const Numeric::uint8& element(unsigned int i) const {
+        const Numeric::uint8& element(index_t i) const {
             geo_debug_assert(i < superclass::nb_elements());
             return ((const Numeric::uint8*)superclass::base_addr_)[i];
         }

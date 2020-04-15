@@ -410,7 +410,8 @@ NLMatrix nlMatrixFactorize_CHOLMOD(
     NLCholmodFactorizedMatrix* LLt = NULL;
     NLCRSMatrix* CRS = NULL;
     cholmod_sparse_ptr cM= NULL;
-    NLuint nnz, cur, i, j, jj;
+    NLuint nnz, cur, i, j;
+    NLuint_big jj;
     int* rowptr = NULL;
     int* colind = NULL;
     double* val = NULL;

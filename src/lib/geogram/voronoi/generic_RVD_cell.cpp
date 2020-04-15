@@ -91,9 +91,9 @@ namespace GEOGen {
                 //   three bisectors [pi b0], [pi b1] and [pi b2]
                 // (and a tet [q0 q1 q2 q3])
 
-                unsigned int b0 = q.sym().bisector(0);
-                unsigned int b1 = q.sym().bisector(1);
-                unsigned int b2 = q.sym().bisector(2);
+                index_t b0 = q.sym().bisector(0);
+                index_t b1 = q.sym().bisector(1);
+                index_t b2 = q.sym().bisector(2);
 
                 if(dim == 3) {
                     // 3d is a special case for side4()
@@ -130,9 +130,9 @@ namespace GEOGen {
                 //   a facet (f0,f1,f2) of the surface and two
                 //   bisectors [pi b0] and [pi b1].
 
-                unsigned int b0 = q.sym().bisector(0);
-                unsigned int b1 = q.sym().bisector(1);
-                unsigned int f = q.sym().boundary_facet(0);
+                index_t b0 = q.sym().bisector(0);
+                index_t b1 = q.sym().bisector(1);
+                index_t f = q.sym().boundary_facet(0);
 
                 if(symbolic_is_surface) {
                     index_t c = mesh->facets.corners_begin(f);
@@ -202,7 +202,7 @@ namespace GEOGen {
                 // The point q is the intersection between
                 //   three facets of the surface
                 //   (i.e. a vertex v0 of the surface).
-                unsigned int v0 = q.sym().get_boundary_vertex();
+                index_t v0 = q.sym().get_boundary_vertex();
                 return GEO::PCK::side1_SOS(
                     pi, pj, mesh->vertices.point_ptr(v0), dim
                 );

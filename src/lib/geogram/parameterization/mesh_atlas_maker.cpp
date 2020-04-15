@@ -227,7 +227,9 @@ namespace {
         */
 	
 	bool precheck_chart(Chart& chart) {
-	    // TODO: topological tests
+#ifdef GEO_OS_ANDROID
+	    return (chart.facets.size() < 3000);
+#endif	    
 	    geo_argused(chart);
 	    return true;
 	}

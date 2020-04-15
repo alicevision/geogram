@@ -3,7 +3,8 @@
 
 HEADERS="nl_linkage.h \
 nl.h \
-nl_ext.h"
+nl_ext.h \
+nl_64.h"
 
 SOURCES="nl_private.h \
 nl_blas.h \

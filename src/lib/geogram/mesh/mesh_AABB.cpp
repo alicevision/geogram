@@ -50,14 +50,6 @@
 #include <geogram/numerics/predicates.h>
 #include <geogram/basic/geometry_nd.h>
 
-#ifdef __SSE2__ 
-#include <emmintrin.h>
-#endif
-
-#ifdef __AVX2__
-#include <immintrin.h>
-#endif
-
 namespace {
 
     using namespace GEO;
@@ -208,149 +200,99 @@ namespace {
 
 
     /**
-     * \brief Tests whether a segment intersects a triangle.
-     * \param[in] q1 , q2 the two extremities of the segment.
-     * \param[in] p1 , p2 , p3 the three vertices of the triangle.
-     * \retval true if [q1,q2] has an intersection with (p1, p2, p3).
-     * \retval false otherwise.
+     * \brief Computes the intersection between a ray and a triangle.
+     * \param[in] O origin of the ray.
+     * \param[in] D direction vector of the ray.
+     * \param[in] A , B , C the three vertices of the triangle.
+     * \param[out] t the intersection point is O + t D when it exists.
+     * \param[out] u , v the intersection point is A + u (B-A) + v (C-A).
+     *   when it exists.
+     * \param[out] N the normal to the triangle.
+     * \retval true if there is an intersection point
+     * \retval false otherwise
      */
-    bool segment_triangle_intersection(
-	const vec3& q1, const vec3& q2,
-	const vec3& p1, const vec3& p2, const vec3& p3
+    bool ray_triangle_intersection(
+	const vec3& O, const vec3& D,
+	const vec3& A, const vec3& B, const vec3& C,
+	double& t, double& u, double& v, vec3& N
     ) {
-
-	//   If the segment does not straddle the supporting plane of the
-	// triangle, then there is no intersection.
-	vec3 N = cross(p2-p1, p3-p1);
-	if(dot(q1-p1,N)*dot(q2-p1,N) > 0.0) {
-	    return false;
-	}
-
-	//  The three tetrahedra formed by the segment and the three edges
-	// of the triangle should have the same sign, else there is no
-	// intersection.
-	int s1 = geo_sgn(Geom::tetra_signed_volume(q1,q2,p1,p2));
-	int s2 = geo_sgn(Geom::tetra_signed_volume(q1,q2,p2,p3));
-	if(s1 != s2) {
-	    return false;
-	}
-	int s3 = geo_sgn(Geom::tetra_signed_volume(q1,q2,p3,p1));
-	return (s2 == s3);
+	// M\"oller and Trumbore,
+	// Fast, Minimum Storage Ray-Triangle Intersection,
+	// Journal of Graphics Tools, vol. 2,‎ 1997, p. 21–28 
+	// (with small adaptations: branchless, and reusing the normal vector)
+	// 
+	// Let E1 = B-A; E2 = C-A, write ray eqn (1) and triangle eqn (2), then
+	//  write equality between (1) and (2) at intersection point (3):
+	// 
+	// (1) O + tD = A + uE1 + vE2 
+	// (2) uE1 + vE2 -tD = O-A
+	// 
+	//                [u]
+	// (3) [E1|E2|-D] [v] = O-A
+	//                [t]
+	// 
+	//  (where [E1|E2|-D] is the 3x3 matrix with E1,E2,-D as its columns)
+	//
+	//  Using Cramer's formula for the solution of:
+	//
+	//    [a11 a12 a13][x1]   [b1]
+	//    [a12 a22 a23][x2] = [b2]
+	//    [a31 a32 a33][x3]   [b3]
+	//
+	//  gives: 
+	// 
+	//        |b1 a12 a13|   |a11 a12 a13|
+	//   x1 = |b2 a22 a23| / |a21 a22 a23|
+	//        |b3 a32 a33|   |a31 a32 a33|
+	//
+	//        |a11 b1 a13|   |a11 a12 a13|
+	//   x2 = |a21 b2 a23| / |a21 a22 a23|
+	//        |a31 b3 a33|   |a31 a32 a33|
+	//
+	//        |a11 a12 b1|   |a11 a12 a13|
+	//   x3 = |a21 a22 b2| / |a21 a22 a23|
+	//        |a31 a32 b3|   |a31 a32 a33|
+	// 
+	// Now we get:
+	//
+	//   u = (O-A,E2,-D) / (E1,E2,-D)
+	//   v = (E1,O-A,-D) / (E1,E2,-D)
+	//   t = (E1,E2,O-A) / (E1,E2,-D)
+	// 
+	// where (A,B,C) denotes the determinant of the 3x3 matrix
+	//  with A,B,C as its column vectors.
+	// 
+	// Now we use the following identities:
+	//   (A,B,C) = dot(A,cross(B,C))  (develop the det w.r.t. first column)
+	//   (B,A,C) = -(A,B,C)           (swapping two cols changes sign)
+	//   (B,C,A) =  (A,B,C)           (circular perm does not change sign)
+	// 
+	// Now we get:
+	//
+	// u = -(E2,O-A,D)  / (D,E1,E2)
+	// v =  (E1,O-A,D)  / (D,E1,E2)
+	// t = -(O-A,E1,E2) / (D,E1,E2)  
+	//
+	// Using N=cross(E1,E2); AO = O-A; DAO = cross(D,AO)
+	vec3 E1(B-A);
+	vec3 E2(C-A);
+	N = cross(E1,E2);
+	double det = -dot(D,N);
+	double invdet = 1.0/det;
+	vec3 AO = O - A;
+	vec3 DAO = cross(AO,D);
+	u =  dot(E2,DAO) * invdet;
+	v = -dot(E1,DAO) * invdet;
+	t =  dot(AO,N)   * invdet;
+	return (
+	    (fabs(det) >= 1e-20) &&
+	    (t >= 0.0) &&
+	    (u >= 0.0) &&
+	    (v >= 0.0) &&
+	    ((u+v) <= 1.0)
+	);
     }
-
-    /**
-     * \brief Tests whether a segment intersects a triangle and has
-     *   an intersection nearer than the intersection computed so far.
-     * \param[in] q1 , q2 the two extremities of the segment.
-     * \param[in] p1 , p2 , p3 the three vertices of the triangle.
-     * \param[in,out] nearest_t coordinate along [q1,q2] of the nearest
-     *  intersection computed so far.
-     * \retval true if [q1,q2] has an intersection with (p1, p2, p3) that
-     *  is nearer than the intersection computed so far.
-     * \retval false otherwise.
-     */
-    bool segment_triangle_nearest_intersection(
-	const vec3& q1, const vec3& q2,
-	const vec3& p1, const vec3& p2, const vec3& p3,
-	double& nearest_t
-    ) {
-	if(!segment_triangle_intersection(q1,q2,p1,p2,p3)) {
-	    return false;
-	}
-
-
-	// TODO: there is probably simpler/faster
-	// for instance:
-	// | p1 p2 p3 (tq2 + (1-t)q1) |
-	// | 1  1  1  1               | = 0
-
-
-	// Normal vector of the triangle
-	
-	vec3 N = cross(p2-p1,p3-p1);
-
-	// Plane equation: dot(N,p) = dot(N,p1)
-	// dot(q1 + t(q2-q1),N) = dot(p1, N)
-	// dot(q1,N) + t dot(q2-q1,N) = dot(p1,N)
-	// t = (dot(p1,N) - dot(q1,N)) / (dot(q2,N) - dot(q1,N))
-
-	double denom = dot(q2,N) - dot(q1,N);
-	if(::fabs(denom) < 1e-20) {
-	    return false;
-	}
-
-	double t = (dot(p1,N) - dot(q1,N)) / denom;
-	      
-	
-	if(t < 0.0 || t > 1.0 || t > nearest_t) {
-	    return false;
-	}
-	nearest_t = t;
-	return true;
-    }
-
     
-    /**
-     * \brief Tests whether there is an intersection between a segment
-     *  and a mesh facet.
-     * \param[in] q1 , q2 the extremities of the segment
-     * \param[in] M the mesh
-     * \param[in] f the facet
-     */
-    bool segment_mesh_facet_intersection(
-	const vec3& q1, const vec3& q2,
-        const Mesh& M,
-        index_t f
-    ) {
-        index_t c = M.facets.corners_begin(f);
-        const vec3& p1 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-	++c;
-	while(c+1 != M.facets.corners_end(f)) {
-	    const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-	    const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c+1));
-	    if(segment_triangle_intersection(q1, q2, p1, p2, p3)) {
-		return true;
-	    }
-	    ++c;
-	}
-	return false;
-    }
-
-    /**
-     * \brief Tests whether there is an intersection between a segment
-     *  and a mesh facet.
-     * \param[in] q1 , q2 the extremities of the segment
-     * \param[in] M the mesh
-     * \param[in] f the facet
-     * \param[in,out] nearest_t coordinate along [q1,q2] of the
-     *  nearest intersection so far
-     * \param[in,out] nearest_f index of the nearest intersected
-     *  facet so far
-     */
-    bool segment_mesh_facet_nearest_intersection(
-	const vec3& q1, const vec3& q2,
-        const Mesh& M, index_t f,
-	double& nearest_t, index_t& nearest_f
-    ) {
-        index_t c = M.facets.corners_begin(f);
-        const vec3& p1 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-	++c;
-	while(c+1 != M.facets.corners_end(f)) {
-	    const vec3& p2 = Geom::mesh_vertex(M, M.facet_corners.vertex(c));
-	    const vec3& p3 = Geom::mesh_vertex(M, M.facet_corners.vertex(c+1));
-	    if(
-		segment_triangle_nearest_intersection(
-		    q1, q2, p1, p2, p3, nearest_t
-		)
-	    ) {
-		nearest_f = f;
-		return true;
-	    }
-	    ++c;
-	}
-	return false;
-    }
-
     inline double max3(double x1, double x2, double x3) {
 	return std::max(x1,std::max(x2,x3));
     }
@@ -371,11 +313,13 @@ namespace {
      * \param[in] dirinv precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
      *   where q2 denotes the second extremity of the segment.
      * \param[in] box the box.
+     * \param[in] T the maximum acceptable value for the intersection parameter.
+     *    Can be used to early-prune boxes while traversing the tree.
      * \retval true if [q1,q2] intersects the box.
      * \retval false otherwise.
      */
-    bool segment_box_intersection(
-	const vec3& q1, const vec3& dirinv, const Box& box
+    bool ray_box_intersection(
+	const vec3& q1, const vec3& dirinv, const Box& box, double T = 1.0
     ) {
         // This version: slab method.
 	// Step 1: compute
@@ -422,7 +366,7 @@ namespace {
 	// thin (for instance, the bbox of a triangle orthogonal to one
 	// of the axes).
 	
-	return (tmax >= 0.0) && (tmin <= tmax) && (tmin <= 1.0);
+	return (tmax >= 0.0) && (tmin <= tmax) && (tmin <= T);
     }
 
 
@@ -574,76 +518,141 @@ namespace GEO {
         }
     }
 
-
-    bool MeshFacetsAABB::segment_intersection(
-	const vec3& q1, const vec3& q2
+    bool MeshFacetsAABB::ray_intersection(
+	const Ray& R, double tmax, index_t ignore_f
     ) const {
 	vec3 dirinv(
-	    1.0/(q2.x-q1.x),
-	    1.0/(q2.y-q1.y),
-	    1.0/(q2.z-q1.z)
+	    1.0/R.direction.x,
+	    1.0/R.direction.y,
+	    1.0/R.direction.z
 	);
-	return segment_intersection_recursive(
-	    q1, q2, dirinv, 1, 0, mesh_->facets.nb()
+	return ray_intersection_recursive(
+	    R, dirinv, tmax, ignore_f, 1, 0, mesh_->facets.nb()
 	);
     }
 
-    bool MeshFacetsAABB::segment_intersection_recursive(
-	const vec3& q1, const vec3& q2,
-	const vec3& dirinv, index_t n, index_t b, index_t e
+    bool MeshFacetsAABB::ray_nearest_intersection(
+	const Ray& R, Intersection& I
     ) const {
-	if(!segment_box_intersection(q1, dirinv, bboxes_[n])) {
+	index_t f = I.f;
+	vec3 dirinv(
+	    1.0/R.direction.x,
+	    1.0/R.direction.y,
+	    1.0/R.direction.z
+	);
+	ray_nearest_intersection_recursive(
+	    R, dirinv, I, f, 1, 0, mesh_->facets.nb(), 0
+	);
+	if(I.f != f) {
+	    I.p = R.origin + I.t * R.direction;
+	    return true;
+	}
+	return false;
+    }
+    bool MeshFacetsAABB::ray_intersection_recursive(
+	const Ray& R, const vec3& dirinv, double tmax, index_t ignore_f,
+	index_t n, index_t b, index_t e
+    ) const {
+	if(!ray_box_intersection(R.origin, dirinv, bboxes_[n], tmax)) { 
 	    return false;
 	}
         if(b + 1 == e) {
-	    return segment_mesh_facet_intersection(q1, q2, *mesh_, b);
+	    index_t f = b;
+	    if(f == ignore_f) {
+		return false;
+	    }
+	    index_t c = mesh_->facets.corners_begin(f);
+	    const vec3& p1 = Geom::mesh_vertex(
+		*mesh_, mesh_->facet_corners.vertex(c)
+	    );
+	    ++c;
+	    while(c+1 != mesh_->facets.corners_end(f)) {
+		const vec3& p2 = Geom::mesh_vertex(
+		    *mesh_, mesh_->facet_corners.vertex(c)
+		);
+		const vec3& p3 = Geom::mesh_vertex(
+		    *mesh_, mesh_->facet_corners.vertex(c+1)
+		);
+		vec3 N;
+		double t,u,v;
+		if(
+		    ray_triangle_intersection(
+			R.origin, R.direction, p1, p2, p3, t, u, v, N
+		    ) && t < tmax
+		) { 
+		    return true;
+		}
+		++c;
+	    }
+	    return false;
 	}
         index_t m = b + (e - b) / 2;
         index_t childl = 2 * n;
         index_t childr = 2 * n + 1;
 	return (
-	    segment_intersection_recursive(q1, q2, dirinv, childl, b, m) ||
-	    segment_intersection_recursive(q1, q2, dirinv, childr, m, e)
+	    ray_intersection_recursive(R,dirinv,tmax,ignore_f, childl,b,m) ||
+	    ray_intersection_recursive(R,dirinv,tmax,ignore_f, childr,m,e)
 	);
     }
 
-    bool MeshFacetsAABB::segment_nearest_intersection(
-	const vec3& q1, const vec3& q2, double& t, index_t& f
+    void MeshFacetsAABB::ray_nearest_intersection_recursive(
+	const Ray& R, const vec3& dirinv, Intersection& I, index_t ignore_f,
+	index_t n, index_t b, index_t e, index_t coord
     ) const {
-	vec3 dirinv(
-	    1.0/(q2.x-q1.x),
-	    1.0/(q2.y-q1.y),
-	    1.0/(q2.z-q1.z)
-	);
-	f = index_t(-1);
-	t = Numeric::max_float64();
-	segment_nearest_intersection_recursive(
-	    q1, q2, dirinv, 1, 0, mesh_->facets.nb(), t, f
-	);
-	return (f != index_t(-1));
-    }
-    
-    void MeshFacetsAABB::segment_nearest_intersection_recursive(
-	const vec3& q1, const vec3& q2,
-	const vec3& dirinv, index_t n, index_t b, index_t e,
-	double& t, index_t& f
-    ) const {
-	if(!segment_box_intersection(q1, dirinv, bboxes_[n])) {
+	if(!ray_box_intersection(R.origin, dirinv, bboxes_[n], I.t)) {
 	    return;
 	}
-        if(b + 1 == e) {
-	    segment_mesh_facet_nearest_intersection(q1, q2, *mesh_, b, t, f);
+	if(b + 1 == e) {
+	    index_t f = b;
+	    if(f == ignore_f) {
+		return;
+	    }
+	    index_t c = mesh_->facets.corners_begin(f);
+	    index_t v1 = mesh_->facet_corners.vertex(c);
+	    const vec3& p1 = Geom::mesh_vertex(*mesh_, v1);
+	    ++c;
+	    while(c+1 != mesh_->facets.corners_end(f)) {
+		index_t v2 = mesh_->facet_corners.vertex(c);
+		index_t v3 = mesh_->facet_corners.vertex(c+1);		
+		const vec3& p2 = Geom::mesh_vertex(*mesh_, v2);
+		const vec3& p3 = Geom::mesh_vertex(*mesh_, v3);
+		vec3 N;
+		double t,u,v;
+		if(ray_triangle_intersection(
+		       R.origin,R.direction,p1,p2,p3,t,u,v,N
+		   ) && t<I.t
+		) {
+		    I.t = t;
+		    I.u = u;
+		    I.v = v;
+		    I.N = N;
+		    I.i = v1;
+		    I.j = v2;
+		    I.k = v3;
+		    I.f = f;
+		}
+		++c;
+	    }
 	    return;
 	}
         index_t m = b + (e - b) / 2;
         index_t childl = 2 * n;
         index_t childr = 2 * n + 1;
-	segment_nearest_intersection_recursive(
-	    q1, q2, dirinv, childl, b, m, t, f
-	);
-	segment_nearest_intersection_recursive(
-	    q1, q2, dirinv, childr, m, e, t, f
-	);
+	if(dirinv[coord] < 0.0) {
+	    ray_nearest_intersection_recursive(
+		R, dirinv, I, ignore_f, childr, m, e, (coord+1)%3
+	    );
+	    ray_nearest_intersection_recursive(
+		R, dirinv, I, ignore_f, childl, b, m, (coord+1)%3
+	    );
+	} else {
+	    ray_nearest_intersection_recursive(
+		R, dirinv, I, ignore_f, childl, b, m, (coord+1)%3
+	    );
+	    ray_nearest_intersection_recursive(
+		R, dirinv, I, ignore_f, childr, m, e, (coord+1)%3
+	    );
+	}
     }
     
     

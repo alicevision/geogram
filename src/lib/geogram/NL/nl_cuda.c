@@ -44,6 +44,7 @@
 
 #include "nl_cuda.h"
 #include "nl_context.h"
+#include <stdint.h>
 
 /**
  * \file nl_cuda.c
@@ -429,6 +430,81 @@ typedef cusparseStatus_t (*FUNPTR_cusparseDcsrmv)(
      const double *beta, double *y
 );
 
+/**********************************************************/
+/* CUSPARSE v10 structures and functions (generic matrix) */
+/**********************************************************/
+
+typedef enum cudaDataType_t {
+    CUDA_R_16F= 2,  CUDA_C_16F= 6,   
+    CUDA_R_32F= 0,  CUDA_C_32F= 4,   
+    CUDA_R_64F= 1,  CUDA_C_64F= 5,  
+    CUDA_R_8I = 3,  CUDA_C_8I = 7,   
+    CUDA_R_8U = 8,  CUDA_C_8U = 9,   
+    CUDA_R_32I= 10, CUDA_C_32I= 11,  
+    CUDA_R_32U= 12, CUDA_C_32U= 13   
+} cudaDataType;
+
+struct cusparseDnVecDescr;
+struct cusparseSpMatDescr;
+typedef struct cusparseDnVecDescr* cusparseDnVecDescr_t;
+typedef struct cusparseSpMatDescr* cusparseSpMatDescr_t;
+
+typedef enum {
+    CUSPARSE_INDEX_16U = 1, 
+    CUSPARSE_INDEX_32I = 2, 
+    CUSPARSE_INDEX_64I = 3  
+} cusparseIndexType_t;
+
+typedef cusparseStatus_t (*FUNPTR_cusparseCreateDnVec)(
+    cusparseDnVecDescr_t* dnVecDescr,
+    int64_t size, void* values, cudaDataType valueType
+);
+
+typedef cusparseStatus_t (*FUNPTR_cusparseDestroyDnVec)(
+    cusparseDnVecDescr_t dnVecDescr
+);
+
+typedef cusparseStatus_t (*FUNPTR_cusparseDnVecSetValues)(
+    cusparseDnVecDescr_t dnVecDescr, void* values
+);
+                        
+typedef cusparseStatus_t (*FUNPTR_cusparseCreateCsr)(
+     cusparseSpMatDescr_t* spMatDescr,
+     int64_t rows, int64_t cols, int64_t nnz,
+     void* csrRowOffsets, void* csrColInd, void* csrValues,
+     cusparseIndexType_t csrRowOffsetsType,
+     cusparseIndexType_t csrColIndType,
+     cusparseIndexBase_t idxBase,
+     cudaDataType valueType
+);
+
+typedef cusparseStatus_t (*FUNPTR_cusparseDestroySpMat)(
+     cusparseSpMatDescr_t spMatDescr
+);
+
+typedef enum {
+    CUSPARSE_MV_ALG_DEFAULT = 0,
+    CUSPARSE_COOMV_ALG      = 1,
+    CUSPARSE_CSRMV_ALG1     = 2,
+    CUSPARSE_CSRMV_ALG2     = 3
+} cusparseSpMVAlg_t;
+
+typedef cusparseStatus_t  (*FUNPTR_cusparseSpMV)(
+   cusparseHandle_t handle, cusparseOperation_t opA,
+   const void* alpha, const cusparseSpMatDescr_t matA,
+   const cusparseDnVecDescr_t vecX, const void* beta,
+   const cusparseDnVecDescr_t vecY, cudaDataType computeType,
+   cusparseSpMVAlg_t alg, void* externalBuffer
+);
+
+typedef cusparseStatus_t (*FUNPTR_cusparseSpMV_bufferSize)(
+    cusparseHandle_t handle, cusparseOperation_t opA,
+    const void* alpha, const cusparseSpMatDescr_t matA,
+    const cusparseDnVecDescr_t vecX, const void* beta,
+    const cusparseDnVecDescr_t vecY, cudaDataType computeType,
+    cusparseSpMVAlg_t alg, size_t* bufferSize
+);
+
 /**
  * \brief Finds and initializes a function pointer to
  *  one of the functions in CUSPARSE.
@@ -448,6 +524,28 @@ typedef cusparseStatus_t (*FUNPTR_cusparseDcsrmv)(
     ) {                                                       \
         nlError("nlInitExtension_CUDA : function not found", #name);	\
         return NL_FALSE;                                      \
+    }
+
+
+/**
+ * \brief Finds and initializes a function pointer to
+ *  one of the functions in CUSPARSE.
+ * \details Function pointers are stored into the 
+ *  CUDAContext returned by the function CUDA().
+ *  If a symbol is not found, returns NL_FALSE from the
+ *  calling function. 
+ */
+#define find_cusparse_func_V10(name)                          \
+    if(                                                       \
+        (                                                     \
+            CUDA()->name =                                    \
+            (FUNPTR_##name)nlFindFunction(                    \
+		   CUDA()->DLL_cusparse,#name                 \
+	    )					              \
+        ) == NULL                                             \
+    ) {                                                       \
+        nlWarning("nlInitExtension_CUDA : optional function not found", #name);	\
+	CUDA()->has_cusparse_V10 = NL_FALSE;                  \
     }
 
 
@@ -495,6 +593,16 @@ typedef struct {
     FUNPTR_cusparseSetMatType cusparseSetMatType;
     FUNPTR_cusparseSetMatIndexBase cusparseSetMatIndexBase;    
     FUNPTR_cusparseDcsrmv cusparseDcsrmv;
+
+    /* cusparse V10 API */
+    NLboolean has_cusparse_V10;
+    FUNPTR_cusparseCreateDnVec cusparseCreateDnVec;
+    FUNPTR_cusparseDestroyDnVec cusparseDestroyDnVec;
+    FUNPTR_cusparseDnVecSetValues cusparseDnVecSetValues; 
+    FUNPTR_cusparseCreateCsr cusparseCreateCsr;
+    FUNPTR_cusparseDestroySpMat cusparseDestroySpMat;
+    FUNPTR_cusparseSpMV cusparseSpMV;
+    FUNPTR_cusparseSpMV_bufferSize cusparseSpMV_bufferSize;
     
     int devID;
 } CUDAContext;
@@ -611,6 +719,9 @@ static int ConvertSMVer2Cores(int major, int minor) {
         {   -1, -1 }
     };
     int index = 0;
+    if(major == 0 && minor == 0) {
+	return 0;
+    }
     while (nGpuArchCoresPerSM[index].SM != -1) {
         if (nGpuArchCoresPerSM[index].SM == ((major << 4) + minor)) {
             return nGpuArchCoresPerSM[index].Cores;
@@ -936,6 +1047,27 @@ NLboolean nlInitExtension_CUDA(void) {
     find_cusparse_func(cusparseSetMatType);
     find_cusparse_func(cusparseSetMatIndexBase);
     find_cusparse_func(cusparseDcsrmv);
+
+    /* V10 API */
+    if(getenv("NL_NO_CUSPARSE_V10") == NULL) {
+        nl_printf("OpenNL CUDA: Trying to initialize cusparse V10\n");
+	CUDA()->has_cusparse_V10 = NL_TRUE;
+	find_cusparse_func_V10(cusparseCreateDnVec);
+	find_cusparse_func_V10(cusparseDestroyDnVec);
+	find_cusparse_func_V10(cusparseDnVecSetValues);
+	find_cusparse_func_V10(cusparseCreateCsr);
+	find_cusparse_func_V10(cusparseDestroySpMat);
+	find_cusparse_func_V10(cusparseSpMV);
+	find_cusparse_func_V10(cusparseSpMV_bufferSize);
+    } else {
+	CUDA()->has_cusparse_V10 = NL_FALSE; 
+    }
+    
+    if(CUDA()->has_cusparse_V10) {
+	nl_printf("OpenNL CUDA: using cusparse V10 API\n");
+    } else {
+	nl_printf("OpenNL CUDA: using cusparse V9 API\n");	
+    }
     
     if(CUDA()->cusparseCreate(&CUDA()->HNDL_cusparse)) {
 	return NL_FALSE;
@@ -975,8 +1107,19 @@ typedef struct {
     NLenum type;
     NLDestroyMatrixFunc destroy_func;
     NLMultMatrixVectorFunc mult_func;
+
+    /* cusparse V9 implementation */    
     cusparseMatDescr_t descr;
-    NLuint nnz;
+
+    /* cusparse V10 implementation */
+    cusparseSpMatDescr_t descr_V10;    
+    cusparseDnVecDescr_t X_V10;
+    cusparseDnVecDescr_t Y_V10;
+    NLboolean work_init_V10;
+    void* work_V10;
+    size_t work_size_V10;
+    
+    NLuint_big nnz;
     int* colind;
     int* rowptr;
     double* val;
@@ -1009,7 +1152,20 @@ static void nlCRSMatrixCUDADestroy(NLCUDASparseMatrix* Mcuda) {
 	return;
     }
     nlCRSMatrixCUDADestroyCRS(Mcuda);
-    nlCUDACheck(CUDA()->cusparseDestroyMatDescr(Mcuda->descr));
+    if(CUDA()->has_cusparse_V10) {
+	nlCUDACheck(CUDA()->cusparseDestroySpMat(Mcuda->descr_V10));
+	if(Mcuda->X_V10 != NULL) {
+	    nlCUDACheck(CUDA()->cusparseDestroyDnVec(Mcuda->X_V10));
+	}
+	if(Mcuda->Y_V10 != NULL) {
+	    nlCUDACheck(CUDA()->cusparseDestroyDnVec(Mcuda->Y_V10));
+	}
+	if(Mcuda->work_V10 != NULL) {
+	    nlCUDACheck(CUDA()->cudaFree(Mcuda->work_V10));	    
+	}
+    } else {
+	nlCUDACheck(CUDA()->cusparseDestroyMatDescr(Mcuda->descr));
+    }
     memset(Mcuda, 0, sizeof(*Mcuda));
 }
 
@@ -1018,23 +1174,86 @@ static void nlCRSMatrixCUDAMult(
 ) {
     const double one = 1.0;
     const double zero = 0.0;
-    nlCUDACheck(
-	CUDA()->cusparseDcsrmv(
-	    CUDA()->HNDL_cusparse,
-	    CUSPARSE_OPERATION_NON_TRANSPOSE,
-	    (int)Mcuda->m,
-	    (int)Mcuda->n,
-	    (int)Mcuda->nnz,
-	    &one,
-	    Mcuda->descr,
-	    Mcuda->val,
-	    Mcuda->rowptr,
-	    Mcuda->colind,
-	    x,
-	    &zero,
-	    y
-	)
-    );
+    if(CUDA()->has_cusparse_V10) {
+	if(Mcuda->X_V10 == NULL) {
+	    nlCUDACheck(
+		CUDA()->cusparseCreateDnVec(
+		    &Mcuda->X_V10, Mcuda->n, (void*)x, CUDA_R_64F
+		)
+	    );
+	} else {
+	    nlCUDACheck(
+		CUDA()->cusparseDnVecSetValues(Mcuda->X_V10, (void*)x)
+	    );
+	}
+	if(Mcuda->Y_V10 == NULL) {
+	    nlCUDACheck(
+		CUDA()->cusparseCreateDnVec(
+		    &Mcuda->Y_V10, Mcuda->m, y, CUDA_R_64F		    
+		)
+	    );
+	} else {
+	    nlCUDACheck(
+		CUDA()->cusparseDnVecSetValues(Mcuda->Y_V10, y)
+	    );
+	}
+	if(!Mcuda->work_init_V10) {
+	    nlCUDACheck(
+		CUDA()->cusparseSpMV_bufferSize(
+		    CUDA()->HNDL_cusparse,
+		    CUSPARSE_OPERATION_NON_TRANSPOSE,
+		    &one,
+		    Mcuda->descr_V10,
+		    Mcuda->X_V10,
+		    &zero,
+		    Mcuda->Y_V10,
+		    CUDA_R_64F,
+		    CUSPARSE_CSRMV_ALG2, /* CUSPARSE_MV_ALG_DEFAULT, HERE */
+		    &Mcuda->work_size_V10
+		)
+	    );
+	    nl_printf("Buffer size = %d\n", Mcuda->work_size_V10);
+	    if(Mcuda->work_size_V10 != 0) {
+		nlCUDACheck(
+		   CUDA()->cudaMalloc(&Mcuda->work_V10,Mcuda->work_size_V10)
+	        );
+		nl_printf("work = 0x%lx\n", Mcuda->work_V10);
+	    }
+	    Mcuda->work_init_V10 = NL_TRUE;
+	}
+	nlCUDACheck(
+	    CUDA()->cusparseSpMV(
+		CUDA()->HNDL_cusparse,
+		CUSPARSE_OPERATION_NON_TRANSPOSE,
+		&one,
+		Mcuda->descr_V10,
+		Mcuda->X_V10,
+		&zero,
+		Mcuda->Y_V10,
+		CUDA_R_64F,
+		CUSPARSE_CSRMV_ALG2, /* CUSPARSE_MV_ALG_DEFAULT, HERE */
+		Mcuda->work_V10
+	    )
+	);
+    } else {
+	nlCUDACheck(
+	    CUDA()->cusparseDcsrmv(
+		CUDA()->HNDL_cusparse,
+		CUSPARSE_OPERATION_NON_TRANSPOSE,
+		(int)Mcuda->m,
+		(int)Mcuda->n,
+		(int)Mcuda->nnz,
+		&one,
+		Mcuda->descr,
+		Mcuda->val,
+		Mcuda->rowptr,
+		Mcuda->colind,
+		x,
+		&zero,
+		y
+	    )
+	);
+    }
     nlCUDABlas()->flops += (NLulong)(2*Mcuda->nnz);
 }
 
@@ -1043,42 +1262,75 @@ NLMatrix nlCUDAMatrixNewFromCRSMatrix(NLMatrix M_in) {
     NLCRSMatrix* M = (NLCRSMatrix*)(M_in);
     size_t colind_sz, rowptr_sz, val_sz;
     nl_assert(M_in->type == NL_MATRIX_CRS);
-    nlCUDACheck(CUDA()->cusparseCreateMatDescr(&Mcuda->descr));
-    if(M->symmetric_storage) {
-	nlCUDACheck(CUDA()->cusparseSetMatType(
-			Mcuda->descr, CUSPARSE_MATRIX_TYPE_SYMMETRIC)
-	);
-    } else {
-	nlCUDACheck(CUDA()->cusparseSetMatType(
-			Mcuda->descr, CUSPARSE_MATRIX_TYPE_GENERAL)
-	);	
-    }
-    nlCUDACheck(CUDA()->cusparseSetMatIndexBase(
-		    Mcuda->descr, CUSPARSE_INDEX_BASE_ZERO)
-    );	
     Mcuda->m = M->m;
     Mcuda->n = M->n;
-    Mcuda->nnz = nlCRSMatrixNNZ(M);
+    Mcuda->nnz = (NLuint)(nlCRSMatrixNNZ(M));
 
-    colind_sz = (size_t)Mcuda->nnz*sizeof(int);
-    rowptr_sz = (size_t)(Mcuda->m+1)*sizeof(int);
+    colind_sz = (size_t)Mcuda->nnz*sizeof(NLuint);
+    rowptr_sz = (size_t)(Mcuda->m+1)*sizeof(NLuint_big);
     val_sz    = (size_t)Mcuda->nnz*sizeof(double);
 
     nlCUDACheck(CUDA()->cudaMalloc((void**)&Mcuda->colind,colind_sz));
     nlCUDACheck(CUDA()->cudaMalloc((void**)&Mcuda->rowptr,rowptr_sz));
     nlCUDACheck(CUDA()->cudaMalloc((void**)&Mcuda->val,val_sz));
     nlCUDACheck(CUDA()->cudaMemcpy(
-      Mcuda->colind, M->colind, colind_sz, cudaMemcpyHostToDevice)
+       Mcuda->colind, M->colind, colind_sz, cudaMemcpyHostToDevice)
     );
     nlCUDACheck(CUDA()->cudaMemcpy(
-      Mcuda->rowptr, M->rowptr, rowptr_sz, cudaMemcpyHostToDevice)
+       Mcuda->rowptr, M->rowptr, rowptr_sz, cudaMemcpyHostToDevice)
     );
     nlCUDACheck(CUDA()->cudaMemcpy(
-      Mcuda->val, M->val, val_sz, cudaMemcpyHostToDevice)
+       Mcuda->val, M->val, val_sz, cudaMemcpyHostToDevice)
     );
     Mcuda->type=NL_MATRIX_OTHER;
     Mcuda->destroy_func=(NLDestroyMatrixFunc)nlCRSMatrixCUDADestroy;
     Mcuda->mult_func=(NLMultMatrixVectorFunc)nlCRSMatrixCUDAMult;
+
+#ifdef GARGANTUA
+    if(!CUDA()->has_cusparse_V10) {
+	nlError(
+	    "OpenNL CUDA",
+	    "FATAL ERROR, GARGANTUA mode needs cusparse V10\n"
+	);
+	exit(-1);
+    }
+#  define ROWPTR_TYPE CUSPARSE_INDEX_64I
+#else
+#  define ROWPTR_TYPE CUSPARSE_INDEX_32I    
+#endif    
+    
+    if(CUDA()->has_cusparse_V10) {
+	nlCUDACheck(
+	    CUDA()->cusparseCreateCsr(
+		&Mcuda->descr_V10,
+		Mcuda->m,
+		Mcuda->n,
+		(int64_t)Mcuda->nnz,
+		Mcuda->rowptr,
+		Mcuda->colind,
+		Mcuda->val,
+		ROWPTR_TYPE,
+		CUSPARSE_INDEX_32I,
+		CUSPARSE_INDEX_BASE_ZERO,
+		CUDA_R_64F
+	    )
+	);
+    } else {
+	nlCUDACheck(CUDA()->cusparseCreateMatDescr(&Mcuda->descr));
+	if(M->symmetric_storage) {
+	    nlCUDACheck(CUDA()->cusparseSetMatType(
+	       Mcuda->descr, CUSPARSE_MATRIX_TYPE_SYMMETRIC)
+	    );
+	} else {
+	    nlCUDACheck(CUDA()->cusparseSetMatType(
+	       Mcuda->descr, CUSPARSE_MATRIX_TYPE_GENERAL)
+	    );	
+	}
+	nlCUDACheck(CUDA()->cusparseSetMatIndexBase(
+	   Mcuda->descr, CUSPARSE_INDEX_BASE_ZERO)
+	);	
+    }
+    
     return (NLMatrix)Mcuda;
 }
 
@@ -1140,7 +1392,8 @@ static NLMatrix nlDiagonalMatrixCUDANew(const double* diag, NLuint n) {
 
 NLMatrix nlCUDAJacobiPreconditionerNewFromCRSMatrix(NLMatrix M_in) {
     NLuint N = M_in->n;
-    NLuint i,jj;
+    NLuint i;
+    NLuint_big jj;
     double* diag = NULL;
     NLMatrix result = NULL;
     NLCRSMatrix* M = (NLCRSMatrix*)(M_in);

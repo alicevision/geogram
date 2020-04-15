@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
         Stopwatch Wtot("Total time");
 
         std::vector<std::string> filenames;
-
+ 
         CmdLine::import_arg_group("standard");
         CmdLine::import_arg_group("algo");
 

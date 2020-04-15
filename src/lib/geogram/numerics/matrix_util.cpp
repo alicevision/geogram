@@ -114,7 +114,7 @@ namespace GEO {
                 while(thr > a_normEPS && nb_iter < MAX_ITER) {
 
                     nb_iter++;
-                    double thr_nn = thr / nn;
+                    double thr_nn = thr / double(nn);
 
                     for(index_t l = 1; l < n; l++) {
                         for(index_t m = l + 1; m <= n; m++) {

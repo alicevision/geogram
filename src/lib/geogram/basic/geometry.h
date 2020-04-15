@@ -824,7 +824,29 @@ namespace GEO {
         return result;
     }
     
-    /******************************************************************/    
+    /******************************************************************/
+
+    /**
+     * \brief A Ray, in parametric form.
+     */
+    struct Ray {
+	/**
+	 * \brief Ray constructor.
+	 * \param[in] O the origin of the ray.
+	 * \param[in] D the direction of the ray.
+	 */
+	Ray(vec3 O, vec3 D) : origin(O), direction(D) {
+	}
+	/**
+	 * \brief Ray constructor.
+	 */
+	Ray() {
+	}
+	vec3 origin;
+	vec3 direction;
+    };
+
+    /******************************************************************/        
     
 }
 

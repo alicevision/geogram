@@ -166,7 +166,7 @@ namespace {
 		    }
 		}
 	    }
-	    NLuint nb_vertices = mesh_.vertices.nb();
+	    NLuint nb_vertices = NLuint(mesh_.vertices.nb());
 	    if(!spectral_) {
 		project();
 	    }
@@ -248,7 +248,7 @@ namespace {
 	 *   (however, this may be invalid for concave facets)
 	 */
 	void setup_lscm(NLuint f) {
-	    NLuint nv = mesh_.facets.nb_vertices(f);
+	    NLuint nv = NLuint(mesh_.facets.nb_vertices(f));
 	    if(angle_.is_bound()) {
 		index_t c0 = mesh_.facets.corners_begin(f);
 		double a0 = angle_[c0];
@@ -256,18 +256,18 @@ namespace {
 		    double ai = angle_[c0+i];
 		    double aip1 = angle_[c0+1+1];
 		    setup_conformal_map_relations(
-			mesh_.facets.vertex(f,0),
-			mesh_.facets.vertex(f,i),
-			mesh_.facets.vertex(f,i+1),
+			NLuint(mesh_.facets.vertex(f,0)),
+			NLuint(mesh_.facets.vertex(f,i)),
+			NLuint(mesh_.facets.vertex(f,i+1)),
 			a0, ai, aip1
 		    );
 		}
 	    } else {
 		for(NLuint i=1; i<nv-1; ++i) {
 		    setup_conformal_map_relations(
-			mesh_.facets.vertex(f,0),
-			mesh_.facets.vertex(f,i),
-			mesh_.facets.vertex(f,i+1)
+			NLuint(mesh_.facets.vertex(f,0)),
+			NLuint(mesh_.facets.vertex(f,i)),
+			NLuint(mesh_.facets.vertex(f,i+1))
 		    );
 		}
 	    }
@@ -434,10 +434,10 @@ namespace {
 	 */
 	void solver_to_mesh() {
 	    for(index_t i: mesh_.vertices) {
-		double u = spectral_ ? nlMultiGetVariable(2 * i    ,eigen_)
-		                     : nlGetVariable(2 * i    );
-		double v = spectral_ ? nlMultiGetVariable(2 * i + 1,eigen_)
-		                     : nlGetVariable(2 * i + 1);
+		double u = spectral_ ? nlMultiGetVariable(NLuint(2*i),eigen_)
+		                     : nlGetVariable(2*i);
+		double v = spectral_ ? nlMultiGetVariable(NLuint(2*i+1),eigen_)
+		                     : nlGetVariable(2*i+1);
 		tex_coord_[2*i] = u;
 		tex_coord_[2*i+1] = v;
 	    }

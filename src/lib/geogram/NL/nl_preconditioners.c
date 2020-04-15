@@ -101,7 +101,8 @@ NLMatrix nlNewJacobiPreconditioner(NLMatrix M) {
     NLSparseMatrix* M_dyn = NULL;
     NLCRSMatrix* M_CRS = NULL;
     NLJacobiPreconditioner* result = NULL;
-    NLuint i,jj;
+    NLuint i;
+    NLuint_big jj;
     nl_assert(
 	M->type == NL_MATRIX_SPARSE_DYNAMIC ||
 	M->type == NL_MATRIX_CRS
@@ -117,7 +118,8 @@ NLMatrix nlNewJacobiPreconditioner(NLMatrix M) {
     if(M->type == NL_MATRIX_SPARSE_DYNAMIC) {
 	M_dyn = (NLSparseMatrix*)M;
 	for(i=0; i<M_dyn->n; ++i) {
-	    result->diag_inv[i] = (M_dyn->diag[i] == 0.0) ? 1.0 : 1.0/M_dyn->diag[i];
+	    result->diag_inv[i] =
+		(M_dyn->diag[i] == 0.0) ? 1.0 : 1.0/M_dyn->diag[i];
 	}
     } else if(M->type == NL_MATRIX_CRS) {
 	M_CRS = (NLCRSMatrix*)M;	

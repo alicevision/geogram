@@ -171,11 +171,11 @@ namespace {
         const MeshHalfedges::Halfedge& H
     ) {
         const Mesh& M = MH.mesh();
-        unsigned int c = H.corner;
-        unsigned int f = H.facet;
-        unsigned int v1 = M.facet_corners.vertex(c);
+        index_t c = H.corner;
+        index_t f = H.facet;
+        index_t v1 = M.facet_corners.vertex(c);
         c = M.facets.next_corner_around_facet(f, c);
-        unsigned int v2 = M.facet_corners.vertex(c);
+        index_t v2 = M.facet_corners.vertex(c);
         vec3 E = Geom::mesh_vertex(M, v2) - Geom::mesh_vertex(M, v1);
         vec3 N = Geom::mesh_facet_normal(M, f);
         return cross(E, N);

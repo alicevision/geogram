@@ -422,7 +422,7 @@ namespace GEO {
 	 * \brief Bitmask that indicates for each real vertex
 	 *  the virtual vertices that were created.
 	 */
-	vector<index_t> vertex_instances_;
+	vector<Numeric::uint32> vertex_instances_;
 
 	bool update_periodic_v_to_cell_;
 	vector<index_t> periodic_v_to_cell_rowptr_;

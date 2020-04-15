@@ -1038,8 +1038,9 @@ namespace {
 			// combinatorial information).
 			facet_triangles.resize(0);
 			C.for_each_Voronoi_vertex(
-			    f+1, // +1 because 0 is vertex at infinity
-			    [&C,&facet_triangles](index_t t) {
+			    VBW::index_t(f+1), // +1 because
+			                       // 0 is vertex at infinity
+			    [&facet_triangles](index_t t) {
 				facet_triangles.push_back(t);
 			    }
 			);
@@ -1071,7 +1072,9 @@ namespace {
 
 			    // Store the tet facet index this facet comes from,
 			    // Used at step VI to simplify the resulting mesh
-			    result_region.push_back(C.v_global_index(f+1));
+			    result_region.push_back(
+				C.v_global_index(VBW::index_t(f+1))
+			    );
 
 			    // Get the combinatorial representation of
 			    // the vertices, used at step V to gue the facets.
@@ -1080,7 +1083,7 @@ namespace {
 				    new_f, ii, v_offset+ii
 				);
 				VBW::Triangle Ti = C.get_triangle(
-				    facet_triangles[ii]
+				    VBW::index_t(facet_triangles[ii])
 				);
 				index_t F[3]; 
 				F[0] = C.v_global_index(Ti.i);

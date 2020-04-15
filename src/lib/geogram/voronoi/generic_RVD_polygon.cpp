@@ -174,9 +174,9 @@ namespace GEOGen {
                 // The point q is the intersection between
                 //   a facet (f0,f1,f2) of the surface and two
                 //   bisectors [pi b0] and [pi b1].
-                unsigned int b0 = q.sym().bisector(0);
-                unsigned int b1 = q.sym().bisector(1);
-                unsigned int f = q.sym().boundary_facet(0);
+                index_t b0 = q.sym().bisector(0);
+                index_t b1 = q.sym().bisector(1);
+                index_t f = q.sym().boundary_facet(0);
 
                 index_t if0 = mesh->facets.vertex(f,0);
                 index_t if1 = mesh->facets.vertex(f,1);
@@ -197,7 +197,7 @@ namespace GEOGen {
                 //   two facets of the surface (i.e. an edge [e0 e1])
                 //   and one bisector [pi b0].
                 // i.e. it's a vertex of the surface.
-                unsigned int b0 = q.sym().bisector(0);
+                index_t b0 = q.sym().bisector(0);
                 index_t e0, e1;
                 q.sym().get_boundary_edge(e0, e1);
                 return GEO::PCK::side2_SOS(
@@ -212,7 +212,7 @@ namespace GEOGen {
                 // The point q is the intersection between
                 //   three facets of the surface
                 //   (i.e. a vertex v0 of the surface).
-                unsigned int v0 = q.sym().get_boundary_vertex();
+                index_t v0 = q.sym().get_boundary_vertex();
                 return GEO::PCK::side1_SOS(
                     pi, pj, mesh->vertices.point_ptr(v0), dim
                 );

@@ -6,7 +6,7 @@
 // Implemented features:
 //  [X] Platform: Clipboard support.
 //  [X] Platform: Gamepad support. Enable with 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad'.
-//  [x] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange'. FIXME: 3 cursors types are missing from GLFW.
+//  [X] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange' (note: the resizing cursors requires GLFW 3.4+).
 //  [X] Platform: Keyboard arrays indexed using GLFW_KEY_* codes, e.g. ImGui::IsKeyPressed(GLFW_KEY_SPACE).
 //  [X] Platform: Multi-viewport support (multiple windows). Enable with 'io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable'.
 
@@ -16,7 +16,9 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2019-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2020-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2020-01-17: Inputs: Disable error callback while assigning mouse cursors because some X11 setup don't have them and it generates errors.
+//  2019-12-05: Inputs: Added support for new mouse cursors added in GLFW 3.4+ (resizing cursors, not allowed cursor).
 //  2019-10-18: Misc: Previously installed user callbacks are now restored on shutdown.
 //  2019-07-21: Inputs: Added mapping for ImGuiKey_KeyPadEnter.
 //  2019-05-11: Inputs: Don't filter value from character callback before calling AddInputCharacter().
@@ -37,9 +39,7 @@
 //  2017-08-25: Inputs: MousePos set to -FLT_MAX,-FLT_MAX when mouse is unavailable/missing (instead of -1,-1).
 //  2016-10-15: Misc: Added a void* user_data parameter to Clipboard function handlers.
 
-#ifndef __ANDROID__ // [Bruno Levy] 
-
-#include <stdio.h>
+#ifndef __ANDROID__ // [Bruno Levy]
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -69,12 +69,19 @@
 #endif
 #endif
 
-#define GLFW_HAS_WINDOW_TOPMOST     (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ GLFW_FLOATING
-#define GLFW_HAS_WINDOW_HOVERED     (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ GLFW_HOVERED
-#define GLFW_HAS_WINDOW_ALPHA       (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwSetWindowOpacity
-#define GLFW_HAS_PER_MONITOR_DPI    (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorContentScale
-#define GLFW_HAS_VULKAN             (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ glfwCreateWindowSurface
-#define GLFW_HAS_FOCUS_WINDOW       (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ glfwFocusWindow
+#define GLFW_HAS_WINDOW_TOPMOST       (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ GLFW_FLOATING
+#define GLFW_HAS_WINDOW_HOVERED       (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ GLFW_HOVERED
+#define GLFW_HAS_WINDOW_ALPHA         (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwSetWindowOpacity
+#define GLFW_HAS_PER_MONITOR_DPI      (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorContentScale
+#define GLFW_HAS_VULKAN               (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ glfwCreateWindowSurface
+#define GLFW_HAS_FOCUS_WINDOW         (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ glfwFocusWindow
+#define GLFW_HAS_FOCUS_ON_SHOW        0 // [Bruno] (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ GLFW_FOCUS_ON_SHOW
+#define GLFW_HAS_MONITOR_WORK_AREA    0 // [Bruno] (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorWorkarea
+#ifdef GLFW_RESIZE_NESW_CURSOR        // Let's be nice to people who pulled GLFW between 2019-04-16 (3.4 define) and 2019-11-29 (cursors defines) // FIXME: Remove when GLFW 3.4 is released?
+#define GLFW_HAS_NEW_CURSORS          (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3400) // 3.4+ GLFW_RESIZE_ALL_CURSOR, GLFW_RESIZE_NESW_CURSOR, GLFW_RESIZE_NWSE_CURSOR, GLFW_NOT_ALLOWED_CURSOR
+#else
+#define GLFW_HAS_NEW_CURSORS          (0)
+#endif
 
 // Data
 enum GlfwClientApi
@@ -96,16 +103,16 @@ static GLFWmousebuttonfun   g_PrevUserCallbackMousebutton = NULL;
 static GLFWscrollfun        g_PrevUserCallbackScroll = NULL;
 static GLFWkeyfun           g_PrevUserCallbackKey = NULL;
 static GLFWcharfun          g_PrevUserCallbackChar = NULL;
+static GLFWmonitorfun       g_PrevUserCallbackMonitor = NULL;
 
 // Forward Declarations
+static void ImGui_ImplGlfw_UpdateMonitors();
 static void ImGui_ImplGlfw_InitPlatformInterface();
 static void ImGui_ImplGlfw_ShutdownPlatformInterface();
-static void ImGui_ImplGlfw_UpdateMonitors();
 
 // [Bruno Levy] 01/06/2017 Do not use GLFW3 clipboard under emscripten, use built-in
 // ImGUI clipboard instead.
 #ifndef __EMSCRIPTEN__
-
 
 static const char* ImGui_ImplGlfw_GetClipboardText(void* user_data)
 {
@@ -117,7 +124,7 @@ static void ImGui_ImplGlfw_SetClipboardText(void* user_data, const char* text)
     glfwSetClipboardString((GLFWwindow*)user_data, text);
 }
 
-#endif
+#endif // __EMSCRIPTEN__ [Bruno Levy] 01/06/2017 
 
 void ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -137,7 +144,6 @@ void ImGui_ImplGlfw_ScrollCallback(GLFWwindow* window, double xoffset, double yo
     yoffset *= -1.0;
 #endif    
     
-
     if (g_PrevUserCallbackScroll != NULL && window == g_Window)
         g_PrevUserCallbackScroll(window, xoffset, yoffset);
 
@@ -161,7 +167,11 @@ void ImGui_ImplGlfw_KeyCallback(GLFWwindow* window, int key, int scancode, int a
     io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
     io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
     io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+#ifdef _WIN32
+    io.KeySuper = false;
+#else
     io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+#endif
 }
 
 void ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c)
@@ -171,6 +181,11 @@ void ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c)
 
     ImGuiIO& io = ImGui::GetIO();
     io.AddInputCharacter(c);
+}
+
+void ImGui_ImplGlfw_MonitorCallback(GLFWmonitor*, int)
+{
+    g_WantUpdateMonitors = true;
 }
 
 static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, GlfwClientApi client_api)
@@ -219,21 +234,36 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     io.GetClipboardTextFn = ImGui_ImplGlfw_GetClipboardText;
     io.ClipboardUserData = g_Window;
 #endif
-
+    
+    // Create mouse cursors
+    // (By design, on X11 cursors are user configurable and some cursors may be missing. When a cursor doesn't exist,
+    // GLFW will emit an error which will often be printed by the app, so we temporarily disable error reporting.
+    // Missing cursors will return NULL and our _UpdateMouseCursor() function will use the Arrow cursor instead.)
+    GLFWerrorfun prev_error_callback = glfwSetErrorCallback(NULL);
     g_MouseCursors[ImGuiMouseCursor_Arrow] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
     g_MouseCursors[ImGuiMouseCursor_TextInput] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-    g_MouseCursors[ImGuiMouseCursor_ResizeAll] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);   // FIXME: GLFW doesn't have this.
     g_MouseCursors[ImGuiMouseCursor_ResizeNS] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
     g_MouseCursors[ImGuiMouseCursor_ResizeEW] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-    g_MouseCursors[ImGuiMouseCursor_ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);  // FIXME: GLFW doesn't have this.
-    g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);  // FIXME: GLFW doesn't have this.
     g_MouseCursors[ImGuiMouseCursor_Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+#if GLFW_HAS_NEW_CURSORS
+    g_MouseCursors[ImGuiMouseCursor_ResizeAll] = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
+    g_MouseCursors[ImGuiMouseCursor_ResizeNESW] = glfwCreateStandardCursor(GLFW_RESIZE_NESW_CURSOR);
+    g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
+    g_MouseCursors[ImGuiMouseCursor_NotAllowed] = glfwCreateStandardCursor(GLFW_NOT_ALLOWED_CURSOR);
+#else
+    g_MouseCursors[ImGuiMouseCursor_ResizeAll] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+    g_MouseCursors[ImGuiMouseCursor_ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+    g_MouseCursors[ImGuiMouseCursor_ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+    g_MouseCursors[ImGuiMouseCursor_NotAllowed] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+#endif
+    glfwSetErrorCallback(prev_error_callback);
 
     // Chain GLFW callbacks: our callbacks will call the user's previously installed callbacks, if any.
     g_PrevUserCallbackMousebutton = NULL;
     g_PrevUserCallbackScroll = NULL;
     g_PrevUserCallbackKey = NULL;
     g_PrevUserCallbackChar = NULL;
+    g_PrevUserCallbackMonitor = NULL;
     if (install_callbacks)
     {
         g_InstalledCallbacks = true;
@@ -241,7 +271,12 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
         g_PrevUserCallbackScroll = glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
         g_PrevUserCallbackKey = glfwSetKeyCallback(window, ImGui_ImplGlfw_KeyCallback);
         g_PrevUserCallbackChar = glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+        g_PrevUserCallbackMonitor = glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
     }
+
+    // Update monitors the first time (note: monitor callback are broken in GLFW 3.2 and earlier, see github.com/glfw/glfw/issues/784)
+    ImGui_ImplGlfw_UpdateMonitors();
+    glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
 
     // Our mouse update function expect PlatformHandle to be filled for the main viewport
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
@@ -423,6 +458,44 @@ static void ImGui_ImplGlfw_UpdateGamepads()
         io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
 }
 
+static void ImGui_ImplGlfw_UpdateMonitors()
+{
+#ifdef __EMSCRIPTEN__ // [Bruno Levy]
+    return;
+#endif    
+    
+    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+    int monitors_count = 0;
+    GLFWmonitor** glfw_monitors = glfwGetMonitors(&monitors_count);
+    platform_io.Monitors.resize(0);
+    for (int n = 0; n < monitors_count; n++)
+    {
+        ImGuiPlatformMonitor monitor;
+        int x, y;
+        glfwGetMonitorPos(glfw_monitors[n], &x, &y);
+        const GLFWvidmode* vid_mode = glfwGetVideoMode(glfw_monitors[n]);
+#if GLFW_HAS_MONITOR_WORK_AREA
+        monitor.MainPos = ImVec2((float)x, (float)y);
+        monitor.MainSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
+        int w, h;
+        glfwGetMonitorWorkarea(glfw_monitors[n], &x, &y, &w, &h);
+        monitor.WorkPos = ImVec2((float)x, (float)y);;
+        monitor.WorkSize = ImVec2((float)w, (float)h);
+#else
+        monitor.MainPos = monitor.WorkPos = ImVec2((float)x, (float)y);
+        monitor.MainSize = monitor.WorkSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
+#endif
+#if GLFW_HAS_PER_MONITOR_DPI
+        // Warning: the validity of monitor DPI information on Windows depends on the application DPI awareness settings, which generally needs to be set in the manifest or at runtime.
+        float x_scale, y_scale;
+        glfwGetMonitorContentScale(glfw_monitors[n], &x_scale, &y_scale);
+        monitor.DpiScale = x_scale;
+#endif
+        platform_io.Monitors.push_back(monitor);
+    }
+    g_WantUpdateMonitors = false;
+}
+
 void ImGui_ImplGlfw_NewFrame()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -457,6 +530,7 @@ void ImGui_ImplGlfw_NewFrame()
 // If you are new to dear imgui or creating a new binding for dear imgui, it is recommended that you completely ignore this section first..
 //--------------------------------------------------------------------------------------------------------
 
+// Helper structure we store in the void* RenderUserData field of each ImGuiViewport to easily retrieve our backend data.
 struct ImGuiViewportDataGlfw
 {
     GLFWwindow* Window;
@@ -511,7 +585,7 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
     glfwWindowHint(GLFW_FOCUSED, false);
 #if GLFW_HAS_FOCUS_ON_SHOW
      glfwWindowHint(GLFW_FOCUS_ON_SHOW, false);
- #endif
+#endif
     glfwWindowHint(GLFW_DECORATED, (viewport->Flags & ImGuiViewportFlags_NoDecoration) ? false : true);
 #if GLFW_HAS_WINDOW_TOPMOST
     glfwWindowHint(GLFW_FLOATING, (viewport->Flags & ImGuiViewportFlags_TopMost) ? true : false);
@@ -525,7 +599,7 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
 #endif
     glfwSetWindowPos(data->Window, (int)viewport->Pos.x, (int)viewport->Pos.y);
 
-    // Install callbacks for secondary viewports
+    // Install GLFW callbacks for secondary viewports
     glfwSetMouseButtonCallback(data->Window, ImGui_ImplGlfw_MouseButtonCallback);
     glfwSetScrollCallback(data->Window, ImGui_ImplGlfw_ScrollCallback);
     glfwSetKeyCallback(data->Window, ImGui_ImplGlfw_KeyCallback);
@@ -558,7 +632,8 @@ static void ImGui_ImplGlfw_DestroyWindow(ImGuiViewport* viewport)
     viewport->PlatformUserData = viewport->PlatformHandle = NULL;
 }
 
-// FIXME-VIEWPORT: Implement same work-around for Linux/OSX in the meanwhile.
+// We have submitted https://github.com/glfw/glfw/pull/1568 to allow GLFW to support "transparent inputs".
+// In the meanwhile we implement custom per-platform workarounds here (FIXME-VIEWPORT: Implement same work-around for Linux/OSX!)
 #if defined(_WIN32) && GLFW_HAS_GLFW_HOVERED
 static WNDPROC g_GlfwWndProc = NULL;
 static LRESULT CALLBACK WndProcNoInputs(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -762,49 +837,6 @@ static int ImGui_ImplGlfw_CreateVkSurface(ImGuiViewport* viewport, ImU64 vk_inst
 }
 #endif // GLFW_HAS_VULKAN
 
-// FIXME-PLATFORM: GLFW doesn't export monitor work area (see https://github.com/glfw/glfw/pull/989)
-static void ImGui_ImplGlfw_UpdateMonitors()
-{
-#ifdef __EMSCRIPTEN__ // [Bruno Levy]
-    return;
-#endif    
-    ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-    int monitors_count = 0;
-    GLFWmonitor** glfw_monitors = glfwGetMonitors(&monitors_count);
-    platform_io.Monitors.resize(0);
-    for (int n = 0; n < monitors_count; n++)
-    {
-        ImGuiPlatformMonitor monitor;
-        int x, y;
-        glfwGetMonitorPos(glfw_monitors[n], &x, &y);
-        const GLFWvidmode* vid_mode = glfwGetVideoMode(glfw_monitors[n]);
-#if GLFW_HAS_MONITOR_WORK_AREA
-        monitor.MainPos = ImVec2((float)x, (float)y);
-        monitor.MainSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
-        int w, h;
-        glfwGetMonitorWorkarea(glfw_monitors[n], &x, &y, &w, &h);
-        monitor.WorkPos = ImVec2((float)x, (float)y);;
-        monitor.WorkSize = ImVec2((float)w, (float)h);
-#else
-        monitor.MainPos = monitor.WorkPos = ImVec2((float)x, (float)y);
-        monitor.MainSize = monitor.WorkSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
-#endif
-#if GLFW_HAS_PER_MONITOR_DPI
-        // Warning: the validity of monitor DPI information on Windows depends on the application DPI awareness settings, which generally needs to be set in the manifest or at runtime.
-        float x_scale, y_scale;
-        glfwGetMonitorContentScale(glfw_monitors[n], &x_scale, &y_scale);
-        monitor.DpiScale = x_scale;
-#endif
-        platform_io.Monitors.push_back(monitor);
-    }
-    g_WantUpdateMonitors = false;
-}
-
-static void ImGui_ImplGlfw_MonitorCallback(GLFWmonitor*, int)
-{
-    g_WantUpdateMonitors = true;
-}
-
 static void ImGui_ImplGlfw_InitPlatformInterface()
 {
     // Register platform interface (will be coupled with a renderer interface)
@@ -832,11 +864,8 @@ static void ImGui_ImplGlfw_InitPlatformInterface()
     platform_io.Platform_SetImeInputPos = ImGui_ImplWin32_SetImeInputPos;
 #endif
 
-    // Note: monitor callback are broken GLFW 3.2 and earlier (see github.com/glfw/glfw/issues/784)
-    ImGui_ImplGlfw_UpdateMonitors();
-    glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
-
     // Register main window handle (which is owned by the main application, not by us)
+    // This is mostly for simplicity and consistency, so that our code (e.g. mouse handling etc.) can use same logic for main and secondary viewports.
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ImGuiViewportDataGlfw* data = IM_NEW(ImGuiViewportDataGlfw)();
     data->Window = g_Window;
@@ -849,7 +878,5 @@ static void ImGui_ImplGlfw_ShutdownPlatformInterface()
 {
 }
 
-#endif // __ANDROID__ [Bruno Levy] 
-
-
+#endif // __ANDROID__ [Bruno Levy]
 

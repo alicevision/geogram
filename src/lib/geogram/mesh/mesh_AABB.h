@@ -356,7 +356,27 @@ namespace GEO {
      */
     class GEOGRAM_API MeshFacetsAABB : public MeshAABB {
     public:
-    
+
+	/**
+	 * \brief Stores all the information related with a ray-facet 
+	 *   intersection.
+	 */
+	struct Intersection {
+	    Intersection() :
+		t(Numeric::max_float64()),
+		f(index_t(-1)),
+		i(index_t(-1)), j(index_t(-1)), k(index_t(-1))
+	    {
+	    }
+	    vec3 p;        /**< the intersection. */
+	    double t;      /**< the parameter along the intersected ray. */
+	    index_t f;     /**< the intersected facet. */	    
+	    vec3 N;        /**< the normal vector at the intersection. */
+	    index_t i,j,k; /**< the vertices of the intersected triangle. */
+	    double u,v;    /**< the barycentric coordinates in the triangle. */
+	};
+
+	
         /**
          * \brief MeshFacetsAABB constructor.
          * \details Creates an uninitialized MeshFacetsAABB.
@@ -500,6 +520,35 @@ namespace GEO {
         }
 
 	/**
+	 * \brief Tests whether there exists an intersection between a ray
+	 *  and the mesh.
+	 * \param[in] R the ray.
+	 * \param[in] tmax optional maximum parameter of the intersection along
+	 *  the ray.
+	 * \param[in] ignore_f optional facet to be ignored in intersection
+	 *  tests.
+	 * \retval true if there was an intersection.
+	 * \retval false otherwise.
+	 */
+	bool ray_intersection(
+	    const Ray& R,
+	    double tmax = Numeric::max_float64(),
+	    index_t ignore_f = index_t(-1)
+	) const;  
+
+
+	/**
+	 * \brief Computes the nearest intersection along a ray.
+	 * \param[in] R the ray
+	 * \param[in,out] I the intersection. If I.t is set, then intersections
+	 *  further away than I.t are ignored. If I.f is set, then intersection
+	 *  with facet f is ignored.
+	 * \retval true if there was an intersection.
+	 * \retval false otherwise.
+	 */
+	bool ray_nearest_intersection(const Ray& R, Intersection& I) const;
+	
+	/**
 	 * \brief Tests whether this surface mesh has an intersection
 	 *  with a segment.
 	 * \param[in] q1 , q2 the two extremities of the segment.
@@ -507,8 +556,9 @@ namespace GEO {
 	 *  and a facet of the mesh.
 	 * \retval false otherwise.
 	 */
-	bool segment_intersection(const vec3& q1, const vec3& q2) const;
-
+	bool segment_intersection(const vec3& q1, const vec3& q2) const {
+	    return ray_intersection(Ray(q1, q2-q1), 1.0);
+	}
 
 	/**
 	 * \brief Finds the intersection between a segment and a surface that
@@ -523,11 +573,17 @@ namespace GEO {
 	 */
 	bool segment_nearest_intersection(
 	    const vec3& q1, const vec3& q2, double& t, index_t& f
-	) const;
-
+	) const {
+	    Ray R(q1, q2-q1);
+	    Intersection I;
+	    I.t = 1.0;
+	    bool result = ray_nearest_intersection(R,I);
+	    t = I.t;
+	    f = I.f;
+	    return result;
+	}
 	
     protected:
-
 
         /**
          * \brief Computes a reasonable initialization for
@@ -572,10 +628,12 @@ namespace GEO {
 
         /**
          * \brief The recursive function used by the implementation
-         *  of segment_intersection()
-	 * \param[in] q1 , q2 the segment
+         *  of ray_intersection()
+	 * \param[in] R the ray
 	 * \param[in] dirinv 
 	 *              precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+	 * \param[in] max_t the maximum value of t for an intersection
+	 * \param[in] ignore_f facet index to be ignored in tests
          * \param[in] n index of the current node in the AABB tree
          * \param[in] b index of the first facet in the subtree under node \p n
          * \param[in] e one position past the index of the last facet in the
@@ -583,29 +641,30 @@ namespace GEO {
 	 * \retval true if their was an intersection
 	 * \retval false otherwise
 	 */
-	bool segment_intersection_recursive(
-	    const vec3& q1, const vec3& q2, const vec3& dirinv,
+	bool ray_intersection_recursive(
+	    const Ray& R, const vec3& dirinv, double max_t, index_t ignore_f,
 	    index_t n, index_t b, index_t e
 	) const;
 
         /**
          * \brief The recursive function used by the implementation
-         *  of segment_nearest_intersection()
-	 * \param[in] q1 , q2 the segment
+         *  of ray_nearest_intersection()
+	 * \param[in] R the ray
 	 * \param[in] dirinv 
 	 *               precomputed 1/(q2.x-q1.x), 1/(q2.y-q1.y), 1/(q2.z-q1.z)
+	 * \param[in,out] I the parameters of the nearest intersection 
+	 *   computed so-far. All intersections further away than I.t are 
+	 *   ignored.
+	 * \param[in] ignore_f facet index to be ignored in tests
          * \param[in] n index of the current node in the AABB tree
          * \param[in] b index of the first facet in the subtree under node \p n
          * \param[in] e one position past the index of the last facet in the
          *  subtree under node \p n
-	 * \param[in,out] t the coordinate along [q1,q2] of the nearest 
-	 *   intersection so-far.
-	 * \param[in,out] f the nearest intersected facet so-far.
+	 * \param[in] coord the current splitting coordinate, one of 0,1,2
 	 */
-	void segment_nearest_intersection_recursive(
-	    const vec3& q1, const vec3& q2, const vec3& dirinv,
-	    index_t n, index_t b, index_t e,
-	    double& t, index_t& f
+	void ray_nearest_intersection_recursive(
+	    const Ray& R, const vec3& dirinv, Intersection& I, index_t ignore_f,
+	    index_t n, index_t b, index_t e, index_t coord
 	) const;
     };
 

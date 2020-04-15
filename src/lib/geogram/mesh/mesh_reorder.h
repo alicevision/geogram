@@ -92,25 +92,6 @@ namespace GEO {
     
     /**
      * \brief Computes the Hilbert order for a set of 3D points.
-     * \details The implementation is inspired by:
-     *  - Christophe Delage and Olivier Devillers. Spatial Sorting. 
-     *   In CGAL User and Reference Manual. CGAL Editorial Board, 
-     *   3.9 edition, 2011
-     * \param[in] nb_vertices number of vertices to sort.
-     * \param[in] vertices pointer to the coordinates of the vertices
-     * \param[out] sorted_indices a vector of vertex indices, sorted
-     *  spatially on exit
-     * \param[in] stride number of doubles between two consecutive vertices
-     */
-    void GEOGRAM_API compute_Hilbert_order(
-        index_t nb_vertices, const double* vertices,
-        vector<index_t>& sorted_indices,
-        index_t stride = 3
-    );
-
-
-    /**
-     * \brief Computes the Hilbert order for a set of 3D points.
      * \details 
      *  This variant sorts a subsequence of the indices vector.
      *  The implementation is inspired by:

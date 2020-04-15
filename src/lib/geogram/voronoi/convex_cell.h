@@ -507,10 +507,10 @@ namespace VBW {
 	 */
         void init_with_tet(
 	    vec4 P0, vec4 P1, vec4 P2, vec4 P3,
-	    index_t P0_global_index,
-	    index_t P1_global_index,
-	    index_t P2_global_index,
-	    index_t P3_global_index	    
+	    global_index_t P0_global_index,
+	    global_index_t P1_global_index,
+	    global_index_t P2_global_index,
+	    global_index_t P3_global_index	    
 	);
       
 	/**
@@ -534,7 +534,7 @@ namespace VBW {
 	 * \return the number of created vertices. 
 	 */
 	index_t save(
-	    std::ostream& out, index_t v_offset=1, double shrink=0.0,
+	    std::ostream& out, global_index_t v_offset=1, double shrink=0.0,
 	    bool borders_only=false
 	) const;
 

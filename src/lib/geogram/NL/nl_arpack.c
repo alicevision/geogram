@@ -482,7 +482,7 @@ void nlEigenSolve_ARPACK(void) {
 	if(nlCurrentContext->verbose) {
 	    if(ierr != 0) {		
 		if(symmetric) {
-		    nl_fprintf(stderr, "Error with dseupd(): %d\n", ierr);		
+		    nl_fprintf(stderr, "Error with dseupd(): %d\n", ierr);
 		} else {
 		    nl_fprintf(stderr, "Error with dneupd(): %d\n", ierr);
 		}

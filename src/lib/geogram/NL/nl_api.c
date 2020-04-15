@@ -303,6 +303,43 @@ void nlGetIntegerv(NLenum pname, NLint* params) {
     }
 }
 
+
+void nlGetIntegervL(NLenum pname, NLlong* params) {
+    switch(pname) {
+    case NL_SOLVER: {
+        *params = (NLlong)(nlCurrentContext->solver);
+    } break;
+    case NL_NB_VARIABLES: {
+        *params = (NLlong)(nlCurrentContext->nb_variables);
+    } break;
+    case NL_NB_SYSTEMS: {
+	*params = (NLlong)(nlCurrentContext->nb_systems);
+    } break;
+    case NL_LEAST_SQUARES: {
+        *params = (NLlong)(nlCurrentContext->least_squares);
+    } break;
+    case NL_MAX_ITERATIONS: {
+        *params = (NLlong)(nlCurrentContext->max_iterations);
+    } break;
+    case NL_SYMMETRIC: {
+        *params = (NLlong)(nlCurrentContext->symmetric);
+    } break;
+    case NL_USED_ITERATIONS: {
+        *params = (NLlong)(nlCurrentContext->used_iterations);
+    } break;
+    case NL_PRECONDITIONER: {
+        *params = (NLlong)(nlCurrentContext->preconditioner);        
+    } break;
+    case NL_NNZ: {
+        *params = (NLlong)(nlMatrixNNZ(nlCurrentContext->M));
+    } break;
+    default: {
+        nlError("nlGetIntegervL","Invalid parameter");
+        nl_assert_not_reached;
+    } 
+    }
+}
+
 /******************************************************************************/
 /* Enable / Disable */
 
@@ -661,7 +698,8 @@ static void nlInitializeMSparseMatrix() {
 
 static void nlEndMatrix() {
 #ifdef NL_DEBUG    
-    NLuint i,jj;
+    NLuint i;
+    NLuint_big jj;
     NLCRSMatrix* M = NULL;
 #endif    
     nlTransition(NL_STATE_MATRIX, NL_STATE_MATRIX_CONSTRUCTED);    
