@@ -210,6 +210,7 @@ namespace GEO {
         keep_infinite_ = false;
         nb_finite_cells_ = 0;
         keep_regions_ = false;
+        Numeric::random_reset();
     }
 
     Delaunay::~Delaunay() {
