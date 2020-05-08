@@ -523,13 +523,13 @@ namespace GEO {
             max_threads_initialized_ = true;
             if(num_threads == 0) {
                 num_threads = 1;
-            } else if(num_threads > number_of_cores()) {
-                Logger::warn("Process")
-                    << "Cannot allocate " << num_threads
-                    << " for multithreading"
-                    << std::endl;
-                num_threads = number_of_cores();
             }
+            // Previous version of code would test: num_threads > number_of_cores()
+            // and set num_threads = number_of_cores() if condition was true.  
+            // Thread counts in geogram must be tied to input data rather than 
+            // hardware; otherwise, its behavior is non-deterministic.  
+            // Additionally, there is no harm in an over-subscription of tasks.  
+            // In some cases in geogram, it is actually more optimal.  
             max_threads_ = num_threads;
             Logger::out("Process")
                 << "Max used threads = " << max_threads_
