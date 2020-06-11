@@ -70,6 +70,8 @@ namespace GEO {
          *  points (set to dim if unspecified).
          * \param[in] nn_algo factory name for nearest neighbor search.
          * \return the number of unique points
+         * \param[in] use_tbb whether to use tbb to multithread the process.
+         * \return the number of unique points
          */
         index_t GEOGRAM_API colocate(
             const double* points,

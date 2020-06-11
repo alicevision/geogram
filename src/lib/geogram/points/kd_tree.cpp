@@ -48,6 +48,8 @@
 #include <geogram/basic/process.h>
 #include <geogram/basic/algorithm.h>
 
+#include <tbb/parallel_for.h>
+
 namespace {
 
     using namespace GEO;
@@ -416,16 +418,7 @@ namespace GEO {
 /****************************************************************************/
     
     BalancedKdTree::BalancedKdTree(coord_index_t dim) :
-        KdTree(dim),
-        m0_(max_index_t()),
-        m1_(max_index_t()),
-        m2_(max_index_t()),
-        m3_(max_index_t()),
-        m4_(max_index_t()),
-        m5_(max_index_t()),
-        m6_(max_index_t()),
-        m7_(max_index_t()),
-        m8_(max_index_t()) {
+        KdTree(dim) {
     }
 
     BalancedKdTree::~BalancedKdTree() {
@@ -435,54 +428,50 @@ namespace GEO {
         index_t sz = max_node_index(1, 0, nb_points()) + 1;
         splitting_coord_.resize(sz);
         splitting_val_.resize(sz);
-        
-        // If there are more than 16*MAX_LEAF_SIZE (=256) points,
-        // create the tree in parallel
-        if(
-            nb_points() >= (16 * MAX_LEAF_SIZE) &&
-            Process::maximum_concurrent_threads() > 1
-        ) {
-            m0_ = 0;
-            m8_ = nb_points();
-            // Create the first level of the tree
-            m4_ = split_kd_node(1, m0_, m8_);
-            
-            // Create the second level of the tree
-            //  (using two threads)
-            parallel(
-                [this]() { m2_ = split_kd_node(2, m0_, m4_); },
-                [this]() { m6_ = split_kd_node(3, m4_, m8_); }
-            );
-            
-            // Create the third level of the tree
-            //  (using four threads)
-            parallel(
-                [this]() { m1_ = split_kd_node(4, m0_, m2_); },
-                [this]() { m3_ = split_kd_node(5, m2_, m4_); },
-                [this]() { m5_ = split_kd_node(6, m4_, m6_); },
-                [this]() { m7_ = split_kd_node(7, m6_, m8_); }          
-            );
 
-            // Create the fourth level of the tree
-            //  (using eight threads)
-            parallel(
-                [this]() { create_kd_tree_recursive(8 , m0_, m1_); },
-                [this]() { create_kd_tree_recursive(9 , m1_, m2_); },
-                [this]() { create_kd_tree_recursive(10, m2_, m3_); },
-                [this]() { create_kd_tree_recursive(11, m3_, m4_); },
-                [this]() { create_kd_tree_recursive(12, m4_, m5_); },
-                [this]() { create_kd_tree_recursive(13, m5_, m6_); },
-                [this]() { create_kd_tree_recursive(14, m6_, m7_); },
-                [this]() { create_kd_tree_recursive(15, m7_, m8_); }            
-            );
-            
-        } else {
-            create_kd_tree_recursive(1, 0, nb_points());
-        }
+        // A tbb Range class can allow us to use tbb for multithreading.
+        class Range {
+        public:
+            // Root node is number 1.
+            // This is because "children at 2*n and 2*n+1" does not
+            // work with 0 !!
+
+            Range(BalancedKdTree& tree, index_t b, index_t e) 
+                : tree(tree), b(b), e(e), node_index(1) {}
+
+            bool empty() const { return b == e; }
+            bool is_divisible() const { return e - b >= 4 * MAX_LEAF_SIZE; }
+
+            Range(Range& r, tbb::split) : Range(r) {
+                auto middle = tree.split_kd_node(node_index, b, e);
+
+                r.e = middle;
+                r.node_index <<= 1;
+
+                b = middle;
+                node_index <<= 1;
+                node_index |= 1;
+            }
+
+            void create_single_threaded() const {
+                tree.create_kd_tree_recursive(node_index, b, e);
+            }
+
+        private:
+            BalancedKdTree& tree;
+            index_t b;
+            index_t e;
+            index_t node_index;
+        };
         
-        // Root node is number 1.
-        // This is because "children at 2*n and 2*n+1" does not
-        // work with 0 !!
+        struct Body {
+            void operator()(const Range& r) const {
+                r.create_single_threaded();
+            }
+        };
+
+        tbb::parallel_for(Range(*this, 0, nb_points()), Body{});
+        
         return 1;
     }
 

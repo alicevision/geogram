@@ -548,11 +548,6 @@ namespace GEO {
          * \brief One per node, splitting coordinate value.
          */
         vector<double> splitting_val_;
-
-        /**
-         * \brief Indices for multithreaded tree construction.
-         */
-        index_t m0_, m1_, m2_, m3_, m4_, m5_, m6_, m7_, m8_;
     };
 
     /*********************************************************************/

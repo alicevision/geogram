@@ -145,7 +145,6 @@ namespace GEO {
         bool multi_nerve = CmdLine::get_arg_bool("remesh:multi_nerve");
 
         Logger::out("Remesh") << "Computing RVD..." << std::endl;
-
         CVT.compute_surface(&M_out, multi_nerve);
         if(CmdLine::get_arg_bool("dbg:save_ANN_histo")) {
             Logger::out("ANN")

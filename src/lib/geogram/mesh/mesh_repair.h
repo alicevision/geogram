@@ -84,6 +84,8 @@ namespace GEO {
      *  Combine them with the 'bitwise or' (|) operator.
      * \param[in] colocate_epsilon tolerance used to colocate vertices
      *  (if #MESH_REPAIR_COLOCATE is set in mode).
+     * \param[in] colocate_use_tbb whether to use tbb to multithread colocating
+     *  vertices (if #MESH_REPAIR_COLOCATE is set in mode).
      */
     void GEOGRAM_API mesh_repair(
         Mesh& M,
@@ -165,6 +167,8 @@ namespace GEO {
      * \param[in] colocate_epsilon if the distance between two
      *  mesh vertices is smaller than colocate_epsilon, then they
      *  are colocated.
+     * \param[in] colocate_use_tbb if true, colocation is multithreaded
+     *  via tbb.
      */
     void GEOGRAM_API mesh_detect_colocated_vertices(
         const Mesh& M, vector<index_t>& v_colocated_index,

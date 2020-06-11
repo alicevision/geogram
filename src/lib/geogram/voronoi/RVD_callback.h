@@ -140,7 +140,7 @@ namespace GEO {
         void set_spinlocks(Process::SpinLockArray* spinlocks) {
             spinlocks_ = spinlocks;
         }
-        
+
       protected:
         index_t seed_;
         index_t simplex_;
@@ -194,7 +194,6 @@ namespace GEO {
             index_t t,
             const GEOGen::Polygon& C
         ) const;
-
     };
     
     /***************************************************************/    
@@ -249,7 +248,6 @@ namespace GEO {
             index_t t,
             const GEOGen::ConvexCell& C
         ) const;
-            
 
         /**
          * \brief Called at the beginning of each intersection polyhedron.
@@ -338,7 +336,8 @@ namespace GEO {
          * \details If set, a single polyhedron is generated for each
          *  (connected component) of the restricted Voronoi cells. If not
          *  set (default), each tetrahedron-Voronoi cell intersection 
-         *  generates a new polyhedron.
+         *  generates a new polyhedron.  If set, this callback must be run
+         *  be run using connected components and not in parallel.
          * \param[in] x true if internal facets should be removed, false
          *  otherwise
          */
@@ -352,7 +351,10 @@ namespace GEO {
          *  of multiple polyhedra that correspond to the intersection with
          *  the tetrahedra of the input volume mesh. They can be simplified
          *  and replaced by a single polygon. This implies simplifying the
-         *  internal tetrahedron facets and using a mesh.
+         *  internal tetrahedron facets and using a mesh.  If set, this 
+         *  callback must be run using connected components and not in 
+         *  parallel, unless simplify_internal_tet_facets and use_mesh are
+         *  subsequently set to false.
          * \param[in] x true if Voronoi facets should be simplified, 
          *  false otherwise.
          */
@@ -371,7 +373,9 @@ namespace GEO {
          *  correspond to the initial polygons of the boundary. They can be 
          *  simplified as a single polygon per Voronoi cell. This implies 
          *  simplifying the internal tetrahedron facets, simplifying the 
-         *  Voronoi facets and using a mesh.
+         *  Voronoi facets and using a mesh, and thus necessitates that the
+         *  callback be run using connected components and not in 
+         *  parallel.
          * \param[in] x true if boundary facets should be simplified, 
          *  false otherwise.
          * \param[in] angle_threshold an edge shared by two adjacent facets 
@@ -403,7 +407,8 @@ namespace GEO {
          * \brief Specifies whether a mesh should be built for each
          *  traversed polyhedron.
          * \details The build mesh can then be modified (e.g., simplified)
-         *  by overloading process_mesh().
+         *  by overloading process_mesh().  If this is true, the callback
+         *  must not be used in parallel.
          * \param[in] x true if a mesh should be build, false otherwise
          */
         void set_use_mesh(bool x);

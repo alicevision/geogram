@@ -49,6 +49,7 @@
 #include <geogram/basic/string.h>
 #include <geogram/basic/command_line.h>
 #include <geogram/basic/stopwatch.h>
+#include <tbb/tbb.h>
 #include <atomic>
 #include <mutex>
 
@@ -741,47 +742,24 @@ namespace GEO {
         }
     }
 
+    void tbb_parallel_for(index_t from, index_t to, std::function<void(index_t)> func)
+    {
+        auto body = [&func](tbb::blocked_range<index_t> range) {
+            for (auto i = range.begin(); i != range.end(); ++i) {
+                func(i);
+            }
+        };
+        tbb::parallel_for(tbb::blocked_range<index_t>(from, to), body);
+    }
+
 
     void parallel_for_slice(
-        index_t from, index_t to, std::function<void(index_t, index_t)> func,
-        index_t threads_per_core
+        index_t from, index_t to, std::function<void(index_t, index_t)> func
     ) {
-#ifdef GEO_OS_WINDOWS
-        // TODO: This is a limitation of WindowsThreadManager, to be fixed.
-        threads_per_core = 1;
-#endif
-
-        index_t nb_threads = std::min(
-            to - from,
-            Process::maximum_concurrent_threads() * threads_per_core
-        );
-
-        nb_threads = std::max(index_t(1), nb_threads);
-
-        index_t batch_size = (to - from) / nb_threads;
-        if(Process::is_running_threads() || nb_threads == 1) {
-            func(from, to);
-        } else {
-            ThreadGroup threads;
-            index_t cur = from;
-            for(index_t i = 0; i < nb_threads; i++) {
-                if(i == nb_threads - 1) {
-                    threads.push_back(
-                        new ParallelForSliceThread(
-                            func, cur, to
-                          )
-                        );
-                } else {
-                    threads.push_back(
-                        new ParallelForSliceThread(
-                            func, cur, cur + batch_size
-                           )
-                        );
-                }
-                cur += batch_size;
-            }
-            Process::run_threads(threads);
-        }
+        auto body = [&func](tbb::blocked_range<index_t> range) {
+            func(range.begin(), range.end());
+        };
+        tbb::parallel_for(tbb::blocked_range<index_t>(from, to), body);
     }
 
     void parallel(

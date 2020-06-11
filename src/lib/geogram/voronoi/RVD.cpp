@@ -194,6 +194,7 @@ namespace {
             arg_scalars_ = nullptr;
             thread_mode_ = MT_NONE;
             nb_triangles_ = 0;
+            set_use_tbb(false);
         }
 
         void set_delaunay(Delaunay* delaunay) override {
@@ -403,6 +404,7 @@ namespace {
                 }
             }
 
+
         private:
             double* mg_;
             double* m_;
@@ -414,7 +416,20 @@ namespace {
         void compute_centroids_on_surface(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nullptr) {
+                if (use_tbb_) {
+                    // When using tbb, we want to use the master-based version
+                    // of ComputeCentroids or ComputeCentroidsWeighted, but with
+                    // *this as the master in question.
+                    arg_vectors_ = mg;
+                    arg_scalars_ = m;
+                    master_m_ = &accu_m_;
+                    master_g_ = &accu_g_;
+                    accu_m_.clear();
+                    accu_g_.clear();
+                    accu_m_.reserve(mesh_->facets.nb());
+                    accu_g_.reserve(DIM * mesh_->facets.nb());
+                }
+                if(master_ != nullptr || use_tbb_) {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCentroidsWeighted<Process::SpinLockArray>(
@@ -446,7 +461,7 @@ namespace {
                 thread_mode_ = MT_LLOYD;
                 arg_vectors_ = mg;
                 arg_scalars_ = m;
-                for(index_t t = 0; t < nb_parts(); t++) {
+                for (index_t t = 0; t < nb_parts(); t++) {
                     part(t).master_m_ = &accu_m_;
                     part(t).master_g_ = &accu_g_;
                 }
@@ -458,6 +473,8 @@ namespace {
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
+            }
+            if (nb_parts() != 0 || use_tbb_) {
                 // sort accu_m_ and accu_g_ by abs value, then sum elements
                 tbb::parallel_sort(accu_m_.begin(), accu_m_.end(), [](
                     const std::pair<index_t, double> &x,
@@ -678,7 +695,19 @@ namespace {
         void compute_centroids_in_volume(double* mg, double* m) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nullptr) {
+                if (use_tbb_) {
+                    // When using tbb, we want to use the master-based version
+                    // of our action, but with *this as the master in question.
+                    arg_vectors_ = mg;
+                    arg_scalars_ = m;
+                    master_m_ = &accu_m_;
+                    master_g_ = &accu_g_;
+                    accu_m_.clear();
+                    accu_g_.clear();
+                    accu_m_.reserve(mesh_->facets.nb());
+                    accu_g_.reserve(DIM * mesh_->facets.nb());
+                }
+                if(master_ != nullptr || use_tbb_) {
                     if(has_weights_) {
                         RVD_.for_each_tetrahedron(
                             ComputeCentroidsVolumicWeighted<Process::SpinLockArray>(
@@ -712,7 +741,7 @@ namespace {
                 thread_mode_ = MT_LLOYD;
                 arg_vectors_ = mg;
                 arg_scalars_ = m;
-                for(index_t t = 0; t < nb_parts(); t++) {
+                for (index_t t = 0; t < nb_parts(); t++) {
                     part(t).master_m_ = &accu_m_;
                     part(t).master_g_ = &accu_g_;
                 }
@@ -724,6 +753,8 @@ namespace {
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
+            }
+            if (nb_parts() != 0 || use_tbb_) {
                 // sort accu_m_ and accu_g_ by abs value, then sum elements
                 tbb::parallel_sort(accu_m_.begin(), accu_m_.end(), [](
                     const std::pair<index_t, double> &x,
@@ -985,7 +1016,19 @@ namespace {
         void compute_CVT_func_grad_on_surface(double& f, double* g) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nullptr) {
+                if (use_tbb_) {
+                    // When using tbb, we want to use the master-based version
+                    // of our action, but with *this as the master in question.
+                    arg_vectors_ = g;
+                    funcval_ = 0.0;
+                    master_f_ = &accu_f_;
+                    master_g_ = &accu_g_;
+                    accu_f_.clear();
+                    accu_g_.clear();
+                    accu_f_.reserve(mesh_->facets.nb());
+                    accu_g_.reserve(DIM * mesh_->facets.nb());
+                }
+                if(master_ != nullptr || use_tbb_) {
                     if(has_weights_) {
                         RVD_.for_each_triangle(
                             ComputeCVTFuncGradWeighted<Process::SpinLockArray>(
@@ -1031,6 +1074,8 @@ namespace {
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
+            }
+            if (nb_parts() != 0 || use_tbb_) {
                 // sort accu_f_ and accu_g_ by abs value, then sum elements
                 tbb::parallel_sort(accu_f_.begin(), accu_f_.end(), [](double x, double y) {
                     return MAKE_KEY(x) < MAKE_KEY(y);
@@ -1176,7 +1221,19 @@ namespace {
         void compute_CVT_func_grad_in_volume(double& f, double* g) override {
             create_threads();
             if(nb_parts() == 0) {
-                if(master_ != nullptr) {
+                if (use_tbb_) {
+                    // When using tbb, we want to use the master-based version
+                    // of our action, but with *this as the master in question.
+                    arg_vectors_ = g;
+                    funcval_ = 0.0;
+                    master_f_ = &accu_f_;
+                    master_g_ = &accu_g_;
+                    accu_f_.clear();
+                    accu_g_.clear();
+                    accu_f_.reserve(mesh_->facets.nb());
+                    accu_g_.reserve(DIM * mesh_->facets.nb());
+                }
+                if(master_ != nullptr || use_tbb_) {
                     RVD_.for_each_volumetric_integration_simplex(
                         ComputeCVTFuncGradVolumetric<Process::SpinLockArray>(
                             RVD_, f, g, master_f_, master_g_, master_->spinlocks_
@@ -1206,6 +1263,8 @@ namespace {
                     0, nb_parts(),
                     [this](index_t i) { run_thread(i); }
                 );
+            }
+            if (nb_parts() != 0 || use_tbb_) {
                 // sort accu_f_ and accu_g_ by abs value, then sum elements
                 tbb::parallel_sort(accu_f_.begin(), accu_f_.end(), [](double x, double y) {
                     return MAKE_KEY(x) < MAKE_KEY(y);
@@ -1242,14 +1301,18 @@ namespace {
              * \brief Constructs a ComputeCVTFuncGradIntegrationSimplex.
              * \param[in] RVD the Restricted Voronoi Diagram
              * \param[in] F the IntegrationSimplex
+             * \param[in] multithread whether this may be used from multiple
+                threads simultaneously.
              */
             ComputeCVTFuncGradIntegrationSimplex(
                 const GenRestrictedVoronoiDiagram& RVD,
-                IntegrationSimplex* F
+                IntegrationSimplex* F,
+                bool multithread
             ) :
                 f_(0.0),
                 RVD_(RVD),
-                simplex_func_(F) {
+                simplex_func_(F),
+                multithread_(multithread) {
                 simplex_func_->reset_thread_local_storage();
             }
 
@@ -1266,9 +1329,15 @@ namespace {
                 const Vertex& v2,
                 const Vertex& v3
             ) {
-                f_ += simplex_func_->eval(
+                auto res = simplex_func_->eval(
                     i,v1,v2,v3,RVD_.current_facet()
                 );
+                if (multithread_) {
+                    accu_f_.push_back(res);
+                }
+                else {
+                    f_ += res;
+                }
             }
 
             /**
@@ -1295,16 +1364,35 @@ namespace {
             ) {
                 geo_argused(v_adj);
                 geo_argused(t_adj);
-                f_ += simplex_func_->eval(
+                auto res = simplex_func_->eval(
                     v,v1,v2,v3,t,index_t(t_adj),index_t(v_adj)
                 );
+                if (multithread_) {
+                    accu_f_.push_back(res);
+                }
+                else {
+                    f_ += res;
+                }
             }
 
             /**
-             * \brief Gets the function value.
+             * \brief Gets the function value.  Once called, this object ceases
+             *  to be multithread-safe (though simultaneously using the 
+             *  underlying IntegrationSimplex from multiple instances of this 
+             *  class remains ok).
              * \return The function value accumulated so far.
              */
-            double f() const {
+            double f() {
+                if (multithread_) {
+                    tbb::parallel_sort(accu_f_.begin(), accu_f_.end(), 
+                            [](double x, double y) {
+                        return MAKE_KEY(x) < MAKE_KEY(y);
+                    });
+                    for (double x : accu_f_) {
+                        f_ += x;
+                    }
+                    multithread_ = false;
+                }
                 return f_;
             }
 
@@ -1312,6 +1400,8 @@ namespace {
             double f_;
             const GenRestrictedVoronoiDiagram& RVD_;
             IntegrationSimplex* simplex_func_;
+            bool multithread_;
+            tbb::concurrent_vector<double> accu_f_;
         };
 
         void compute_integration_simplex_func_grad(
@@ -1327,7 +1417,9 @@ namespace {
                         g
                     );
                 }
-                ComputeCVTFuncGradIntegrationSimplex C(RVD_,F);
+                ComputeCVTFuncGradIntegrationSimplex C(
+                    RVD_, F, use_tbb_
+                );
                 bool sym = RVD_.symbolic();
                 RVD_.set_symbolic(true);
                 if(F->volumetric()) {
@@ -1375,57 +1467,12 @@ namespace {
 
         /********************************************************************/
 
-        /**
-         * \brief Adapter class used internally to implement for_each_polygon()
-         * \details Gets the current triangle from the RVD and passes it back
-         *  to the callback. It is needed because GenericRVD::for_each_polygon()
-         *  does not pass the current triangle.
-         */
-        // TODO: pass it through all the callbacks, because it is ridiculous:
-        // we pass it through the first levels, then throw it, then retrieve it
-        // (see GenRVD)
-        class PolygonCallbackAction {
-        public:
-            /**
-             * \brief PolygonCallbackAction constructor
-             * \param[in] RVD a pointer to the restricted Voronoi diagram
-             * \param[in] callback a pointer to the PolygonCallback
-             */
-            PolygonCallbackAction(
-                GenRestrictedVoronoiDiagram& RVD,
-                GEO::RVDPolygonCallback& callback
-            ) :
-                RVD_(RVD),
-                callback_(callback) {
-            }
-
-            /**
-             * \brief Callback called for each polygon.
-             * \details Routes the callback to the wrapped user action class.
-             * \param[in] v index of current Delaunay seed
-             * \param[in] P intersection between current mesh facet
-             *  and the Voronoi cell of \p v
-             */
-            void operator() (
-                index_t v,
-                const GEOGen::Polygon& P
-            ) const {
-                callback_(v, RVD_.current_facet(), P);
-            }
-
-        protected:
-            GenRestrictedVoronoiDiagram& RVD_;
-            GEO::RVDPolygonCallback& callback_;
-        };
-
-
         virtual void compute_with_polygon_callback(
             GEO::RVDPolygonCallback& polygon_callback
         ) {
             create_threads();
             if(nb_parts() == 0) {
-                PolygonCallbackAction action(RVD_,polygon_callback);
-                RVD_.for_each_polygon(action);
+                RVD_.for_each_polygon(polygon_callback);
             } else {
                 for(index_t t = 0; t < nb_parts(); t++) {
                     part(t).RVD_.set_symbolic(RVD_.symbolic());
@@ -1496,10 +1543,10 @@ namespace {
             BuildRVD(
                 const GenRestrictedVoronoiDiagram& RVD_in,
                 BUILDER& builder
-            ) :
-                RVD(RVD_in),
+            ) :                
                 builder_(builder),
                 current_facet_(-1) {
+                geo_argused(RVD_in), // For backward compatibility only.
                 builder_.begin_surface();
             }
 
@@ -1522,9 +1569,9 @@ namespace {
              */
             void operator() (
                 index_t v,
+                index_t f,
                 const typename GenRestrictedVoronoiDiagram::Polygon& P
             ) {
-                index_t f = RVD.current_facet();
                 if(signed_index_t(f) != current_facet_) {
                     if(current_facet_ != -1) {
                         builder_.end_reference_facet();
@@ -1541,7 +1588,6 @@ namespace {
             }
 
         private:
-            const GenRestrictedVoronoiDiagram& RVD;
             BUILDER& builder_;
             signed_index_t current_facet_;
         };
@@ -1765,6 +1811,8 @@ namespace {
         ) override {
             bool sym = RVD_.symbolic();
             RVD_.set_symbolic(true);
+            bool old_use_tbb = use_tbb_;
+            set_use_tbb(false);
             if(volumetric_) {
                 if(dim == 0) {
                     dim = dimension();
@@ -1864,6 +1912,7 @@ namespace {
                 );
             }
             RVD_.set_symbolic(sym);
+            set_use_tbb(old_use_tbb);
             M.show_stats("RVD");
         }
 
@@ -1901,8 +1950,10 @@ namespace {
             if(parallel) {
                 compute_with_polygon_callback(callback);
             } else {
-                PolygonCallbackAction action(RVD_,callback);
-                RVD_.for_each_polygon(action);
+                auto old_use_tbb = use_tbb_;
+                set_use_tbb(false);
+                RVD_.for_each_polygon(callback);
+                set_use_tbb(old_use_tbb);
             }
             callback.end();
             RVD_.set_symbolic(sym_backup);
@@ -1925,7 +1976,10 @@ namespace {
             if(parallel) {
                 compute_with_polyhedron_callback(callback);
             } else {
+                auto old_use_tbb = use_tbb_;
+                set_use_tbb(false);
                 RVD_.for_each_polyhedron(callback);
+                set_use_tbb(old_use_tbb);
             }
             callback.end();
             RVD_.set_symbolic(sym_backup);
@@ -2279,9 +2333,11 @@ namespace {
             /**
              * \brief The callback called for each restricted Voronoi cell.
              * \param[in] s1 index of current center vertex
+             * \param[in] facet current facet.  Not used.
              * \param[in] P current restricted Voronoi cell
              */
-            void operator() (index_t s1, const Polygon& P) {
+            void operator() (index_t s1, index_t facet, const Polygon& P) {
+                geo_argused(facet);
                 if(RVD_.connected_component_changed()) {
                     if(cur_seed_ != -1) {
                         end_connected_component();
@@ -2625,6 +2681,8 @@ namespace {
             const vector<bool>& seed_is_locked,
             MeshFacetsAABB* AABB
         ) override {
+            bool old_use_tbb = use_tbb_;
+            set_use_tbb(false);
             if(volumetric_) {
                 // For the moment, only simple mode is supported
                 simplices.clear();
@@ -2688,6 +2746,7 @@ namespace {
                     }
                 }
             }
+            set_use_tbb(old_use_tbb);
         }
 
         void create_threads() override {
@@ -2696,6 +2755,30 @@ namespace {
             // TODO: create parts even if facets range is specified
             // (and subdivide facets range)
             if(is_slave_ || facets_begin_ != -1 || facets_end_ != -1) {
+                return;
+            }
+            if (use_tbb_) {
+                // We don't want to actually use worker objects, but we 
+                // sometimes call this to improve data locality, and that is
+                // relevant when using tbb, so we do that part of the thread 
+                // creation.  We do, however, do so in a way that is based on
+                // the mesh rather than the system.  We also set ranges for
+                // facets and tets, though since we're not using workers the
+                // range for each is simply the entirety of the mesh.
+                auto nb_parts_in = 
+                    static_cast<index_t>(std::log2(
+                        mesh_->facets.nb() + mesh_->cells.nb()
+                    ));
+                vector<index_t> facet_ptr;
+                vector<index_t> tet_ptr;
+                mesh_partition(
+                    *mesh_, MESH_PARTITION_HILBERT,
+                    facet_ptr, tet_ptr, nb_parts_in
+                );
+                set_facets_range(0, mesh_->facets.nb());
+                if (mesh_->cells.nb() != 0) {
+                    set_tetrahedra_range(0, mesh_->cells.nb());
+                }
                 return;
             }
             index_t nb_parts_in = Process::maximum_concurrent_threads();
@@ -2794,6 +2877,11 @@ namespace {
             return RVD_.point_allocator();
         }
 
+        void set_use_tbb(bool x) override {
+            use_tbb_ = x;
+            RVD_.set_use_tbb(x);
+        }
+
 
     protected:
 
@@ -2840,6 +2928,8 @@ namespace {
         tbb::concurrent_vector<double> * master_f_ = nullptr;
         tbb::concurrent_vector<std::pair<index_t, double>> * master_g_ = nullptr;
         tbb::concurrent_vector<std::pair<index_t, double>> * master_m_ = nullptr;
+
+        bool use_tbb_ = true;
 
     protected:
         /**

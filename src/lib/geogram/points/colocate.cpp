@@ -242,10 +242,9 @@ namespace GEO {
             Colocate colocate_obj(NN, old2new, tolerance);
             
             if(CmdLine::get_arg_bool("sys:multithread")) {
-                parallel_for(
+                tbb_parallel_for(
                     0, nb_points,
-                    [&colocate_obj](index_t i){ colocate_obj.do_it(i); },
-                    1, true
+                    [&colocate_obj](index_t i){ colocate_obj.do_it(i); }
                 );
             } else {
                 for(index_t i = 0; i < nb_points; i++) {

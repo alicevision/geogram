@@ -54,6 +54,8 @@
 #include <geogram/basic/algorithm.h>
 #include <geogram/bibliography/bibliography.h>
 
+#include <tbb/parallel_for.h>
+
 #include <random>
 
 namespace {
@@ -709,8 +711,9 @@ namespace {
 
     /**
      * \brief Generic class for sorting arbitrary elements in
-     *  Hilbert and Morton orders in 3d.
-     * \details The implementation is inspired by:
+     *  Hilbert and Morton orders in 3d using tbb.
+     * \details The implementation is inspired by tbb::parallel_sort and the 
+     *  old non-tbb geogram version, which was in turn inspired by:
      *  - Christophe Delage and Olivier Devillers. Spatial Sorting.
      *   In CGAL User and Reference Manual. CGAL Editorial Board,
      *   3.9 edition, 2011
@@ -725,51 +728,166 @@ namespace {
      */
     template <template <int COORD, bool UP, class MESH> class CMP, class MESH>
     struct HilbertSort3d {
+        // tbb range class to allow for parallel_for with changing comparator.
+        class Range {
+        public:
+            Range(const MESH& M, vector<index_t>::iterator begin,
+                  vector<index_t>::iterator end) 
+                :M(M), begin(begin), end(end), phase(0), position(0)
+            {}
 
-        /**
-         * \brief Low-level recursive spatial sorting function
-         * \details This function is recursive
-         * \param[in] M the mesh in which the elements reside
-         * \param[in] begin an iterator that points to the
-         *  first element of the sequence
-         * \param[in] end an iterator that points one position past the
-         *  last element of the sequence
-         * \param[in] limit subsequences smaller than limit are left unsorted
-         * \tparam COORDX the first coordinate, can be 0,1 or 2. The second
-         *  and third coordinates are COORDX+1 modulo 3 and COORDX+2 modulo 3
-         *  respectively
-         * \tparam UPX whether ordering along the first coordinate
-         *  is direct or inverse
-         * \tparam UPY whether ordering along the second coordinate
-         *  is direct or inverse
-         * \tparam UPZ whether ordering along the third coordinate
-         *  is direct or inverse
-         */
-        template <int COORDX, bool UPX, bool UPY, bool UPZ, class IT>
-        static void sort(
-            const MESH& M, IT begin, IT end, index_t limit = 1
-        ) {
-            const int COORDY = (COORDX + 1) % 3, COORDZ = (COORDY + 1) % 3;
-            if(end - begin <= signed_index_t(limit)) {
-                return;
+            bool empty() const { return begin == end; }
+
+            bool is_runnable() const { return end - begin > 1; }
+
+            bool is_divisible() const { return end - begin >= 256; }
+
+            vector<index_t>::iterator compare_and_sort() {
+                auto middle = begin + (end - begin) / 2;
+                switch (COORDX * 2 + UPX) {
+                case 0:
+                {
+                    CMP<0, false, MESH> cmp(M);
+                    std::nth_element(begin, middle, end, cmp);
+                    break;
+                }
+                case 1:
+                {
+                    CMP<0, true, MESH> cmp(M);
+                    std::nth_element(begin, middle, end, cmp);
+                    break;
+                }
+                case 2:
+                {
+                    CMP<1, false, MESH> cmp(M);
+                    std::nth_element(begin, middle, end, cmp);
+                    break;
+                }
+                case 3:
+                {
+                    CMP<1, true, MESH> cmp(M);
+                    std::nth_element(begin, middle, end, cmp);
+                    break;
+                }
+                case 4:
+                {
+                    CMP<2, false, MESH> cmp(M);
+                    std::nth_element(begin, middle, end, cmp);
+                    break;
+                }
+                case 5:
+                {
+                    CMP<2, true, MESH> cmp(M);
+                    std::nth_element(begin, middle, end, cmp);
+                    break;
+                }
+                default:
+                    geo_assert_not_reached;
+                }
+                return middle;
             }
-            IT m0 = begin, m8 = end;
-            IT m4 = reorder_split(m0, m8, CMP<COORDX, UPX, MESH>(M));
-            IT m2 = reorder_split(m0, m4, CMP<COORDY, UPY, MESH>(M));
-            IT m1 = reorder_split(m0, m2, CMP<COORDZ, UPZ, MESH>(M));
-            IT m3 = reorder_split(m2, m4, CMP<COORDZ, !UPZ, MESH>(M));
-            IT m6 = reorder_split(m4, m8, CMP<COORDY, !UPY, MESH>(M));
-            IT m5 = reorder_split(m4, m6, CMP<COORDZ, UPZ, MESH>(M));
-            IT m7 = reorder_split(m6, m8, CMP<COORDZ, !UPZ, MESH>(M));
-            sort<COORDZ, UPZ, UPX, UPY>(M, m0, m1);
-            sort<COORDY, UPY, UPZ, UPX>(M, m1, m2);
-            sort<COORDY, UPY, UPZ, UPX>(M, m2, m3);
-            sort<COORDX, UPX, !UPY, !UPZ>(M, m3, m4);
-            sort<COORDX, UPX, !UPY, !UPZ>(M, m4, m5);
-            sort<COORDY, !UPY, UPZ, !UPX>(M, m5, m6);
-            sort<COORDY, !UPY, UPZ, !UPX>(M, m6, m7);
-            sort<COORDZ, !UPZ, !UPX, UPY>(M, m7, m8);
-        }
+
+            Range(Range& r, tbb::split) : Range(r) {
+                auto middle = compare_and_sort();
+
+                advanceCoord();
+                ++phase;
+                position <<= 1;
+                position |= 1;
+                begin = middle;
+                UPX = !UPX;
+                updateForPhase3();
+
+                r.advanceCoord();
+                ++r.phase;
+                r.position <<= 1;
+                r.end = middle;
+                r.updateForPhase3();
+            }
+
+        private:
+            void advanceCoord() {
+                COORDX = (COORDX + 1) % 3;
+                auto temp = UPX;
+                UPX = UPY;
+                UPY = UPZ;
+                UPZ = temp;
+            }
+
+            void retreatCoord() {
+                COORDX = (COORDX + 2) % 3;
+                auto temp = UPX;
+                UPX = UPZ;
+                UPZ = UPY;
+                UPY = temp;
+            }
+
+            void updateForPhase3() {
+                if (phase < 3) {
+                    return;
+                }
+                geo_assert(phase == 3);
+                phase = 0;
+                switch (position) {
+                case 0:
+                    retreatCoord();
+                    break;
+                case 1:
+                    UPX = !UPX; // We negated it in the last split, 
+                                // so undo that.
+                    advanceCoord();
+                    break;
+                case 2:
+                    UPZ = !UPZ;
+                    advanceCoord();
+                    break;
+                case 3:
+                    UPX = !UPX;
+                    UPY = !UPY; // We want to negate it.
+                    break;
+                case 4:
+                    UPZ = !UPZ;
+                    break;
+                case 5:
+                    advanceCoord();
+                    break;
+                case 6:
+                    UPX = !UPX;
+                    UPZ = !UPZ;
+                    advanceCoord();
+                    break;
+                case 7:
+                    UPY = !UPY;
+                    retreatCoord();
+                    break;
+                default:
+                    geo_assert_not_reached;
+                }
+                position = 0;
+            }
+
+            int COORDX = 0;
+            bool UPX = false;
+            bool UPY = false;
+            bool UPZ = false;
+            int phase; // Our splitting technique only repeats every 3 splits.
+            int position; // Position relative to the last phase 0.
+
+            const MESH& M;
+            vector<index_t>::iterator begin;
+            vector<index_t>::iterator end;
+        };
+
+        // tbb body class, to be called on the range.
+        struct Body {
+            void operator()(Range& r) const
+            {
+                while (r.is_runnable()) {
+                    Range splitResult(r, tbb::split{});
+                    operator()(splitResult);
+                }
+            }
+        };
 
         /**
          * \brief Sorts a sequence of elements spatially.
@@ -788,8 +906,7 @@ namespace {
             vector<index_t>::iterator b,
             vector<index_t>::iterator e,
             index_t limit = 1
-        ) :
-            M_(M)
+        ) 
         {
             geo_debug_assert(e > b);
             geo_cite_with_info(
@@ -799,69 +916,16 @@ namespace {
                 " template in the spatial sort package of CGAL"
             );
 
+            Range range(M, b, e);
+
             // If the sequence is smaller than the limit, skip it
-            if(index_t(e - b) <= limit) {
+            if (index_t(e - b) <= limit) {
                 return;
             }
 
-            // If the sequence is smaller than 1024, use sequential sorting
-            if(index_t(e - b) < 1024) {
-                sort<0, false, false, false>(M_, b, e);
-                return;
-            }
-
-            // Parallel sorting (2 then 4 then 8 sorts in parallel)
-
-// Unfortunately we cannot access consts for template arguments in lambdas in all
-// compilers (gcc is OK but not MSVC) so I'm using (ugly) macros here...
-
-#          define COORDX 0
-#          define COORDY 1
-#          define COORDZ 2
-#          define UPX false
-#          define UPY false
-#          define UPZ false
-
-            m0_ = b;
-            m8_ = e;
-            m4_ = reorder_split(m0_, m8_, CMP<COORDX, UPX, MESH>(M));
-
-
-            parallel(
-                [this]() { m2_ = reorder_split(m0_, m4_, CMP<COORDY,  UPY, MESH>(M_)); },
-                [this]() { m6_ = reorder_split(m4_, m8_, CMP<COORDY, !UPY, MESH>(M_)); }
-            );
-
-            parallel(
-                [this]() { m1_ = reorder_split(m0_, m2_, CMP<COORDZ,  UPZ, MESH>(M_)); },
-                [this]() { m3_ = reorder_split(m2_, m4_, CMP<COORDZ, !UPZ, MESH>(M_)); },
-                [this]() { m5_ = reorder_split(m4_, m6_, CMP<COORDZ,  UPZ, MESH>(M_)); },
-                [this]() { m7_ = reorder_split(m6_, m8_, CMP<COORDZ, !UPZ, MESH>(M_)); }
-            );
-
-            parallel(
-                [this]() { sort<COORDZ,  UPZ,  UPX,  UPY>(M_, m0_, m1_); },
-                [this]() { sort<COORDY,  UPY,  UPZ,  UPX>(M_, m1_, m2_); },
-                [this]() { sort<COORDY,  UPY,  UPZ,  UPX>(M_, m2_, m3_); },
-                [this]() { sort<COORDX,  UPX, !UPY, !UPZ>(M_, m3_, m4_); },
-                [this]() { sort<COORDX,  UPX, !UPY, !UPZ>(M_, m4_, m5_); },
-                [this]() { sort<COORDY, !UPY,  UPZ, !UPX>(M_, m5_, m6_); },
-                [this]() { sort<COORDY, !UPY,  UPZ, !UPX>(M_, m6_, m7_); },
-                [this]() { sort<COORDZ, !UPZ, !UPX,  UPY>(M_, m7_, m8_); }
-            );
-
-#          undef COORDX
-#          undef COORDY
-#          undef COORDZ
-#          undef UPX
-#          undef UPY
-#          undef UPZ
+            Range r(M, b, e);
+            tbb::parallel_for(range, Body{});
         }
-
-    private:
-        const MESH& M_;
-        vector<index_t>::iterator
-            m0_, m1_, m2_, m3_, m4_, m5_, m6_, m7_, m8_;
     };
 
     /************************************************************************/
