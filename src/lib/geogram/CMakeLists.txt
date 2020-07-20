@@ -61,6 +61,8 @@ if(WIN32)
     target_link_libraries(geogram psapi)
 endif()
 
+target_compile_features(geogram PUBLIC cxx_std_17)
+
 # Install the library
 install_devkit_targets(geogram)
 

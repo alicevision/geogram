@@ -162,15 +162,18 @@ namespace GEO {
          *  the point set before calling Newton_iterations().
          * \param[in] nb_iter number of iterations
          * \param[in] safe_mode a flag that determines whether to run this
-         * function in a way that avoids potential errors in the algorithm when
-         * a point has many neighbors.  If set to false, the potential errors
-         * will typically be fairly minor (and thus still produce a suitable
-         * input for Newton_iterations()), but will be dependent on the number
-         * of threads used (and thus may pose issues for reproducibility across
-         * different machines); they may also be somewhat more significant in
-         * extreme cases.
+         *  function in a way that avoids potential errors in the algorithm when
+         *  a point has many neighbors.  If set to false, the potential errors
+         *  will typically be fairly minor (and thus still produce a suitable
+         *  input for Newton_iterations()), but will be dependent on the number
+         *  of threads used (and thus may pose issues for reproducibility across
+         *  different machines); they may also be somewhat more significant in
+         *  extreme cases.
+         * \param[in] safe_mode a flag that determines whether to run this
+         *  function using tbb for multithreading
          */
-        virtual void Lloyd_iterations(index_t nb_iter, bool safe_mode = false);
+        virtual void Lloyd_iterations(index_t nb_iter, 
+                                      bool safe_mode = true);
 
         /**
          * \brief Relaxes the points with Newton-Lloyd's algorithm.
@@ -291,6 +294,8 @@ namespace GEO {
          * \param[in] x current value of the variables
          * \param[out] f current value of the objective function
          * \param[out] g gradient of the objective function
+
+
          */
         static void funcgrad_CB(
             index_t n, double* x, double& f, double* g

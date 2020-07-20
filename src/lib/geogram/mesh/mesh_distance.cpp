@@ -50,7 +50,10 @@
 #include <geogram/basic/process.h>
 #include <geogram/basic/stopwatch.h>
 
+#include <tbb/parallel_for.h>
+
 #include <algorithm>
+#include <atomic>
 
 namespace {
 
@@ -64,10 +67,10 @@ namespace {
      *  runs multiple instances of this class
      *  (one per core).
      */
-    class DistanceThread : public Thread {
+    class DistanceBody {
     public:
         /**
-         * \brief Constructs a new DistanceThread
+         * \brief Constructs a new DistanceBody
          * \details This DistanceThread will compute the distances
          *  between a batch of points and an axis-aligned bounding box
          *  tree.
@@ -79,53 +82,35 @@ namespace {
          * \param[in] points_stride number of doubles between two
          *  consecutive points
          */
-        DistanceThread(
-            const MeshFacetsAABB& AABB,
-            index_t from, index_t to,
+        DistanceBody(
+            const MeshFacetsAABB& AABB, std::atomic<double>& result,
             const double* points_ptr, index_t points_stride = 3
         ) :
             AABB_(AABB),
-            from_(from),
-            to_(to),
-            max_sq_dist_(0.0),
+            result_(result),
             points_ptr_(points_ptr),
             points_stride_(points_stride) {
         }
 
-        /**
-         * \brief Runs the thread.
-         * \details Computes the distances for the batch of points associated
-         *  with this thread.
-         */
-        void run() override {
-            for(index_t v = from_; v < to_; v++) {
-                // TODO: optimization
-                // if we know that the points are spatially
-                // sorted, then we can use AABB_.squared_distance_with_hint()
+        void operator()(const tbb::blocked_range<index_t>& range) const {
+            double max = 0.0;
+            for (auto i = range.begin(); i != range.end(); ++i) {
                 double sq_dist = AABB_.squared_distance(
                     *reinterpret_cast<const vec3*>(
-                        points_ptr_ + v * points_stride_
-                    )
+                        points_ptr_ + i * points_stride_
+                        )
                 );
-                max_sq_dist_ = std::max(
-                    max_sq_dist_, sq_dist
-                );
+                max = std::max(max, sq_dist);
             }
-        }
-
-        /**
-         * \brief Gets the computed max squared distance.
-         * \return the maximum squared distance computed so far
-         */
-        double max_squared_distance() const {
-            return max_sq_dist_;
+            auto expected = result_.load();
+            while (expected < max) {
+                result_.compare_exchange_weak(expected, max);
+            }
         }
 
     private:
         const MeshFacetsAABB& AABB_;
-        index_t from_;
-        index_t to_;
-        double max_sq_dist_;
+        std::atomic<double>& result_;
         const double* points_ptr_;
         index_t points_stride_;
     };
@@ -150,31 +135,11 @@ namespace {
         index_t points_stride = 3
     ) {
         SystemStopwatch W;
-        TypedThreadGroup<DistanceThread> threads;
-        index_t nb_threads = Process::maximum_concurrent_threads();
-        index_t batch_size = nb_points / nb_threads;
-        index_t cur = 0;
-        index_t remaining = nb_points;
-        for(index_t i = 0; i < nb_threads; i++) {
-            index_t this_batch_size = batch_size;
-            if(i == nb_threads - 1) {
-                this_batch_size = remaining;
-            }
-            threads.push_back(
-                new DistanceThread(
-                    AABB,
-                    cur, cur + this_batch_size,
-                    points_ptr, points_stride
-                )
-            );
-            cur += this_batch_size;
-            remaining -= this_batch_size;
-        }
-        geo_assert(remaining == 0);
-        Process::run_threads(threads);
-        for(index_t t = 0; t < threads.size(); t++) {
-            result = std::max(result, threads[t]->max_squared_distance());
-        }
+        std::atomic<double> max_sq_dist_atomic(0.);
+        DistanceBody body(AABB, max_sq_dist_atomic, points_ptr, points_stride);
+        tbb::parallel_for(tbb::blocked_range<index_t>(0, nb_points), body);
+        result = max_sq_dist_atomic;
+
         double elapsed = W.elapsed_user_time();
         if(elapsed == 0.0) {
             Logger::out("AABB")

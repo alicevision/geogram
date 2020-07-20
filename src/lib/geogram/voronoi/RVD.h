@@ -699,6 +699,15 @@ namespace GEO {
          */
         virtual GEOGen::PointAllocator* point_allocator() = 0;
 
+        /**
+         * \brief Determines whether this should use tbb for multithreading.
+         * \details We generally want to use tbb, but when running Lloyd
+         *  iterations not in safe mode, it can exacerbate reproducibility
+         *  issues.
+         * \param[in] x whether to use tbb
+         */
+        virtual void set_use_tbb(bool x) = 0;
+
     protected:
         /**
          * \brief This constructor is never called directly.

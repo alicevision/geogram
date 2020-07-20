@@ -283,11 +283,8 @@ namespace GEO {
                 neighbors_.resize_array(i, default_nb_neighbors_, false);
             }
         }
-        parallel_for(
-            0, nb_vertices(),
-            [this](index_t i) { store_neighbors_CB(i); },
-            1, true
-        );
+        auto toRun = [this](index_t i) { store_neighbors_CB(i); };
+        tbb_parallel_for(0, nb_vertices(), std::move(toRun));
     }
 
     void Delaunay::get_neighbors_internal(

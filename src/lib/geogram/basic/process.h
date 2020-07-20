@@ -541,7 +541,7 @@ namespace GEO {
     /**
      * \brief Executes a loop with concurrent threads.
      * \details
-     *   Executes a parallel for loop from index \p to index \p to, calling
+     *   Executes a parallel for loop from index \p from index \p to, calling
      *   functional object \p func at each iteration.
      *
      * Calling parallel_for(func, from, to) is equivalent
@@ -574,6 +574,29 @@ namespace GEO {
         bool interleaved = false
     );
 
+     /**
+     * \brief Executes a loop with concurrent threads using tbb.
+     * \details
+     *   Executes a parallel for loop from index \p from index \p to, calling
+     *   functional object \p func at each iteration.
+     *
+     * Calling parallel_for(func, from, to) is equivalent
+     * to the following loop, computed in parallel:
+     * \code
+     * for(index_t i = from; i < to; i++) {
+     *    func(i)
+     * }
+     * \endcode
+     *
+     * While similar to parallel_for, this function allows for much more 
+     * flexibility (as best used by the system) regarding which indices are 
+     * run by which threads.  If called by a tbb worker thread, any threads
+     * available to that thread's context are available to this.
+     */
+     void GEOGRAM_API tbb_parallel_for(
+         index_t from, index_t to, std::function<void(index_t)> func
+     );
+
     /**
      * \brief Executes a loop with concurrent threads.
      *
@@ -590,8 +613,8 @@ namespace GEO {
      *   ...
      *   func(in, to);
      * \endcode
-     * where i1,i2,...in are automatically generated. Typically one interval
-     * per physical core is generated.
+     * where i1,i2,...in are automatically generated. Uses tbb for 
+     * implementation.
      *
      * \param[in] func functional object that accepts two arguments of
      *  type index_t.
@@ -601,8 +624,7 @@ namespace GEO {
      *  core (default is 1).
      */
      void GEOGRAM_API parallel_for_slice(
-         index_t from, index_t to, std::function<void(index_t, index_t)> func,
-         index_t threads_per_core = 1
+         index_t from, index_t to, std::function<void(index_t, index_t)> func
      );
 
      /**
