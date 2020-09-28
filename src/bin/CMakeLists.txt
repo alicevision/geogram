@@ -20,4 +20,5 @@ endif()
 
 if(GEOGRAM_WITH_FPG)
   add_subdirectory(fpg)
+  add_subdirectory(pck)  
 endif()

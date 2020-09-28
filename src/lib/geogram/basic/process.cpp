@@ -234,10 +234,11 @@ namespace {
             geo_argused(max_threads);
 
 #pragma omp parallel for schedule(dynamic)
-            for(index_t i = 0; i < threads.size(); i++) {
-                set_thread_id(threads[i],i);
-                set_current_thread(threads[i]);
-                threads[i]->run();
+            for(int i = 0; i < int(threads.size()); i++) {
+	        index_t ii = index_t(i);
+                set_thread_id(threads[ii],ii);
+                set_current_thread(threads[ii]);
+                threads[ii]->run();
             }
         }
 

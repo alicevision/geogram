@@ -5,7 +5,7 @@ if(WIN32)
     remove_definitions(/W3)
     add_definitions(-w)
 else()
-    add_definitions(-w)
+  add_definitions(-w -fcommon)
 endif()
 
 include_directories(${GEOGRAM_SOURCE_DIR}/src/lib/third_party/numerics/INCLUDE)

@@ -1169,12 +1169,11 @@ CALL_FUNCTION(BeginPopupContextItem, bool, str_id, mouse_button)
 IF_RET_ADD_END_STACK(11)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
-//    IMGUI_API bool          BeginPopupContextWindow(const char* str_id = NULL, int mouse_button = 1, bool also_over_items = true);  // helper to open and begin popup when clicked on current window.
+//    IMGUI_API bool          BeginPopupContextWindow(const char* str_id = NULL, int popup_flags = 1);  // helper to open and begin popup when clicked on current window.
 IMGUI_FUNCTION(BeginPopupContextWindow)
 OPTIONAL_LABEL_ARG(str_id)
-OPTIONAL_INT_ARG(mouse_button, 1)
-OPTIONAL_BOOL_ARG(also_over_items, true)
-CALL_FUNCTION(BeginPopupContextWindow, bool, str_id, mouse_button, also_over_items)
+OPTIONAL_INT_ARG(popup_flags, 1)
+CALL_FUNCTION(BeginPopupContextWindow, bool, str_id, popup_flags)
 IF_RET_ADD_END_STACK(11)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
@@ -1202,12 +1201,12 @@ CALL_FUNCTION_NO_RET(EndPopup)
 POP_END_STACK(11)
 END_IMGUI_FUNC
 //    IMGUI_API bool          OpenPopupOnItemClick(const char* str_id = NULL, int mouse_button = 1);                                  // helper to open popup when clicked on last item (note: actually triggers on the mouse _released_ event to be consistent with popup behaviors). return true when just opened.
-IMGUI_FUNCTION(OpenPopupOnItemClick)
-OPTIONAL_LABEL_ARG(str_id)
-OPTIONAL_INT_ARG(mouse_button, 1)
-CALL_FUNCTION(OpenPopupOnItemClick, bool, str_id, mouse_button)
-PUSH_BOOL(ret)
-END_IMGUI_FUNC
+//IMGUI_FUNCTION(OpenPopupOnItemClick)
+//OPTIONAL_LABEL_ARG(str_id)
+//OPTIONAL_INT_ARG(mouse_button, 1)
+//CALL_FUNCTION(OpenPopupOnItemClick, bool, str_id, mouse_button)
+//PUSH_BOOL(ret)
+//END_IMGUI_FUNC
 //    IMGUI_API bool          IsPopupOpen(const char* str_id);                                    // return true if the popup is open at the current begin-ed level of the popup stack.
 IMGUI_FUNCTION(IsPopupOpen)
 LABEL_ARG(str_id)

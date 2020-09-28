@@ -150,6 +150,7 @@ namespace GLUP {
     }
 
     void Context_GLSL150::setup_GLUP_TETRAHEDRA() {
+	
         GLuint program = GLSL::compile_program_with_includes_no_link(
             this,
             "//stage GL_VERTEX_SHADER\n"
@@ -173,7 +174,7 @@ namespace GLUP {
             "}\n"
         );
         set_primitive_info(GLUP_TETRAHEDRA, GL_LINES_ADJACENCY,program);
-        marching_tet_.bind_uniform_state(program);
+	marching_tet_.bind_uniform_state(program);
     }
 
     void Context_GLSL150::setup_GLUP_CONNECTORS() {

@@ -51,7 +51,11 @@ void draw_marching_cell() {
     compute_intersections();                          
     int size = config_size(config);
 
-    if(glupIsEnabled(GLUP_DRAW_MESH)) {
+    // Using instead if(glupIsEnabled(GLUP_DRAW_MESH)) crashes on NVidia driver
+    // so I directly test the state variable (a little bit less efficient, but
+    // does not crash) -> probably an NVidia GLSL compiler bug (crashes in
+    // memcpy when calling glLinkProgram()).
+    if(GLUP.draw_mesh_enabled) {
         // Single triangle: mesh tex coords are standard tri mesh tex coord.
         if(size == 3) {                                
             isect_triangle(                              
@@ -59,7 +63,7 @@ void draw_marching_cell() {
                 config_edge(config,1), vec4(0.0, 1.0, 0.0, 0.0),
                 config_edge(config,2), vec4(0.0, 0.0, 1.0, 0.0)
             );                                           
-        } else {
+	} else {
             // First triangle: draw mesh only on first wedge
             // (let's pretend it is a wedge of a quad)
             isect_triangle(                              
@@ -83,7 +87,7 @@ void draw_marching_cell() {
                 config_edge(config,size-2), vec4(1.0, 0.0, 1.0, 0.0),
                 config_edge(config,size-1), vec4(1.0, 0.0, 0.0, 1.0)
             );                                           
-        }                                               
+	} 
     } else {                                          
         for(int i=1; i+1<size; ++i) {                  
             isect_triangle(                              

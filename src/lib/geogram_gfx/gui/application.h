@@ -597,9 +597,9 @@ namespace GEO {
     
       protected:
         bool ImGui_firsttime_init_;  /**< true if ImGui was once initialized */
-        bool menubar_visible_;
+        bool menubar_visible_;       /**< guess what */
         bool phone_screen_;          /**< true if running on a phone */
-        bool soft_keyboard_visible_;
+        bool soft_keyboard_visible_; /**< guess what */
 
 #ifdef GEO_OS_EMSCRIPTEN
        friend void emscripten_one_frame();

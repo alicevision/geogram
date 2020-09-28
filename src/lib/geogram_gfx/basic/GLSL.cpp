@@ -351,6 +351,12 @@ namespace GEO {
         GLuint compile_shader(
             GLenum target, const char** sources, index_t nb_sources
         ) {
+	    
+	    if(CmdLine::get_arg_bool("gfx:GL_debug")) {
+		dump_program_source_with_line_numbers(sources, nb_sources);
+	    }
+
+	    
             GLuint s_handle = glCreateShader(target);
             if(s_handle == 0) {
                 Logger::err("GLSL") << "Could not create shader for target"

@@ -73,18 +73,16 @@ namespace GEO {
          * \retval true if \p permutation is a valid permutation
          * \retval false otherwise
          */
-        inline bool is_valid(
-            const vector<index_t>& permutation
-        ) {
+        inline bool is_valid(const vector<index_t>& permutation) {
             std::vector<bool> visited(permutation.size(), false);
             for(index_t i = 0; i < permutation.size(); i++) {
                 if(permutation[i] >= permutation.size()) {
                     return false;
                 }
-                if(visited[i]) {
+                if(visited[permutation[i]]) {
                     return false;
                 }
-                visited[i] = true;
+                visited[permutation[i]] = true;
             }
             return true;
         }

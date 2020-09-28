@@ -1118,7 +1118,7 @@ namespace GEO {
             return;
         }
         set_GLUP_parameters();
-        set_GLUP_picking(MESH_VERTICES);
+        set_GLUP_picking(MESH_CELLS);
         update_buffer_objects_if_needed();
         glupSetCellsShrink(GLUPfloat(shrink_));
 

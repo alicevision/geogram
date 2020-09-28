@@ -409,7 +409,9 @@ namespace GEO {
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	// Viewports allow to drag ImGui windows outside the app's window,
 	// but it is still a bit unstable, so deactivated it for now.
-	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	if(CmdLine::get_arg_bool("dbg:viewports")) {
+	    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	}
 	
 	// Note: NavKeyboard sets WantsCaptureKeyboard all the time and
 	// thus prevents from nanosleeping !

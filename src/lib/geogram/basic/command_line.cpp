@@ -287,7 +287,10 @@ namespace {
 			    if(auto_create_args) {
 				CmdLine::declare_arg(argname, argval, "...");
 			    } else {
-				Logger::warn("config") << argname << "=" << argval << " ignored" << std::endl;
+				Logger::warn("config") << argname
+						       << "=" << argval
+						       << " ignored"
+						       << std::endl;
 			    }
 			}
 		    }
@@ -309,17 +312,22 @@ namespace {
      */
     void parse_config_file(int argc, char** argv) {
 	geo_assert(argc >= 1);
-	std::string program_name = String::to_uppercase(FileSystem::base_name(argv[0]));
+	std::string program_name = String::to_uppercase(
+	    FileSystem::base_name(argv[0])
+	);
 	static bool init = false;
 	if(init) {
 	    return;
 	}
 	init = true;
-	Logger::out("config") << "Configuration file name:" << config_file_name
-			      << std::endl;
-	Logger::out("config") << "Home directory:" << FileSystem::home_directory()
-			      << std::endl;
-	std::string config_filename = FileSystem::home_directory() + "/" + config_file_name;
+	Logger::out("config")
+	    << "Configuration file name:" << config_file_name
+	    << std::endl;
+	Logger::out("config")
+	    << "Home directory:" << FileSystem::home_directory()
+	    << std::endl;
+	std::string config_filename =
+	    FileSystem::home_directory() + "/" + config_file_name;
 	parse_config_file(config_filename, program_name);
     }
     
@@ -560,7 +568,9 @@ namespace GEO {
 	    return geo_argv;
 	}
 
-	void set_config_file_name(const std::string& filename, bool auto_create) {
+	void set_config_file_name(
+	    const std::string& filename, bool auto_create
+	) {
 	    config_file_name = filename;
 	    auto_create_args = auto_create;
 	}

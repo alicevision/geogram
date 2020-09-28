@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
 
     try {
 
-        Stopwatch W("Total time");
+        Stopwatch Wtot("Total time");
 
         std::vector<std::string> filenames;
 

@@ -213,7 +213,7 @@ namespace GEO {
          */
         inline double cos_angle(const vec3& a, const vec3& b) {
 	    double lab = ::sqrt(length2(a)*length2(b));
-            double result = (lab > 1e-20) ? (dot(a, b) / lab) : 1.0;
+            double result = (lab > 1e-50) ? (dot(a, b) / lab) : 1.0;
             // Numerical precision problem may occur, and generate
             // normalized dot products that are outside the valid
             // range of acos.
