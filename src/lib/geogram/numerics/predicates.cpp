@@ -360,6 +360,15 @@ namespace {
     index_t len_orient3dh_denom = 0;
     index_t len_orient3dh_SOS = 0;
 
+
+    index_t cnt_det4d_total = 0;
+    index_t cnt_det4d_exact = 0;
+    index_t len_det4d = 0;
+
+    index_t cnt_det3d_total = 0;
+    index_t cnt_det3d_exact = 0;
+    index_t len_det3d = 0;
+  
     // ================= side1 =========================================
 
     /**
@@ -1587,6 +1596,8 @@ namespace {
     Sign det_3d_exact(
 	const double* p0, const double* p1, const double* p2
     ) {
+        cnt_det3d_exact++;
+	
 	const expansion& p0_0 = expansion_create(p0[0]);
 	const expansion& p0_1 = expansion_create(p0[1]);
 	const expansion& p0_2 = expansion_create(p0[2]);
@@ -1604,6 +1615,9 @@ namespace {
 	    p1_0, p1_1, p1_2,
 	    p2_0, p2_1, p2_2
 	);
+	
+        len_det3d = std::max(len_det3d, Delta.length());
+	
 	return Delta.sign();
     }
     
@@ -2139,6 +2153,7 @@ namespace GEO {
 	Sign det_3d(
 	    const double* p0, const double* p1, const double* p2
 	) {
+            cnt_det3d_total++;	  
 	    Sign result = Sign(
 		det_3d_filter(p0, p1, p2)
 	    );
@@ -2153,11 +2168,14 @@ namespace GEO {
 	    const double* p0, const double* p1,
 	    const double* p2, const double* p3
 	) {
+            cnt_det4d_total++;	  	  
 	    Sign result = Sign(
 		det_4d_filter(p0, p1, p2, p3)
 	    );
 	    
 	    if(result == 0) {
+	        cnt_det4d_exact++;
+		
 		const expansion& p0_0 = expansion_create(p0[0]);
 		const expansion& p0_1 = expansion_create(p0[1]);
 		const expansion& p0_2 = expansion_create(p0[2]);
@@ -2353,6 +2371,16 @@ namespace GEO {
                 "side4/insph.",
                 cnt_side4_total, cnt_side4_exact, cnt_side4_SOS,
                 len_side4_num, len_side4_denom, len_side4_SOS
+            );
+            show_stats_plain(
+                "det3d",
+                cnt_det3d_total, cnt_det3d_exact,
+                len_det3d
+            );
+            show_stats_plain(
+                "det4d",
+                cnt_det4d_total, cnt_det4d_exact,
+                len_det4d
             );
         }
     }

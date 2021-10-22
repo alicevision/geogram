@@ -292,6 +292,13 @@ namespace GEO {
         inline double mesh_area(const Mesh& M) {
             return mesh_area(M, M.vertices.dimension());
         }
+
+        /**
+	 * \brief Computes the volume enclosed by a surfacic mesh.
+         * \param[in] M a closed surfacic mesh.
+	 * \return the volume enclosed by \p M.
+	 */
+        double GEOGRAM_API mesh_enclosed_volume(const Mesh& M);
     }
 
     /**

@@ -264,7 +264,6 @@ namespace GEO {
                 weight[v0] + weight[v1] +
                 weight[v2] + weight[v3]
             ) / 4.0;
-            // TODO: check whether this is the correct formula
         }
 
         return result;
@@ -369,7 +368,7 @@ namespace GEO {
         }
         if(mesh.cells.nb() > 1 && last_t == first_t) {
             Logger::warn("Sampler")
-                << "Did put all the points in the same triangle"
+                << "Did put all the points in the same tetrahedron"
                 << std::endl;
             return false;
         }

@@ -150,8 +150,10 @@ vec4 glup_lighting(in vec4 color, in vec3 normal) {
         result.rgb = diff*result.rgb + vec3(0.2, 0.2, 0.2);
 	if(GLUP.specular > 0.0) {
 	    float spec = dot(normal,GLUP.light_half_vector);
-	    spec = pow(spec, 30.0);
-	    result.rgb += GLUP.specular*spec*vec3(1.0, 1.0, 1.0);
+	    if(spec > 0.0) {
+	       spec = pow(spec, 30.0);
+	       result.rgb += GLUP.specular*spec*vec3(1.0, 1.0, 1.0);
+	    }
 	}
     } else {                                                        
         result.rgb = vec3(0.2, 0.2, 0.2);

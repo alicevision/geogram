@@ -61,6 +61,10 @@
 #endif
 #endif
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 /******************************************************************************/
 /* Assertions */
 
@@ -97,7 +101,7 @@ void nl_should_not_have_reached(const char* file, int line) {
 
 
 /******************************************************************************/
-/* Timing */
+/* Timing and number of cores */
 
 #ifdef WIN32
 NLdouble nlCurrentTime() {
@@ -111,6 +115,44 @@ double nlCurrentTime() {
     return (NLdouble)user_clock / 100.0 ;
 }
 #endif
+
+#if defined(_OPENMP)
+
+static NLuint nl_num_threads = 0;
+
+NLuint nlGetNumCores(void) {
+    return (NLuint)omp_get_num_procs();
+}
+
+NLuint nlGetNumThreads(void) {
+    if(nl_num_threads == 0) {
+      nl_num_threads = (NLuint)omp_get_num_procs();
+      nl_printf("OpenNL: using %d threads\n",nl_num_threads);
+    }
+    return nl_num_threads;
+}
+
+void nlSetNumThreads(NLuint n) {
+    nl_num_threads = n;
+    omp_set_num_threads((int)nl_num_threads);
+}
+
+#else
+
+NLuint nlGetNumCores(void) {
+    return 1;
+}
+
+NLuint nlGetNumThreads(void) {
+    return 1;
+}
+
+void nlSetNumThreads(NLuint n) {
+    nl_arg_used(n);
+}
+
+#endif
+
 
 /******************************************************************************/
 /* DLLs/shared objects/dylibs */
@@ -239,7 +281,7 @@ NLfunc nlFindFunction(void* handle, const char* name) {
 
 #endif
 
-/************************************************************************************/
+/******************************************************************************/
 /* Error-reporting functions */
 
 NLprintfFunc nl_printf = printf;
@@ -258,6 +300,6 @@ void nlPrintfFuncs(NLprintfFunc f1, NLfprintfFunc f2) {
     nl_fprintf = f2;
 }
 
-/************************************************************************************/
+/******************************************************************************/
 
 

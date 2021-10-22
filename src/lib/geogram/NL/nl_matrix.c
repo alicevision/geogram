@@ -419,7 +419,7 @@ void nlCRSMatrixComputeSlices(NLCRSMatrix* CRS) {
 }
 
 void nlCRSMatrixPatternCompile(NLCRSMatrix* M) {
-    NLuint nslices = 8; /* TODO get number of cores */
+    NLuint nslices = nlGetNumThreads();
     NLuint i;
     NLuint_big nnz;
     NLuint k;
@@ -920,7 +920,7 @@ void nlSparseMatrixAddColumn( NLSparseMatrix* M) {
 
 NLMatrix nlCRSMatrixNewFromSparseMatrix(NLSparseMatrix* M) {
     NLuint_big nnz = nlSparseMatrixNNZ(M);
-    NLuint nslices = 8; /* TODO: get number of cores */
+    NLuint nslices = nlGetNumThreads();
     NLuint i,ij,k; 
     NLCRSMatrix* CRS = NL_NEW(NLCRSMatrix);
 

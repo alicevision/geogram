@@ -407,16 +407,25 @@ namespace GEO {
 	}
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	
 	// Viewports allow to drag ImGui windows outside the app's window,
 	// but it is still a bit unstable, so deactivated it for now.
-	if(CmdLine::get_arg_bool("dbg:viewports")) {
+	if(
+	   CmdLine::arg_is_declared("gui:viewports") &&
+	   CmdLine::get_arg_bool("gui:viewports")
+	) {
 	    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	}
 	
 	// Note: NavKeyboard sets WantsCaptureKeyboard all the time and
 	// thus prevents from nanosleeping !
-	// io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
+	if(
+	   CmdLine::arg_is_declared("gui:keyboard_nav") &&
+	   CmdLine::get_arg_bool("gui:keyboard_nav")
+	) {
+	    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	}
+	
 #if defined(GEO_GLFW)
 	
 	// Second argument to true = install callbacks

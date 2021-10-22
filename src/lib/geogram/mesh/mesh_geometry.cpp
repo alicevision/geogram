@@ -137,6 +137,30 @@ namespace GEO {
             }
             return result;
         }
+
+        double GEOGRAM_API mesh_enclosed_volume(const Mesh& M) {
+	  // TODO: direct formula, without using origin
+	  static double origin[3] = {0.0, 0.0, 0.0};
+	  double result = 0.0;
+	  for(index_t f: M.facets) {
+            const double* p0 = M.vertices.point_ptr(
+		M.facet_corners.vertex(M.facets.corners_begin(f))
+            );
+            for(
+                index_t i = M.facets.corners_begin(f) + 1;
+                i + 1 < M.facets.corners_end(f); i++
+            ) {
+	      const double* p1 = M.vertices.point_ptr(
+				                     M.facet_corners.vertex(i));
+	      const double* p2 = M.vertices.point_ptr(
+						   M.facet_corners.vertex(i+1));
+	      
+	      result += GEO::Geom::tetra_signed_volume(origin, p0, p1, p2);
+            }
+	  }
+	  return ::fabs(result);
+        }
+      
     }
 
     void compute_normals(Mesh& M) {

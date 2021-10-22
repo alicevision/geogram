@@ -227,6 +227,26 @@ void nlWarning(const char* function, const char* message) ;
  */
 NLdouble nlCurrentTime(void);
 
+
+/**
+ * \brief Gets the number of cores
+ * \return the number of cores obtained from OpenMP if supported, or 1
+ */
+NLuint nlGetNumCores(void);
+
+/**
+ * \brief Gets the number of threads
+ * \return the number of threads used by OpenMP if supported, or 1
+ */
+NLuint nlGetNumThreads(void);
+
+/**
+ * \brief Sets the number of threads
+ * \param[in] nb_threads number of threads to be used by OpenMP,
+ *   ignored if OpenMP is not supported.
+ */
+void nlSetNumThreads(NLuint nb_threads);
+
 /**
  * \brief Type for manipulating DLL/shared object/dylib handles.
  */
