@@ -73,6 +73,39 @@
  */
 
 namespace GEO {
+    
+    /*******************************************************************/
+
+   /**
+    * \brief Normalizes the coordinates of a mesh
+    *  in the unit box.
+    * \details A uniform scaling is applied.
+    * \param[in,out] M the mesh to be normalized.
+    */
+    inline void normalize_mesh(Mesh& M) {
+	double mesh_xyz_min[3];
+	double mesh_xyz_max[3];
+	get_bbox(M, mesh_xyz_min, mesh_xyz_max);
+	double dim[3];
+	dim[0] = (mesh_xyz_max[0] - mesh_xyz_min[0]);
+	dim[1] = (mesh_xyz_max[1] - mesh_xyz_min[1]);
+	dim[2] = (mesh_xyz_max[2] - mesh_xyz_min[2]);
+	double max_dim = std::max(dim[0], std::max(dim[1], dim[2]));
+	double s = 1.0 / max_dim;
+	double T[3];
+	T[0] = 0.5 * (max_dim - dim[0]);
+	T[1] = 0.5 * (max_dim - dim[1]);
+	T[2] = 0.5 * (max_dim - dim[2]);        
+	for(index_t v=0; v<M.vertices.nb(); ++v) {
+	    double* p = M.vertices.point_ptr(v);
+	    double x = s * (T[0] + p[0] - mesh_xyz_min[0]);
+	    double y = s * (T[1] + p[1] - mesh_xyz_min[1]);
+	    double z = s * (T[2] + p[2] - mesh_xyz_min[2]);
+	    p[0] = x;
+	    p[1] = z;
+	    p[2] = 1.0-y;
+	}
+    }
 
     /*******************************************************************/
     
@@ -706,10 +739,16 @@ namespace GEO {
     public:
 	/**
 	 * \brief MeshObject constructor.
-	 * \param[in,out] M a reference to the mesh. Note that 
-	 *  MeshAABB changes the order of the mesh elements.
+	 * \param[in] filename the name of the file that contains the mesh.
+	 * \param[in] normalize if set, the mesh is normalized in
+	 *  the unit box after loading.
 	 */
-	MeshObject(Mesh& M) : AABB_(M) {
+	MeshObject(const std::string& filename, bool normalize=true) {
+	    mesh_load(filename, mesh_);
+	    if(normalize) {
+		normalize_mesh(mesh_);
+	    }
+	    AABB_.initialize(mesh_);
 	}
 
 	/**
@@ -718,24 +757,14 @@ namespace GEO {
 	void get_nearest_intersection(
 	    const Ray& R, Intersection& I
 	) const override {
-	    // Multiply by big constant because AABB has a segment isect routine
-	    // (not ray isect routine), so it would ignore intersections further
-	    // away than (R.origin + R.direction), and we want them !
-	    vec3 p2 = R.origin + 10000.0 * R.direction;
-	    double t;
-	    index_t f;
-	    if(AABB_.segment_nearest_intersection(R.origin, p2, t, f)) {
-		// Do not forget to take the 10000.0 factor into account else
-		// the computed t does not make sense !
-		t *= 10000.0;
-		if(t > epsilon_t && t < I.t) {
-		    I.t = t;
+	    MeshFacetsAABB::Intersection cur_I;
+	    if(AABB_.ray_nearest_intersection(R, cur_I)) {
+		if(cur_I.t > epsilon_t && cur_I.t < I.t) {
+		    I.t = cur_I.t;
 		    I.object = this;
 		    I.material = material_;
-		    I.position = R.origin + t * R.direction;
-		    I.normal = normalize(
-			Geom::mesh_facet_normal(*AABB_.mesh(),f)
-		    );
+		    I.position = cur_I.p; 
+		    I.normal = normalize(cur_I.N); 
 		}
 	    }
 	}
@@ -749,6 +778,7 @@ namespace GEO {
 	}
 	
     private:
+	Mesh mesh_;
 	MeshFacetsAABB AABB_;
     };
 
@@ -844,6 +874,39 @@ namespace GEO {
 	    return O;
 	}
 
+
+	/**
+	 * \brief Removes an object from the scene.
+	 * \param[in] o the object to be removed.
+	 * \details this does not deallocates the object.
+	 */
+	void remove_object(Object* o) {
+	    for(index_t i=0; i<objects_.size(); ++i) {
+		if(objects_[i] == o) {
+		    objects_.erase(objects_.begin() + std::ptrdiff_t(i));
+		    return;
+		}
+	    }
+	    geo_assert_not_reached;
+	}
+
+	/**
+	 * \brief Gets the number of objects in the scene.
+	 * \return the number of objects, comprising lights.
+	 */
+	index_t nb_objects() const {
+	    return objects_.size();
+	}
+
+	/**
+	 * \brief Gets an object by index.
+	 * \param[in] i the index, in [0..nb_objects()-1]
+	 * \return a pointer to the ith object.
+	 */
+	Object* ith_object(index_t i) {
+	    return objects_[i];
+	}
+	
 	/**
 	 * \copydoc Object::get_nearest_intersection()
 	 */
@@ -1054,37 +1117,6 @@ namespace GEO {
         ) ; 
     }
     
-   /**
-    * \brief Normalizes the coordinates of a mesh
-    *  in the unit box.
-    * \details A uniform scaling is applied.
-    * \param[in,out] M the mesh to be normalized.
-    */
-    inline void normalize_mesh(Mesh& M) {
-	double mesh_xyz_min[3];
-	double mesh_xyz_max[3];
-	get_bbox(M, mesh_xyz_min, mesh_xyz_max);
-	double dim[3];
-	dim[0] = (mesh_xyz_max[0] - mesh_xyz_min[0]);
-	dim[1] = (mesh_xyz_max[1] - mesh_xyz_min[1]);
-	dim[2] = (mesh_xyz_max[2] - mesh_xyz_min[2]);
-	double max_dim = std::max(dim[0], std::max(dim[1], dim[2]));
-	double s = 1.0 / max_dim;
-	double T[3];
-	T[0] = 0.5 * (max_dim - dim[0]);
-	T[1] = 0.5 * (max_dim - dim[1]);
-	T[2] = 0.5 * (max_dim - dim[2]);        
-	for(index_t v=0; v<M.vertices.nb(); ++v) {
-	    double* p = M.vertices.point_ptr(v);
-	    double x = s * (T[0] + p[0] - mesh_xyz_min[0]);
-	    double y = s * (T[1] + p[1] - mesh_xyz_min[1]);
-	    double z = s * (T[2] + p[2] - mesh_xyz_min[2]);
-	    p[0] = x;
-	    p[1] = z;
-	    p[2] = 1.0-y;
-	}
-    }
-
     inline vec3 random_color() {
 	vec3 result;
 	while(length2(result) < 0.1) {

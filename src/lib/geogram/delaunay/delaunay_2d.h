@@ -129,16 +129,39 @@ namespace GEO {
 	/**
 	 * \copydoc Delaunay::set_vertices()
 	 */
-        virtual void set_vertices(
+        void set_vertices(
             index_t nb_vertices, const double* vertices
-        );
+        ) override;
 
 	/**
 	 * \copydoc Delaunay::nearest_vertex()
 	 */
-        virtual index_t nearest_vertex(const double* p) const;
+        index_t nearest_vertex(const double* p) const override;
+
+	/**
+	 * \brief Tests whether the Laguerre diagram has empty cells.
+	 * \details If the Laguerre diagram has empty cells and
+	 *  abort_if_empty_cell is set, then computation is stopped, 
+	 *  and all the queries on the Laguerre diagram will not work 
+	 *  (including the non-empty cells).
+	 * \retval true if the Laguerre diagram has empty cells.
+	 * \retval false otherwise.
+	 */
+	bool has_empty_cells() const {
+	    return has_empty_cells_;
+	}
 
 
+	/**
+	 * \brief Specifies behavior if an empty cell is detected.
+	 * \param[in] x if set, then computation is aborted as soon
+	 *  as an empty cell is detected.
+	 * \details only happens in RegularTriangulation/Laguerre diagram.
+	 */
+	void abort_if_empty_cell(bool x) {
+	    abort_if_empty_cell_ = x;
+	}
+	
     protected:
 
         /**
@@ -870,7 +893,7 @@ namespace GEO {
         /**
          * \brief Delaunay2d destructor
          */
-        virtual ~Delaunay2d();
+        ~Delaunay2d() override;
 
         /**
          * \brief For debugging purposes, displays a triangle.
@@ -944,6 +967,17 @@ namespace GEO {
 	  * \brief Used by find_conflict_zone_iterative()
 	  */
 	 std::stack<index_t> S_;
+
+	/**
+	 * \brief Regular triangulations can have empty cells.
+	 */
+	 bool has_empty_cells_;
+
+        /**
+	 * \brief Stop inserting points as soon as an empty cell 
+	 *  is encountered.
+	 */
+	 bool abort_if_empty_cell_;
     };
 
     /************************************************************************/
@@ -976,7 +1010,7 @@ namespace GEO {
         /**
          * \brief RegularWeightedDelaunay2d destructor
          */
-        virtual ~RegularWeightedDelaunay2d();
+        ~RegularWeightedDelaunay2d() override;
     };
 }
 

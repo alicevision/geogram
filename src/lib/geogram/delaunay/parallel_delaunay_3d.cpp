@@ -2804,9 +2804,9 @@ namespace GEO {
                 Delaunay3dThread* thread = 
                     static_cast<Delaunay3dThread*>(threads_[t].get());
                 Logger::out("PDEL") 
-                    << "thread " << t << " : " 
-                    << thread->nb_rollbacks() << " rollbacks  "
-                    << thread->nb_failed_locate() << " failed locate"
+                    << "thread " << std::setw(3) << t << " : " 
+                    << std::setw(3) << thread->nb_rollbacks() << " rollbacks  "
+                    << std::setw(3) << thread->nb_failed_locate() << " restarted locate"
                     << std::endl;
                 tot_rollbacks += thread->nb_rollbacks();
                 tot_failed_locate += thread->nb_failed_locate();
@@ -2814,7 +2814,7 @@ namespace GEO {
             Logger::out("PDEL") << "------------------" << std::endl;
             Logger::out("PDEL") << "total: " 
                                 << tot_rollbacks << " rollbacks  "
-                                << tot_failed_locate << " failed locate"
+                                << tot_failed_locate << " restarted locate"
                                 << std::endl;
         }
 

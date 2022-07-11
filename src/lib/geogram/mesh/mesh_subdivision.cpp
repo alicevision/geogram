@@ -280,6 +280,77 @@ namespace GEO {
 	M.facets.connect();
     }
 
+   
+    void mesh_triangulate_center_vertex(
+	Mesh& M, index_t facets_begin, index_t facets_end,
+	MeshSplitCallbacks* cb	
+    ) {
+	MeshSplitCallbacks default_cb(&M);
+	if(cb == nullptr) {
+	    cb = &default_cb;
+	}
+	
+	if(facets_end == index_t(-1)) {
+	    facets_end = M.facets.nb();
+	}
+	
+	index_t nv0 = M.vertices.nb();
+	index_t nf0 = M.facets.nb();
+
+	// Compute corner to new vertex and facet to new vertex
+	// mappings.
+	
+	vector<index_t> ftov(M.facets.nb(), NO_VERTEX);
+	
+	index_t nbnewv=0;
+	index_t nbnewf=0;
+	for(index_t f=facets_begin; f<facets_end; ++f) {
+	    ftov[f] = nbnewv;
+	    ++nbnewv;
+	    nbnewf += M.facets.nb_vertices(f);
+	}
+
+	// Create vertices
+	M.vertices.create_vertices(nbnewv);
+	for(index_t f=facets_begin; f<facets_end; ++f) {
+	    cb->zero_vertex(ftov[f] + nv0);
+	    for(index_t c1=M.facets.corners_begin(f);
+		c1<M.facets.corners_end(f); ++c1
+	    ) {
+		index_t v1 = M.facet_corners.vertex(c1);
+		cb->madd_vertex(ftov[f]+nv0, 1.0, v1);
+	    }
+	    double s = 1.0 / double(M.facets.nb_vertices(f));
+	    cb->scale_vertex(ftov[f]+nv0, s);
+	}
+
+	// Create facets
+	M.facets.create_triangles(nbnewf);
+	index_t cur_f = 0;
+	for(index_t f=facets_begin; f<facets_end; ++f) {
+	    for(
+		index_t c1=M.facets.corners_begin(f);
+		c1<M.facets.corners_end(f); ++c1
+	     ) {
+	        index_t c2 = M.facets.next_corner_around_facet(f,c1);
+		index_t v1 = M.facet_corners.vertex(c1);
+		index_t v2 = M.facet_corners.vertex(c2);
+		M.facets.attributes().copy_item(cur_f + nf0, f);
+		M.facets.set_vertex(cur_f + nf0, 0, v1);
+		M.facets.set_vertex(cur_f + nf0, 1, v2);
+		M.facets.set_vertex(cur_f + nf0, 2, nv0+ftov[f]);
+		++cur_f;
+	    }
+	}
+
+	vector<index_t> to_delete(M.facets.nb(),0);
+	for(index_t f=facets_begin; f<facets_end; ++f) {
+	    to_delete[f] = 1;
+	}
+	M.facets.delete_elements(to_delete);
+	M.facets.connect();
+    }
+   
     void mesh_split_catmull_clark(Mesh& M, MeshSplitCallbacks* cb) {
 
 	geo_cite("journals/CAD/CatmullRGB");

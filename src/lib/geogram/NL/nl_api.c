@@ -996,7 +996,8 @@ NLboolean nlSolve() {
     if(!nlCurrentContext->no_variables_indirection) {
 	nlVectorToVariables();
     }
-    nlCurrentContext->elapsed_time = nlCurrentTime() - nlCurrentContext->start_time;
+    nlCurrentContext->elapsed_time =
+	nlCurrentTime() - nlCurrentContext->start_time;
     nlTransition(NL_STATE_SYSTEM_CONSTRUCTED, NL_STATE_SOLVED);
     return result;
 }

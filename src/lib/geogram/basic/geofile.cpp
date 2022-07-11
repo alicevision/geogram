@@ -128,9 +128,6 @@ namespace GEO {
         ascii_attribute_write_[type_name] = write;
     }
 
-    
-    
-    
     /**************************************************************/
     
     GeoFile::GeoFile(const std::string& filename) :
@@ -505,7 +502,10 @@ namespace GEO {
             index_t element_size = read_int();
             index_t dimension = read_int();
             current_attribute_set_ = find_attribute_set(attribute_set_name);
-            if(current_attribute_set_->find_attribute(attribute_name) != nullptr) {
+            if(
+		current_attribute_set_->find_attribute(attribute_name)
+		!= nullptr
+	    ) {
                 throw GeoFileException(
                     "Duplicate attribute " + attribute_name +
                     " in attribute set " + attribute_set_name
@@ -684,7 +684,9 @@ namespace GEO {
             attribute_set_name
         );
         geo_assert(attribute_set_info != nullptr);
-        geo_assert(attribute_set_info->find_attribute(attribute_name) == nullptr);
+        geo_assert(
+	    attribute_set_info->find_attribute(attribute_name) == nullptr
+	);
 
         size_t data_size =
             element_size * dimension *
@@ -705,7 +707,9 @@ namespace GEO {
             "the name of the attribute set this attribute belongs to"
         );
         write_string(attribute_name, "the name of this attribute");
-        write_string(element_type, "the type of the elements in this attribute");
+        write_string(
+	    element_type, "the type of the elements in this attribute"
+	);
         write_int(index_t(element_size), "the size of an element (in bytes)");
         write_int(dimension, "the number of elements per item");
 
@@ -713,13 +717,16 @@ namespace GEO {
             AsciiAttributeSerializer write_attribute_func =
                 ascii_attribute_write_[element_type];
             if(write_attribute_func == nullptr) {
-                throw GeoFileException("No ASCII serializer for type:"+element_type);                
+                throw GeoFileException(
+		    "No ASCII serializer for type:"+element_type
+		);                
             }
             bool result = (*write_attribute_func)(
-                ascii_file_, Memory::pointer(data), index_t(data_size/element_size)
+                ascii_file_, Memory::pointer(data),
+		index_t(data_size/element_size)
             );
             if(!result) {
-                throw GeoFileException("Could not write attribute data");                
+                throw GeoFileException("Could not write attribute data");
             }
         } else {
             int check = gzwrite(file_, data, (unsigned int)(data_size));
@@ -761,7 +768,8 @@ namespace GEO {
 		if(serializable) {
 		    new_args.push_back(arg);
 		} else {
-		    Logger::warn("GeoFile") << "Skipping arg: " << arg << std::endl;
+		    Logger::warn("GeoFile") << "Skipping arg: "
+					    << arg << std::endl;
 		}
 	    }
 	    write_string_array(new_args);	    

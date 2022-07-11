@@ -6,11 +6,12 @@
 # - it is the first version that fully supports the specification of Visual
 # Studio toolsets (v110_xp).
 # - it is the version that supports the command string(TIMESTAMP ...)
-cmake_minimum_required(VERSION 2.8.11)
+# ... set to 2.8.12 (< 2.8.12 has been deprecated)
+cmake_minimum_required(VERSION 2.8.12)
 
 # Note: geogram.cmake defines GEOGRAM_WITH_VORPALINE
 # that we could have used instead,
-# but geogram.cmake needs to be included after the project() 
+# but geogram.cmake needs to be included after the project()
 # command, since project() resets CFLAGS and CXXFLAGS.
 
 if("$ENV{GEOGRAM_WITH_VORPALINE}" STREQUAL "")
@@ -41,14 +42,15 @@ if(NOT GEOGRAM_SUB_BUILD)
    option(GEOGRAM_LIB_ONLY "Libraries only (no example programs/no viewer)" OFF)
    option(GEOGRAM_WITH_FPG "Predicate generator (Sylvain Pion's FPG)" OFF)
    option(GEOGRAM_USE_SYSTEM_GLFW3 "Use the version of GLFW3 installed in the system if found" OFF)
-   set(VORPALINE_PLATFORM "" CACHE STRING "")
+   option(GEOGRAM_WITH_GARGANTUA "64-bit indices" OFF)
+   include(cmake/geo_detect_platform.cmake)
 endif()
 
 include(cmake/geogram.cmake)
 
 set(VORPALINE_VERSION_MAJOR 1)
 set(VORPALINE_VERSION_MINOR 7)
-set(VORPALINE_VERSION_PATCH 7)
+set(VORPALINE_VERSION_PATCH 9)
 set(VORPALINE_VERSION ${VORPALINE_VERSION_MAJOR}.${VORPALINE_VERSION_MINOR}.${VORPALINE_VERSION_PATCH})
 
 set(VORPALINE_INCLUDE_SUBPATH geogram${VORPALINE_VERSION_MAJOR})
@@ -64,6 +66,10 @@ string(TIMESTAMP YEAR "%Y")
 # This is set by Jenkins in environment variable BUILD_NUMBER
 set(VORPALINE_BUILD_NUMBER $ENV{BUILD_NUMBER})
 
+if(GEOGRAM_WITH_GARGANTUA)
+  add_definitions(-DGARGANTUA)
+endif()
+
 
 ##############################################################################
 # Get SVN revision info
@@ -71,13 +77,13 @@ set(VORPALINE_BUILD_NUMBER $ENV{BUILD_NUMBER})
 if(GEOGRAM_WITH_VORPALINE)
    find_package(Subversion QUIET)
    if(NOT SUBVERSION_FOUND)
-       message(WARNING "Subversion executable not found - cannot determine current revision") 
+       message(WARNING "Subversion executable not found - cannot determine current revision")
    else()
        Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Vorpaline)
        message(STATUS "Vorpaline revision is ${Vorpaline_WC_REVISION}")
        set(VORPALINE_SVN_REVISION ${Vorpaline_WC_REVISION})
    endif()
-endif()   
+endif()
 
 ##############################################################################
 # RPATH (where executables find the .so / DLLs)
@@ -176,7 +182,7 @@ if(CPACK_GENERATOR STREQUAL "DEB")
 #   or GET_PROPERTY(result GLOBAL ENABLED_FEATURES)  (successful FIND_PACKAGE())
 endif()
 
-if(NOT DEFINED CPACK_GENERATOR) 
+if(NOT DEFINED CPACK_GENERATOR)
   if(WIN32)
     set(CPACK_GENERATOR ZIP)
   else()

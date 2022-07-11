@@ -119,6 +119,16 @@ namespace GEO {
 
     protected:
 
+	/**
+	 * \brief Called at the beginning of draw_scene().
+	 * \details Configures mesh_graphics_ in function of
+	 *  drawing attributes.
+	 */
+	virtual void draw_points();
+	virtual void draw_edges();
+	virtual void draw_surface();
+	virtual void draw_volume();
+	
         /**
          * \brief Gets the bounding box of a mesh animation.
          * \details In animated mode, the mesh animation is stored as 
@@ -220,16 +230,12 @@ namespace GEO {
         /**
          * \brief Makes the attributes visible.
          */
-        void show_attributes() {
-            show_attributes_ = true;
-        }
+        virtual void show_attributes();
         
         /**
          * \brief Makes the attributes invisible.
          */
-        void hide_attributes() {
-            show_attributes_ = false;
-        }
+        virtual void hide_attributes();
         
         /**
          * \brief Adjusts the current minimum and maximum attribute value
@@ -253,7 +259,6 @@ namespace GEO {
     protected:
         Mesh mesh_;
         MeshGfx mesh_gfx_;
-        std::string file_extensions_;
 
         float anim_speed_;
         float anim_time_;

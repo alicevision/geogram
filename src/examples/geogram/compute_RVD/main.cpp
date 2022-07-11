@@ -67,9 +67,11 @@
 #include <geogram/mesh/mesh_degree3_vertices.h>
 #include <geogram/mesh/mesh_tetrahedralize.h>
 #include <geogram/delaunay/delaunay.h>
+#include <geogram/delaunay/periodic_delaunay_3d.h>
 #include <geogram/voronoi/RVD.h>
 #include <geogram/voronoi/RVD_callback.h>
 #include <geogram/voronoi/RVD_mesh_builder.h>
+#include <geogram/voronoi/convex_cell.h>
 #include <geogram/numerics/predicates.h>
 
 namespace {
@@ -155,7 +157,7 @@ namespace {
 	    }
 	}
 
-	~SaveRVDCells() {
+	~SaveRVDCells() override {
 	    delete my_vertex_map_;
 	    my_vertex_map_ = nullptr;
 	}
@@ -163,7 +165,7 @@ namespace {
 	/**
 	 * \brief Called at the beginning of RVD traversal.
 	 */
-	virtual void begin() {
+	void begin() override {
 	    RVDPolyhedronCallback::begin();
 	    output_mesh_.clear();
 	    output_mesh_.vertices.set_dimension(3);
@@ -172,7 +174,7 @@ namespace {
 	/**
 	 * \brief Called at the end of RVD traversal.
 	 */
-	virtual void end() {
+	void end() override {
 	    RVDPolyhedronCallback::end();
 	    output_mesh_.facets.connect();
 	}
@@ -183,7 +185,7 @@ namespace {
 	 *  defines the RVD polyhedron, as the intersection between the Voronoi
 	 *  cell of the seed and the tetrahedron.
 	 */
-	virtual void begin_polyhedron(index_t seed, index_t tetrahedron) {
+	void begin_polyhedron(index_t seed, index_t tetrahedron) override {
 	    geo_argused(tetrahedron);
 	    geo_argused(seed);
 
@@ -208,15 +210,15 @@ namespace {
 	 * \param[in] facet_tet if the facet is on a tethedral facet, then
 	 *  the index of the tetrahedron on the other side, else index_t(-1)
 	 */
-	virtual void begin_facet(index_t facet_seed, index_t facet_tet) {
+	void begin_facet(index_t facet_seed, index_t facet_tet) override {
 	    geo_argused(facet_seed);
 	    geo_argused(facet_tet);
 	    current_facet_.resize(0);
 	}
 
-	virtual void vertex(
+	void vertex(
 	    const double* geometry, const GEOGen::SymbolicVertex& symb
-	) {
+	) override {
 	    // Find the index of the vertex associated with its symbolic representation.
 	    index_t vid = my_vertex_map_->find_or_create_vertex(seed(), symb);
 
@@ -229,7 +231,7 @@ namespace {
 	    current_facet_.push_back(vid);
 	}
 
-	virtual void end_facet() {
+	void end_facet() override {
 	    // Create the facet from the memorized indices.
 	    index_t f = output_mesh_.facets.nb();
 	    output_mesh_.facets.create_polygon(current_facet_.size());
@@ -238,11 +240,11 @@ namespace {
 	    }
 	}
 
-	virtual void end_polyhedron() {
+	void end_polyhedron() override {
 	    // Nothing to do.
 	}
 
-	virtual void process_polyhedron_mesh() {
+	void process_polyhedron_mesh() override {
 	    // This function is called for each cell if set_use_mesh(true) was called.
 	    // It is the case if simplify_voronoi_facets(true) or
 	    // simplify_boundary_facets(true) was called.
@@ -339,7 +341,7 @@ int main(int argc, char** argv) {
 
         if(
             !CmdLine::parse(
-                argc, argv, filenames, "meshfile <pointsfile> <outputfile>"
+                argc, argv, filenames, "meshfile (or \'cube\') <pointsfile> <outputfile>"
             )
         ) {
             return 1;
@@ -379,8 +381,9 @@ int main(int argc, char** argv) {
 
         Mesh M_in, points_in;
         Mesh M_out;
-
-        {
+        bool cube = (mesh_filename == "cube");
+       
+	if(!cube) {
             MeshIOFlags flags;
             if(volumetric) {
                 flags.set_element(MESH_CELLS);
@@ -413,7 +416,39 @@ int main(int argc, char** argv) {
 
         geo_assert(points_in.vertices.dimension() == 3);
 
-        if(CmdLine::get_arg_bool("constrained")) {
+        if(cube) {
+	   double shrink = CmdLine::get_arg_double("RVD_cells:shrink");
+	   SmartPointer<PeriodicDelaunay3d> delaunay = new PeriodicDelaunay3d(false);
+	   delaunay->set_keeps_infinite(true);	   
+	   delaunay->set_vertices(
+	       points_in.vertices.nb(), points_in.vertices.point_ptr(0)
+           );
+	   delaunay->compute();
+	   ConvexCell C;
+	   PeriodicDelaunay3d::IncidentTetrahedra W;
+	   index_t cur_v_index = 1;
+	   if(FileSystem::extension(output_filename) != "obj") {
+	      Logger::err("RVD") 
+		<< "cube mode only available in .obj file format" 
+		<< std::endl;
+	      exit(-1);
+	   }
+	   
+	   
+	   std::ofstream out(output_filename);
+	   for(index_t v=0; v<delaunay->nb_vertices(); ++v) {
+	       delaunay->copy_Laguerre_cell_from_Delaunay(v, C, W);
+	       C.clip_by_plane(vec4( 1.0, 0.0, 0.0, 0.0));
+	       C.clip_by_plane(vec4(-1.0, 0.0, 0.0, 1.0));
+	       C.clip_by_plane(vec4( 0.0, 1.0, 0.0, 0.0));
+	       C.clip_by_plane(vec4( 0.0,-1.0, 0.0, 1.0));	
+	       C.clip_by_plane(vec4( 0.0, 0.0, 1.0, 0.0));
+	       C.clip_by_plane(vec4( 0.0, 0.0,-1.0, 1.0));
+	       out << "# CELL " << v << std::endl;
+	       cur_v_index += C.save(out, cur_v_index, shrink);
+	   }
+	   exit(0);
+	} else if(CmdLine::get_arg_bool("constrained")) {
 
             Mesh surface;
             vector<double> inner_points;
@@ -542,7 +577,7 @@ int main(int argc, char** argv) {
                 mesh_save(RDT, "RDT.meshb", flags);
             }
 
-            if(!meshes_have_same_topology(M_in, M_out, true)) {
+	    if(!volumetric && !meshes_have_same_topology(M_in, M_out, true)) {
                 Logger::out("") << "Returning error code (2)" << std::endl;
                 return 2;
             }

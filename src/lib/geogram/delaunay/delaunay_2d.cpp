@@ -166,6 +166,8 @@ namespace GEO {
         verbose_debug_mode_ = CmdLine::get_arg_bool("dbg:delaunay_verbose");
         debug_mode_ = (debug_mode_ || verbose_debug_mode_);
         benchmark_mode_ = CmdLine::get_arg_bool("dbg:delaunay_benchmark");
+	has_empty_cells_ = false;
+	abort_if_empty_cell_ = false;
     }
 
     Delaunay2d::~Delaunay2d() {
@@ -174,6 +176,7 @@ namespace GEO {
     void Delaunay2d::set_vertices(
         index_t nb_vertices, const double* vertices
     ) {
+        has_empty_cells_ = false;
         Stopwatch* W = nullptr;
         if(benchmark_mode_) {
             W = new Stopwatch("DelInternal");
@@ -245,7 +248,12 @@ namespace GEO {
             // Do not re-insert the first four vertices.
             if(v != v0 && v != v1 && v != v2) {
                 index_t new_hint = insert(v, hint);
-                if(new_hint != NO_TRIANGLE) {
+		if(new_hint == NO_TRIANGLE) {
+		  has_empty_cells_ = true;
+		  if(abort_if_empty_cell_) {
+		    return;
+		  }
+		} else {
                     hint = new_hint;
                 }
             }
@@ -381,6 +389,11 @@ namespace GEO {
             nb_triangles,
             cell_to_v_store_.data(), cell_to_cell_store_.data()
         );
+
+	// Not mandatory, but doing so makes it possible to
+	// use locate() in derived classes outside of
+	// set_vertices().
+	cell_next_.assign(cell_next_.size(),~index_t(0));
     }
 
     index_t Delaunay2d::nearest_vertex(const double* p) const {

@@ -247,7 +247,7 @@ namespace GEO {
         /**
          * \brief PeriodicDelaunay3dThread destructor.
          */
-        ~PeriodicDelaunay3dThread() {
+        ~PeriodicDelaunay3dThread() override {
             pthread_mutex_destroy(&mutex_);
             pthread_cond_destroy(&cond_);
         }
@@ -367,7 +367,7 @@ namespace GEO {
          * \details The point sequence was previously defined
          *  by set_work(). 
          */
-        virtual void run() {
+        void run() override {
 	    has_empty_cells_ = false;
             finished_ = false;
 
@@ -2990,7 +2990,7 @@ namespace GEO {
 	
         Stopwatch* W = nullptr ;
         if(benchmark_mode_) {
-            W = new Stopwatch("SpatialSort");
+            W = new Stopwatch("BRIO");
         }
 	nb_vertices_non_periodic_ = nb_vertices;
 
@@ -3126,9 +3126,9 @@ namespace GEO {
             index_t tot_failed_locate = 0 ;
             for(index_t t=0; t<threads_.size(); ++t) {
                 Logger::out("PDEL") 
-                    << "thread " << t << " : " 
-                    << thread(t)->nb_rollbacks() << " rollbacks  "
-                    << thread(t)->nb_failed_locate() << " failed locate"
+                    << "thread " << std::setw(3) << t << " : " 
+                    << std::setw(3) << thread(t)->nb_rollbacks() << " rollbacks  "
+                    << std::setw(3) << thread(t)->nb_failed_locate() << " restarted locate"
                     << std::endl;
                 tot_rollbacks += thread(t)->nb_rollbacks();
                 tot_failed_locate += thread(t)->nb_failed_locate();
@@ -3136,7 +3136,7 @@ namespace GEO {
             Logger::out("PDEL") << "------------------" << std::endl;
             Logger::out("PDEL") << "total: " 
                                 << tot_rollbacks << " rollbacks  "
-                                << tot_failed_locate << " failed locate"
+                                << tot_failed_locate << " restarted locate"
                                 << std::endl;
         }
 
@@ -3602,7 +3602,7 @@ namespace GEO {
      * \param[in] i the index of the vertex of which the Laguerre cell
      *  should be computed.
      * \param[out] C the Laguerre cell.
-     * \param[out] neighbors the vector of neighbor vertices indices.
+     * \param[out] W the vector of neighbor vertices indices.
      */
     void PeriodicDelaunay3d::copy_Laguerre_cell_from_Delaunay(
 	GEO::index_t i,
@@ -3643,6 +3643,7 @@ namespace GEO {
 	        );
 	    }
 	}
+        C.connect_triangles();
     }
 
     

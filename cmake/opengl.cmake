@@ -3,6 +3,8 @@
 # Sets variable OPENGL_LIBRARIES to the list of GL and GLU libraries
 #
 
+if(!ANDROID)
+
 set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(OpenGL)
@@ -52,4 +54,6 @@ if(GEOGRAM_WITH_EMSCRIPTEN)
   set(GLFW_LIBRARIES "")
 else()
   set(GLFW_LIBRARIES glfw ${OPENGL_LIBRARIES})
+endif()
+
 endif()

@@ -632,7 +632,7 @@ namespace GEO {
 
             bool use_doubles = (ver == GmfDouble);
 
-            if(dim != 3) {
+            if(dim != 3 && dim != 2) {
                 Logger::err("I/O") << "Invalid dimension: " << dim << std::endl;
                 GmfCloseMesh(mesh_file_handle);
                 return false;
@@ -668,8 +668,19 @@ namespace GEO {
             if(use_doubles) {
                 for(index_t v = 0; v < index_t(nb_vertices); ++v) {
                     double xyz[3];
-                    int ref;
-                    if(!GmfGetLin(
+                    int ref = 0;
+		    xyz[2] = 0.0;
+                    if(dim == 2 && !GmfGetLin(
+                           mesh_file_handle, GmfVertices,
+                           &xyz[0], &xyz[1], &ref
+                    )) {
+                        Logger::err("I/O") << "Failed to read vertex #" << v
+                            << std::endl;
+                        GmfCloseMesh(mesh_file_handle);
+                        unbind_attributes();
+                        return false;
+                    }
+                    if(dim == 3 && !GmfGetLin(
                            mesh_file_handle, GmfVertices,
                            &xyz[0], &xyz[1], &xyz[2], &ref
                     )) {
@@ -686,10 +697,18 @@ namespace GEO {
                 }
             } else {
                 for(index_t v = 0; v < index_t(nb_vertices); ++v) {
-                    float x,y,z;
+                    float x=0.0f,y=0.0f,z=0.0f;
                     double xyz[3];
-                    int ref;
-                    if(!GmfGetLin(
+                    int ref = 0;
+                    if(dim == 2 && !GmfGetLin(
+                           mesh_file_handle, GmfVertices, &x, &y, &ref)
+                    ) {
+                        Logger::err("I/O") << "Failed to read vertex #" << v
+                            << std::endl;
+                        GmfCloseMesh(mesh_file_handle);
+                        return false;
+                    }
+                    if(dim == 3 && !GmfGetLin(
                            mesh_file_handle, GmfVertices, &x, &y, &z, &ref)
                     ) {
                         Logger::err("I/O") << "Failed to read vertex #" << v
@@ -994,6 +1013,10 @@ namespace GEO {
                         << " non-tri / non-quad facets"
                         << " (not saved)"
                         << std::endl;
+                    Logger::warn("I/O")
+                        << "Use another file format (e.g., .obj or .geogram)"
+                        << std::endl;
+		    
                 }
             }
 

@@ -135,9 +135,9 @@ namespace GEO {
 	 * \copydoc Delaunay::set_vertices()
 	 * \note compute() needs to be called after.
 	 */
-        virtual void set_vertices(
+        void set_vertices(
             index_t nb_vertices, const double* vertices
-        );
+        ) override;
 
 	/**
 	 * \brief Sets the weights.
@@ -204,12 +204,12 @@ namespace GEO {
 	/**
 	 * \copydoc Delaunay::nearest_vertex()
 	 */
-        virtual index_t nearest_vertex(const double* p) const;
+        index_t nearest_vertex(const double* p) const override;
 
 	/**
 	 * \copydoc Delaunay::set_BRIO_levels()
 	 */
-        virtual void set_BRIO_levels(const vector<index_t>& levels);
+        void set_BRIO_levels(const vector<index_t>& levels) override;
 
 	/**
 	 * \brief computes the set of tetrahedra that are incident to
@@ -317,12 +317,12 @@ namespace GEO {
 	 *  also updates the map periodic_v_to_cell_ that maps
 	 *  each virtual vertex to a tet incident to it.
 	 */
-	virtual void update_v_to_cell();
+	void update_v_to_cell() override;
 
 	/**
 	 * \copydoc Delaunay::update_cicl()
 	 */
-	virtual void update_cicl();
+	void update_cicl() override;
 
 	/**
 	 * \brief Duplicates the points with Voronoi cells 

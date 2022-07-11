@@ -134,8 +134,10 @@ namespace VBW {
 	max_t_(64),
 	max_v_(32),
 	t_(max_t_),
-	vv2t_(max_v_*max_v_),
-	plane_eqn_(max_v_)
+	t_adj_(max_t_),
+	plane_eqn_(max_v_),
+	v2t_(max_v_),
+	v2e_(max_v_)
     {
 #ifndef STANDALONE_CONVEX_CELL
 	use_exact_predicates_ = true;
@@ -153,6 +155,8 @@ namespace VBW {
 	if(has_tflags_) {
 	    tflags_.assign(max_t_,0);
 	}
+	v2t_.assign(max_v_,ushort(-1));
+	v2e_.assign(max_v_,uchar(-1));	
     }
 
     /***********************************************************************/
@@ -169,15 +173,6 @@ namespace VBW {
 	for(index_t t=0; t<max_t(); ++t) {
 	    set_triangle_flags(t, END_OF_LIST);
 	}
-
-	// Initializing edge table, just for
-	// debugging purposes.
-	/*
-	for(index_t v1=0; v1<max_v(); ++v1) {
-	    for(index_t v2=0; v2<max_v(); ++v2) {
-		set_vv2t(v1, v2, END_OF_LIST);
-	    }
-	}*/
 #endif
     }
     
@@ -243,12 +238,17 @@ namespace VBW {
 	plane_eqn_[boff+2] = P2;
 	plane_eqn_[boff+3] = P3;
 
-	new_triangle(boff+3, boff+2, boff+1);
-	new_triangle(boff+3, boff+0, boff+2);
-	new_triangle(boff+3, boff+1, boff+0);
-	new_triangle(boff+2, boff+0, boff+1);
+        //   Create the 4 triangles (that correspond to
+	//          the 4 vertices of the tetrahedron)
+ 	//   (Unused) adjacency info. ----------.
+	//   Triangle vertices -.               |
+        //                      v               v
+	new_triangle(boff+3, boff+2, boff+1, 3, 2, 1);
+	new_triangle(boff+3, boff+0, boff+2, 3, 0, 2);
+	new_triangle(boff+3, boff+1, boff+0, 3, 1, 0);
+	new_triangle(boff+2, boff+0, boff+1, 2, 0, 1);
 	
-	// We already created 6 vertices (for the 6 bounding box
+	// We already created 4 vertices (for the 4 facets
 	// plane equations) plus the vertex at infinity.
 	nb_v_ = 5;
 
@@ -307,7 +307,7 @@ namespace VBW {
 		TriangleWithFlags T = get_triangle_and_flags(t);
 		vec4 p;
 		if(geometry_dirty_) {
-		    p = compute_triangle_point(T);
+		    p = compute_triangle_point(t);
 		    p.x /= p.w;
 		    p.y /= p.w;
 		    p.z /= p.w;
@@ -339,7 +339,7 @@ namespace VBW {
 	       has_vglobal() &&
 	       v_global_index(v) != global_index_t(-1) &&
 	       v_global_index(v) != global_index_t(-2)
-                // inde_t(-2) is for fluid free bndry
+                // index_t(-2) is for fluid free bndry
 	    ) {
 		continue;
 	    }
@@ -396,7 +396,7 @@ namespace VBW {
 	    index_t t = first_valid_;
 	    while(t != END_OF_LIST) { 
 		TriangleWithFlags T = get_triangle_and_flags(t);
-		vec4 p = compute_triangle_point(T);
+		vec4 p = compute_triangle_point(t);
 		p.x /= p.w;
 		p.y /= p.w;
 		p.z /= p.w;
@@ -773,33 +773,97 @@ namespace VBW {
 	    return;
 	}
 
-	// Triangulate conflict zone
-        index_t t = conflict_head;
-        while(t != END_OF_LIST) { 
-	    TriangleWithFlags T = get_triangle_and_flags(t);
-	    
-	    index_t adj1 = vv2t(T.j,T.i);
-	    index_t adj2 = vv2t(T.k,T.j);
-	    index_t adj3 = vv2t(T.i,T.k);
-	    
-	    ushort flg1 = get_triangle_flags(adj1);
-	    ushort flg2 = get_triangle_flags(adj2);
-	    ushort flg3 = get_triangle_flags(adj3);
-	    
-	    if(	!(flg1 & ushort(CONFLICT_MASK)) ) {
-		new_triangle(lv, T.i, T.j);
+
+	// Link the vertices on the border of the conflict zone.
+	// Consider the edge e of triangle t such that:
+	//    t is not marked as conflict
+	//    triangle_adjacent(t,e) is marked as conflict
+	// Let v1 = triangle_vertex(t, (e+1)%3)
+	//     v2 = triangle_vertex(t, (e+2)%3)
+	// We set:
+	//     v2t_[v1] = t
+	//     v2e_[v1] = e
+	// Once done for all the triangles, one can traverse the
+	// border of the conflict zone with:
+	//
+	// v = first_v_on_border]
+	// do {
+	//    t = v2t_[v];
+	//    e = v2t_[e];
+	//    do something with t,e
+	//    v = triangle_vertex(t, (e+2)%3);
+	// } while(v != first_v_on_border]);
+
+	index_t nb = 0; // for sanity check, number of vertices on border
+	                // of conflict zone.
+	VBW::index_t first_v_on_border = END_OF_LIST;
+	for(
+	    VBW::ushort t = first_triangle();
+	    t != END_OF_LIST;
+	    t = next_triangle(t)
+	) {
+	    vbw_assert(!triangle_is_marked_as_conflict(t));
+
+	    if(triangle_is_marked_as_conflict(triangle_adjacent(t,0))) {
+		first_v_on_border = triangle_vertex(t,1);
+		v2t_[first_v_on_border] = t;
+		v2e_[first_v_on_border] = 0;
+		++nb;
 	    }
-	    
-	    if(	!(flg2 & ushort(CONFLICT_MASK)) ) {
-		new_triangle(lv, T.j, T.k);		
+	    if(triangle_is_marked_as_conflict(triangle_adjacent(t,1))) {
+		first_v_on_border = triangle_vertex(t,2);
+		v2t_[first_v_on_border] = t;
+		v2e_[first_v_on_border] = 1;
+		++nb;		
 	    }
-	    
-	    if(	!(flg3 & ushort(CONFLICT_MASK)) ) {
-		new_triangle(lv, T.k, T.i);
+	    if(triangle_is_marked_as_conflict(triangle_adjacent(t,2))) {
+		first_v_on_border = triangle_vertex(t,0);
+		v2t_[first_v_on_border] = t;
+		v2e_[first_v_on_border] = 2;
+		++nb;		
 	    }
-	    
-	    t = index_t(T.flags & ~ushort(CONFLICT_MASK));
-	} 
+	}
+
+	index_t nb2 = 0; // for sanity check, number of vertices on border
+	                 // of conflict zone (should match nb).
+
+	// Traverse the list of edges on the border of the conflict zone
+	// (see previous comment block for explanations). For each edge
+	// on the border of the conflict zone, generate a new triangle.
+	// - Connect it to the triangle on the border of the conflict zone
+	// - Connect it to the previous new triangle
+	// - Special case: in the end, connect the first new triangle with
+	//    the last one.
+
+	// check we are not in the special case with all triangles in conflict
+	if(first_v_on_border != END_OF_LIST) {
+	    VBW::index_t v = first_v_on_border;
+	    VBW::ushort prev_new_t  = VBW::ushort(-1);
+	    VBW::ushort first_new_t = VBW::ushort(-1);
+	    do {
+		++nb2;
+		index_t t = v2t_[v];
+		index_t e = v2e_[v];
+		index_t v1 = triangle_vertex(t, (e+1)%3);
+		index_t v2 = triangle_vertex(t, (e+2)%3);
+		vbw_assert(v1 == v);
+		VBW::ushort new_t = VBW::ushort(new_triangle(lv, v2, v1));
+		set_triangle_adjacent(new_t, 0, t);
+		set_triangle_adjacent(t, e, new_t);
+		if(prev_new_t == VBW::ushort(-1)) {
+		    first_new_t = new_t;
+		} else {
+		    set_triangle_adjacent(prev_new_t, 2, new_t);
+		    set_triangle_adjacent(new_t, 1, prev_new_t);
+		}
+		prev_new_t = new_t;
+		v = v2;
+	    } while (v != first_v_on_border);
+	    set_triangle_adjacent(prev_new_t, 2, first_new_t);
+	    set_triangle_adjacent(first_new_t, 1, prev_new_t);
+	}
+
+	vbw_assert(nb2 == nb);
 	
 	// Recycle triangles in conflict zone
 	set_triangle_flags(conflict_tail, ushort(first_free_));
@@ -910,9 +974,10 @@ namespace VBW {
 	return (det > 0.0);
     }
     
-    vec4 ConvexCell::compute_triangle_point(TriangleWithFlags T) const {
+    vec4 ConvexCell::compute_triangle_point(index_t t) const {
 
 	double infinite_len = 16.0;
+	TriangleWithFlags T = get_triangle_and_flags(t); 
 	
 	// Special cases with one of the three vertices at infinity.
 	if(T.i == VERTEX_AT_INFINITY) {
@@ -922,10 +987,9 @@ namespace VBW {
 		make_vec3(Pj.x, Pj.y, Pj.z),
 		make_vec3(Pk.x, Pk.y, Pk.z)
 	    ));
-	    index_t t_adj = vv2t(T.k, T.j);
+	    index_t t_adj = t_adj_[t].i; // vv2t(T.k, T.j);
 	    vbw_assert(!triangle_is_infinite(t_adj));
-	    TriangleWithFlags T_adj = t_[t_adj];
-	    vec4 result = compute_triangle_point(T_adj);
+	    vec4 result = compute_triangle_point(t_adj);
 	    result.x += result.w * Njk.x * infinite_len;
 	    result.y += result.w * Njk.y * infinite_len;
 	    result.z += result.w * Njk.z * infinite_len;
@@ -937,10 +1001,9 @@ namespace VBW {
 		make_vec3(Pk.x, Pk.y, Pk.z),
 		make_vec3(Pi.x, Pi.y, Pi.z)
 	    ));
-	    index_t t_adj = vv2t(T.i, T.k);
+	    index_t t_adj = t_adj_[t].j; // vv2t(T.i, T.k);
 	    vbw_assert(!triangle_is_infinite(t_adj));
-	    TriangleWithFlags T_adj = t_[t_adj];
-	    vec4 result = compute_triangle_point(T_adj);
+	    vec4 result = compute_triangle_point(t_adj);
 	    result.x += result.w * Nki.x * infinite_len;
 	    result.y += result.w * Nki.y * infinite_len;
 	    result.z += result.w * Nki.z * infinite_len;
@@ -952,10 +1015,9 @@ namespace VBW {
 		make_vec3(Pi.x, Pi.y, Pi.z),
 		make_vec3(Pj.x, Pj.y, Pj.z)
 	    ));
-	    index_t t_adj = vv2t(T.j, T.i);
+	    index_t t_adj = t_adj_[t].k; // vv2t(T.j, T.i);
 	    vbw_assert(!triangle_is_infinite(t_adj));
-	    TriangleWithFlags T_adj = t_[t_adj];
-	    vec4 result = compute_triangle_point(T_adj);
+	    vec4 result = compute_triangle_point(t_adj);
 	    result.x += result.w * Nij.x * infinite_len;
 	    result.y += result.w * Nij.y * infinite_len;
 	    result.z += result.w * Nij.z * infinite_len;
@@ -1028,21 +1090,17 @@ namespace VBW {
     /***********************************************************************/
 
     void ConvexCell::grow_v() {
-	vector<ushort> vv2t_new((max_v_*2)*(max_v_*2));
-	for(index_t j=0; j<max_v_; ++j) {	
-	    for(index_t i=0; i<max_v_; ++i) {
-		vv2t_new[max_v_ * 2 * j + i] = vv2t_[max_v_ * j + i];
-	    }
-	}
-	std::swap(vv2t_, vv2t_new);
 	max_v_ *= 2;
 	plane_eqn_.resize(max_v_);
 	vglobal_.resize(max_v_, global_index_t(-1));
+	v2t_.resize(max_v_, ushort(-1));
+	v2e_.resize(max_v_, uchar(-1));	
     }
 
     void ConvexCell::grow_t() {
 	max_t_ *= 2;
 	t_.resize(max_t_);
+	t_adj_.resize(max_t_);	
 	if(has_tflags_) {
 	    tflags_.resize(max_t_,0);
 	}
@@ -1062,9 +1120,6 @@ namespace VBW {
 	    if(T.k == v) {
 		T.k = VERTEX_AT_INFINITY;
 	    }
-	    set_vv2t(T.i, T.j, t);
-	    set_vv2t(T.j, T.k, t);
-	    set_vv2t(T.k, T.i, t);
 	    t_[t].i = T.i;
 	    t_[t].j = T.j;
 	    t_[t].k = T.k;	    
@@ -1079,19 +1134,12 @@ namespace VBW {
 	}
 
 	triangle_point_.resize(nb_t());
+	v2t_.assign(max_v(),END_OF_LIST);
 	
-	// Yes, need to do that with two
-	// instructions: resize(nb_v(), END_OF_LIST)
-	// does not reset the existing items to
-	// END_OF LIST !! (had a hard time finding
-	// this bug...)
-	v2t_.resize(nb_v());
-	v2t_.assign(nb_v(),END_OF_LIST);
-
         index_t t = first_valid_;
         while(t != END_OF_LIST) { 
 	    TriangleWithFlags T = get_triangle_and_flags(t);
-	    vec4 p = compute_triangle_point(T);
+	    vec4 p = compute_triangle_point(t);
 	    triangle_point_[t] = make_vec3(p.x/p.w, p.y/p.w, p.z/p.w);
 	    v2t_[T.i] = ushort(t);
 	    v2t_[T.j] = ushort(t);
@@ -1273,7 +1321,7 @@ namespace VBW {
         while(t != END_OF_LIST) { 
 	    TriangleWithFlags T = get_triangle_and_flags(t);
 	    if(geometry_dirty_) {
-		vec4 p4 = compute_triangle_point(T);
+		vec4 p4 = compute_triangle_point(t);
 		vec3 p3 = make_vec3(
 		    p4.x/p4.w, p4.y/p4.w, p4.z/p4.w
 		);
@@ -1302,6 +1350,63 @@ namespace VBW {
 	return result;
     }
 
+
+    void ConvexCell::connect_triangles() {
+
+	// create array that maps vertices pairs to triangles.
+	// size of the array is nb_v squared.
+	// If nb_v is small, allocate it on the stack, else
+	// allocate it on the heap (allocating on the stack is
+	// interesting for multithreading).
+	
+	const index_t MAX_NV_ON_STACK = 50;
+	index_t NV = nb_v();
+	ushort* vv2t =
+	    (NV <= MAX_NV_ON_STACK) ? (ushort*)alloca(NV*NV*sizeof(ushort))
+	                            : new ushort[NV*NV]
+			            ;
+
+	#ifdef GEO_DEBUG
+	for(index_t i=0; i<NV*NV; ++i) {
+	    vv2t[i] = END_OF_LIST;
+	}
+	#endif
+	
+	for(
+	    ushort t = first_triangle();
+	    t != END_OF_LIST;
+	    t = next_triangle(t)
+	) {
+	    Triangle T = t_[t];
+	    vbw_assert(T.i < nb_v());
+	    vbw_assert(T.j < nb_v());
+	    vbw_assert(T.k < nb_v());
+	    vv2t[NV*T.j + T.k] = t;
+	    vv2t[NV*T.k + T.i] = t;	    	    	    
+	    vv2t[NV*T.i + T.j] = t;
+	}
+
+	for(
+	    ushort t = first_triangle();
+	    t != END_OF_LIST;
+	    t = next_triangle(t)
+	) {
+	    Triangle T = t_[t];
+	    vbw_assert(vv2t[NV*T.j + T.i] != END_OF_LIST);
+	    vbw_assert(vv2t[NV*T.k + T.j] != END_OF_LIST);
+	    vbw_assert(vv2t[NV*T.i + T.k] != END_OF_LIST);	    	    
+	    t_adj_[t] = make_triangle(
+		vv2t[NV*T.k + T.j],
+		vv2t[NV*T.i + T.k],				
+		vv2t[NV*T.j + T.i]
+	    );
+	}
+
+	if(NV > MAX_NV_ON_STACK) {
+	    delete[] vv2t;
+	}
+    }
+    
     /************************************************************************/
 
     

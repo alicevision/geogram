@@ -224,7 +224,9 @@ static NLboolean nlSolveDirect() {
     for(k=0; k<nlCurrentContext->nb_systems; ++k) {
 	if(nlCurrentContext->no_variables_indirection) {
 	    x = (double*)nlCurrentContext->variable_buffer[k].base_address;
-	    nl_assert(nlCurrentContext->variable_buffer[k].stride == sizeof(double));
+	    nl_assert(
+		nlCurrentContext->variable_buffer[k].stride == sizeof(double)
+	    );
 	}
 	nlMultMatrixVector(F, b, x);
 	b += n;
@@ -276,7 +278,9 @@ static NLboolean nlSolveIterative() {
 
 	if(nlCurrentContext->no_variables_indirection) {
 	    x = (double*)nlCurrentContext->variable_buffer[k].base_address;
-	    nl_assert(nlCurrentContext->variable_buffer[k].stride == sizeof(double));
+	    nl_assert(
+		nlCurrentContext->variable_buffer[k].stride == sizeof(double)
+	    );
 	}
 	
 	nlSolveSystemIterative(

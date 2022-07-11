@@ -24,10 +24,10 @@ Find_Package (Threads REQUIRED)
 Target_Link_Libraries (${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
 # Link to Geogram
-#Find_Package(Geogram)
-#Target_Link_Libraries(${PROJECT_NAME} Geogram::geogram_gfx Geogram::geogram)
+Find_Package(Geogram)
+Target_Link_Libraries(${PROJECT_NAME} Geogram::geogram_gfx Geogram::geogram)
 
-Target_Link_Libraries(${PROJECT_NAME} geogram_gfx geogram)
+#Target_Link_Libraries(${PROJECT_NAME} geogram_gfx geogram)
 
 # Link to Eigen
 Find_Package(Eigen3)
