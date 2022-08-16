@@ -49,6 +49,8 @@
 #include <geogram/basic/algorithm.h>
 #include <geogram/basic/string.h>
 
+#include <tbb/parallel_for.h>
+
 namespace GEO {
 
     MeshSubElementsStore::MeshSubElementsStore(Mesh& mesh) :
@@ -1268,27 +1270,25 @@ namespace GEO {
         }
         
         // Step 2: connect tets
-        for(index_t t1 = 0; t1 < nb(); ++t1) {
-            for(index_t lf1 = 0; lf1 < 4; ++lf1) {
-                if(adjacent(t1, lf1) == NO_CELL) {
-                    index_t v1 = facet_vertex(t1, lf1, 0);
-                    index_t v2 = facet_vertex(t1, lf1, 1);
-                    index_t v3 = facet_vertex(t1, lf1, 2);
-                    for(
-                        index_t c2 = v2c[v1]; c2 != NO_CORNER;
-                        c2 = next_tet_corner_around_vertex[c2]
-                    ) {
-                        index_t t2 = c2/4;
-                        index_t lf2 = find_tet_facet(t2, v3, v2, v1);
-                        if(lf2 != NO_FACET) {
-                            set_adjacent(t1, lf1, t2);
-                            set_adjacent(t2, lf2, t1);
-                            break;
-                        }
-                    }
+        auto connect = [&](index_t t1) {
+          for (index_t lf1 = 0; lf1 < 4; ++lf1) {
+            if (adjacent(t1, lf1) == NO_CELL) {
+              index_t v1 = facet_vertex(t1, lf1, 0);
+              index_t v2 = facet_vertex(t1, lf1, 1);
+              index_t v3 = facet_vertex(t1, lf1, 2);
+              for (index_t c2 = v2c[v1]; c2 != NO_CORNER; c2 = next_tet_corner_around_vertex[c2]) {
+                index_t t2  = c2 / 4;
+                index_t lf2 = find_tet_facet(t2, v3, v2, v1);
+                if (lf2 != NO_FACET) {
+                  set_adjacent(t1, lf1, t2);
+                  break;
                 }
+              }
             }
-        }
+          }
+        }; 
+
+        tbb::parallel_for(index_t(0), nb(), connect);
     }
 
     bool MeshCells::facets_match(
